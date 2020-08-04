@@ -1566,6 +1566,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       GetAttributeNodeGen SourceSection: [13992,14000]`h.append`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: append
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -1684,6 +1685,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       GetAttributeNodeGen SourceSection: [14385,14396]`it.__next__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __next__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1962,6 +1964,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GetAttributeNodeGen SourceSection: [15097,15110]`next.__self__`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: __self__
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -2011,6 +2014,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   GetAttributeNodeGen SourceSection: [15213,15224]`it.__next__`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: __next__
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -2347,6 +2351,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             GetAttributeNodeGen SourceSection: [15803,15816]`next.__self__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __self__
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -4403,6 +4408,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heapreplace_max
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -4427,6 +4433,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heapify_max
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -4451,6 +4458,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heappop_max
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None

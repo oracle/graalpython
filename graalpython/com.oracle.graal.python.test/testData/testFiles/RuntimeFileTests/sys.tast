@@ -46,6 +46,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           Frame: [1,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       GetAnyAttributeNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __getattribute__
                         IsBuiltinClassProfile SourceSection: None
@@ -124,6 +125,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         GetAttributeNodeGen SourceSection: [2512,2534]`implementation.versi...`
           GetFixedAttributeNodeGen SourceSection: None
             Key: version
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -167,6 +169,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       GetAnyAttributeNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __getattribute__
                         IsBuiltinClassProfile SourceSection: None
@@ -185,6 +188,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         GetAttributeNodeGen SourceSection: [2642,2673]`type(make_flags_clas...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __code__
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -464,6 +468,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       GetAnyAttributeNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __getattribute__
                         IsBuiltinClassProfile SourceSection: None
@@ -550,6 +555,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       GetAnyAttributeNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __getattribute__
                         IsBuiltinClassProfile SourceSection: None
@@ -788,6 +794,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     GetAttributeNodeGen SourceSection: [4701,4716]`e.__traceback__`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: __traceback__
+                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -818,6 +825,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                   GetAttributeNodeGen SourceSection: [4815,4845]`tb.tb_frame.f_code.c...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: co_filename
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -825,6 +833,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                     GetAttributeNodeGen SourceSection: [4815,4833]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -832,6 +841,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                       GetAttributeNodeGen SourceSection: [4815,4826]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -842,6 +852,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                   GetAttributeNodeGen SourceSection: [4863,4875]`tb.tb_lineno`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: tb_lineno
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -852,6 +863,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                   GetAttributeNodeGen SourceSection: [4893,4919]`tb.tb_frame.f_code.c...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: co_name
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -859,6 +871,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                     GetAttributeNodeGen SourceSection: [4893,4911]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -866,6 +879,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                       GetAttributeNodeGen SourceSection: [4893,4904]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -892,6 +906,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             GetAttributeNodeGen SourceSection: [4965,4975]`tb.tb_next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: tb_next
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -930,6 +945,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             GetAttributeNodeGen SourceSection: [5043,5063]`type(e).__qualname__...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __qualname__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -963,6 +979,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                         GetAttributeNodeGen SourceSection: [5116,5136]`type(e).__qualname__...`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __qualname__
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -1582,6 +1599,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                   GetAttributeNodeGen SourceSection: [6839,6854]`stdout.encoding`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: encoding
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -1610,6 +1628,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       GetAttributeNodeGen SourceSection: [6926,6939]`stdout.buffer`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: buffer
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1634,6 +1653,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       GetAttributeNodeGen SourceSection: [6999,7014]`stdout.encoding`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: encoding
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None

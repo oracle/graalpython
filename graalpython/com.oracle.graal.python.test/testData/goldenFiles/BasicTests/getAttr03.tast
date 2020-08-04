@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
         GetAttributeNodeGen SourceSection: [0,12]`a().b.c(x).d`
           GetFixedAttributeNodeGen SourceSection: None
             Key: d
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -21,6 +22,7 @@ ModuleRootNode Name: <module 'getAttr03'> SourceSection: [0,16]`a().b.c(x).d.f()
               GetAttributeNodeGen SourceSection: [0,5]`a().b`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: b
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

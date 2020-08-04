@@ -22,6 +22,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           Identifier: DynamicClassAttribute
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -38,6 +39,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               Identifier: OrderedDict
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -53,6 +55,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Identifier: OrderedDict
                 EmptyNode SourceSection: None
               GetAnyAttributeNodeGen SourceSection: None
+                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
@@ -907,6 +910,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [2716,2734]`self._member_names`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_names
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -984,6 +988,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [2981,2999]`self._member_names`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1021,6 +1026,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNodeGen SourceSection: [3131,3143]`self._ignore`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _ignore
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -1109,6 +1115,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           GetAttributeNodeGen SourceSection: [3418,3429]`value.value`
                                                             GetFixedAttributeNodeGen SourceSection: None
                                                               Key: value
+                                                              CachedDispatchFirst SourceSection: None
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
@@ -1143,6 +1150,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNodeGen SourceSection: [3517,3535]`self._member_names`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _member_names
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -1154,6 +1162,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNodeGen SourceSection: None
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _last_values
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -1174,6 +1183,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [3584,3595]`value.value`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: value
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -1189,6 +1199,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [3608,3626]`self._member_names`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_names
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -1206,6 +1217,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [3651,3668]`self._last_values`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _last_values
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -1706,6 +1718,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [5329,5352]`classdict._member_na...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1738,6 +1751,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [5374,5397]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1933,6 +1947,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [6414,6424]`b.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -2068,6 +2083,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNodeGen SourceSection: [7416,7436]`member_type.__dict__...`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __dict__
+                                                                    CachedDispatchFirst SourceSection: None
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -2308,6 +2324,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [8637,8656]`enum_member._value_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2380,6 +2397,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNodeGen SourceSection: [9026,9050]`canonical_member._va...`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value_
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -2390,6 +2408,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNodeGen SourceSection: [9054,9073]`enum_member._value_`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value_
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -2415,6 +2434,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [8974,8997]`enum_class._member_m...`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _member_map_
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -2429,6 +2449,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [9264,9289]`enum_class._member_n...`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_names_
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -2475,6 +2496,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_map_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2494,6 +2516,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   GetAttributeNodeGen SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _value2member_map_
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2519,6 +2542,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [7788,7811]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2669,6 +2693,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [10835,10847]`Enum.__new__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __new__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2731,6 +2756,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [11085,11110]`enum_class._member_n...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3069,6 +3095,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [13079,13092]`member._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3079,6 +3106,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [13096,13112]`cls._member_map_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_map_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3151,6 +3179,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [13265,13281]`cls._member_map_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3171,6 +3200,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [13372,13384]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3247,6 +3277,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [13532,13551]`self._member_names_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3334,6 +3365,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_map_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3414,6 +3446,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: None
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_map_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3498,6 +3531,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNodeGen SourceSection: None
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _member_map_
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -3535,6 +3569,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [14253,14271]`cls._member_names_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3596,6 +3631,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [14315,14333]`cls._member_names_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3665,6 +3701,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [14606,14622]`cls._member_map_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_map_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3722,6 +3759,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [14677,14689]`cls.__name__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __name__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3803,6 +3841,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNodeGen SourceSection: None
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _member_map_
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -3845,6 +3884,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [14778,14796]`cls._member_names_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _member_names_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3918,6 +3958,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [15124,15136]`cls.__dict__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __dict__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4070,6 +4111,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNodeGen SourceSection: [15826,15839]`cls.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -4499,6 +4541,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: f_globals
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4712,6 +4755,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   GetAttributeNodeGen SourceSection: [18128,18147]`base._member_names_`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: _member_names_
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -4862,6 +4906,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [18728,18744]`bases[0].__mro__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5036,6 +5081,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNodeGen SourceSection: [20365,20377]`None.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
+                                                                    CachedDispatchFirst SourceSection: None
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -5044,6 +5090,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNodeGen SourceSection: [20407,20421]`object.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
+                                                                    CachedDispatchFirst SourceSection: None
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -5054,6 +5101,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 GetAttributeNodeGen SourceSection: [20451,20463]`Enum.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: __new__
+                                                                    CachedDispatchFirst SourceSection: None
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -5106,6 +5154,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [20677,20691]`object.__new__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __new__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5125,6 +5174,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [20904,20918]`object.__new__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __new__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5303,6 +5353,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [21658,21680]`cls._value2member_ma...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value2member_map_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5319,6 +5370,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _value2member_map_
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -5349,6 +5401,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [21894,21908]`member._value_`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: _value_
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -5376,6 +5429,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [21848,21864]`cls._member_map_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _member_map_
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -5584,6 +5638,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [22403,22415]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5644,6 +5699,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [22492,22515]`self.__class__.__nam...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5651,6 +5707,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [22492,22506]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5661,6 +5718,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [22517,22528]`self._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5671,6 +5729,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [22530,22542]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5730,6 +5789,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [22594,22617]`self.__class__.__nam...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5737,6 +5797,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [22594,22608]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -5747,6 +5808,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [22619,22630]`self._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5858,6 +5920,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               GetAttributeNodeGen SourceSection: [22831,22848]`self._member_map_`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: _member_map_
+                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -5887,6 +5950,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       GetAttributeNodeGen SourceSection: [22774,22786]`cls.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -5927,6 +5991,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNodeGen SourceSection: [22728,22742]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -6007,6 +6072,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [23195,23213]`self._member_type_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_type_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6045,6 +6111,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [23331,23349]`self._member_type_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_type_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6059,6 +6126,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [23368,23380]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6134,6 +6202,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [23474,23485]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6196,6 +6265,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [23539,23553]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6207,6 +6277,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [23556,23568]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6273,6 +6344,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [24077,24088]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6337,6 +6409,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [24197,24209]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6438,6 +6511,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: modules
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6744,6 +6818,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [25680,25695]`cls.__members__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __members__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6903,6 +6978,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                         GetAttributeNodeGen SourceSection: [25886,25895]`self.name`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: name
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -7311,6 +7387,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [27095,27117]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value2member_map_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7390,6 +7467,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [27363,27375]`cls.__name__`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __name__
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -7437,6 +7515,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNodeGen SourceSection: [27701,27723]`cls._value2member_ma...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: _value2member_map_
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -7520,6 +7599,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [27855,27869]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -7569,6 +7649,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [28129,28142]`other._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7579,6 +7660,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [28145,28157]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7589,6 +7671,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [28161,28174]`other._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -7641,6 +7724,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNodeGen SourceSection: [28214,28228]`self.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -7656,6 +7740,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [28240,28251]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -7677,6 +7762,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28301,28313]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -7687,6 +7773,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28315,28326]`self._name_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _name_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -7697,6 +7784,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28328,28340]`self._value_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -7718,6 +7806,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNodeGen SourceSection: [28387,28399]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -7760,6 +7849,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [28450,28462]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7811,6 +7901,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   GetAttributeNodeGen SourceSection: [28494,28502]`m._name_`
                                                                     GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: _name_
+                                                                      CachedDispatchFirst SourceSection: None
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
@@ -7821,6 +7912,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   GetAttributeNodeGen SourceSection: [28506,28515]`m._value_`
                                                                     GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: _value_
+                                                                      CachedDispatchFirst SourceSection: None
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
@@ -7860,6 +7952,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [28553,28565]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7913,6 +8006,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GetAttributeNodeGen SourceSection: [28623,28637]`self.__class__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __class__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -7928,6 +8022,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [28649,28660]`self._name_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _name_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -7949,6 +8044,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28704,28716]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -7959,6 +8055,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28718,28729]`self._name_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _name_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -7980,6 +8077,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNodeGen SourceSection: [28776,28788]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -8031,6 +8129,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [28823,28840]`members[0]._name_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _name_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8058,6 +8157,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28880,28892]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -8068,6 +8168,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28894,28912]`members[0]._value_`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _value_
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -8092,6 +8193,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [28979,28991]`cls.__name__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -8143,6 +8245,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     GetAttributeNodeGen SourceSection: [29027,29035]`m._name_`
                                                                       GetFixedAttributeNodeGen SourceSection: None
                                                                         Key: _name_
+                                                                        CachedDispatchFirst SourceSection: None
                                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                                           Op: __getattribute__
                                                                         IsBuiltinClassProfile SourceSection: None
@@ -8153,6 +8256,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     GetAttributeNodeGen SourceSection: [29039,29048]`m._value_`
                                                                       GetFixedAttributeNodeGen SourceSection: None
                                                                         Key: _value_
+                                                                        CachedDispatchFirst SourceSection: None
                                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                                           Op: __getattribute__
                                                                         IsBuiltinClassProfile SourceSection: None
@@ -8241,6 +8345,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [29137,29149]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8309,6 +8414,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [29214,29228]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8342,6 +8448,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29295,29307]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8352,6 +8459,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29310,29323]`other._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8420,6 +8528,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [29389,29403]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8453,6 +8562,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29470,29482]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8463,6 +8573,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29485,29498]`other._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8531,6 +8642,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [29564,29578]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8564,6 +8676,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29645,29657]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8574,6 +8687,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [29660,29673]`other._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -8628,6 +8742,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNodeGen SourceSection: [29742,29756]`self.__class__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __class__
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -8638,6 +8753,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetAttributeNodeGen SourceSection: [29758,29770]`self._value_`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _value_
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -8716,6 +8832,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [29883,29892]`m._value_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _value_
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -8726,6 +8843,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     GetAttributeNodeGen SourceSection: [29895,29907]`self._value_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _value_
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -8755,6 +8873,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [29826,29840]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -8924,6 +9043,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GetAttributeNodeGen SourceSection: [30210,30222]`cls.__name__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -9022,6 +9142,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [30392,30414]`cls._value2member_ma...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value2member_map_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9140,6 +9261,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             GetAttributeNodeGen SourceSection: [30800,30822]`cls._value2member_ma...`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: _value2member_map_
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -9259,6 +9381,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GetAttributeNodeGen SourceSection: [31516,31538]`cls._value2member_ma...`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: _value2member_map_
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -9354,6 +9477,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [31665,31679]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9390,6 +9514,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [31754,31766]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -9400,6 +9525,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [31769,31798]`self.__class__(other...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -9483,6 +9609,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [31887,31901]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9520,6 +9647,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [31974,31986]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9530,6 +9658,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [31989,32018]`self.__class__(other...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9605,6 +9734,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [32085,32099]`self.__class__`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __class__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9642,6 +9772,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [32172,32184]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9652,6 +9783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [32187,32216]`self.__class__(other...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9761,6 +9893,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetAttributeNodeGen SourceSection: [32346,32358]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -9926,6 +10059,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 GetAttributeNodeGen SourceSection: [32711,32722]`member.name`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: name
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -9947,6 +10081,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   GetAttributeNodeGen SourceSection: [32761,32772]`member.name`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: name
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -9964,6 +10099,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               GetAttributeNodeGen SourceSection: [32659,32682]`enumeration.__member...`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __members__
+                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -10217,6 +10353,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [33605,33611]`m.name`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: name
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -10289,6 +10426,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     GetAttributeNodeGen SourceSection: [33553,33576]`flag._value2member_m...`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: _value2member_map_
+                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -10342,6 +10480,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GetAttributeNodeGen SourceSection: [33843,33849]`m.name`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: name
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -10425,6 +10564,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     GetAttributeNodeGen SourceSection: [33791,33814]`flag._value2member_m...`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: _value2member_map_
+                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -10547,6 +10687,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNodeGen SourceSection: [34139,34162]`flag._value2member_m...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: _value2member_map_
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -10568,6 +10709,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNodeGen SourceSection: None
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: _value2member_map_
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -10622,6 +10764,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             GetAttributeNodeGen SourceSection: [34250,34259]`m._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -10665,6 +10808,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             GetAttributeNodeGen SourceSection: [34303,34319]`members[0].value`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: value
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None

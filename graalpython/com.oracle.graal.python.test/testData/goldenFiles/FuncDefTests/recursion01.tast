@@ -74,6 +74,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                             GetAttributeNodeGen SourceSection: [52,63]`self.string`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: string
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None

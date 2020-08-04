@@ -11,6 +11,7 @@ ModuleRootNode Name: <module 'call16'> SourceSection: [0,11]`a.b.c.foo()`
         GetAttributeNodeGen SourceSection: [0,5]`a.b.c`
           GetFixedAttributeNodeGen SourceSection: None
             Key: c
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -18,6 +19,7 @@ ModuleRootNode Name: <module 'call16'> SourceSection: [0,11]`a.b.c.foo()`
           GetAttributeNodeGen SourceSection: [0,3]`a.b`
             GetFixedAttributeNodeGen SourceSection: None
               Key: b
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None

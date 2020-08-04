@@ -23,6 +23,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
           Identifier: MAXGROUPS
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -309,6 +310,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 GetAttributeNodeGen SourceSection: [1504,1515]`self.lineno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: lineno
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -319,6 +321,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                                 GetAttributeNodeGen SourceSection: [1517,1527]`self.colno`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: colno
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -553,6 +556,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         GetAttributeNodeGen SourceSection: [1833,1842]`self.name`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: name
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -789,6 +793,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           GetAttributeNodeGen SourceSection: [2075,2084]`item.name`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: name
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None

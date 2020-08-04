@@ -133,6 +133,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __bases__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None

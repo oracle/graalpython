@@ -28,6 +28,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           Identifier: islice
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -42,6 +43,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
           Identifier: get_ident
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -578,6 +580,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [1557,1570]`self.maxlevel`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlevel
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -645,6 +648,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       GetAttributeNodeGen SourceSection: [1623,1639]`type(x).__name__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __name__
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -898,6 +902,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [2125,2135]`self.repr1`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: repr1
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1146,6 +1151,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [2487,2500]`self.maxtuple`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxtuple
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1229,6 +1235,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [2598,2610]`self.maxlist`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlist
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1312,6 +1319,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             GetAttributeNodeGen SourceSection: [2702,2712]`x.typecode`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: typecode
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1331,6 +1339,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         GetAttributeNodeGen SourceSection: [2748,2758]`x.typecode`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: typecode
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -1358,6 +1367,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [2818,2831]`self.maxarray`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxarray
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1466,6 +1476,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [3000,3011]`self.maxset`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxset
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1574,6 +1585,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [3238,3255]`self.maxfrozenset`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxfrozenset
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1656,6 +1668,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [3356,3369]`self.maxdeque`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxdeque
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1789,6 +1802,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       GetAttributeNodeGen SourceSection: [3540,3550]`self.repr1`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: repr1
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1882,6 +1896,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             GetAttributeNodeGen SourceSection: [3618,3630]`self.maxdict`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maxdict
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1903,6 +1918,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [3794,3806]`self.maxdict`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxdict
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2017,6 +2033,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             GetAttributeNodeGen SourceSection: [3952,3966]`self.maxstring`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maxstring
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2043,6 +2060,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [3989,4003]`self.maxstring`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxstring
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2071,6 +2089,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4029,4043]`self.maxstring`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxstring
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2102,6 +2121,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4074,4088]`self.maxstring`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxstring
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2297,6 +2317,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [4326,4338]`self.maxlong`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxlong
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2325,6 +2346,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4364,4376]`self.maxlong`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxlong
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2356,6 +2378,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4407,4419]`self.maxlong`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxlong
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2503,6 +2526,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                   GetAttributeNodeGen SourceSection: [4750,4770]`x.__class__.__name__...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -2510,6 +2534,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     GetAttributeNodeGen SourceSection: [4750,4761]`x.__class__`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __class__
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -2548,6 +2573,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                           GetAttributeNodeGen SourceSection: [4799,4812]`self.maxother`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maxother
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2576,6 +2602,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4838,4851]`self.maxother`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxother
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2607,6 +2634,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 GetAttributeNodeGen SourceSection: [4882,4895]`self.maxother`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maxother
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -2770,6 +2798,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
             GetAttributeNodeGen SourceSection: [5256,5266]`aRepr.repr`
               GetFixedAttributeNodeGen SourceSection: None
                 Key: repr
+                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None

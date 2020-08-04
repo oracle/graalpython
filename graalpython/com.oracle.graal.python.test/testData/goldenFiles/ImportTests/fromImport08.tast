@@ -20,6 +20,7 @@ ModuleRootNode Name: <module 'fromImport08'> SourceSection: [0,38]`from sys.path
             Identifier: basename
             EmptyNode SourceSection: None
           GetAnyAttributeNodeGen SourceSection: None
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None

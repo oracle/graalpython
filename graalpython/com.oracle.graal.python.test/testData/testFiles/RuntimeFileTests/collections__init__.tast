@@ -37,6 +37,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           Identifier: _eq
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -51,6 +52,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           Identifier: _iskeyword
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -75,6 +77,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           Identifier: _proxy
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -95,6 +98,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           Identifier: _starmap
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -109,6 +113,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           Identifier: _recursive_repr
           EmptyNode SourceSection: None
         GetAnyAttributeNodeGen SourceSection: None
+          CachedDispatchFirst SourceSection: None
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __getattribute__
           IsBuiltinClassProfile SourceSection: None
@@ -125,6 +130,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               Identifier: deque
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -145,6 +151,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                 GetAttributeNodeGen SourceSection: [1394,1426]`_collections_abc.Mut...`
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: MutableSequence
+                    CachedDispatchFirst SourceSection: None
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                     IsBuiltinClassProfile SourceSection: None
@@ -167,6 +174,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               Identifier: defaultdict
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -229,6 +237,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           GetAttributeNodeGen SourceSection: [1760,1784]`_collections_abc.__a...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: __all__
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -432,6 +441,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: [2531,2544]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -464,6 +474,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [2446,2471]`_collections_abc.Key...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: KeysView
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -555,6 +566,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: _mapping
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -581,6 +593,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [2661,2674]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -620,6 +633,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [2575,2601]`_collections_abc.Ite...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: ItemsView
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -707,6 +721,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _mapping
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -732,6 +747,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [2838,2851]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -771,6 +787,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [2751,2778]`_collections_abc.Val...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: ValuesView
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -1014,6 +1031,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [4330,4341]`self.__root`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __root
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1046,6 +1064,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [4451,4466]`self.__hardroot`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __hardroot
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -1134,6 +1153,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetAttributeNodeGen SourceSection: [4646,4662]`dict.__setitem__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __setitem__
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1260,6 +1280,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __map
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1287,6 +1308,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [4984,4995]`self.__root`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __root
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1301,6 +1323,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [5015,5024]`root.prev`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: prev
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1406,6 +1429,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetAttributeNodeGen SourceSection: [5235,5251]`dict.__delitem__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __delitem__
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -1484,6 +1508,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [5504,5514]`self.__map`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __map
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1501,6 +1526,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [5544,5553]`link.prev`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: prev
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1515,6 +1541,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [5574,5583]`link.next`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: next
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1593,6 +1620,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [5827,5838]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __root
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1607,6 +1635,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [5854,5863]`root.next`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: next
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1623,6 +1652,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [5914,5922]`curr.key`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: key
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1638,6 +1668,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [5942,5951]`curr.next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1711,6 +1742,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [6095,6106]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __root
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1725,6 +1757,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [6122,6131]`root.prev`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: prev
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1741,6 +1774,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [6182,6190]`curr.key`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: key
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1756,6 +1790,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [6210,6219]`curr.prev`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: prev
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1831,6 +1866,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [6314,6325]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __root
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1869,6 +1905,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [6371,6381]`self.__map`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __map
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1956,6 +1993,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [6700,6711]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __root
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1978,6 +2016,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [6748,6757]`root.prev`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: prev
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1992,6 +2031,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [6782,6791]`link.prev`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: prev
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2023,6 +2063,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [6893,6902]`root.next`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: next
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2037,6 +2078,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [6927,6936]`link.next`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: next
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2067,6 +2109,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7019,7027]`link.key`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: key
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2078,6 +2121,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __map
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2179,6 +2223,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: None
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __map
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2196,6 +2241,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7360,7369]`link.prev`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: prev
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2210,6 +2256,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7390,7399]`link.next`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: next
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2224,6 +2271,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7420,7434]`link_next.prev`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: prev
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2254,6 +2302,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7520,7531]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __root
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2276,6 +2325,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [7568,7577]`root.prev`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: prev
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2323,6 +2373,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [7733,7742]`root.next`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: next
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2407,6 +2458,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [7910,7924]`_sys.getsizeof`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: getsizeof
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2443,6 +2495,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: [8028,8041]`self.__dict__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __dict__
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -2469,6 +2522,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [8099,8109]`self.__map`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __map
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2497,6 +2551,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [8182,8197]`self.__hardroot`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __hardroot
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2526,6 +2581,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [8245,8256]`self.__root`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __root
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2555,6 +2611,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           GetAttributeNodeGen SourceSection: [8331,8369]`_collections_abc.Mut...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: update
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2562,6 +2619,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetAttributeNodeGen SourceSection: [8331,8362]`_collections_abc.Mut...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: MutableMapping
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -2752,6 +2810,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                         GetAttributeNodeGen SourceSection: [8784,8822]`_collections_abc.Mut...`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __ne__
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -2759,6 +2818,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           GetAttributeNodeGen SourceSection: [8784,8815]`_collections_abc.Mut...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: MutableMapping
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -2902,6 +2962,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [9213,9226]`self.__marker`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __marker
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3100,6 +3161,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [9737,9760]`self.__class__.__nam...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3107,6 +3169,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [9737,9751]`self.__class__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3129,6 +3192,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [9790,9813]`self.__class__.__nam...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __name__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3136,6 +3200,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [9790,9804]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -3249,6 +3314,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [10036,10050]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3583,6 +3649,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               Identifier: OrderedDict
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -4246,6 +4313,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                           GetAttributeNodeGen SourceSection: [13958,13969]`_sys.intern`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: intern
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -4388,6 +4456,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       GetAttributeNodeGen SourceSection: [14166,14179]`tuple.__new__`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: __new__
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -4629,6 +4698,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       GetAttributeNodeGen SourceSection: [14948,14962]`_make.__func__`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: __func__
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -4706,6 +4776,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: [15135,15143]`kwds.pop`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: pop
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -4825,6 +4896,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: [15509,15532]`self.__class__.__nam...`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __name__
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -4832,6 +4904,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [15509,15523]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4905,6 +4978,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [15681,15693]`self._fields`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _fields
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4998,6 +5072,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [8,23]`method.__name__`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: __name__
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -5014,6 +5089,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetAttributeNodeGen SourceSection: [15928,15942]`_make.__func__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __func__
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -5286,6 +5362,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [17380,17407]`_sys._getframe(1).f_...`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: f_globals
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -5389,6 +5466,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                       GetAttributeNodeGen SourceSection: [17839,17850]`mapping.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -5445,6 +5523,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               Identifier: _count_elements
               EmptyNode SourceSection: None
             GetAnyAttributeNodeGen SourceSection: None
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -6133,6 +6212,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [24262,24286]`_collections_abc.Map...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: Mapping
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6155,6 +6235,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [24345,24353]`self.get`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: get
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -6430,6 +6511,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [25822,25830]`self.get`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: get
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6452,6 +6534,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [25867,25891]`_collections_abc.Map...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: Mapping
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -6672,6 +6755,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [26298,26312]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -6822,6 +6906,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [26581,26604]`self.__class__.__nam...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __name__
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6829,6 +6914,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [26581,26595]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -6856,6 +6942,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [26652,26668]`'%r: %r'.__mod__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mod__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -6880,6 +6967,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [26724,26747]`self.__class__.__nam...`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __name__
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -6887,6 +6975,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     GetAttributeNodeGen SourceSection: [26724,26738]`self.__class__`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: __class__
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -6911,6 +7000,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [26878,26901]`self.__class__.__nam...`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name__
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -6918,6 +7008,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [26878,26892]`self.__class__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -9010,6 +9101,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [33073,33082]`self.maps`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maps
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -9171,6 +9263,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [33486,33495]`self.maps`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: maps
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -9257,6 +9350,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [33614,33623]`self.maps`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maps
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9400,6 +9494,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [33808,33817]`self.maps`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: maps
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -9459,6 +9554,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [33863,33872]`self.maps`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maps
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -9544,6 +9640,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [34013,34022]`self.maps`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maps
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -9692,6 +9789,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: maps
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -9705,6 +9803,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: maps
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -9814,6 +9913,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [34692,34701]`self.maps`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maps
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -9887,6 +9987,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: maps
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -9963,6 +10064,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: None
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: maps
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -10031,6 +10133,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maps
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -10114,6 +10217,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: maps
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -10211,6 +10315,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: maps
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -10285,6 +10390,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: maps
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -10310,6 +10416,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [32206,32237]`_collections_abc.Mut...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: MutableMapping
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -10652,6 +10759,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [36880,36889]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -10721,6 +10829,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [36941,36950]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -10737,6 +10846,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -10760,6 +10870,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [37005,37019]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -10779,6 +10890,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [37056,37070]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -10860,6 +10972,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -10923,6 +11036,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -10984,6 +11098,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [37277,37286]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11054,6 +11169,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [37416,37425]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11112,6 +11228,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [37525,37534]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11165,6 +11282,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [37567,37581]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11191,6 +11309,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [37623,37632]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -11213,6 +11332,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: [37676,37685]`self.data`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -11392,6 +11512,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [35996,36027]`_collections_abc.Mut...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: MutableMapping
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -11527,6 +11648,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [38495,38504]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -11538,6 +11660,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: None
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11572,6 +11695,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -11588,6 +11712,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -11665,6 +11790,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [38741,38750]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11729,6 +11855,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [38788,38797]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11802,6 +11929,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [38856,38865]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11875,6 +12003,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [38924,38933]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -11948,6 +12077,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [38992,39001]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12021,6 +12151,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [39060,39069]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12106,6 +12237,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [39136,39146]`other.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12179,6 +12311,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [39238,39247]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12237,6 +12370,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [39282,39291]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12299,6 +12433,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: None
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12366,6 +12501,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -12429,6 +12565,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -12517,6 +12654,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39550,39559]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12527,6 +12665,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39562,39572]`other.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12554,6 +12693,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39610,39619]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12578,6 +12718,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [39657,39666]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -12606,6 +12747,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [39706,39715]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -12699,6 +12841,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39836,39846]`other.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12709,6 +12852,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39849,39858]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12736,6 +12880,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [39896,39905]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12763,6 +12908,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [39951,39960]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -12796,6 +12942,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40006,40015]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -12873,6 +13020,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40100,40109]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12883,6 +13031,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40113,40123]`other.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -12910,6 +13059,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [40160,40169]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12926,6 +13076,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40185,40194]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -12945,6 +13096,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40230,40239]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13031,6 +13183,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40331,40340]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13110,6 +13263,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         GetAttributeNodeGen SourceSection: [40402,40411]`self.data`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: data
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -13181,6 +13335,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40465,40474]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13251,6 +13406,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40519,40528]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13323,6 +13479,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40577,40586]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13386,6 +13543,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40622,40631]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13441,6 +13599,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40666,40675]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13557,6 +13716,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40766,40775]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13639,6 +13799,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [40829,40838]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13691,6 +13852,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40881,40890]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13770,6 +13932,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [40936,40945]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13845,6 +14008,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [41047,41056]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13855,6 +14019,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           GetAttributeNodeGen SourceSection: [41064,41074]`other.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -13869,6 +14034,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [41102,41111]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -13895,6 +14061,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
           GetAttributeNodeGen SourceSection: [38191,38223]`_collections_abc.Mut...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: MutableSequence
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -14035,6 +14202,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14111,6 +14279,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41601,41610]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14169,6 +14338,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41648,41657]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14227,6 +14397,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41693,41702]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14285,6 +14456,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41742,41751]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14343,6 +14515,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41795,41804]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14401,6 +14574,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [41842,41851]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14456,6 +14630,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14541,6 +14716,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42007,42016]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14551,6 +14727,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42020,42031]`string.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14570,6 +14747,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42047,42056]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14652,6 +14830,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42159,42168]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14662,6 +14841,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42171,42182]`string.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14681,6 +14861,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42198,42207]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14763,6 +14944,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42309,42318]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14773,6 +14955,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42322,42333]`string.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14792,6 +14975,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42349,42358]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14874,6 +15058,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42461,42470]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14884,6 +15069,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42473,42484]`string.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14903,6 +15089,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42500,42509]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -14985,6 +15172,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42611,42620]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -14995,6 +15183,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [42624,42635]`string.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15014,6 +15203,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42651,42660]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -15092,6 +15282,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [42766,42775]`char.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -15117,6 +15308,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42799,42808]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -15175,6 +15367,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               GetAttributeNodeGen SourceSection: [42844,42853]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -15243,6 +15436,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15331,6 +15525,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43035,43044]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15341,6 +15536,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43047,43057]`other.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15380,6 +15576,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     GetAttributeNodeGen SourceSection: [43130,43139]`self.data`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: data
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -15408,6 +15605,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [43179,43188]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15504,6 +15702,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43311,43320]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15537,6 +15736,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [43365,43374]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15607,6 +15807,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [43432,43441]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15694,6 +15895,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [43527,43536]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -15825,6 +16027,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43734,43743]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15887,6 +16090,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43812,43821]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15972,6 +16176,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [43900,43909]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -15994,6 +16199,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [43970,43982]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -16079,6 +16285,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [44043,44051]`sub.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -16098,6 +16305,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [44067,44076]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16201,6 +16409,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                         GetAttributeNodeGen SourceSection: [44252,44261]`self.data`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: data
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -16232,6 +16441,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       GetAttributeNodeGen SourceSection: [44322,44331]`self.data`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: data
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -16260,6 +16470,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [44380,44389]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -16282,6 +16493,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [44444,44456]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -16356,6 +16568,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [44474,44483]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16437,6 +16650,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [44580,44589]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -16462,6 +16676,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [44648,44660]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -16547,6 +16762,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [44721,44729]`sub.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -16566,6 +16782,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [44745,44754]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16658,6 +16875,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [44829,44838]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16722,6 +16940,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [44911,44920]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16747,6 +16966,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [44979,44991]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -16821,6 +17041,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45009,45018]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16886,6 +17107,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45072,45081]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16942,6 +17164,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45122,45131]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -16998,6 +17221,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45172,45181]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17054,6 +17278,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45224,45233]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17110,6 +17335,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45276,45285]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17166,6 +17392,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45331,45340]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17222,6 +17449,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45386,45395]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17278,6 +17506,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45438,45447]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17334,6 +17563,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45494,45503]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17390,6 +17620,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45548,45557]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17446,6 +17677,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45598,45607]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17502,6 +17734,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45648,45657]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17566,6 +17799,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [45700,45709]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17654,6 +17888,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [45785,45794]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -17716,6 +17951,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [45859,45868]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -17787,6 +18023,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [45934,45943]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -17808,6 +18045,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                             GetAttributeNodeGen SourceSection: [45975,45988]`str.maketrans`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: maketrans
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -17875,6 +18113,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46034,46043]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -17969,6 +18208,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [46163,46171]`old.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -17999,6 +18239,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [46230,46238]`new.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -18024,6 +18265,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [46269,46278]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -18055,6 +18297,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [46346,46358]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -18140,6 +18383,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             GetAttributeNodeGen SourceSection: [46419,46427]`sub.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -18159,6 +18403,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46443,46452]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18190,6 +18435,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [46515,46527]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -18264,6 +18510,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46545,46554]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18358,6 +18605,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [46644,46653]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -18422,6 +18670,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46721,46730]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18496,6 +18745,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [46811,46820]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -18573,6 +18823,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46895,46904]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18653,6 +18904,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [46986,46995]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18724,6 +18976,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [47067,47076]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18749,6 +19002,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 GetAttributeNodeGen SourceSection: [47144,47156]`_sys.maxsize`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: maxsize
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -18823,6 +19077,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GetAttributeNodeGen SourceSection: [47174,47183]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -18903,6 +19158,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47270,47279]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -18968,6 +19224,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47340,47349]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -19030,6 +19287,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47405,47414]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -19105,6 +19363,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47486,47495]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -19167,6 +19426,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47557,47566]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -19237,6 +19497,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GetAttributeNodeGen SourceSection: [47626,47635]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -19263,6 +19524,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
               GetAttributeNodeGen SourceSection: [41324,41349]`_collections_abc.Seq...`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: Sequence
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
