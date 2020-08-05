@@ -472,7 +472,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            if (isStartedPorfile.profile(self.isStarted())) {
+            if (isStartedPorfile.profile(self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
