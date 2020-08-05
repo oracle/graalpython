@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
@@ -331,6 +332,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AugAssignmentSSTNode node) {
         checkCannotAssignTo(node.lhs);
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
+        checkExpressionAssignable(lhs);
         if (!(lhs instanceof ReadNode)) {
             throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT);
         }
@@ -1366,7 +1368,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
+    private void checkExpressionAssignable(ExpressionNode lhs) {
         if (lhs instanceof ObjectLiteralNode) {
             if (((ObjectLiteralNode) lhs).getObject() == PEllipsis.INSTANCE) {
                 throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "Ellipsis");
@@ -1387,7 +1389,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "set display");
         } else if (lhs instanceof FormatStringLiteralNode) {
             throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "f-string expression");
-        } else if (lhs instanceof TupleLiteralNode) {
+        } else if (lhs instanceof AbstractYieldNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "yield expression");
+        }
+    }
+
+    private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
+        checkExpressionAssignable(lhs);
+        if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {
             return createDestructuringAssignment(((ListLiteralNode) lhs).getValues(), rhs);

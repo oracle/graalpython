@@ -1858,7 +1858,9 @@ Traceback (most recent call last):
   ...
 SyntaxError: 'yield' outside function
 
->>> def f(): x = yield = y
+
+# XXX Truffle change: relax the message, CPython error messages are inconsistent and arbitrary here
+>>> def f(): x = yield = y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
 SyntaxError: assignment to yield expression not possible
