@@ -97,7 +97,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return CreateArgumentsNodeGen.getUncached();
     }
 
-    @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()", assumptions = "singleContextAssumption()")
     Object[] doMethodCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
@@ -115,7 +115,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction",
-                    "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
+                    "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached", assumptions = "singleContextAssumption()")
     Object[] doMethodFunctionAndSelfCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction,
@@ -132,7 +132,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, cachedSelf, defaults, kwdefaults, isMethodCall(cachedSelf));
     }
 
-    @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached")
+    @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached", assumptions = "singleContextAssumption()")
     Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
@@ -149,7 +149,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
-    @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()", assumptions = "singleContextAssumption()")
     Object[] doFunctionCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @Cached("create()") GetSignatureNode getSignatureNode,
