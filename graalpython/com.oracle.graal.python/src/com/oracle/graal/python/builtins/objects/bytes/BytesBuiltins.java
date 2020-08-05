@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -853,23 +854,42 @@ public class BytesBuiltins extends PythonBuiltins {
 
     // bytes.index(x)
     // bytearray.index(x)
-    @Builtin(name = "index", minNumOfPositionalArgs = 2)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public abstract static class ByteArrayIndexNode extends PythonBuiltinNode {
-        @Child private SequenceStorageNodes.LenNode lenNode;
-
+    public abstract static class ByteArrayIndexNode extends PythonQuaternaryBuiltinNode {
         @Specialization
-        public int index(VirtualFrame frame, PIBytesLike byteArray, Object arg,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, byteArray, arg, 0, getLength(byteArray.getSequenceStorage()));
+        int index(VirtualFrame frame, PIBytesLike byteArray, Object arg, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("storage") @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Shared("findNode") @Cached("create()") BytesNodes.FindNode findNode) {
+            return checkResult(findNode.execute(frame, byteArray, arg, 0, lenNode.execute(getStorageNode.execute(byteArray))));
         }
 
-        private int getLength(SequenceStorage s) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
+        @Specialization(guards = {"!isPNone(start)"})
+        int indexWithStart(VirtualFrame frame, PIBytesLike byteArray, Object arg, Object start, @SuppressWarnings("unused") PNone end,
+                        @Shared("storage") @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("findNode") @Cached("create()") BytesNodes.FindNode findNode) {
+            return checkResult(findNode.execute(frame, byteArray, arg, start, lenNode.execute(getStorageNode.execute(byteArray))));
+        }
+
+        @Specialization(guards = {"!isPNone(end)"})
+        int indexWithEnd(VirtualFrame frame, PIBytesLike byteArray, Object arg, @SuppressWarnings("unused") PNone start, Object end,
+                        @Shared("findNode") @Cached("create()") BytesNodes.FindNode findNode) {
+            return checkResult(checkResult(findNode.execute(frame, byteArray, arg, 0, end)));
+        }
+
+        @Specialization(guards = {"!isPNone(start)", "!isPNone(end)"})
+        int indexWithStartEnd(VirtualFrame frame, PIBytesLike byteArray, Object arg, Object start, Object end,
+                        @Shared("findNode") @Cached("create()") BytesNodes.FindNode findNode) {
+            return checkResult(findNode.execute(frame, byteArray, arg, start, end));
+        }
+
+        private int checkResult(int result) {
+            if (result == -1) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SUBSECTION_NOT_FOUND);
             }
-            return lenNode.execute(s);
+            return result;
         }
     }
 

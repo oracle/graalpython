@@ -473,6 +473,7 @@ public abstract class ErrorMessages {
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
+    public static final String SUBSECTION_NOT_FOUND = "subsection not found";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
