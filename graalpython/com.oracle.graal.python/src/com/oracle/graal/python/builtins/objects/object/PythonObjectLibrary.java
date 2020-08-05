@@ -1078,19 +1078,13 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * When a {@code receiver} is a wrapped primitive object that utilizes a #ReflectionLibrary, the
-     * value will appear here as primitive contrary to the value in the call cite which should
-     * represent the {@code receiverOrigin}
+     * When a {@code receiver} is a wrapped primitive object that utilizes a #ReflectionLibrary,
+     * this message will return the delegated value of the receiver.
      *
      * @param receiver the receiver Object
-     * @param receiverOrigin also the receiver Object
-     * @return True if there has been a reflection
+     * @return the delegated value of the receiver
      */
-    public boolean isReflectedObject(Object receiver, Object receiverOrigin) {
-        return receiver != receiverOrigin;
-    }
-
-    public Object getReflectedObject(Object receiver) {
+    public Object getDelegatedValue(Object receiver) {
         return receiver;
     }
 

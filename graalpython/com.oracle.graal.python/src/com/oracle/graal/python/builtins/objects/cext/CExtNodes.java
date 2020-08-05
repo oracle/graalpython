@@ -476,8 +476,9 @@ public abstract class CExtNodes {
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib) {
             assert object != null : "Java 'null' cannot be a Sulong value";
-            assert CApiGuards.isNativeWrapper(object) : "unknown object cannot be a Sulong value";
-            return object;
+            Object o = lib.getDelegatedValue(object);
+            assert CApiGuards.isNativeWrapper(o) : "unknown object cannot be a Sulong value";
+            return o;
         }
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
@@ -487,7 +488,7 @@ public abstract class CExtNodes {
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
                             object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE || object instanceof PythonAbstractObject) &&
-                            !lib.isReflectedObject(object, object) && !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
+                            !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {

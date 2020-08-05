@@ -351,29 +351,25 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
     }
 
-    protected static boolean isReflectedObject(Object left, Object right, PythonObjectLibrary libLeft, PythonObjectLibrary libRight) {
-        return libLeft.isReflectedObject(left, left) || libRight.isReflectedObject(right, right);
-    }
-
     // Object, Object
 
-    @Specialization(guards = {"!isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
+    @Specialization(guards = {"!isReversible()"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
-                    @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
+                      @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
-        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(left), left);
+        Object leftValue = libLeft.getDelegatedValue(left);
+        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(leftValue), leftValue);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
-                return runErrorHandler(left, right);
+                return runErrorHandler(leftValue, right);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
-        return ensureDispatch().executeObject(frame, leftCallable, left, right);
+        return ensureDispatch().executeObject(frame, leftCallable, leftValue, right);
     }
 
-    @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
+    @Specialization(guards = {"isReversible()"}, limit = "4")
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
@@ -394,40 +390,34 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftCallable = getattr.execute(frame, leftClass, left);
+        Object leftValue = libLeft.getDelegatedValue(left);
+        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
         Object rightClass = libRight.getLazyPythonClass(right);
-        Object rightCallable = getattrR.execute(frame, rightClass, right);
+        Object rightValue = libRight.getDelegatedValue(right);
+        Object rightCallable = getattrR.execute(frame, rightClass, rightValue);
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
             if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass)) {
-                result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
+                result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 rightCallable = PNone.NO_VALUE;
             }
-            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
+            result = ensureDispatch().executeObject(frame, leftCallable, leftValue, rightValue);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
         if (notImplementedBranch.profile(rightCallable != PNone.NO_VALUE)) {
-            result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
+            result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            return runErrorHandler(left, right);
+            return runErrorHandler(leftValue, rightValue);
         }
         return result;
-    }
-
-    @Specialization(guards = "isReflectedObject(left, right, libLeft, libRight)", limit = "1")
-    Object callReflected(VirtualFrame frame, Object left, Object right,
-                    @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @CachedLibrary("right") PythonObjectLibrary libRight,
-                    @Cached("create(name, rname, handlerFactory)") LookupAndCallBinaryNode recursiveCall) {
-        return recursiveCall.executeObject(frame, libLeft.getReflectedObject(left), libRight.getReflectedObject(right));
     }
 
     private Object runErrorHandler(Object left, Object right) {
