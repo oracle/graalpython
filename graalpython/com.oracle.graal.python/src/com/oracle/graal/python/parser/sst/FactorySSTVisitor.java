@@ -251,7 +251,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    protected StatementNode createAssignmentBlock(@SuppressWarnings("unused") AssignmentSSTNode node, StatementNode... statements) {
+    protected StatementNode createResumableBlock(@SuppressWarnings("unused") boolean canYield, StatementNode... statements) {
         return BlockNode.create(statements);
     }
 
@@ -303,6 +303,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(AssignmentSSTNode node) {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
+        int numYields = getCurrentNumberOfYields();
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
             checkCannotAssignTo(sstLhs);
@@ -311,7 +312,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
 
         StatementNode result;
-        if (lhs.length == 1) {
+        if (lhs.length == 1 && !hadYieldSince(numYields)) {
             result = createAssignment(lhs[0], rhs);
         } else {
             int len = lhs.length;
@@ -322,7 +323,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             for (int i = 0; i < len; i++) {
                 assignments[i + 1] = createAssignment(lhs[i], (ExpressionNode) tmp);
             }
-            result = createAssignmentBlock(node, assignments);
+            result = createResumableBlock(hadYieldSince(numYields), assignments);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

@@ -114,8 +114,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createAssignmentBlock(AssignmentSSTNode node, StatementNode... statements) {
-        if (node.rhs instanceof YieldExpressionSSTNode) {
+    protected StatementNode createResumableBlock(boolean canYield, StatementNode... statements) {
+        if (canYield) {
             return GeneratorBlockNode.create(statements, generatorInfo);
         } else {
             return BlockNode.create(statements);
