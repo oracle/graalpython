@@ -53,6 +53,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -70,6 +72,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
 // Although it would produce correct results, the special handling of long to double comparison
 // is slower than converting int->double, which is always correct.
+@ReportPolymorphism
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -355,10 +358,11 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     @Specialization(guards = {"!isReversible()"}, limit = "2")
     Object callObject(VirtualFrame frame, Object left, Object right,
-                      @CachedLibrary("left") PythonObjectLibrary libLeft,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        Object leftClass = libLeft.getLazyPythonClass(left);
         Object leftValue = libLeft.getDelegatedValue(left);
-        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(leftValue), leftValue);
+        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 return runErrorHandler(leftValue, right);
