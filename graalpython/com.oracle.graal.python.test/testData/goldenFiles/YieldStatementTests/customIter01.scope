@@ -10,7 +10,7 @@ Scope: []
         FreeVars: Empty
         Scope: gen
             Kind: Generator
-            FrameDescriptor: [ret, MyIter, <return_val>]
+            FrameDescriptor: [ret, MyIter, <>temp2, <return_val>]
             CellVars: Empty
             FreeVars: [MyIter, ret]
         Scope: MyIter
