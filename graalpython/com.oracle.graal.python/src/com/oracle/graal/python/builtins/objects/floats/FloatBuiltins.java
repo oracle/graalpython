@@ -1053,7 +1053,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             if (w > -0x1000000000000L && w < 0x1000000000000L) {    // w is at most 48 bits
                 return v - w;
             } else {
-                return compareUsingBigDecimal(v, BigInteger.valueOf(w));
+                return compareUsingBigDecimal(v, PInt.longToBigInteger(w));
             }
         }
 
