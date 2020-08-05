@@ -2016,7 +2016,11 @@ And finalization:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 exiting
 
 
@@ -2031,7 +2035,11 @@ GeneratorExit is not caught by except Exception:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 finally
 
 
