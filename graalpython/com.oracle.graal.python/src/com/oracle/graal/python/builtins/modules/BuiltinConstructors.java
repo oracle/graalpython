@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -2318,7 +2319,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
-                        callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                        try {
+                            callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                        } catch (PException e) {
+                            throw raise(RuntimeError, e.getEscapedException(), ERROR_CALLING_SET_NAME, entry.value, entry.key, newType);
+                        }
                     }
                 }
 
