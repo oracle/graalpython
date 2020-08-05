@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-### Does module/package XYZ work on the GraalVM Python implementation?
+### Does module/package XYZ work on GraalVM's Python implementation?
 
 It depends, but is currently unlikely. The first goal with the GraalVM Python implementation was to
 show that NumPy and related packages can run using the managed GraalVM LLVM
@@ -13,7 +13,7 @@ It can, but there are some caveats, like Python code subclassing Java
 classes or use through the `javax.script.ScriptEngine` not being
 supported. See the [Jython Compatibility](Jython.md) guide for details.
 
-### Do I need to compile and run native modules as LLVM bitcode to use GraalPython?
+### Do I need to compile and run native modules as LLVM bitcode to use GraalVM's Python implementation?
 
 If you want to run C extensions or use certain built-in features, yes, you need
 to build the module with GraalVM's Python and then it will run using the GraalVM
@@ -23,7 +23,7 @@ library modules and packages work without running any LLVM bitcode. So even
 though GraalVM's Python depends on the GraalVM LLVM runtime, for many use cases
 you can disallow native modules entirely.
 
-### Can I use GraalVM sandboxing features with GraalPython?
+### Can I use GraalVM sandboxing features with GraalVM's Python implementation?
 
 Yes, you can. As an embedder, you can selectively disable features. For example, you
 can disable native code execution or filesystem access. If you are a user of
@@ -38,7 +38,7 @@ unclear or where multiple behaviours are imaginable. The team is actively lookin
 use cases and are continuously evolving the Python implementation to provide the most
 convenient and least surprising behaviour.
 
-### What is the performance I can expect from GraalVM's Python?
+### What is the performance I can expect from GraalVM's Python implementation?
 
 For pure Python code, performance after warm-up can be expected to be around 5-6
 times faster than CPython 3.8 (or 6-7x faster than Jython). For native
