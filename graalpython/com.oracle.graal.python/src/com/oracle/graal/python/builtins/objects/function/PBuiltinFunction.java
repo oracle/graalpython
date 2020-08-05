@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
@@ -137,7 +139,9 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         if (klass == enclosingType) {
             return this;
         } else {
-            return factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
+            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
+            func.setAttribute(__DOC__, getAttribute(__DOC__));
+            return func;
         }
     }
 

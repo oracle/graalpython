@@ -89,7 +89,7 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         if (klass == type) {
             return this;
         } else {
-            return factory.createGetSetDescriptor(get, set, name, klass);
+            return factory.createGetSetDescriptor(get, set, name, klass, allowsDelete);
         }
     }
 }
