@@ -25,18 +25,10 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerDirectives;
-
 public abstract class TypedSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public final ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return new ObjectSequenceStorage(getInternalArray());
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    @Override
-    public final Object[] getCopyOfInternalArray() {
-        return getInternalArray();
     }
 }

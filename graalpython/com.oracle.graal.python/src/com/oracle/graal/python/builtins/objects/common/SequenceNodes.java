@@ -125,9 +125,23 @@ public abstract class SequenceNodes {
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             return toArrayNode.execute(getSequenceStorageNode.execute(seq));
         }
+    }
 
-        public static GetObjectArrayNode create() {
-            return SequenceNodesFactory.GetObjectArrayNodeGen.create();
+    @GenerateUncached
+    public abstract static class SetSequenceStorageNode extends Node {
+
+        public abstract void execute(PSequence s, SequenceStorage storage);
+
+        @Specialization(guards = "s.getClass() == cachedClass")
+        static void doSpecial(PSequence s, SequenceStorage storage,
+                        @Cached("s.getClass()") Class<? extends PSequence> cachedClass) {
+            cachedClass.cast(s).setSequenceStorage(storage);
+        }
+
+        @Specialization(replaces = "doSpecial")
+        @CompilerDirectives.TruffleBoundary
+        static void doGeneric(PSequence s, SequenceStorage storage) {
+            s.setSequenceStorage(storage);
         }
     }
 }
