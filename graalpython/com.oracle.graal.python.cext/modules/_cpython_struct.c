@@ -1291,6 +1291,10 @@ prepare_s(PyStructObject *self)
     size_t ncodes;
 
     fmt = PyBytes_AS_STRING(self->s_format);
+    if (strlen(fmt) != (size_t)PyBytes_GET_SIZE(self->s_format)) {
+        PyErr_SetString(StructError, "embedded null character");
+        return -1;
+    }
 
     f = whichtable(&fmt);
 
@@ -2370,6 +2374,9 @@ PyInit__cpython_struct(void)
                     /* Skip float and double, could be
                        "unknown" float format */
                     if (ptr->format == 'd' || ptr->format == 'f')
+                        break;
+                    /* Skip _Bool, semantics are different for standard size */
+                    if (ptr->format == '?')
                         break;
                     ptr->pack = native->pack;
                     ptr->unpack = native->unpack;
