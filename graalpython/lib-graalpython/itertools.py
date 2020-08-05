@@ -858,3 +858,34 @@ class compress():
     @__graalpython__.builtin_method
     def __reduce__(self):
         return (type(self), (self.data, self.selectors))
+
+
+def tee(iterable, n=2):
+    import collections
+    class _tee:
+        @__graalpython__.builtin_method
+        def __init__(self, it, deque, deques):
+            self.it = it
+            self.deque = deque
+            self.deques = deques
+
+        @__graalpython__.builtin_method
+        def __iter__(self):
+            return self
+
+        @__graalpython__.builtin_method
+        def __next__(self):
+            if not self.deque:
+                newval = next(self.it)
+                for d in self.deques:
+                    d.append(newval)
+            return self.deque.popleft()
+
+    if not isinstance(n, int):
+        raise TypeError()
+    if n < 0:
+        raise ValueError("n must be >=0")
+
+    deques = [collections.deque() for i in range(n)]
+    it = iter(iterable)
+    return tuple(_tee(it, d, deques) for d in deques)
