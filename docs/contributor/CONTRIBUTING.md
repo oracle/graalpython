@@ -289,3 +289,76 @@ To run the JVM configuration:
 To run the Native Image configuration:
 
     mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=native --python-vm-config=default --
+
+### Finding Memory Leaks
+
+For best performance we keep references to long-lived user objects (mostly
+functions, classes, and modules) directly in the AST nodes when using the
+default configuration of a single Python context (as is used when running the
+launcher). For better sharing of warmup and where absolutely best peak
+performance is not needed, contexts can be configured with a shared engine and
+the ASTs will be shared across contexts. However, that implies we *must* not
+store any user objects strongly in the ASTs. Here is a query to find any such
+leaks where a PythonObject is reacheable from any kind of Truffle AST Node
+subinstance in VisualVM:
+
+    findLeaks("com.oracle.graal.python.builtins.objects.object.PythonObject", "com.oracle.truffle.api.nodes.Node")
+
+    function findLeaks(to, from) {
+      var objs = heap.objects(to, true)
+      var leaks = []
+      var path = []
+      var cutOffPath = false
+
+      while (objs.hasMoreElements() && leaks.length < 100) {
+        var o = objs.nextElement()
+        path = []
+        cutOffPath = false
+        if (isReferencedFromAtMaxDepth(o, 20)) {
+          if (!cutOffPath) {
+            leaks.push(o)
+          }
+        }
+      }
+      return leaks
+
+      function isReferencedFromAtMaxDepth(obj, limit) {
+        var refs = referrers(obj)
+        while (refs.hasMoreElements()) {
+          var o = refs.nextElement()
+          var refClass = classof(o)
+          var cutOffHere = false
+          while (refClass != null) {
+            if (refClass.name == from) {
+              leaks.push(classof(o).name)
+              return true
+            } else if (refClass.name == "java.lang.ref.WeakReference" ||
+                       refClass.name == "java.lang.ref.SoftReference" ||
+                       refClass.name == "java.lang.ref.PhantomReference") {
+              // any weak reference is fine
+              return false;
+            } else if (refClass.name == to) {
+              // we have found another `to` object along the path, use this one as the shorter path
+              cutOffHere = true
+            }
+            refClass = refClass.superclass
+          }
+          if (limit > 0) {
+            if (isReferencedFromAtMaxDepth(o, limit - 1)) {
+              if (!cutOffPath) {
+                if (cutOffHere) {
+                  cutOffPath = true
+                  leaks.push(o)
+                } else {
+                  leaks.push(classof(o).name)
+                }
+              }
+              return true
+            }
+          }
+        }
+        return false
+      }
+    }
+
+Running such a query on a multi-context heap should yield no results.
