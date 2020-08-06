@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaString
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.CastToJavaStringCheckedNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -97,7 +99,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -168,24 +169,25 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends FormatNodeBase {
+        @Child CastToJavaStringCheckedNode castSelfToStringNode;
 
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
-        }
-
-        @Specialization(guards = "!formatString.isEmpty()")
-        Object format(Object self, String formatString,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            String str = castToJavaStringNode.cast(self, INVALID_RECEIVER, __STR__, self);
+        @Specialization
+        Object format(VirtualFrame frame, Object self, Object formatStringObj,
+                        @Cached CastToJavaStringNode castFmtToStringNode) {
+            String formatString = castFormatString(formatStringObj, castFmtToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            String str = ensureCastSelfToStringNode().cast(self, INVALID_RECEIVER, __STR__, self);
             return formatString(getCore(), getAndValidateSpec(formatString), str);
         }
 
-        @Fallback
-        Object other(@SuppressWarnings("unused") Object self, Object formatString) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
+        @TruffleBoundary
+        private static Object formatString(PythonCore core, Spec spec, String str) {
+            TextFormatter formatter = new TextFormatter(core, spec.withDefaults(Spec.STRING));
+            formatter.format(str);
+            return formatter.pad().getResult();
         }
 
         private Spec getAndValidateSpec(String formatString) {
@@ -202,11 +204,12 @@ public final class StringBuiltins extends PythonBuiltins {
             return spec;
         }
 
-        @TruffleBoundary
-        private static Object formatString(PythonCore core, Spec spec, String str) {
-            TextFormatter formatter = new TextFormatter(core, spec.withDefaults(Spec.STRING));
-            formatter.format(str);
-            return formatter.pad().getResult();
+        private CastToJavaStringCheckedNode ensureCastSelfToStringNode() {
+            if (castSelfToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castSelfToStringNode = insert(CastToJavaStringCheckedNodeGen.create());
+            }
+            return castSelfToStringNode;
         }
     }
 
