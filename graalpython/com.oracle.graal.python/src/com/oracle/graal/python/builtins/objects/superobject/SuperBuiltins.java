@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.superobject;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -108,9 +110,13 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetTypeNode extends Node {
+        static final Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
         Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getType()") Object type) {
@@ -124,9 +130,13 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectTypeNode extends Node {
+        static final Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
         Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObjectType()") Object type) {
@@ -140,9 +150,13 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     abstract static class GetObjectNode extends Node {
+        static final Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
         abstract Object execute(SuperObject self);
 
-        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
         Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObject()") Object object) {
