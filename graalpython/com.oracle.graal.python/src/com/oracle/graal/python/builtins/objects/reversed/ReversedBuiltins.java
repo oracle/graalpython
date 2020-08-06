@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -59,7 +58,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -147,9 +145,8 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
-                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib,
-                        @Cached ConditionProfile hasFrame) {
-            int len = lib.lengthWithFrame(self.getObject(), hasFrame, frame);
+                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib) {
+            int len = lib.lengthWithFrame(self.getObject(), frame);
             if (len < self.index) {
                 return 0;
             }
@@ -181,10 +178,8 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callUnaryNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object reduce = pol.lookupAttribute(self.getPSequence(), __REDUCE__);
-            Object content = callUnaryNode.executeObject(frame, reduce);
+            Object content = pol.lookupAndCallSpecialMethod(self.getPSequence(), frame, __REDUCE__);
             return reduceInternal(self, content, self.index, pol);
         }
 

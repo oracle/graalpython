@@ -314,9 +314,8 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public int lengthHint(VirtualFrame frame, PSequenceIterator self,
-                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib,
-                        @Cached ConditionProfile hasFrame) {
-            int len = lib.lengthWithFrame(self.getObject(), hasFrame, frame) - self.getIndex();
+                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib) {
+            int len = lib.lengthWithFrame(self.getObject(), frame) - self.getIndex();
             return len < 0 ? 0 : len;
         }
     }
@@ -325,10 +324,10 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object reduce(PArrayIterator self,
+        public Object reduce(VirtualFrame frame, PArrayIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(self.array, self.getIndex(), context, pol);
+            return reduceInternal(frame, self.array, self.getIndex(), context, pol);
         }
 
         @Specialization
@@ -341,7 +340,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             PList list = factory().createList(storageNode.execute(frame, self));
             self.setExhausted(isExhausted);
             self.index = index;
-            return reduceInternal(list, self.getIndex(), context, pol);
+            return reduceInternal(frame, list, self.getIndex(), context, pol);
         }
 
         @Specialization
@@ -358,41 +357,41 @@ public class IteratorBuiltins extends PythonBuiltins {
             setState.execute(self.getIterator(), state);
             self.setExhausted(isExhausted);
             self.index = index;
-            return reduceInternal(list, context, pol);
+            return reduceInternal(frame, list, context, pol);
         }
 
         @Specialization
-        public Object reduce(PIntegerSequenceIterator self,
+        public Object reduce(VirtualFrame frame, PIntegerSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             if (self.isExhausted()) {
-                return reduceInternal(factory().createList(), null, context, pol);
+                return reduceInternal(frame, factory().createList(), null, context, pol);
             }
-            return reduceInternal(self.getObject(), self.getIndex(), context, pol);
+            return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
         }
 
         @Specialization
-        public Object reduce(PPrimitiveIterator self,
+        public Object reduce(VirtualFrame frame, PPrimitiveIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             if (self.isExhausted()) {
-                return reduceInternal(factory().createList(), null, context, pol);
+                return reduceInternal(frame, factory().createList(), null, context, pol);
             }
-            return reduceInternal(self.getObject(), self.getIndex(), context, pol);
+            return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
         }
 
         @Specialization
-        public Object reduce(PStringIterator self,
+        public Object reduce(VirtualFrame frame, PStringIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             if (self.isExhausted()) {
-                return reduceInternal("", null, context, pol);
+                return reduceInternal(frame, "", null, context, pol);
             }
-            return reduceInternal(self.value, self.getIndex(), context, pol);
+            return reduceInternal(frame, self.value, self.getIndex(), context, pol);
         }
 
         @Specialization
-        public Object reduce(PIntRangeIterator self,
+        public Object reduce(VirtualFrame frame, PIntRangeIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LenOfRangeNode length,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
@@ -400,11 +399,11 @@ public class IteratorBuiltins extends PythonBuiltins {
             int stop = self.getReduceStop();
             int step = self.getReduceStep();
             int len = (int) length.execute(start, stop, step);
-            return reduceInternal(factory().createIntRange(start, stop, step, len), self.getIndex(), context, pol);
+            return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), context, pol);
         }
 
         @Specialization
-        public Object reduce(PBigRangeIterator self,
+        public Object reduce(VirtualFrame frame, PBigRangeIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached LenOfRangeNode length,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
@@ -412,14 +411,14 @@ public class IteratorBuiltins extends PythonBuiltins {
             PInt stop = self.getReduceStop(factory());
             PInt step = self.getReduceStep();
             PInt len = factory().createInt((BigInteger) length.execute(start, stop, step));
-            return reduceInternal(factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), context, pol);
+            return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), context, pol);
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object reduce(PSequenceIterator self,
+        public Object reduce(VirtualFrame frame, PSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(self.getPSequence(), self.getIndex(), context, pol);
+            return reduceInternal(frame, self.getPSequence(), self.getIndex(), context, pol);
         }
 
         @Specialization(guards = "!self.isPSequence()")
@@ -427,19 +426,19 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
             if (!self.isExhausted()) {
-                return reduceInternal(self.getObject(), self.getIndex(), context, pol);
+                return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
             } else {
-                return reduceInternal(factory().createTuple(new Object[]{}), null, context, pol);
+                return reduceInternal(frame, factory().createTuple(new Object[]{}), null, context, pol);
             }
         }
 
-        private PTuple reduceInternal(Object arg, PythonContext context, PythonObjectLibrary pol) {
-            return reduceInternal(arg, null, context, pol);
+        private PTuple reduceInternal(VirtualFrame frame, Object arg, PythonContext context, PythonObjectLibrary pol) {
+            return reduceInternal(frame, arg, null, context, pol);
         }
 
-        private PTuple reduceInternal(Object arg, Object state, PythonContext context, PythonObjectLibrary pol) {
+        private PTuple reduceInternal(VirtualFrame frame, Object arg, Object state, PythonContext context, PythonObjectLibrary pol) {
             PythonModule builtins = context.getCore().getBuiltins();
-            Object iter = pol.lookupAttribute(builtins, ITER);
+            Object iter = pol.lookupAttributeStrict(builtins, frame, ITER);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {

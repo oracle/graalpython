@@ -192,7 +192,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             HashingStorage dictStorage = self.getWrappedDict().getDictStorage();
             Object value = hlib.getItemWithFrame(dictStorage, getTupleItemNode.execute(frame, tupleStorage, 0), hasFrame, frame);
             if (value != null) {
-                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, hasFrame, frame);
+                return lib.equalsWithFrame(value, getTupleItemNode.execute(frame, tupleStorage, 1), lib, frame);
             } else {
                 return false;
             }

@@ -143,9 +143,9 @@ public class MethodBuiltins extends PythonBuiltins {
             Object func = method.getFunction();
             String defname = "?";
 
-            Object funcName = pol.lookupAttribute(func, __QUALNAME__);
+            Object funcName = pol.lookupAttribute(func, frame, __QUALNAME__);
             if (funcName == PNone.NO_VALUE) {
-                funcName = pol.lookupAttribute(func, __NAME__);
+                funcName = pol.lookupAttribute(func, frame, __NAME__);
             }
 
             try {

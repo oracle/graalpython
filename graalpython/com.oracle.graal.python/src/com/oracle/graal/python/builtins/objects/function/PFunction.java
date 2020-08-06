@@ -28,9 +28,12 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -38,10 +41,14 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(PythonObjectLibrary.class)
@@ -224,5 +231,23 @@ public class PFunction extends PythonObject {
     @SuppressWarnings("static-method")
     public Object getLazyPythonClass() {
         return PythonBuiltinClassType.PFunction;
+    }
+
+    @ExportMessage
+    public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("callMethod") @Cached CallNode call) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return call.execute(frame, this, PositionalArgumentsNode.prependArgument(receiver, arguments));
+    }
+
+    @ExportMessage
+    public Object callUnboundMethodIgnoreGetExceptionWithState(ThreadState state, Object receiver, Object[] arguments,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("callMethod") @Cached CallNode call) {
+        return callUnboundMethodWithState(state, receiver, arguments, gotState, call);
     }
 }

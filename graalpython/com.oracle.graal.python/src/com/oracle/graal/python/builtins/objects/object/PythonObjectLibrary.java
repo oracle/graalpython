@@ -40,7 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -48,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
@@ -62,10 +70,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
-import com.oracle.truffle.api.library.Library;
-import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
+import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -178,7 +186,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is callable
      */
     public boolean isCallable(Object receiver) {
-        return false;
+        Object callMethod = lookupAttributeOnType(receiver, __CALL__);
+        return PGuards.isCallable(callMethod);
     }
 
     /**
@@ -245,8 +254,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #hashWithState(Object, ThreadState)
      */
-    public final long hashWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public final long hashWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return hashWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return hash(receiver);
@@ -368,6 +377,9 @@ public abstract class PythonObjectLibrary extends Library {
     // used.
     @Child private DefaultNodes defaultNodes;
 
+    // Profiling a frame is needed in many calls so it's separate from the above
+    @CompilationFinal private ConditionProfile hasFrameProfile;
+
     private DefaultNodes getDefaultNodes() {
         if (isAdoptable()) {
             if (defaultNodes == null) {
@@ -377,6 +389,26 @@ public abstract class PythonObjectLibrary extends Library {
             return defaultNodes;
         } else {
             return DefaultNodes.getUncached();
+        }
+    }
+
+    private ThreadState getStateFromFrame(VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
+            return PArguments.getThreadState(frame);
+        } else {
+            return null;
+        }
+    }
+
+    private boolean profileHasFrame(VirtualFrame frame) {
+        if (isAdoptable()) {
+            if (hasFrameProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasFrameProfile = ConditionProfile.create();
+            }
+            return hasFrameProfile.profile(frame != null);
+        } else {
+            return frame != null;
         }
     }
 
@@ -442,8 +474,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #equalsWithState
      */
-    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, ConditionProfile hasFrame, VirtualFrame frame) {
-        if (hasFrame.profile(frame != null)) {
+    public final boolean equalsWithFrame(Object receiver, Object other, PythonObjectLibrary otherLibrary, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return equalsWithState(receiver, other, otherLibrary, PArguments.getThreadState(frame));
         } else {
             return equals(receiver, other, otherLibrary);
@@ -472,7 +504,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @return True if object is indexable
      */
     public boolean canBeIndex(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE;
     }
 
     /**
@@ -498,8 +530,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public Object asIndexWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return asIndexWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return asIndex(receiver);
@@ -569,20 +601,180 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Looks up an attribute for the given receiver like {@code PyObject_LookupAttr}.
      *
-     * @param receiver
+     * @param receiver self
      * @param name attribute name
-     * @param inheritedOnly determines whether the lookup should start on the class or on the object
+     * @return found attribute object or {@link PNone#NO_VALUE}
      */
-    public Object lookupAttribute(Object receiver, String name, boolean inheritedOnly) {
+    public final Object lookupAttribute(Object receiver, VirtualFrame frame, String name) {
+        return lookupAttributeInternal(receiver, getStateFromFrame(frame), name, false);
+    }
+
+    /**
+     * @see #lookupAttribute(Object, VirtualFrame, String)
+     */
+    public final Object lookupAttributeWithState(Object receiver, ThreadState state, String name) {
+        return lookupAttributeInternal(receiver, state, name, false);
+    }
+
+    /**
+     * Looks up an attribute for the given receiver like {@code PyObject_GetAttr}. Raises an
+     * {@code AttributeError} if not found.
+     *
+     * @param receiver self
+     * @param name attribute name
+     * @return found attribute object
+     */
+    public final Object lookupAttributeStrict(Object receiver, VirtualFrame frame, String name) {
+        return lookupAttributeInternal(receiver, getStateFromFrame(frame), name, true);
+    }
+
+    /**
+     * @see #lookupAttributeStrict(Object, VirtualFrame, String)
+     */
+    public final Object lookupAttributeStrictWithState(Object receiver, ThreadState state, String name) {
+        return lookupAttributeInternal(receiver, state, name, true);
+    }
+
+    /**
+     * Method to implement {@link #lookupAttribute} and {@link #lookupAttributeStrict} for the
+     * library. Implementor note: state may be null.
+     */
+    protected Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict) {
+        // Default implementation for objects that only want to provide special methods
+        return lookupAttributeOnTypeInternal(receiver, name, strict);
+    }
+
+    /**
+     * Lookup an attribute directly in MRO of the receiver's type. Doesn't bind the attribute to the
+     * object. Typically used to lookup special methods and attributes. Equivalent of CPython's
+     * {@code _PyType_Lookup} or {@code lookup_maybe_method}.
+     * 
+     * @param receiver self
+     * @param name attribute name
+     * @return found attribute or {@code PNone#NO_VALUE}
+     */
+    public final Object lookupAttributeOnType(Object receiver, String name) {
+        return lookupAttributeOnTypeInternal(receiver, name, false);
+    }
+
+    /**
+     * Like {@link #lookupAttributeOnType(Object, String)}, but raises an {@code AttributeError}
+     * when the attribute is not found.
+     */
+    public final Object lookupAttributeOnTypeStrict(Object receiver, String name) {
+        return lookupAttributeOnTypeInternal(receiver, name, true);
+    }
+
+    /**
+     * Method to implement {@link #lookupAttributeOnType} and {@link #lookupAttributeOnTypeStrict}
+     * for the library.
+     */
+    protected Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     /**
-     * @see #lookupAttribute
+     * Call a callable object.
      */
-    public final Object lookupAttribute(Object receiver, String name) {
-        return lookupAttribute(receiver, name, false);
+    public final Object callObject(Object callable, VirtualFrame frame, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callObjectWithState(callable, state, arguments);
+    }
+
+    /**
+     * Call a callable object.
+     */
+    public Object callObjectWithState(Object callable, ThreadState state, Object... arguments) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
+    }
+
+    /**
+     * Call an unbound method or other unbound descriptor using given receiver. Will first call
+     * {@code __get__} to bind the descriptor, then call the bound object. There are optimized
+     * implementations for plain and builtin functions that avoid creating the intermediate bound
+     * object. Typically called on a result of {@link #lookupAttributeOnType}. Equivalent of
+     * CPython's {@code call_unbound}.
+     *
+     * @param method unbound method or descriptor object whose {@code __get__} hasn't been called
+     * @param receiver self
+     */
+    public final Object callUnboundMethod(Object method, VirtualFrame frame, Object receiver, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    /**
+     * @see #callUnboundMethod(Object, VirtualFrame, Object, Object...)
+     */
+    public Object callUnboundMethodWithState(Object method, ThreadState state, Object receiver, Object... arguments) {
+        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
+    }
+
+    /**
+     * Like {@link #callUnboundMethod(Object, VirtualFrame, Object, Object...)}, but ignores
+     * possible python exception in the @{code __get__} call and returns {@link PNone#NO_VALUE} in
+     * that case.
+     */
+    public final Object callUnboundMethodIgnoreGetException(Object method, VirtualFrame frame, Object self, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return callUnboundMethodIgnoreGetExceptionWithState(method, state, self, arguments);
+    }
+
+    /**
+     * @see #callUnboundMethodIgnoreGetException(Object, VirtualFrame, Object, Object...)
+     */
+    public Object callUnboundMethodIgnoreGetExceptionWithState(Object method, ThreadState state, Object self, Object... arguments) {
+        return callUnboundMethodWithState(method, state, method, arguments);
+    }
+
+    /**
+     * Call a special method on an object. Raises {@code AttributeError} if no such method was
+     * found.
+     */
+    public final Object lookupAndCallSpecialMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return lookupAndCallSpecialMethodWithState(receiver, state, methodName, arguments);
+    }
+
+    /**
+     * @see #lookupAndCallSpecialMethod(Object, VirtualFrame, String, Object...)
+     */
+    public Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    /**
+     * Call a regular (not special) method on an object. Raises {@code AttributeError} if no such
+     * method was found.
+     */
+    public final Object lookupAndCallRegularMethod(Object receiver, VirtualFrame frame, String methodName, Object... arguments) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return lookupAndCallRegularMethodWithState(receiver, state, methodName, arguments);
+    }
+
+    /**
+     * @see #lookupAndCallRegularMethod(Object, VirtualFrame, String, Object...)
+     */
+    public Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
     }
 
     /**
@@ -596,9 +788,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a java double
      */
-    @Abstract(ifExported = {"asJavaDoubleWithState", "asJavaDouble"})
     public boolean canBeJavaDouble(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __FLOAT__) != PNone.NO_VALUE || canBeIndex(receiver);
     }
 
     /**
@@ -630,9 +821,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a Python int
      */
-    @Abstract(ifExported = {"asPIntWithState", "asPInt"})
     public boolean canBePInt(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE || lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
     }
 
     /**
@@ -664,9 +854,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param receiver the receiver Object
      * @return True if object can be converted to a java long
      */
-    @Abstract(ifExported = {"asJavaLongWithState", "asJavaLong"})
     public boolean canBeJavaLong(Object receiver) {
-        return false;
+        return lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
     }
 
     /**
@@ -799,8 +988,8 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public int lengthWithFrame(Object receiver, ConditionProfile hasFrameProfile, VirtualFrame frame) {
-        if (hasFrameProfile.profile(frame != null)) {
+    public int lengthWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
             return lengthWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return length(receiver);

@@ -64,8 +64,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileClassNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -176,18 +174,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     // arguments for super-implementation call
-                    @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Exclusive @Cached IsSubtypeNode isSubtype,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile noIndex,
+                    @Exclusive @Cached ConditionProfile resultProfile) {
         if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
             return this; // subclasses of 'int' should do early return
         } else {
-            return asIndexWithState(threadState, lib, raise, callNode, isSubtype, lookupIndex, noIndex, resultProfile, gotState);
+            return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile);
         }
     }
 

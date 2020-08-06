@@ -44,20 +44,20 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -164,13 +164,11 @@ final class DefaultPythonDoubleExports {
 
     @ExportMessage
     static Object asPString(Double receiver,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached.Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                    @Cached.Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Cached.Exclusive @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
-                    @Cached.Exclusive @Cached ConditionProfile gotState) {
-        return PythonAbstractObject.asPString(receiver, lookup, gotState, null, callNode, isSubtypeNode, lib, raise);
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
+                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Exclusive @Cached PRaiseNode raise) {
+        return PythonAbstractObject.asPString(lib, receiver, null, isSubtypeNode, resultLib, raise);
     }
 
     @SuppressWarnings("static-method")
@@ -207,8 +205,35 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(Double x, String name, boolean inheritedOnly,
-                    @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly);
+    public static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
+                    @Cached ConditionProfile gotState,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
+    }
+
+    @ExportMessage
+    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Double receiver, String name, boolean strict,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(PythonBuiltinClassType.PFloat, name, strict);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
     }
 }

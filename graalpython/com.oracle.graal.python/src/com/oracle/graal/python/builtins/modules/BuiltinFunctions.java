@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
@@ -120,7 +121,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
@@ -241,14 +241,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Math.abs(arg);
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         public Object absObject(VirtualFrame frame, Object object,
-                        @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbsNode) {
-            Object result = callAbsNode.executeObject(frame, object);
-            if (result == NO_VALUE) {
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+            Object method = lib.lookupAttributeOnType(object, __ABS__);
+            if (method == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
-            return result;
+            return methodLib.callUnboundMethod(method, frame, object);
         }
     }
 
@@ -311,14 +312,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile isMinLong,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index = lib.asIndexWithFrame(x, hasFrame, frame);
+            Object index = lib.asIndexWithFrame(x, frame);
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -467,9 +467,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         long hash(VirtualFrame frame, Object object,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.hashWithFrame(object, profile, frame);
+            return lib.hashWithFrame(object, frame);
         }
     }
 
@@ -1314,9 +1313,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public int len(VirtualFrame frame, Object obj,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(obj, hasFrame, frame);
+            return lib.lengthWithFrame(obj, frame);
         }
     }
 
@@ -1572,39 +1570,35 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final String DEFAULT_END = "\n";
         private static final String DEFAULT_SEPARATOR = " ";
         @Child private ReadAttributeFromObjectNode readStdout;
-        @Child private GetAttributeNode getWrite = GetAttributeNode.create("write", null);
-        @Child private CallNode callWrite = CallNode.create();
-        @Child private LookupAndCallUnaryNode callFlushNode;
         @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
         PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
                         @SuppressWarnings("unused") PNone flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, valueLib);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             int lastValue = values.length - 1;
-            Object write = getWrite.executeObject(frame, file);
+            Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                callWrite.execute(frame, write, lib.asPString(values[i]));
-                callWrite.execute(frame, write, sep);
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
+                lib.callObject(writeMethod, frame, sep);
             }
             if (lastValue >= 0) {
-                callWrite.execute(frame, write, lib.asPString(values[lastValue]));
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
             }
-            callWrite.execute(frame, write, end);
+            lib.callObject(writeMethod, frame, end);
             if (flush) {
-                if (callFlushNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callFlushNode = insert(LookupAndCallUnaryNode.create("flush"));
-                }
-                callFlushNode.executeObject(frame, file);
+                Object flushMethod = lib.lookupAttributeStrict(file, frame, "flush");
+                lib.callObject(flushMethod, frame);
             }
             return PNone.NONE;
         }
@@ -1615,7 +1609,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             String sep;
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
@@ -1642,7 +1637,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lib);
+            return printAllGiven(frame, values, sep, end, file, flush, lib, valueLib);
         }
 
         private Object getStdout() {

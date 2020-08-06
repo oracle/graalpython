@@ -40,23 +40,28 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Object.class)
 final class DefaultPythonObjectExports {
@@ -244,7 +249,7 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static Object asPString(Object receiver,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached.Exclusive @Cached PRaiseNode raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         if (lib.isString(receiver)) {
             try {
                 return lib.asString(receiver);
@@ -264,7 +269,7 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static double asJavaDouble(Object receiver,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
             try {
@@ -280,11 +285,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(@SuppressWarnings("unused") Object x, @SuppressWarnings("unused") String name, @SuppressWarnings("unused") boolean inheritedOnly) {
-        return PNone.NO_VALUE;
-    }
-
-    @ExportMessage
     static boolean canBeJavaLong(@SuppressWarnings("unused") Object receiver,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         return interopLib.fitsInLong(receiver);
@@ -292,7 +292,7 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     static long asJavaLong(Object receiver,
-                    @Cached.Exclusive @Cached PRaiseNode raise,
+                    @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
             try {
@@ -315,7 +315,7 @@ final class DefaultPythonObjectExports {
     @ExportMessage
     static long asPInt(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary lib,
-                    @Cached.Exclusive @Cached PRaiseNode raise) {
+                    @Exclusive @Cached PRaiseNode raise) {
         if (lib.fitsInLong(receiver)) {
             try {
                 return lib.asLong(receiver);
@@ -328,4 +328,37 @@ final class DefaultPythonObjectExports {
         throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
+    @ExportMessage
+    public static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
+                    @Cached ConditionProfile gotState,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
+    }
+
+    @ExportMessage
+    public static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
+                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    @ExportMessage
+    public static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
+    }
 }

@@ -739,7 +739,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public long computeHash(VirtualFrame frame, PFrozenSet self,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary hlib,
-                        @Cached("createBinaryProfile()") ConditionProfile gotFrame,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = getStorage.execute(self);
@@ -751,7 +750,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             long hash = 0;
 
             for (Object key : hlib.keys(storage)) {
-                long tmp = lib.hashWithFrame(hlib.getItem(storage, key), gotFrame, frame);
+                long tmp = lib.hashWithFrame(hlib.getItem(storage, key), frame);
                 hash ^= shuffleBits(tmp);
             }
 
