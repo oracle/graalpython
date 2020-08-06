@@ -444,7 +444,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization(limit = "4")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
                         @Cached StringNodes.CastToJavaStringCheckedNode castToString,
@@ -526,10 +526,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"})
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
             PHashingCollection dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -543,10 +543,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self, PDict dict,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
