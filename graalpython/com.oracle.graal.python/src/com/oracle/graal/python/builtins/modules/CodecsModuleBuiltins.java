@@ -84,12 +84,12 @@ import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -159,7 +159,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             PythonCore core = getCore();
             byte[] byteArray = toBytes.execute(frame, bytes);
             String string = strFromBytes(byteArray);
-            String unescapedString = core.getParser().unescapeJavaString(string);
+            String unescapedString = core.getParser().unescapeJavaString(core, string);
             return factory().createTuple(new Object[]{unescapedString, byteArray.length});
         }
 

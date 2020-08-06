@@ -174,6 +174,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -210,7 +212,7 @@ public final class Python3Core implements PythonCore {
 
     public static final Pattern MISSING_PARENTHESES_PATTERN = Pattern.compile("^(print|exec) +([^(][^;]*).*");
 
-    private static final String[] initializeCoreFiles() {
+    private static String[] initializeCoreFiles() {
         // Order matters!
         List<String> coreFiles = new ArrayList<>(Arrays.asList(
                         "_descriptor",
@@ -305,7 +307,7 @@ public final class Python3Core implements PythonCore {
         c = null;
     }
 
-    private static final PythonBuiltins[] initializeBuiltins() {
+    private static PythonBuiltins[] initializeBuiltins() {
         List<PythonBuiltins> builtins = new ArrayList<>(Arrays.asList(
                         new BuiltinConstructors(),
                         new BuiltinFunctions(),
@@ -490,6 +492,7 @@ public final class Python3Core implements PythonCore {
         return initialized;
     }
 
+    @Override
     public void initialize(PythonContext context) {
         singletonContext = context;
         initializeJavaCore();
@@ -525,16 +528,19 @@ public final class Python3Core implements PythonCore {
         }
     }
 
+    @Override
     @TruffleBoundary
     public PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
+    @Override
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
+    @Override
     @TruffleBoundary
     public String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(new String[0]);
@@ -555,6 +561,14 @@ public final class Python3Core implements PythonCore {
             instance = objectFactory.createBaseException(type);
         }
         throw PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+    }
+
+    @Override
+    @TruffleBoundary
+    public void warn(Object type, String format, Object... args) {
+        PythonModule warningsModule = lookupBuiltinModule("_warnings");
+        Object warn = ReadAttributeFromDynamicObjectNode.getUncached().execute(warningsModule.getStorage(), "warn");
+        CallNode.getUncached().execute(warn, String.format(format, args), type);
     }
 
     private void publishBuiltinModules() {
@@ -704,23 +718,28 @@ public final class Python3Core implements PythonCore {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
+    @Override
     public PythonObjectFactory factory() {
         return objectFactory;
     }
 
+    @Override
     public void setContext(PythonContext context) {
         assert singletonContext == null;
         singletonContext = context;
     }
 
+    @Override
     public PInt getTrue() {
         return pyTrue;
     }
 
+    @Override
     public PInt getFalse() {
         return pyFalse;
     }
 
+    @Override
     public PFloat getNaN() {
         return pyNaN;
     }

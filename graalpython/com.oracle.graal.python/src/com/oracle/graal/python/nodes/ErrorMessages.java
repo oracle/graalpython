@@ -554,4 +554,5 @@ public abstract class ErrorMessages {
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";
     public static final String CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = "can't convert negative value to unsigned int";
     public static final String SEND_NON_NONE_TO_UNSTARTED_GENERATOR = "can't send non-None value to a just-started generator";
+    public static final String UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = "unsupported format string passed to %p.__format__";
 }

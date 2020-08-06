@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -36,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Supplier;
 
 /**
  * Storage for initialized Python built-in modules and types.
@@ -67,9 +66,14 @@ public interface PythonCore extends ParserErrorCallback {
     public String[] builtinModuleNames();
 
     // Error throwing functions
+    @Override
     public PException raise(PythonBuiltinClassType type, String format, Object... args);
 
+    @Override
+    void warn(Object type, String format, Object... args);
+
     // Accessors
+    @Override
     public PythonLanguage getLanguage();
 
     public PythonParser getParser();
