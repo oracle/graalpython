@@ -195,6 +195,7 @@ public abstract class ErrorMessages {
     public static final String ERROR57_SOCKET_CANNOT_BE_CONNECTED = "[Errno 57] Socket is not connected";
     public static final String ERROR_5_WHILE_DECOMPRESSING = "Error -5 while decompressing data: incomplete or truncated stream";
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
+    public static final String ERROR_CALLING_SET_NAME = "Error calling __set_name__ on '%p' instance '%s' in '%N'";
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
