@@ -1690,6 +1690,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
 
         cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
+        pycache_dir = os.path.join(self.subject.get_output_root(), "__pycache__")
         args = []
         if mx._opts.verbose:
             args.append("-v")
@@ -1697,7 +1698,10 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             # always add "-q" if not verbose to suppress hello message
             args.append("-q")
 
-        args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
+        args += ["--python.WithThread",
+                 "--python.PyCachePrefix=" + pycache_dir,
+                 "-S", os.path.join(self.src_dir() , "setup.py"),
+                 self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
