@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -58,6 +59,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ImportStarNode extends AbstractImportNode {
     private final ConditionProfile javaImport = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile havePyFrame = ConditionProfile.createBinaryProfile();
     private final ConditionProfile haveCustomLocals = ConditionProfile.createBinaryProfile();
 
     @Child private SetItemNode dictWriteNode;
@@ -106,18 +108,8 @@ public class ImportStarNode extends AbstractImportNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        PythonObject globals = PArguments.getGlobals(frame);
-        Object importedModule = importModule(frame, moduleName, globals, new String[]{"*"}, level);
-        PythonObject locals = globals;
-
-        Object customLocals = PArguments.getCustomLocals(frame);
-        if (haveCustomLocals.profile(customLocals != null)) {
-            assert customLocals instanceof PFrame.Reference;
-            PFrame pyFrame = ((PFrame.Reference) customLocals).getPyFrame();
-            if (pyFrame != null) {
-                locals = (PythonObject) pyFrame.getLocals(factory());
-            }
-        }
+        Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
+        PythonObject locals = fastGetCustomLocalsOrGlobals(frame, havePyFrame, haveCustomLocals);
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {

@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -52,6 +53,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Read the locals from the passed frame, updating them from the frame if that is needed. This does
@@ -100,5 +102,22 @@ public abstract class ReadLocalsNode extends Node {
 
     public static ReadLocalsNode create() {
         return ReadLocalsNodeGen.create();
+    }
+
+    /**
+     * Fast access to custom locals if a custom dict was provided by the caller and the python frame does not escape.
+     *
+     * @param frame the current frame
+     * @param havePyFrame profile if we do have a python frame (PFrame)
+     * @param haveCustomLocals profile if the python frame has a custom set locals dict
+     * @return the custom locals (if found) or the globals
+     */
+    public static PythonObject fastGetCustomLocalsOrGlobals(VirtualFrame frame, ConditionProfile havePyFrame, ConditionProfile haveCustomLocals) {
+        PFrame pyFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
+        if (havePyFrame.profile(pyFrame != null) && haveCustomLocals.profile(pyFrame.getLocals(null) != null)) {
+            return  (PythonObject) pyFrame.getLocals(null);
+        }
+        // return the globals
+        return PArguments.getGlobals(frame);
     }
 }

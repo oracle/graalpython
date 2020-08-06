@@ -115,4 +115,8 @@ public abstract class GetCurrentFrameRef extends Node {
     static ConditionProfile[] getFlagUncached() {
         return DISABLED;
     }
+
+    public static GetCurrentFrameRef create() {
+        return GetCurrentFrameRefNodeGen.create();
+    }
 }
