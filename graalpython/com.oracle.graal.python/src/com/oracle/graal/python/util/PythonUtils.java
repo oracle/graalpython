@@ -40,6 +40,17 @@
  */
 package com.oracle.graal.python.util;
 
+import java.lang.management.ManagementFactory;
+
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.ReflectionException;
+
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -77,5 +88,43 @@ public final class PythonUtils {
             throw OverflowException.INSTANCE;
         }
         return (int) r;
+    }
+
+    private static final MBeanServer SERVER;
+    private static final String OPERATION_NAME = "gcRun";
+    private static final Object[] PARAMS = new Object[]{null};
+    private static final String[] SIGNATURE = new String[]{String[].class.getName()};
+    private static final ObjectName OBJECT_NAME;
+
+    static {
+        if (ImageInfo.inImageCode()) {
+            OBJECT_NAME = null;
+            SERVER = null;
+        } else {
+            SERVER = ManagementFactory.getPlatformMBeanServer();
+            ObjectName n;
+            try {
+                n = new ObjectName("com.sun.management:type=DiagnosticCommand");
+            } catch (final MalformedObjectNameException e) {
+                n = null;
+            }
+            OBJECT_NAME = n;
+        }
+    }
+
+    /**
+     * {@link System#gc()} does not force a GC, but the DiagnosticCommand "gcRun" does.
+     */
+    @TruffleBoundary
+    public static void forceFullGC() {
+        if (OBJECT_NAME != null && SERVER != null) {
+            try {
+                SERVER.invoke(OBJECT_NAME, OPERATION_NAME, PARAMS, SIGNATURE);
+            } catch (InstanceNotFoundException | ReflectionException | MBeanException e) {
+                // use fallback
+            }
+        }
+        System.gc();
+        Runtime.getRuntime().freeMemory();
     }
 }

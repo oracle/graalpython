@@ -3366,13 +3366,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
         int doCachedDomainIdx(VirtualFrame frame, @SuppressWarnings("unused") long domain, Object pointerObject, long size,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
-                        @Cached("lookupDomain(domain)") int cachedDomainIdx,
-                        @Cached BranchProfile profile) {
+                        @Cached("lookupDomain(domain)") int cachedDomainIdx) {
 
             CApiContext cApiContext = getContext().getCApiContext();
             cApiContext.getTraceMallocDomain(cachedDomainIdx).track(pointerObject, size);
-            cApiContext.increaseMemoryPressure(frame, size, profile);
+            cApiContext.increaseMemoryPressure(frame, context, this, size);
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(() -> String.format("Tracking memory (size: %d): %s", size, CApiContext.asHex(pointerObject)));
             }
@@ -3381,8 +3381,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doCachedDomainIdx")
         int doGeneric(VirtualFrame frame, int domain, Object pointerObject, long size,
-                        @Cached BranchProfile profile) {
-            return doCachedDomainIdx(frame, domain, pointerObject, size, domain, lookupDomain(domain), profile);
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            return doCachedDomainIdx(frame, domain, pointerObject, size, context, domain, lookupDomain(domain));
         }
 
         int lookupDomain(long domain) {
