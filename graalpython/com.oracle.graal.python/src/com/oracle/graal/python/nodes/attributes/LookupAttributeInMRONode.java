@@ -183,7 +183,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return ReadAttributeFromDynamicObjectNode.getUncached().execute(core.lookupType(current).getStorage(), key);
     }
 
-    @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getCore(), cachedKlass, key)") Object cachedValue) {
