@@ -368,14 +368,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2716,2721]`value`
+                                    Frame: [1,value,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
                                   TupleLiteralNode SourceSection: [2729,2744]`(None, '', 'C')`
                                     ObjectLiteralNode SourceSection: [2730,2734]`None`
                                     StringLiteralNode SourceSection: [2736,2738]`''`
                                     StringLiteralNode SourceSection: [2740,2743]`'C'`
                                     PythonObjectFactoryNodeGen SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [2716,2721]`value`
-                                    Frame: [1,value,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                               RaiseNodeGen SourceSection: [2758,2815]`raise Error('_locale...`
                                 PythonCallUnary SourceSection: [2764,2815]`Error('_locale emula...`
                                   CallUnaryMethodNodeGen SourceSection: None
@@ -409,13 +409,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             YesNodeGen SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
+            StringLiteralNode SourceSection: [2904,2913]`'strxfrm'`
             PythonCallNodeGen SourceSection: [2921,2930]`globals()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [2921,2928]`globals`
                 Identifier: globals
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-            StringLiteralNode SourceSection: [2904,2913]`'strxfrm'`
         WriteNameNodeGen SourceSection: [2936,2954]`strxfrm = _strxfrm`
           Identifier: strxfrm
           ReadNameNodeGen SourceSection: [2946,2954]`_strxfrm`
@@ -433,13 +433,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             YesNodeGen SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
+            StringLiteralNode SourceSection: [2958,2967]`'strcoll'`
             PythonCallNodeGen SourceSection: [2975,2984]`globals()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [2975,2982]`globals`
                 Identifier: globals
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
-            StringLiteralNode SourceSection: [2958,2967]`'strcoll'`
         WriteNameNodeGen SourceSection: [2990,3008]`strcoll = _strcoll`
           Identifier: strcoll
           ReadNameNodeGen SourceSection: [3000,3008]`_strcoll`
@@ -888,13 +888,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
-                                      StringLiteralNode SourceSection: [4461,4473]`"0123456789"`
                                       GetItemNodeGen SourceSection: [4448,4453]`s[-1]`
                                         ReadLocalVariableNode SourceSection: None
                                           Frame: [0,s,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [4450,4452]`-1`
                                           Value: -1
+                                      StringLiteralNode SourceSection: [4461,4473]`"0123456789"`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
@@ -1348,13 +1348,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          StringLiteralNode SourceSection: [5556,5564]`'eEfFgG'`
                           GetItemNodeGen SourceSection: [5541,5552]`percent[-1]`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [0,percent,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             IntegerLiteralNode SourceSection: [5549,5551]`-1`
                               Value: -1
+                          StringLiteralNode SourceSection: [5556,5564]`'eEfFgG'`
                       BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [5574,5582]`seps = 0`
                           Identifier: seps
@@ -1494,13 +1494,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
-                            StringLiteralNode SourceSection: [5985,5990]`'diu'`
                             GetItemNodeGen SourceSection: [5970,5981]`percent[-1]`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [0,percent,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               IntegerLiteralNode SourceSection: [5978,5980]`-1`
                                 Value: -1
+                            StringLiteralNode SourceSection: [5985,5990]`'diu'`
                         BlockNode SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [6000,6008]`seps = 0`
                             Identifier: seps
@@ -3113,10 +3113,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [10962,10965]`'.'`
                           ReadLocalVariableNode SourceSection: [10969,10973]`code`
                             Frame: [0,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [10962,10965]`'.'`
                       WriteLocalVariableNodeGen SourceSection: [10983,11016]`langname = code[:cod...`
                         Identifier: langname
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3216,12 +3216,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [11507,11528]`locale_encoding_alia...`
-                            Identifier: locale_encoding_alias
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [11490,11503]`norm_encoding`
                             Frame: [3,norm_encoding,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [11507,11528]`locale_encoding_alia...`
+                            Identifier: locale_encoding_alias
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [11538,11585]`encoding = locale_en...`
                         Identifier: encoding
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3268,12 +3268,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [11734,11755]`locale_encoding_alia...`
-                                Identifier: locale_encoding_alias
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [11717,11730]`norm_encoding`
                                 Frame: [3,norm_encoding,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [11734,11755]`locale_encoding_alia...`
+                                Identifier: locale_encoding_alias
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           WriteLocalVariableNodeGen SourceSection: [11769,11816]`encoding = locale_en...`
                             Identifier: encoding
                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3369,10 +3369,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
+                              StringLiteralNode SourceSection: [11974,11977]`'.'`
                               ReadLocalVariableNode SourceSection: [11985,11989]`code`
                                 Frame: [0,code,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              StringLiteralNode SourceSection: [11974,11977]`'.'`
                           FrameReturnNode SourceSection: [12003,12030]`return code + '.ISO8...`
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
@@ -3437,13 +3437,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
+                              ReadLocalVariableNode SourceSection: [12087,12095]`encoding`
+                                Frame: [3,encoding,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                               TupleLiteralNode SourceSection: [12099,12122]`('ISO8859-15', 'UTF-...`
                                 StringLiteralNode SourceSection: [12100,12112]`'ISO8859-15'`
                                 StringLiteralNode SourceSection: [12114,12121]`'UTF-8'`
                                 PythonObjectFactoryNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [12087,12095]`encoding`
-                                Frame: [3,encoding,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
                           FrameReturnNode SourceSection: [12136,12147]`return code`
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
@@ -3553,10 +3553,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [12813,12816]`':'`
                           ReadLocalVariableNode SourceSection: [12820,12824]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [12813,12816]`':'`
                       WriteLocalVariableNodeGen SourceSection: [12889,12918]`code = code.replace(...`
                         Identifier: code
                         WriteLocalFrameSlotNodeGen SourceSection: None
@@ -3580,10 +3580,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [12926,12929]`'@'`
                           ReadLocalVariableNode SourceSection: [12933,12937]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [12926,12929]`'@'`
                       DestructuringAssignmentNodeGen SourceSection: [12947,12982]`code, modifier = cod...`
                         PythonCallBinary SourceSection: [12964,12982]`code.split('@', 1)`
                           CallBinaryMethodNodeGen SourceSection: None
@@ -3631,10 +3631,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [13022,13025]`'.'`
                           ReadLocalVariableNode SourceSection: [13029,13033]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [13022,13025]`'.'`
                       DestructuringAssignmentNodeGen SourceSection: [13043,13083]`langname, encoding =...`
                         GetItemNodeGen SourceSection: [13064,13083]`code.split('.')[:2]`
                           PythonCallUnary SourceSection: [13064,13079]`code.split('.')`
@@ -3844,10 +3844,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
+                                  StringLiteralNode SourceSection: [13841,13844]`'@'`
                                   ReadLocalVariableNode SourceSection: [13852,13856]`code`
                                     Frame: [1,code,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [13841,13844]`'@'`
                               FrameReturnNode SourceSection: [13874,13913]`return _append_modif...`
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <return_val>
@@ -3973,10 +3973,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
+                                  StringLiteralNode SourceSection: [14375,14378]`'@'`
                                   ReadLocalVariableNode SourceSection: [14386,14390]`code`
                                     Frame: [1,code,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [14375,14378]`'@'`
                               FrameReturnNode SourceSection: [14408,14448]`return _replace_enco...`
                                 WriteLocalVariableNodeGen SourceSection: None
                                   Identifier: <return_val>
@@ -4095,10 +4095,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
+                                      StringLiteralNode SourceSection: [14833,14836]`'@'`
                                       ReadLocalVariableNode SourceSection: [14844,14848]`code`
                                         Frame: [1,code,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [14833,14836]`'@'`
                                   BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [14870,14910]`code = _replace_enco...`
                                       Identifier: code
@@ -4275,10 +4275,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [15707,15710]`'@'`
                           ReadLocalVariableNode SourceSection: [15714,15718]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [15707,15710]`'@'`
                       BlockNode SourceSection: None
                         DestructuringAssignmentNodeGen SourceSection: [15765,15800]`code, modifier = cod...`
                           PythonCallBinary SourceSection: [15782,15800]`code.split('@', 1)`
@@ -4333,10 +4333,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
+                                  StringLiteralNode SourceSection: [15835,15838]`'.'`
                                   ReadLocalVariableNode SourceSection: [15846,15850]`code`
                                     Frame: [1,code,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                  StringLiteralNode SourceSection: [15835,15838]`'.'`
                               YesNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
                                   CachedDispatchFirst SourceSection: None
@@ -4363,10 +4363,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [16085,16088]`'.'`
                           ReadLocalVariableNode SourceSection: [16092,16096]`code`
                             Frame: [1,code,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [16085,16088]`'.'`
                       FrameReturnNode SourceSection: [16106,16139]`return tuple(code.sp...`
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
@@ -4907,10 +4907,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
+                            StringLiteralNode SourceSection: [19307,19310]`';'`
                             ReadLocalVariableNode SourceSection: [19314,19324]`localename`
                               Frame: [1,localename,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [19307,19310]`';'`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None

@@ -62,15 +62,14 @@ public abstract class ContainsNode extends BinaryOpNode {
 
     @Child private GetIteratorNode getIterator;
     @Child private GetNextNode next;
-    @Child private BinaryComparisonNode eqNode;
     @Child private IsBuiltinClassProfile errorProfile;
 
-    public static ExpressionNode create(ExpressionNode right, ExpressionNode left) {
-        return ContainsNodeGen.create(right, left);
+    public static ExpressionNode create(ExpressionNode left, ExpressionNode right) {
+        return ContainsNodeGen.create(left, right);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doBoolean(VirtualFrame frame, Object iter, boolean item,
+    boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -81,7 +80,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doInt(VirtualFrame frame, Object iter, int item,
+    boolean doInt(VirtualFrame frame, int item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -91,7 +90,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doLong(VirtualFrame frame, Object iter, long item,
+    boolean doLong(VirtualFrame frame, long item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -101,7 +100,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    boolean doDouble(VirtualFrame frame, Object iter, double item,
+    boolean doDouble(VirtualFrame frame, double item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
@@ -111,7 +110,7 @@ public abstract class ContainsNode extends BinaryOpNode {
     }
 
     @Specialization
-    boolean doGeneric(VirtualFrame frame, Object iter, Object item,
+    boolean doGeneric(VirtualFrame frame, Object item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {

@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
@@ -248,7 +249,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1, doc = "Implement next(self).")
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -471,7 +472,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            if (isStartedPorfile.profile(self.isStarted())) {
+            if (isStartedPorfile.profile(self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
@@ -511,12 +512,18 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetRunningNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object getRunning(PGenerator self) {
+    public abstract static class GetRunningNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static Object getRunning(PGenerator self, @SuppressWarnings("unused") PNone none) {
             return self.isRunning();
+        }
+
+        @Specialization(guards = "!isNoValue(obj)")
+        static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
     }
 

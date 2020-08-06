@@ -1204,10 +1204,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [3243,3254]`'metaclass'`
                           ReadLocalVariableNode SourceSection: [3258,3262]`kwds`
                             Frame: [2,kwds,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [3243,3254]`'metaclass'`
                       WriteLocalVariableNodeGen SourceSection: [3272,3300]`meta = kwds.pop('met...`
                         Identifier: meta
                         WriteLocalFrameSlotNodeGen SourceSection: None

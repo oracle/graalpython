@@ -183,10 +183,10 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,gen,Illegal]
                         GeneratorFunctionDefinitionNode Name: gen SourceSection: None
-                          FrameDescriptor: 3 slots [MyIter, ret, <return_val>]
+                          FrameDescriptor: 4 slots [MyIter, ret, <>temp2, <return_val>]
                           Active Flags: 2
                           For Nodes: 1
-                          Block Nodes: 1
+                          Block Nodes: 2
                           Arguments: None
                           KwArguments: None
                           Documentation: None
@@ -200,7 +200,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             CelVars: None
                             FreeVars: MyIter, ret
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [MyIter, ret, <return_val>]
+                            FrameDescriptor: 4 slots [MyIter, ret, <>temp2, <return_val>]
                             ExecutionSlots:
                               FreeVarsSlots: MyIter, , ret, 
                               CellVarsSlots: None
@@ -211,39 +211,48 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                   GeneratorBlockNode SourceSection: None
                                     ExpressionStatementNode SourceSection: [167,179]`nonlocal ret`
                                       EmptyNode SourceSection: [167,179]`nonlocal ret`
-                                    WriteLocalCellNodeGen SourceSection: [188,213]`ret = yield from MyI...`
-                                      Identifier: ret
-                                      ReadGeneratorFrameVariableNode SourceSection: None
-                                        Frame: [1,ret,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                      YieldFromNode SourceSection: [194,213]`yield from MyIter()`
-                                        GetIteratorNodeGen SourceSection: None
-                                        GetNextNode SourceSection: None
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __next__
-                                        GeneratorAccessNode SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        PythonCallNodeGen SourceSection: [205,213]`MyIter()`
-                                          CallNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: [205,211]`MyIter`
-                                            ReadGeneratorFrameVariableNode SourceSection: None
-                                              Frame: [0,MyIter,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                            ReadFromCellNodeGen SourceSection: None
+                                    GeneratorBlockNode SourceSection: [188,213]`ret = yield from MyI...`
+                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                        Identifier: <>temp2
+                                        WriteGeneraterFrameSlotNodeGen SourceSection: None
+                                          Frame: [2,<>temp2,Illegal]
+                                        YieldFromNode SourceSection: [194,213]`yield from MyIter()`
+                                          GetIteratorNodeGen SourceSection: None
+                                          GetNextNode SourceSection: None
+                                            LookupAndCallUnaryNodeGen SourceSection: None
+                                              Op: __next__
+                                          GeneratorAccessNode SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
+                                          PythonCallNodeGen SourceSection: [205,213]`MyIter()`
+                                            CallNodeGen SourceSection: None
+                                            ReadLocalCellNodeGen SourceSection: [205,211]`MyIter`
+                                              ReadGeneratorFrameVariableNode SourceSection: None
+                                                Frame: [0,MyIter,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadFromCellNodeGen SourceSection: None
+                                      WriteLocalCellNodeGen SourceSection: None
+                                        Identifier: ret
+                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                          Frame: [1,ret,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadGeneratorFrameVariableNode SourceSection: None
+                                          Frame: [2,<>temp2,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                      GeneratorAccessNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None

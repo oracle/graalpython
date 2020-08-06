@@ -619,6 +619,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [2448,2454]`method`
+                                        Frame: [4,method,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       GetAttributeNodeGen SourceSection: [2458,2468]`B.__dict__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __dict__
@@ -629,9 +632,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ReadLocalVariableNode SourceSection: [2458,2459]`B`
                                           Frame: [3,B,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [2448,2454]`method`
-                                        Frame: [4,method,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                                     IfNode SourceSection: [2486,2575]`if B.__dict__[method...`
                                       YesNodeGen SourceSection: None
@@ -4811,11 +4811,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [11138,11143]`other`
-                                                  Frame: [1,other,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [11126,11130]`elem`
                                                   Frame: [2,elem,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [11138,11143]`other`
+                                                  Frame: [1,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             FrameReturnNode SourceSection: [11161,11173]`return False`
                                               WriteLocalVariableNodeGen SourceSection: None
@@ -5168,11 +5168,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [11739,11743]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [11727,11731]`elem`
                                                   Frame: [2,elem,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [11739,11743]`self`
+                                                  Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             FrameReturnNode SourceSection: [11761,11773]`return False`
                                               WriteLocalVariableNodeGen SourceSection: None
@@ -5488,14 +5488,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
                                                               CachedDispatchFirst SourceSection: None
+                                                          ReadGeneratorFrameVariableNode SourceSection: [12408,12413]`value`
+                                                            Frame: [0,value,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [12417,12421]`self`
                                                             ReadGeneratorFrameVariableNode SourceSection: None
                                                               Frame: [1,self,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadFromCellNodeGen SourceSection: None
-                                                          ReadGeneratorFrameVariableNode SourceSection: [12408,12413]`value`
-                                                            Frame: [0,value,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                       ExpressionStatementNode SourceSection: [12380,12385]`value`
                                                         YieldNode SourceSection: [12380,12385]`value`
                                                           flagSlot: 0
@@ -5607,11 +5607,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [12593,12597]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [12584,12589]`value`
                                                   Frame: [2,value,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12593,12597]`self`
+                                                  Frame: [0,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             FrameReturnNode SourceSection: [12615,12627]`return False`
                                               WriteLocalVariableNodeGen SourceSection: None
@@ -5966,14 +5966,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [13174,13179]`value`
+                                                              Frame: [0,value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [13187,13192]`other`
                                                               ReadGeneratorFrameVariableNode SourceSection: None
                                                                 Frame: [1,other,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
-                                                            ReadGeneratorFrameVariableNode SourceSection: [13174,13179]`value`
-                                                              Frame: [0,value,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                       ExpressionStatementNode SourceSection: [13112,13117]`value`
                                                         YieldNode SourceSection: [13112,13117]`value`
                                                           flagSlot: 0
@@ -6160,14 +6160,14 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
                                                                 CachedDispatchFirst SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [13496,13501]`value`
+                                                              Frame: [0,value,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [13509,13513]`self`
                                                               ReadGeneratorFrameVariableNode SourceSection: None
                                                                 Frame: [1,self,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               ReadFromCellNodeGen SourceSection: None
-                                                            ReadGeneratorFrameVariableNode SourceSection: [13496,13501]`value`
-                                                              Frame: [0,value,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
                                                       ExpressionStatementNode SourceSection: [13433,13438]`value`
                                                         YieldNode SourceSection: [13433,13438]`value`
                                                           flagSlot: 0
@@ -6862,11 +6862,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [15659,15663]`self`
-                                            Frame: [0,self,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [15646,15651]`value`
                                             Frame: [1,value,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [15659,15663]`self`
+                                            Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       RaiseNodeGen SourceSection: [15677,15698]`raise KeyError(value...`
                                         PythonCallUnary SourceSection: [15683,15698]`KeyError(value)`
@@ -7317,11 +7317,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     YesNodeGen SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [16640,16644]`self`
-                                                      Frame: [0,self,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [16631,16636]`value`
                                                       Frame: [2,value,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [16640,16644]`self`
+                                                      Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExpressionStatementNode SourceSection: [16666,16685]`self.discard(value)`
                                                   PythonCallUnary SourceSection: [16666,16685]`self.discard(value)`
@@ -8420,6 +8420,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [18722,18725]`key`
+                                            Frame: [1,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [18729,18742]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
@@ -8430,9 +8433,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadLocalVariableNode SourceSection: [18729,18733]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          ReadLocalVariableNode SourceSection: [18722,18725]`key`
-                                            Frame: [1,key,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

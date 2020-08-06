@@ -219,10 +219,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
-                                    TupleLiteralNode SourceSection: [3928,3979]`('_frozen_importlib'...`
-                                      StringLiteralNode SourceSection: [3929,3948]`'_frozen_importlib'`
-                                      StringLiteralNode SourceSection: [3950,3978]`'_frozen_importlib_e...`
-                                      PythonObjectFactoryNodeGen SourceSection: None
                                     PythonCallTernary SourceSection: [3845,3904]`getattr(getattr(m, '...`
                                       CallTernaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3845,3852]`getattr`
@@ -240,6 +236,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ObjectLiteralNode SourceSection: [3878,3882]`None`
                                       StringLiteralNode SourceSection: [3885,3897]`'__module__'`
                                       ObjectLiteralNode SourceSection: [3899,3903]`None`
+                                    TupleLiteralNode SourceSection: [3928,3979]`('_frozen_importlib'...`
+                                      StringLiteralNode SourceSection: [3929,3948]`'_frozen_importlib'`
+                                      StringLiteralNode SourceSection: [3950,3978]`'_frozen_importlib_e...`
+                                      PythonObjectFactoryNodeGen SourceSection: None
                                 ContinueNode SourceSection: [3994,4002]`continue`
                                 BlockNode SourceSection: None
                               TryFinallyNode SourceSection: [4059,4195]`try:↵            m._...`
@@ -446,11 +446,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
                                       CachedDispatchFirst SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [4884,4895]`known_paths`
-                                    Frame: [1,known_paths,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [4869,4876]`dircase`
                                     Frame: [3,dircase,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [4884,4895]`known_paths`
+                                    Frame: [1,known_paths,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                                 ExpressionStatementNode SourceSection: [4909,4922]`L.append(dir)`
@@ -905,11 +905,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 YesNodeGen SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [6219,6230]`known_paths`
-                                                  Frame: [2,known_paths,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [6208,6215]`dircase`
                                                   Frame: [8,dircase,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [6219,6230]`known_paths`
+                                                  Frame: [2,known_paths,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [6235,6254]`os.path.exists(dir)`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -1264,11 +1264,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
-                          ReadLocalVariableNode SourceSection: [7200,7211]`known_paths`
-                            Frame: [1,known_paths,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [7185,7196]`sitedircase`
                             Frame: [3,sitedircase,Illegal]
+                            ReadVariableFromFrameNodeGen SourceSection: None
+                          ReadLocalVariableNode SourceSection: [7200,7211]`known_paths`
+                            Frame: [1,known_paths,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                       BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [7221,7245]`sys.path.append(site...`
@@ -2378,11 +2378,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [11158,11162]`seen`
-                                        Frame: [2,seen,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadLocalVariableNode SourceSection: [11148,11154]`prefix`
                                         Frame: [3,prefix,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [11158,11162]`seen`
+                                        Frame: [2,seen,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
@@ -3153,10 +3153,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                           YesNodeGen SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
+                                          StringLiteralNode SourceSection: [14428,14437]`'libedit'`
                                           ReadLocalVariableNode SourceSection: [14441,14453]`readline_doc`
                                             Frame: [3,readline_doc,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                          StringLiteralNode SourceSection: [14428,14437]`'libedit'`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -3367,10 +3367,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
+                            StringLiteralNode SourceSection: [15794,15815]`'__PYVENV_LAUNCHER__...`
                             ReadLocalVariableNode SourceSection: [15819,15822]`env`
                               Frame: [1,env,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
-                            StringLiteralNode SourceSection: [15794,15815]`'__PYVENV_LAUNCHER__...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
@@ -3652,10 +3652,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
+                                      StringLiteralNode SourceSection: [16605,16608]`'='`
                                       ReadLocalVariableNode SourceSection: [16612,16616]`line`
                                         Frame: [12,line,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      StringLiteralNode SourceSection: [16605,16608]`'='`
                                   BlockNode SourceSection: None
                                     DestructuringAssignmentNodeGen SourceSection: [16638,16673]`key, _, value = line...`
                                       PythonCallUnary SourceSection: [16654,16673]`line.partition('=')`
@@ -4699,10 +4699,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [20715,20728]`'--user-base'`
                           ReadLocalVariableNode SourceSection: [20732,20736]`args`
                             Frame: [1,args,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [20715,20728]`'--user-base'`
                       ExpressionStatementNode SourceSection: [20746,20770]`buffer.append(USER_B...`
                         PythonCallUnary SourceSection: [20746,20770]`buffer.append(USER_B...`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -4724,10 +4724,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
                               CachedDispatchFirst SourceSection: None
+                          StringLiteralNode SourceSection: [20778,20791]`'--user-site'`
                           ReadLocalVariableNode SourceSection: [20795,20799]`args`
                             Frame: [1,args,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
-                          StringLiteralNode SourceSection: [20778,20791]`'--user-site'`
                       ExpressionStatementNode SourceSection: [20809,20833]`buffer.append(USER_S...`
                         PythonCallUnary SourceSection: [20809,20833]`buffer.append(USER_S...`
                           CallUnaryMethodNodeGen SourceSection: None

@@ -780,7 +780,11 @@ Subject: Re: PEP 255: Simple Generators
 
 >>> import random
 >>> gen = random.Random(42)
->>> while 1:
+
+
+# XXX Truffle change: our random generator generates different numbers
+@support.impl_detail(graalvm=False)
+>>> while 1: # doctest: +SKIP
 ...     for s in sets:
 ...         print(" %s->%s" % (s, s.find()), end='')
 ...     print()
@@ -1858,7 +1862,9 @@ Traceback (most recent call last):
   ...
 SyntaxError: 'yield' outside function
 
->>> def f(): x = yield = y
+
+# XXX Truffle change: relax the message, CPython error messages are inconsistent and arbitrary here
+>>> def f(): x = yield = y # doctest:+IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   ...
 SyntaxError: assignment to yield expression not possible
@@ -2016,7 +2022,11 @@ And finalization:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 exiting
 
 
@@ -2031,7 +2041,11 @@ GeneratorExit is not caught by except Exception:
 
 >>> g = f()
 >>> next(g)
->>> del g
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> del g # doctest: +SKIP
 finally
 
 
@@ -2052,7 +2066,9 @@ RuntimeError: generator ignored GeneratorExit
 
 Our ill-behaved code should be invoked during GC:
 
->>> with support.catch_unraisable_exception() as cm:
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     g = f()
 ...     next(g)
 ...     del g
@@ -2166,7 +2182,12 @@ to test.
 ...             raise RuntimeError(message)
 ...         invoke("del failed")
 ...
->>> with support.catch_unraisable_exception() as cm:
+
+
+
+# XXX Truffle change skip test requiring refcounting/finalization
+@support.impl_detail(graalvm=False)
+>>> with support.catch_unraisable_exception() as cm: # doctest: +SKIP
 ...     l = Leaker()
 ...     del l
 ...

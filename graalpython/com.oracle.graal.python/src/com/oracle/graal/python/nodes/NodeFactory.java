@@ -255,10 +255,8 @@ public class NodeFactory {
         return DictLiteralNodeFactory.create(new ExpressionNode[0], new ExpressionNode[0]);
     }
 
-    public ExpressionNode createDictLiteral(List<ExpressionNode> keys, List<ExpressionNode> values) {
-        ExpressionNode[] convertedKeys = keys.toArray(new ExpressionNode[keys.size()]);
-        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
-        return DictLiteralNodeFactory.create(convertedKeys, convertedValues);
+    public ExpressionNode createDictLiteral(ExpressionNode[] keys, ExpressionNode[] values) {
+        return DictLiteralNodeFactory.create(keys, values);
     }
 
     public TupleLiteralNode createTupleLiteral(ExpressionNode... values) {
@@ -396,9 +394,9 @@ public class NodeFactory {
             case "!=":
                 return BinaryComparisonNode.create(SpecialMethodNames.__NE__, SpecialMethodNames.__NE__, operator, left, right);
             case "in":
-                return ContainsNode.create(right, left);
+                return ContainsNode.create(left, right);
             case "notin":
-                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(right, left));
+                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(left, right));
             case "is":
                 return IsExpressionNode.create(left, right);
             case "isnot":

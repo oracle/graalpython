@@ -1020,13 +1020,13 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               YesNodeGen SourceSection: None
                                                                 IsBuiltinClassProfile SourceSection: None
                                                                   CachedDispatchFirst SourceSection: None
+                                                              ReadLocalVariableNode SourceSection: [2422,2425]`key`
+                                                                Frame: [4,key,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                               TupleLiteralNode SourceSection: [2433,2442]`('', 'q')`
                                                                 StringLiteralNode SourceSection: [2434,2436]`''`
                                                                 StringLiteralNode SourceSection: [2438,2441]`'q'`
                                                                 PythonObjectFactoryNodeGen SourceSection: None
-                                                              ReadLocalVariableNode SourceSection: [2422,2425]`key`
-                                                                Frame: [4,key,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
                                                           WriteLocalVariableNodeGen SourceSection: [2468,2478]`key = None`
                                                             Identifier: key
                                                             WriteLocalFrameSlotNodeGen SourceSection: None

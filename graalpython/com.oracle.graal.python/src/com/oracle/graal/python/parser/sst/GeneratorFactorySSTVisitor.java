@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
+import com.oracle.graal.python.nodes.generator.GeneratorExpressionWithSideEffects;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
@@ -80,6 +81,8 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -111,8 +114,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createAssignmentBlock(AssignmentSSTNode node, StatementNode... statements) {
-        if (node.rhs instanceof YieldExpressionSSTNode) {
+    protected StatementNode createResumableBlock(boolean canYield, StatementNode... statements) {
+        if (canYield) {
             return GeneratorBlockNode.create(statements, generatorInfo);
         } else {
             return BlockNode.create(statements);
@@ -412,4 +415,62 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         return result;
     }
 
+    @Override
+    protected int getCurrentNumberOfYields() {
+        return generatorInfo.getYieldNodes().size();
+    }
+
+    @Override
+    protected ExpressionNode createResumableExpression(ExpressionNode left, ExpressionNode right, boolean rightCanYield, BiFunction<ExpressionNode, ExpressionNode, ExpressionNode> create) {
+        if (rightCanYield) {
+            // Make sure that left is computed only once even if right yields
+            ReadNode readLeft = makeTempLocalVariable();
+            StatementNode writeLeft = readLeft.makeWriteNode(left);
+            ExpressionNode operation = create.apply((ExpressionNode) readLeft, right);
+            return GeneratorExpressionWithSideEffects.create(operation, new StatementNode[]{writeLeft}, generatorInfo);
+        } else {
+            return create.apply(left, right);
+        }
+    }
+
+    @Override
+    protected ExpressionNode createResumableExpression(ExpressionNode[] nodes, boolean canYield, Function<ExpressionNode[], ExpressionNode> create) {
+        if (canYield) {
+            StatementNode[] sideEffects = new StatementNode[nodes.length];
+            ExpressionNode[] exprs = new ExpressionNode[nodes.length];
+            for (int i = 0; i < nodes.length; i++) {
+                ReadNode read = makeTempLocalVariable();
+                StatementNode write = read.makeWriteNode(nodes[i]);
+                sideEffects[i] = write;
+                exprs[i] = (ExpressionNode) read;
+            }
+            return GeneratorExpressionWithSideEffects.create(create.apply(exprs), sideEffects, generatorInfo);
+        } else {
+            return create.apply(nodes);
+        }
+    }
+
+    @Override
+    protected ExpressionNode createResumableExpression(ExpressionNode[] nodes1, ExpressionNode[] nodes2, boolean canYield, BiFunction<ExpressionNode[], ExpressionNode[], ExpressionNode> create) {
+        if (canYield) {
+            StatementNode[] sideEffects = new StatementNode[nodes1.length + nodes2.length];
+            ExpressionNode[] exprs1 = new ExpressionNode[nodes1.length];
+            for (int i = 0; i < nodes1.length; i++) {
+                ReadNode read = makeTempLocalVariable();
+                StatementNode write = read.makeWriteNode(nodes1[i]);
+                sideEffects[i] = write;
+                exprs1[i] = (ExpressionNode) read;
+            }
+            ExpressionNode[] exprs2 = new ExpressionNode[nodes2.length];
+            for (int i = 0; i < nodes2.length; i++) {
+                ReadNode read = makeTempLocalVariable();
+                StatementNode write = read.makeWriteNode(nodes2[i]);
+                sideEffects[nodes1.length + i] = write;
+                exprs2[i] = (ExpressionNode) read;
+            }
+            return GeneratorExpressionWithSideEffects.create(create.apply(exprs1, exprs2), sideEffects, generatorInfo);
+        } else {
+            return create.apply(nodes1, nodes2);
+        }
+    }
 }

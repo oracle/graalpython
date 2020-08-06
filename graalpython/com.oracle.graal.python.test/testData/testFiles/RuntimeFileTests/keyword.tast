@@ -303,10 +303,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
+                                    StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
                                     ReadLocalVariableNode SourceSection: [1608,1612]`line`
                                       Frame: [11,line,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [1630,1658]`match = strprog.sear...`
                                     Identifier: match
