@@ -55,6 +55,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
             minFracDigits = 0;
         } else if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
+            // This should be equivalent to Py_DTSF_ALT flag in CPython
             minFracDigits = -1;
         } else if (spec.type == 'r' || spec.type == Spec.NONE) {
             // These formats by default show at least one fractional digit.
@@ -649,11 +650,10 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 }
                 lenWhole = digitCount;
             }
-
-            if (noTruncate) {
-                // Extend the fraction as BigDecimal will have economised on zeros.
-                appendPointAndTrailingZeros(precision - digitCount);
-            }
+        }
+        if (noTruncate) {
+            // Extend the fraction as BigDecimal will have economised on zeros.
+            appendPointAndTrailingZeros(lenFraction + precision - digitCount);
         }
 
         // Finally, ensure we have all and only the fractional digits we should.
