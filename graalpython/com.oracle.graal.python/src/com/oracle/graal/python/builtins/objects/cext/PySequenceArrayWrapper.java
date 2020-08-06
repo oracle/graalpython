@@ -402,10 +402,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     abstract static class ToNativeArrayNode extends Node {
         public abstract Object execute(PySequenceArrayWrapper object);
 
-        @Specialization(guards = "isPSequence(lib.getDelegate(object))", limit = "1")
+        @Specialization(guards = "isPSequence(lib.getDelegate(object))")
         Object doPSequence(PySequenceArrayWrapper object,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceNodes.SetSequenceStorageNode setStorage,
+                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
             PSequence sequence = (PSequence) lib.getDelegate(object);
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence));
@@ -414,13 +415,13 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 throw new IllegalStateException("could not allocate native storage");
             }
             // switch to native storage
-            sequence.setSequenceStorage(nativeStorage);
+            setStorage.execute(sequence, nativeStorage);
             return nativeStorage.getPtr();
         }
 
-        @Specialization(guards = "!isPSequence(lib.getDelegate(object))", limit = "1")
+        @Specialization(guards = "!isPSequence(lib.getDelegate(object))")
         Object doGeneric(PySequenceArrayWrapper object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callNativeHandleForArrayNode) {
             // TODO correct element size
             return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
@@ -438,8 +439,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "!isNative(s)")
         NativeSequenceStorage doManaged(SequenceStorage s,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
-            return storageToNativeNode.execute(s.getInternalArrayObject());
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
+            return storageToNativeNode.execute(getInternalArrayNode.execute(s));
         }
 
         @Specialization

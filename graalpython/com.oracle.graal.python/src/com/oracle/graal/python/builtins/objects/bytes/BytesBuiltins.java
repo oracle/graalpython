@@ -181,8 +181,10 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child private SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        boolean eq(VirtualFrame frame, PIBytesLike self, PIBytesLike other) {
-            return getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
+        boolean eq(VirtualFrame frame, PIBytesLike self, PIBytesLike other,
+                        @Cached GetSequenceStorageNode getSelfStorage,
+                        @Cached GetSequenceStorageNode getOtherStorage) {
+            return getEqNode().execute(frame, getSelfStorage.execute(self), getOtherStorage.execute(other));
         }
 
         @SuppressWarnings("unused")
@@ -209,8 +211,10 @@ public class BytesBuiltins extends PythonBuiltins {
         @Child SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
-        boolean ne(VirtualFrame frame, PIBytesLike self, PIBytesLike other) {
-            return !getEqNode().execute(frame, self.getSequenceStorage(), other.getSequenceStorage());
+        boolean ne(VirtualFrame frame, PIBytesLike self, PIBytesLike other,
+                        @Cached GetSequenceStorageNode getSelfStorage,
+                        @Cached GetSequenceStorageNode getOtherStorage) {
+            return !getEqNode().execute(frame, getSelfStorage.execute(self), getOtherStorage.execute(other));
         }
 
         @SuppressWarnings("unused")
@@ -343,8 +347,9 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doLen(PIBytesLike operand,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(operand.getSequenceStorage()) != 0;
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetSequenceStorageNode getSelfStorage) {
+            return lenNode.execute(getSelfStorage.execute(operand)) != 0;
         }
 
         @Fallback
@@ -583,8 +588,9 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(PIBytesLike self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(self.getSequenceStorage());
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetSequenceStorageNode getSelfStorage) {
+            return lenNode.execute(getSelfStorage.execute(self));
         }
     }
 
@@ -603,20 +609,23 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean contains(VirtualFrame frame, PIBytesLike self, PIBytesLike other,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
+                        @Cached("create()") BytesNodes.FindNode findNode,
+                        @Shared("getSelfStorage") @Cached GetSequenceStorageNode getSelfStorage) {
+            return findNode.execute(frame, self, other, 0, getLength(getSelfStorage.execute(self))) != -1;
         }
 
         @Specialization
         boolean contains(VirtualFrame frame, PIBytesLike self, int other,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
+                        @Cached("create()") BytesNodes.FindNode findNode,
+                        @Shared("getSelfStorage") @Cached GetSequenceStorageNode getSelfStorage) {
+            return findNode.execute(frame, self, other, 0, getLength(getSelfStorage.execute(self))) != -1;
         }
 
         @Specialization
         boolean contains(VirtualFrame frame, PIBytesLike self, long other,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(frame, self, other, 0, getLength(self.getSequenceStorage())) != -1;
+                        @Cached("create()") BytesNodes.FindNode findNode,
+                        @Shared("getSelfStorage") @Cached GetSequenceStorageNode getSelfStorage) {
+            return findNode.execute(frame, self, other, 0, getLength(getSelfStorage.execute(self))) != -1;
         }
 
         @Specialization(guards = {"!isBytes(other)"})
@@ -936,22 +945,25 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         int find(VirtualFrame frame, PIBytesLike self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
-            return find(frame, self, sub, 0, lenNode.execute(self.getSequenceStorage()), findNode);
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode,
+                        @Cached GetSequenceStorageNode getSelfStorage) {
+            return find(frame, self, sub, 0, lenNode.execute(getSelfStorage.execute(self)), findNode);
         }
 
         @Specialization
         int find(VirtualFrame frame, PIBytesLike self, Object sub, int start, @SuppressWarnings("unused") PNone end,
                         @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
-            return find(frame, self, sub, start, lenNode.execute(self.getSequenceStorage()), findNode);
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode,
+                        @Cached GetSequenceStorageNode getSelfStorage) {
+            return find(frame, self, sub, start, lenNode.execute(getSelfStorage.execute(self)), findNode);
         }
 
         @Specialization
         int find(VirtualFrame frame, PIBytesLike self, Object sub, Object start, @SuppressWarnings("unused") PNone end,
                         @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("findNode") @Cached BytesNodes.FindNode findNode) {
-            return find(frame, self, sub, start, lenNode.execute(self.getSequenceStorage()), findNode);
+                        @Shared("findNode") @Cached BytesNodes.FindNode findNode,
+                        @Cached GetSequenceStorageNode getSelfStorage) {
+            return find(frame, self, sub, start, lenNode.execute(getSelfStorage.execute(self)), findNode);
         }
 
         @Specialization
