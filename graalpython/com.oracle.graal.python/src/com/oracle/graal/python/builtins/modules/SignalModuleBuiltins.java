@@ -176,6 +176,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
     private static Object handlerToPython(PythonObjectFactory factory, SignalHandler handler, int signum) {
         if (handler == sun.misc.SignalHandler.SIG_DFL) {
             return Signals.SIG_DFL;
@@ -249,6 +250,11 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         Object signalHandler(@SuppressWarnings("unused") PythonModule self, Object signal, PJavaSignalHandler handler,
                         @CachedLibrary("signal") PythonObjectLibrary signalLib) {
             int signum = signalLib.asSize(signal);
+            return signal(signum, handler);
+        }
+
+        @TruffleBoundary
+        private Object signal(int signum, PJavaSignalHandler handler) {
             SignalHandler oldHandler;
             try {
                 oldHandler = Signals.setSignalHandler(signum, handler.getHandler());
