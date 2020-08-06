@@ -46,10 +46,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
      *
      * @param result destination buffer
      * @param spec parsed conversion specification
+     * @param addDot0 reflects flag {@code Py_DTSF_ADD_DOT_0} in CPython, applicable only for 'r'
+     *            specifier
      */
-    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
+    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec, boolean addDot0) {
         super(core, result, spec);
-        if (spec.alternate) {
+        if (!addDot0 && spec.type == 'r') {
+            minFracDigits = 0;
+        } else if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
             minFracDigits = -1;
         } else if (spec.type == 'r' || spec.type == Spec.NONE) {
@@ -64,11 +68,10 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
     }
 
-    /**
-     * Construct the formatter from a specification, allocating a buffer internally for the result.
-     *
-     * @param spec parsed conversion specification
-     */
+    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
+        this(core, result, spec, true);
+    }
+
     public FloatFormatter(PythonCore core, Spec spec) {
         this(core, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
     }
