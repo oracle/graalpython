@@ -59,8 +59,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -77,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFir
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPtrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -351,25 +351,16 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        /**
-         * Generic integer conversion.<br/>
-         * In the interpreter: we just lookup the cached primitive native wrapper and use this
-         * instance. In compiled code, we do the same but create a fresh copy such that the compiler
-         * always sees a fresh instance. This avoids a phi and certainly a real allocation. Note: it
-         * is important to copy the existing cached wrapper because otherwise pointer equality is
-         * not ensured (see also:
-         * {@link AsPythonObjectBaseNode#mayUsePrimitive(IsPointerNode, PrimitiveNativeWrapper)}).
-         */
-        @Specialization(replaces = "doIntegerSmall")
-        static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i,
+        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
+            return PrimitiveNativeWrapper.createInt(i);
+        }
+
+        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
+        static PrimitiveNativeWrapper doIntegerGeneric(@SuppressWarnings("unused") CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallInteger(i)) {
-                if (CompilerDirectives.inInterpreter()) {
-                    return doIntegerSmall(cextContext, i, contextRef);
-                } else {
-                    // for explanation: see method doc
-                    return doIntegerSmall(cextContext, i, contextRef).copy();
-                }
+                return doIntegerSmall(cextContext, i, contextRef);
             }
             return PrimitiveNativeWrapper.createInt(i);
         }
@@ -384,16 +375,16 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(replaces = "doLongSmall")
-        static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l,
+        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
+            return PrimitiveNativeWrapper.createLong(l);
+        }
+
+        @Specialization(replaces = {"doLongSmall", "doLong"})
+        static PrimitiveNativeWrapper doLongGeneric(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallLong(l)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doLongSmall(cextContext, l, contextRef);
-                } else {
-                    return doLongSmall(cextContext, l, contextRef).copy();
-                }
+                return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
         }
@@ -606,6 +597,20 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
+        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
+            return PrimitiveNativeWrapper.createInt(i);
+        }
+
+        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
+        static PrimitiveNativeWrapper doIntegerGeneric(CExtContext cextContext, int i,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            if (CApiGuards.isSmallInteger(i)) {
+                return doIntegerSmall(cextContext, i, contextRef);
+            }
+            return PrimitiveNativeWrapper.createInt(i);
+        }
+
         @Specialization(guards = "isSmallLong(l)")
         static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
@@ -618,30 +623,16 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(replaces = "doIntegerSmall")
-        static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doIntegerSmall(cextContext, i, contextRef);
-                } else {
-                    return doIntegerSmall(cextContext, i, contextRef).copy();
-                }
-            }
-            return PrimitiveNativeWrapper.createInt(i);
+        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
+            return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(replaces = "doLongSmall")
-        static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
+        @Specialization(replaces = {"doLongSmall", "doLong"})
+        static PrimitiveNativeWrapper doLongGeneric(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (CApiGuards.isSmallLong(l)) {
-                // for explanation of this construct: see 'ToSulongNode.doInteger'
-                if (CompilerDirectives.inInterpreter()) {
-                    return doLongSmall(cextContext, l, contextRef);
-                } else {
-                    return doLongSmall(cextContext, l, contextRef).copy();
-                }
+                return doLongSmall(cextContext, l, contextRef);
             }
             return PrimitiveNativeWrapper.createLong(l);
         }
@@ -808,34 +799,44 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+        static Object doBoolean(CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             return ToNewRefNode.doBoolean(cextContext, b, contextRef, profile);
         }
 
         @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i,
+        static PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             return ToNewRefNode.doIntegerSmall(cextContext, i, contextRef);
         }
 
+        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i) {
+            return ToNewRefNode.doInteger(cextContext, i);
+        }
+
+        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
+        static PrimitiveNativeWrapper doIntegerGeneric(CExtContext cextContext, int i,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            return ToNewRefNode.doIntegerGeneric(cextContext, i, contextRef);
+        }
+
         @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l,
+        static PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             return ToNewRefNode.doLongSmall(cextContext, l, contextRef);
         }
 
-        @Specialization(replaces = "doIntegerSmall")
-        static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doInteger(cextContext, i, contextRef);
+        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
+            return ToNewRefNode.doLong(cextContext, l);
         }
 
-        @Specialization(replaces = "doLongSmall")
-        static PrimitiveNativeWrapper doLong(CExtContext cextContext, long l,
+        @Specialization(replaces = {"doLongSmall", "doLong"})
+        static PrimitiveNativeWrapper doLongGeneric(CExtContext cextContext, long l,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doLong(cextContext, l, contextRef);
+            return ToNewRefNode.doLongGeneric(cextContext, l, contextRef);
         }
 
         @Specialization(guards = "!isNaN(d)")

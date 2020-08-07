@@ -1475,12 +1475,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             this.dvalue = dvalue;
         }
 
-        private PrimitiveNativeWrapper(byte state, long value, double dvalue) {
-            this.state = state;
-            this.value = value;
-            this.dvalue = dvalue;
-        }
-
         public byte getState() {
             return state;
         }
@@ -1561,10 +1555,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Override
         public int hashCode() {
             return (Long.hashCode(value) ^ Long.hashCode(Double.doubleToRawLongBits(dvalue)) ^ state);
-        }
-
-        PrimitiveNativeWrapper copy() {
-            return new PrimitiveNativeWrapper(state, value, dvalue);
         }
 
         @Override
