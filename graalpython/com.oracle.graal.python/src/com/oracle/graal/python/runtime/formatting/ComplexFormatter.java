@@ -54,19 +54,17 @@ public class ComplexFormatter extends InternalFormat.Formatter {
         Spec imSpec;
         if (hasNoSpecType()) {
             // no type spec: should be like the default __str__
-            reSpec = getComponentSpecForNoSpecType(InternalFormat.Spec.NONE);
-            imSpec = getComponentSpecForNoSpecType('+');
+            reSpec = getComponentSpecForNoSpecType(spec, InternalFormat.Spec.NONE);
+            imSpec = getComponentSpecForNoSpecType(spec, '+');
         } else {
             // Turn off any flags that should apply to the result as a whole and not to the
-            // individual
-            // components (re/im). Sign of re is determined by the sign flag, sign of im will be
-            // always
-            // printed ('+' flag)
+            // individual components (re/im). Sign of re is determined by the sign flag, sign of im
+            // will be always printed ('+' flag)
             reSpec = getComponentSpec(spec, spec.sign);
             imSpec = getComponentSpec(spec, '+');
         }
-        reFormatter = new FloatFormatter(core, result, reSpec);
-        imFormatter = new FloatFormatter(core, result, imSpec);
+        reFormatter = new FloatFormatter(core, result, reSpec, false);
+        imFormatter = new FloatFormatter(core, result, imSpec, false);
     }
 
     public ComplexFormatter(PythonCore core, Spec spec) {
@@ -85,10 +83,17 @@ public class ComplexFormatter extends InternalFormat.Formatter {
                         spec.type);
     }
 
-    private static Spec getComponentSpecForNoSpecType(char sign) {
+    private static Spec getComponentSpecForNoSpecType(Spec spec, char sign) {
         // CPython uses "r" type, but also some internal flags that cause that integer values
         // are printed without the decimal part, which is mostly what "g" does
-        return new InternalFormat.Spec(' ', '>', sign, false, InternalFormat.Spec.UNSPECIFIED, Spec.NONE, -1, 'g');
+        int precision = spec.precision;
+        char type = 'r';
+        if (precision < 0) {
+            precision = 0;
+        } else {
+            type = 'g';
+        }
+        return new InternalFormat.Spec(' ', '>', sign, false, InternalFormat.Spec.UNSPECIFIED, Spec.NONE, precision, type);
     }
 
     private boolean hasNoSpecType() {

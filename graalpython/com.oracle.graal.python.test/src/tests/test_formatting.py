@@ -114,6 +114,7 @@ def test_complex_formatting():
     assert format(complex(1, float("Inf")), "") == "(1+infj)"
     assert format(MyComplex(3j), "") == "42"
     assert format(MyComplex(3j), " <5") == "3j   "
+    assert format(complex(2**53 + 1, 0)) == '(9007199254740992+0j)'
 
 
 class AnyRepr:

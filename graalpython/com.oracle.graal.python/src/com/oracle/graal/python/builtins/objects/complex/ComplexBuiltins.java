@@ -714,11 +714,11 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         String repr(PComplex self) {
             return repr(self, getCore());
         }
 
+        @TruffleBoundary
         private static String repr(PComplex self, PythonCore core) {
             ComplexFormatter formatter = new ComplexFormatter(core, new Spec(-1, Spec.NONE));
             formatter.format(self);

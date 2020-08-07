@@ -104,12 +104,10 @@ public abstract class ErrorMessages {
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
     public static final String CANNOT_ASSIGN_TO = "cannot assign to %s";
-    public static final String CANNOT_BE_INTEPRETED_AS_INT = "%s cannot be interpreted as int (type %p)";
     public static final String CANNOT_BE_INTEPRETED_AS_LONG = "%s cannot be interpreted as long (type %p)";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
     public static final String CANNOT_CALL_CTOR_OF = "cannot call constructor of %s";
     public static final String CANNOT_CLOSE_EXPORTED_PTRS_EXIST = "cannot close exported pointers exist";
-    public static final String CANNOT_CONERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
@@ -139,7 +137,6 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
-    public static final String CANT_APPLY_THIS_S_TO_P_OBJECT = "can't apply this %s to %p object";
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
@@ -181,7 +178,6 @@ public abstract class ErrorMessages {
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
-    public static final String DICT_KEYS_CHANGED_DURING_ITERATION = "dictionary keys changed during iteration";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
     public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must have been set to a dictionary, not a '%p'";
     public static final String DICT_OF_P_OBJECTS_HAS_NO_ATTR = "'%p' dict of '%p' object has no attribute '__setitem__'";
@@ -237,7 +233,6 @@ public abstract class ErrorMessages {
     public static final String GENERATOR_ALREADY_EXECUTING = "generator already executing";
     public static final String GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = "getting the source is not supported for '%p'";
     public static final String GLOBALS_MUST_BE_DICT = "%s() globals must be a dict, not %p";
-    public static final String GOT_INVALID_CODESTRING = "got an invalid codestring trying to create a function code object";
     public static final String GOT_MULTIPLE_VALUES_FOR_ARG = "%s() got multiple values for argument '%s'";
     public static final String GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = "%s() got some positional-only arguments passed as keyword arguments: '%s'";
     public static final String GOT_UNEXPECTED_KEYWORD_ARG = "%s() got an unexpected keyword argument '%s'";
@@ -380,16 +375,13 @@ public abstract class ErrorMessages {
     public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
     public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
-    public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";
     public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during %s formatting";
-    public static final String NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S = "%s not allowed %s%s format specifier%s";
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
     public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
-    public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INT = "%s cannot be interpreted as int (type %p)";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%s' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
@@ -420,7 +412,6 @@ public abstract class ErrorMessages {
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO = "Python int too large to convert to %s";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = "Python int too large to convert to %s-byte C type";
     public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
-    public static final String RANGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
     public static final String RAW_FORMAT_NOT_SUPPORTED = "RAW format unsupported";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
@@ -434,13 +425,11 @@ public abstract class ErrorMessages {
     public static final String C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = "%%c requires an integer in range(256) or a single byte";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
-    public static final String RESULT_TOO_MANY_ITEMS = "%s result has too many items";
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
     public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
     public static final String S_RETURNED_NON_CLASS = "%s returned a non-class ('%p')";
-    public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
     public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
     public static final String RETURNED_NON_LONG = "%p.%s returned a non long (type %p)";
@@ -495,7 +484,6 @@ public abstract class ErrorMessages {
     public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
     public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
-    public static final String TWO_STARRED_EXPRESSION_IN_ASSIGMENT = "two starred expressions in assignment";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";
     public static final String TYPE_DOESNT_DEFINE_METHOD = "type %p doesn't define %s method";
     public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%p' is not an acceptable base type";
@@ -544,11 +532,14 @@ public abstract class ErrorMessages {
     public static final String POW_BASE_NOT_INVERTIBLE = "base is not invertible for the given modulus";
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
+    public static final String EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = "'=' alignment not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT = "Alternate form (#) not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = "Alternate form (#) not allowed in string format specifier";
     public static final String CAPI_LOAD_ERROR = "Could not load C API from %s.";
     public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.";
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";

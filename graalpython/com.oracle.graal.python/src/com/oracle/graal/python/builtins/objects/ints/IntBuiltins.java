@@ -2630,8 +2630,12 @@ public class IntBuiltins extends PythonBuiltins {
             if (Spec.specified(spec.precision)) {
                 throw core.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
             }
-            if (spec.type == 'c' && Spec.specified(spec.sign)) {
-                throw core.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+            if (spec.type == 'c') {
+                if (Spec.specified(spec.sign)) {
+                    throw core.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+                } else if (spec.alternate) {
+                    throw core.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
+                }
             }
         }
     }
