@@ -705,7 +705,8 @@ if __name__ == "__main__":
                 patterns.append(argv.pop(idx))
             except IndexError:
                 print("-k needs an argument")
-        idx += 1
+        else:
+            idx += 1
 
     if argv[1] == "-v":
         verbose = True
