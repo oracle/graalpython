@@ -172,6 +172,23 @@ class BasicTests(unittest.TestCase):
         self.assertRaises(OverflowError, float('-inf').as_integer_ratio)
         self.assertRaises(ValueError, float('nan').as_integer_ratio)
 
+    def test_compare(self):
+        i = 2**53 + 1
+        f = float(i)
+        self.assertFalse(f == i)
+        self.assertTrue(f != i)
+        self.assertTrue(f < i)
+        self.assertTrue(f <= i)
+        self.assertFalse(f > i)
+        self.assertFalse(f >= i)
+        self.assertFalse(i == f)
+        self.assertTrue(i != f)
+        self.assertFalse(i < f)
+        self.assertFalse(i <= f)
+        self.assertTrue(i > f)
+        self.assertTrue(i >= f)
+
+
 fromHex = float.fromhex
 
 class HexFloatTests(unittest.TestCase):

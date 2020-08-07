@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIVMOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -53,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
@@ -81,7 +83,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -591,30 +595,17 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doComplexInt(PComplex left, long right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) == 0;
         }
 
         @Specialization
         boolean doComplexInt(PComplex left, PInt right) {
-            if (left.getImag() == 0) {
-                try {
-                    return left.getReal() == right.longValueExact();
-                } catch (ArithmeticException e) {
-                    // do nothing -> return false;
-                }
-            }
-            return false;
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
         boolean doComplexInt(PComplex left, double right) {
-            if (left.getImag() == 0) {
-                return left.getReal() == right;
-            }
-            return false;
+            return left.getImag() == 0 && left.getReal() == right;
         }
 
         @SuppressWarnings("unused")
@@ -699,12 +690,12 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doComplex(PComplex left, long right) {
-            return left.getImag() != 0 || left.getReal() != right;
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) != 0;
         }
 
         @Specialization
         boolean doComplex(PComplex left, PInt right) {
-            return left.getImag() != 0 || left.getReal() != right.doubleValue();
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization
@@ -836,11 +827,10 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int hash(PComplex self) {
+        long hash(PComplex self) {
             // just like CPython
-            int realHash = Double.hashCode(self.getReal());
-            int imagHash = Double.hashCode(self.getImag());
+            long realHash = PythonObjectLibrary.hash(self.getReal());
+            long imagHash = PythonObjectLibrary.hash(self.getImag());
             return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }
@@ -851,6 +841,28 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         PComplex hash(PComplex self) {
             return factory().createComplex(self.getReal(), -self.getImag());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __FLOORDIV__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class FloorDivNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object floorDiv(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ModNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object mod(Object arg) {
+            throw raise(TypeError, ErrorMessages.CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX);
         }
     }
 }
