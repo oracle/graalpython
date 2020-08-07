@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -64,6 +64,14 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
         return PGuards.expectLong(execute(frame, arg, arg2));
     }
 
+    public double executeDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectDouble(execute(frame, arg, arg2));
+    }
+
+    public double executeDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException {
+        return PGuards.expectDouble(execute(frame, arg, arg2));
+    }
+
     public double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException {
         return PGuards.expectDouble(execute(frame, arg, arg2));
     }
@@ -73,6 +81,14 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
     }
 
     public boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(frame, arg, arg2));
+    }
+
+    public boolean executeBool(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(frame, arg, arg2));
+    }
+
+    public boolean executeBool(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(frame, arg, arg2));
     }
 

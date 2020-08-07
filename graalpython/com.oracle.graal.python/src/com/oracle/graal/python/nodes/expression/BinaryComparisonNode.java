@@ -209,6 +209,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     }
 
     @Specialization
+    boolean doLI(VirtualFrame frame, long left, double right) {
+        try {
+            return profileCondition(callNode.executeBool(frame, left, right));
+        } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        }
+    }
+
+    @Specialization
     boolean doDB(VirtualFrame frame, double left, boolean right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, asDouble(right)));
@@ -220,6 +230,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
 
     @Specialization
     boolean doDI(VirtualFrame frame, double left, int right) {
+        try {
+            return profileCondition(callNode.executeBool(frame, left, right));
+        } catch (UnexpectedResultException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalStateException("Comparison on primitive values didn't return a boolean");
+        }
+    }
+
+    @Specialization
+    boolean doDL(VirtualFrame frame, double left, long right) {
         try {
             return profileCondition(callNode.executeBool(frame, left, right));
         } catch (UnexpectedResultException e) {

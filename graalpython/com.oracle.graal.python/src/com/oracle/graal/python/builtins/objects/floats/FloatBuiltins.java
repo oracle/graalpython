@@ -296,6 +296,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        double doLD(long left, double right) {
+            return left + right;
+        }
+
+        @Specialization
         double doDPi(double left, PInt right) {
             return left + right.doubleValueWithOverflow(getRaiseNode());
         }
@@ -373,6 +378,11 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         double doDL(double left, long right) {
+            return left * right;
+        }
+
+        @Specialization
+        double doLD(long left, double right) {
             return left * right;
         }
 
@@ -1012,6 +1022,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean eqLnDb(long a, double b) {
+            return compareDoubleToLong(b, a) == 0;
+        }
+
+        @Specialization
         boolean eqDbPI(double a, PInt b) {
             return compareDoubleToLargeInt(a, b) == 0;
         }
@@ -1041,6 +1056,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         // adapted from CPython's float_richcompare in floatobject.c
+        @TruffleBoundary(allowInlining = true)
         public static double compareDoubleToLong(double v, long w) {
             if (!Double.isFinite(v)) {
                 return v;
@@ -1095,6 +1111,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean neLnDb(long a, double b) {
+            return EqNode.compareDoubleToLong(b, a) != 0;
+        }
+
+        @Specialization
         boolean neDbPI(double a, PInt b) {
             return EqNode.compareDoubleToLargeInt(a, b) != 0;
         }
@@ -1136,6 +1157,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         boolean doDL(double x, long y) {
             return EqNode.compareDoubleToLong(x, y) < 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y) {
+            return EqNode.compareDoubleToLong(y, x) > 0;
         }
 
         @Specialization
@@ -1204,6 +1230,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doLD(long x, double y) {
+            return EqNode.compareDoubleToLong(y, x) >= 0;
+        }
+
+        @Specialization
         boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) <= 0;
         }
@@ -1269,6 +1300,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doLD(long x, double y) {
+            return EqNode.compareDoubleToLong(y, x) < 0;
+        }
+
+        @Specialization
         boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) > 0;
         }
@@ -1331,6 +1367,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         boolean doDL(double x, long y) {
             return EqNode.compareDoubleToLong(x, y) >= 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y) {
+            return EqNode.compareDoubleToLong(y, x) <= 0;
         }
 
         @Specialization

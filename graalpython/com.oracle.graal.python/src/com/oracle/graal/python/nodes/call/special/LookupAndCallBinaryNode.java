@@ -92,11 +92,19 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract long executeLong(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
+    public abstract double executeDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
+
     public abstract double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
@@ -253,6 +261,32 @@ public abstract class LookupAndCallBinaryNode extends Node {
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
+    }
+
+    // long, double
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolean(VirtualFrame frame, long left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolean(VirtualFrame frame, double left, long right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    double callDouble(VirtualFrame frame, long left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    double callDouble(VirtualFrame frame, double left, long right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
     }
 
     // double, double
