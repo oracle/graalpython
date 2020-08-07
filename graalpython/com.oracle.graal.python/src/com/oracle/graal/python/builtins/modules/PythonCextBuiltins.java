@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.io.PrintWriter;
+import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -61,6 +62,7 @@ import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -113,10 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ObjectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
@@ -128,9 +127,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -2318,49 +2314,52 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /*
+     * We are creating a special PFunction as a wrapper here - that PFunction has a reference to the
+     * wrapped function's CallTarget. Since the wrapped function is a PFunction anyway, we'll have
+     * to do the full call logic at some point. But instead of doing it when dispatching to the
+     * wrapped function, we copy all relevant bits (signature, mostly) and thus the caller of the
+     * wrapper will already do all that work. The root node embedded in the wrapper call target (a
+     * MayRaiseNode) then just does a direct call with the frame arguments, without doing anything
+     * else anymore. Thus, while there is an extra call, there are really only those Java frames in
+     * between that are caused by the Truffle machinery for calls.
+     */
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-        private static final Builtin unaryBuiltin = MayRaiseUnaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin binaryBuiltin = MayRaiseBinaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin ternaryBuiltin = MayRaiseTernaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin varargsBuiltin = MayRaiseNode.class.getAnnotation(Builtin.class);
+        private static final WeakHashMap<RootCallTarget, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
+
+        private static final RootCallTarget createWrapperCt(PFunction func, Object errorResult) {
+            CompilerDirectives.transferToInterpreter();
+            assert errorResult instanceof Integer || errorResult instanceof Long || errorResult instanceof Double || errorResult == PNone.NONE || InteropLibrary.getUncached().isNull(errorResult) : "invalid wrap";
+            PythonLanguage lang = PythonLanguage.getCurrent();
+            RootNode rootNode = new MayRaiseNode(lang, func.getSignature(), func.getCallTarget(), errorResult);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        }
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResult,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
-            RootNode rootNode = null;
-            Signature funcSignature = func.getSignature();
-            if (funcSignature.takesPositionalOnly()) {
-                switch (funcSignature.getMaxNumOfPositionalArgs()) {
-                    case 1:
-                        rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    case 2:
-                        rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    case 3:
-                        rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    default:
-                        break;
-                }
+        Object make(PFunction func, Object errorResult) {
+            RootCallTarget wrappedCt = func.getCallTarget();
+            WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(wrappedCt);
+            RootCallTarget wrapperCt = null;
+            if (wrapperCtRef != null) {
+                wrapperCt = wrapperCtRef.get();
             }
-            if (rootNode == null) {
-                rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
-                                new StandaloneBuiltinFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
-                                true);
+            if (wrapperCt == null) {
+                wrapperCt = createWrapperCt(func, errorResult);
+                weakCallTargetMap.put(wrappedCt, new WeakReference<>(wrapperCt));
             }
-
-            return factory().createBuiltinFunction(func.getName(), null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+            PCode wrappedCode = func.getCode();
+            PCode wrapperCode = factory().createCode(PythonBuiltinClassType.PCode, wrapperCt, func.getSignature(),
+                            0, 0, 0,
+                            new byte[0], new Object[0], new Object[0],
+                            new Object[0], new Object[0], new Object[0],
+                            wrappedCode.getFilename(), wrappedCode.getName(), 0,
+                            new byte[0]);
+            return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(),
+                            wrapperCode, func.getGlobals(), func.getDefaults(), func.getKwDefaults(),
+                            func.getClosure(), func.getCodeStableAssumption(), func.getDefaultsStableAssumption());
         }
     }
 
