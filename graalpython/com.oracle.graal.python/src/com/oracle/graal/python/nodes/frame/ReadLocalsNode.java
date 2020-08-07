@@ -105,7 +105,8 @@ public abstract class ReadLocalsNode extends Node {
     }
 
     /**
-     * Fast access to custom locals if a custom dict was provided by the caller and the python frame does not escape.
+     * Fast access to custom locals if a custom dict was provided by the caller and the python frame
+     * does not escape.
      *
      * @param frame the current frame
      * @param havePyFrame profile if we do have a python frame (PFrame)
@@ -115,7 +116,7 @@ public abstract class ReadLocalsNode extends Node {
     public static PythonObject fastGetCustomLocalsOrGlobals(VirtualFrame frame, ConditionProfile havePyFrame, ConditionProfile haveCustomLocals) {
         PFrame pyFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
         if (havePyFrame.profile(pyFrame != null) && haveCustomLocals.profile(pyFrame.getLocals(null) != null)) {
-            return  (PythonObject) pyFrame.getLocals(null);
+            return (PythonObject) pyFrame.getLocals(null);
         }
         // return the globals
         return PArguments.getGlobals(frame);
