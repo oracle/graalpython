@@ -828,12 +828,10 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        long hash(PComplex self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        long hash(PComplex self) {
             // just like CPython
-            long realHash = lib.hash(self.getReal());
-            long imagHash = lib.hash(self.getImag());
+            long realHash = PythonObjectLibrary.hash(self.getReal());
+            long imagHash = PythonObjectLibrary.hash(self.getImag());
             return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }

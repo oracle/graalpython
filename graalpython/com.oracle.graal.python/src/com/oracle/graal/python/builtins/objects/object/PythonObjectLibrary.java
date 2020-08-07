@@ -253,23 +253,19 @@ public abstract class PythonObjectLibrary extends Library {
         }
     }
 
-    @SuppressWarnings("static-method")
-    public final long hash(boolean receiver) {
+    public static long hash(boolean receiver) {
         return DefaultPythonBooleanExports.hash(receiver);
     }
 
-    @SuppressWarnings("static-method")
-    public final long hash(int receiver) {
+    public static long hash(int receiver) {
         return DefaultPythonIntegerExports.hash(receiver);
     }
 
-    @SuppressWarnings("static-method")
-    public final long hash(long receiver) {
+    public static long hash(long receiver) {
         return DefaultPythonLongExports.hash(receiver);
     }
 
-    @SuppressWarnings("static-method")
-    public final long hash(double receiver) {
+    public static long hash(double receiver) {
         return DefaultPythonDoubleExports.hash(receiver);
     }
 
