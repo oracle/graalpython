@@ -339,17 +339,22 @@ public class RangeBuiltins extends PythonBuiltins {
             return slice.getStart() == PNone.NONE && slice.getStop() == PNone.NONE && slice.getStep() == PNone.NONE;
         }
 
+        protected static boolean isNotSlice(Object value) {
+            return !(value instanceof PSlice);
+        }
+
         @Specialization(guards = "allNone(slice)")
         Object doPRangeObj(PRange range, @SuppressWarnings("unused") PObjectSlice slice) {
             return range;
         }
 
-        @Specialization(guards = "canBeInteger(idx)")
-        Object doPRange(PIntRange primary, Object idx) {
-            return primary.getIntItemNormalized(normalize.execute(idx, primary.getIntLength()));
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isNotSlice(idx)")
+        Object doPRange(PIntRange primary, Object idx,
+                        @CachedLibrary(value = "idx") PythonObjectLibrary pol) {
+            return primary.getIntItemNormalized(normalize.execute(pol.asSize(idx), primary.getIntLength()));
         }
 
-        @Specialization(guards = "canBeInteger(idx)")
+        @Specialization(guards = "isNotSlice(idx)")
         Object doPRange(PBigRange self, Object idx,
                         @Cached CastToJavaBigIntegerNode toBigInt) {
             return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(self, idx, toBigInt)));
