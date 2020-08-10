@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -2646,25 +2647,40 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int hash(int self) {
-            return self;
+        long hash(int self) {
+            return PythonObjectLibrary.hash(self);
         }
 
         @Specialization
         long hash(long self) {
-            return self;
-        }
-
-        @Specialization
-        long hash(PInt self) {
-            return self.longValue();
+            return PythonObjectLibrary.hash(self);
         }
 
         @Specialization
         @TruffleBoundary
-        long hash(PythonNativeVoidPtr self) {
-            return self.object.hashCode();
+        long hash(PInt self) {
+            return self.getValue().remainder(BigInteger.valueOf(SysModuleBuiltins.HASH_MODULUS)).longValue();
         }
+
+        @Specialization
+        long hash(PythonNativeVoidPtr self,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (lib.isPointer(self.object)) {
+                try {
+                    long ptrVal = lib.asPointer(self.object);
+                    return PythonObjectLibrary.hash(ptrVal);
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            return doHashCode(self.object);
+        }
+
+        @TruffleBoundary
+        long doHashCode(Object o) {
+            return o.hashCode();
+        }
+
     }
 
     @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)

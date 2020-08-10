@@ -91,12 +91,12 @@ final class DefaultPythonIntegerExports {
 
     @ExportMessage
     static long hash(Integer value) {
-        return value;
+        return hash(value.intValue());
     }
 
     @Ignore
     static long hash(int value) {
-        return value;
+        return value == -1 ? -2 : value;
     }
 
     @ExportMessage
