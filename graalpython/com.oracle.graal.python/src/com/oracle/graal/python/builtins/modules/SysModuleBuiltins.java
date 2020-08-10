@@ -109,6 +109,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static final String PLATFORM_WIN32 = "win32";
     public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
+    public static final long HASH_MULTIPLIER = 1000003L;
+    public static final int HASH_BITS = 61;
+    public static final long HASH_MODULUS = (1L << HASH_BITS) - 1;
+    public static final long HASH_INF = 314159;
+    public static final long HASH_NAN = 0;
+    public static final long HASH_IMAG = HASH_MULTIPLIER;
 
     static {
         String compile_time;
@@ -154,6 +160,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         2.2204460492503131e-16,     // DBL_EPSILON
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
+        }));
+        builtinConstants.put("hash_info", core.factory().createTuple(new Object[]{
+                        "java",                     // algorithm
+                        0,                          // cutoff
+                        64,                         // hash_bits
+                        HASH_IMAG,                  // imag
+                        HASH_INF,                   // inf
+                        HASH_MODULUS,               // modulus
+                        HASH_NAN,                   // nan
+                        0,                          // seed_bits
+                        64,                         // width
         }));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 

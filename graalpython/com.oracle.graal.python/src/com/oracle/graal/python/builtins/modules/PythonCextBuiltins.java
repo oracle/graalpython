@@ -1466,7 +1466,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyHashImagNode extends PythonBuiltinNode {
         @Specialization
         long getHash() {
-            return PComplex.IMAG_MULTIPLIER;
+            return SysModuleBuiltins.HASH_IMAG;
         }
     }
 

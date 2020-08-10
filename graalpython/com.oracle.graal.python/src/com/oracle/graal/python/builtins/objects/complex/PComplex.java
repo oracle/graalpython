@@ -31,8 +31,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PComplex extends PythonBuiltinObject {
-    /* Prime multiplier used in string and various other hashes in CPython. */
-    public static final int IMAG_MULTIPLIER = 1000003; /* 0xf4243 */
 
     private final double real;
     private final double imag;
