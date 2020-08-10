@@ -74,6 +74,7 @@
 *graalpython.lib-python.3.test.test_statistics.TestApproxEqualErrors.test_bad_tol
 *graalpython.lib-python.3.test.test_statistics.TestFMean.test_basics
 *graalpython.lib-python.3.test.test_statistics.TestFMean.test_special_values
+*graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_basics
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_big_and_small
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_special_values
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_various_input_types

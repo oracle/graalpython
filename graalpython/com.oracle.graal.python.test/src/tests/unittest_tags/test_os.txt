@@ -79,6 +79,7 @@
 *graalpython.lib-python.3.test.test_os.MakedirTests.test_makedir
 *graalpython.lib-python.3.test.test_os.MiscTests.test_getcwd
 *graalpython.lib-python.3.test.test_os.MiscTests.test_getcwd_long_path
+*graalpython.lib-python.3.test.test_os.NonLocalSymlinkTests.test_directory_link_nonlocal
 *graalpython.lib-python.3.test.test_os.PathTConverterTests.test_path_t_converter_and_custom_class
 *graalpython.lib-python.3.test.test_os.Pep383Tests.test_statvfs
 *graalpython.lib-python.3.test.test_os.PidTests.test_getppid
