@@ -183,11 +183,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         } else if (handler == sun.misc.SignalHandler.SIG_IGN) {
             return Signals.SIG_IGN;
         } else if (handler instanceof Signals.PythonSignalHandler) {
-            if (signalHandlers.containsKey(signum)) {
-                return signalHandlers.get(signum);
-            } else {
-                return PNone.NONE;
-            }
+            return signalHandlers.getOrDefault(signum, PNone.NONE);
         } else {
             return factory.createJavaSignalHandler(handler);
         }
@@ -242,8 +238,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
-            signalHandlers.put(signum, id);
-            return handlerToPython(factory(), oldHandler, signum);
+            Object result = handlerToPython(factory(), oldHandler, signum);
+            signalHandlers.remove(signum);
+            return result;
         }
 
         @Specialization(limit = "1")
@@ -261,8 +258,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
             }
+            Object result = handlerToPython(factory(), oldHandler, signum);
             signalHandlers.remove(signum);
-            return handlerToPython(factory(), oldHandler, signum);
+            return result;
         }
 
         @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
@@ -288,8 +286,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
             }
+            Object result = handlerToPython(factory(), oldHandler, signum);
             signalHandlers.put(signum, handler);
-            return handlerToPython(factory(), oldHandler, signum);
+            return result;
         }
 
         @SuppressWarnings("unchecked")
