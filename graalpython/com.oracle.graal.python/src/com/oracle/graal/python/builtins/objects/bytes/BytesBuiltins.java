@@ -431,14 +431,25 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
-            int timesInt;
-            if (hasFrame.profile(frame != null)) {
-                timesInt = lib.asSizeWithState(times, PArguments.getThreadState(frame));
-            } else {
-                timesInt = lib.asSize(times);
-            }
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), timesInt);
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
             return factory().createBytes(res);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object mul(VirtualFrame frame, PByteArray self, Object times,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @CachedLibrary("times") PythonObjectLibrary lib) {
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
+            return factory().createByteArray(res);
+        }
+
+        private int getTimesInt(VirtualFrame frame, Object times, ConditionProfile hasFrame, PythonObjectLibrary lib) {
+            if (hasFrame.profile(frame != null)) {
+                return lib.asSizeWithState(times, PArguments.getThreadState(frame));
+            } else {
+                return lib.asSize(times);
+            }
         }
 
         @SuppressWarnings("unused")
