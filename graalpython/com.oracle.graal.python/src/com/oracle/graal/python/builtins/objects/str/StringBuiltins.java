@@ -1535,18 +1535,13 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile typeErrorProfile) {
-            try {
-                int repeat;
-                if (hasFrame.profile(frame != null)) {
-                    repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
-                } else {
-                    repeat = lib.asSize(right);
-                }
-                return doStringIntGeneric(left, repeat, loopProfile);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
-                throw raise(MemoryError);
+            int repeat;
+            if (hasFrame.profile(frame != null)) {
+                repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
+            } else {
+                repeat = lib.asSize(right);
             }
+            return doStringIntGeneric(left, repeat, loopProfile);
         }
 
         @Specialization
