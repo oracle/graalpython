@@ -349,18 +349,18 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization(guards = "lib.fitsInInt(key) || isPSlice(key)")
+        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.fitsInInt(key)", "!isPSlice(key)"})
+        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
         public Object doListError(VirtualFrame frame, PList primary, Object key, Object value,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
