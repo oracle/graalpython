@@ -73,8 +73,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
 public class OperatorModuleBuiltins extends PythonBuiltins {
 
@@ -234,7 +232,7 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object asIndex(Object value,
-                       @CachedLibrary(value = "value") PythonObjectLibrary pol) {
+                        @CachedLibrary(value = "value") PythonObjectLibrary pol) {
             return pol.asIndex(value);
         }
     }
