@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.signal.PJavaSignalHandler;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -63,7 +62,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -77,7 +75,8 @@ import sun.misc.SignalHandler;
 
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
-    private static ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
 
     private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
     private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
@@ -177,7 +176,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static Object handlerToPython(PythonObjectFactory factory, SignalHandler handler, int signum) {
+    private static Object handlerToPython(SignalHandler handler, int signum) {
         if (handler == sun.misc.SignalHandler.SIG_DFL) {
             return Signals.SIG_DFL;
         } else if (handler == sun.misc.SignalHandler.SIG_IGN) {
@@ -185,7 +184,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         } else if (handler instanceof Signals.PythonSignalHandler) {
             return signalHandlers.getOrDefault(signum, PNone.NONE);
         } else {
-            return factory.createJavaSignalHandler(handler);
+            // Save default JVM handlers to be restored later
+            defaultSignalHandlers.put(signum, handler);
+            return Signals.SIG_DFL;
         }
     }
 
@@ -195,7 +196,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getsignal(int signum) {
-            return handlerToPython(factory(), Signals.getCurrentSignalHandler(signum), signum);
+            return handlerToPython(Signals.getCurrentSignalHandler(signum), signum);
         }
 
         @Specialization(limit = "3")
@@ -219,7 +220,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = {"!idNumLib.isCallable(idNum)", "!isJavaHandler(idNum)"}, limit = "1")
+        @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
         Object signalId(@SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
                         @CachedLibrary("signal") PythonObjectLibrary signalLib) {
@@ -234,31 +235,15 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         private Object signal(int signum, int id) {
             SignalHandler oldHandler;
             try {
-                oldHandler = Signals.setSignalHandler(signum, id);
+                if (id == Signals.SIG_DFL && defaultSignalHandlers.containsKey(signum)) {
+                    oldHandler = Signals.setSignalHandler(signum, defaultSignalHandlers.get(signum));
+                } else {
+                    oldHandler = Signals.setSignalHandler(signum, id);
+                }
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
-            Object result = handlerToPython(factory(), oldHandler, signum);
-            signalHandlers.remove(signum);
-            return result;
-        }
-
-        @Specialization(limit = "1")
-        Object signalHandler(@SuppressWarnings("unused") PythonModule self, Object signal, PJavaSignalHandler handler,
-                        @CachedLibrary("signal") PythonObjectLibrary signalLib) {
-            int signum = signalLib.asSize(signal);
-            return signal(signum, handler);
-        }
-
-        @TruffleBoundary
-        private Object signal(int signum, PJavaSignalHandler handler) {
-            SignalHandler oldHandler;
-            try {
-                oldHandler = Signals.setSignalHandler(signum, handler.getHandler());
-            } catch (IllegalArgumentException e) {
-                throw raise(PythonErrorType.ValueError, e);
-            }
-            Object result = handlerToPython(factory(), oldHandler, signum);
+            Object result = handlerToPython(oldHandler, signum);
             signalHandlers.remove(signum);
             return result;
         }
@@ -286,7 +271,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
             }
-            Object result = handlerToPython(factory(), oldHandler, signum);
+            Object result = handlerToPython(oldHandler, signum);
             signalHandlers.put(signum, handler);
             return result;
         }
@@ -309,10 +294,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalStateException("the signal trigger semaphore was modified!");
             }
-        }
-
-        protected static boolean isJavaHandler(Object obj) {
-            return obj instanceof PJavaSignalHandler;
         }
     }
 }

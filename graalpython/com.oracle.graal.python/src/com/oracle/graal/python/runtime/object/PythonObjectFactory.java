@@ -108,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.signal.PJavaSignalHandler;
 import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -155,8 +154,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
-
-import sun.misc.SignalHandler;
 
 @GenerateUncached
 @ImportStatic(PythonOptions.class)
@@ -859,15 +856,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public PSocket createSocket(Object cls, int family, int type, int proto, int fileno) {
         return trace(new PSocket(cls, getShape(cls), family, type, proto, fileno));
-    }
-
-    /*
-     * Signal
-     */
-
-    public PJavaSignalHandler createJavaSignalHandler(SignalHandler handler) {
-        PythonBuiltinClassType cls = PythonBuiltinClassType.PJavaSignalHandler;
-        return trace(new PJavaSignalHandler(cls, getShape(cls), handler));
     }
 
     /*
