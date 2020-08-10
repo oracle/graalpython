@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -2657,9 +2656,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         long hash(PInt self) {
-            return self.getValue().remainder(BigInteger.valueOf(SysModuleBuiltins.HASH_MODULUS)).longValue();
+            return self.hash();
         }
 
         @Specialization
