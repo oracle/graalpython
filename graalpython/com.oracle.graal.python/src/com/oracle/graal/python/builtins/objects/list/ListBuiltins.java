@@ -1061,8 +1061,8 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return false;
+        Object doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -1078,8 +1078,8 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return true;
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

@@ -417,8 +417,8 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return true;
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
