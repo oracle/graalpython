@@ -655,49 +655,9 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
-        protected boolean noDecimals(float num) {
-            return num % 1 == 0;
-        }
-
-        protected boolean noDecimals(double num) {
-            return num % 1 == 0;
-        }
-
-        protected boolean noDecimals(PFloat num) {
-            return num.getValue() % 1 == 0;
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashFloatNoDecimals(float self) {
-            return (long) self;
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashFloatWithDecimals(float self) {
-            return Float.valueOf(self).hashCode();
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashDoubleNoDecimals(double self) {
-            return (long) self;
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashDoubleWithDecimals(double self) {
-            return Double.valueOf(self).hashCode();
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashPFloatNoDecimals(PFloat self) {
-            return (long) self.getValue();
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashPFloatWithDecimals(PFloat self) {
-            return Double.valueOf(self.getValue()).hashCode();
+        @Specialization
+        long hashDouble(double self) {
+            return PythonObjectLibrary.hash(self);
         }
     }
 
