@@ -90,7 +90,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -101,7 +102,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -574,22 +574,22 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "isString(formatString)")
-        Object format(VirtualFrame frame, Object self, String formatString,
+        @Specialization
+        Object format(VirtualFrame frame, Object self, Object formatStringObj,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            String formatString;
+            try {
+                formatString = castToStringNode.execute(formatStringObj);
+            } catch (CannotCastException ex) {
+                throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
+            }
             if (formatString.length() > 0) {
                 raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
             }
             return strCall.executeObject(frame, self);
-        }
-
-        @Fallback
-        Object formatFail(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object formatSpec) {
-            throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
         }
     }
 

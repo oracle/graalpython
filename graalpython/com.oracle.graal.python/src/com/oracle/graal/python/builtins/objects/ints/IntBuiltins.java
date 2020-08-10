@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -56,6 +55,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -90,6 +92,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2560,53 +2563,70 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends FormatNodeBase {
+        @Child private BuiltinConstructors.FloatNode floatNode;
 
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
+        // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
+        // boolean's __str__ and not int's __str__
+        @Specialization
+        Object formatB(VirtualFrame frame, boolean self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormatInt(self ? 1 : 0, formatString);
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
-        @TruffleBoundary
-        String formatI(int self, String formatString) {
+        @Specialization
+        Object formatI(VirtualFrame frame, int self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormatInt(self, formatString);
+        }
+
+        private String doFormatInt(int self, String formatString) {
             PythonCore core = getCore();
             Spec spec = getSpec(formatString, core);
             if (isDoubleSpec(spec)) {
                 return formatDouble(core, spec, self);
             }
             validateIntegerSpec(core, spec);
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
-            formatter.format(self);
-            return formatter.pad().getResult();
+            return formatInt(self, core, spec);
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
-        String formatL(long self, String formatString) {
-            return formatPI(factory().createInt(self), formatString);
+        @Specialization
+        Object formatL(VirtualFrame frame, long self, Object formatString,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            return formatPI(frame, factory().createInt(self), formatString, castToStringNode);
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
-        @TruffleBoundary
-        String formatPI(PInt self, String formatString) {
+        @Specialization
+        Object formatPI(VirtualFrame frame, PInt self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
             PythonCore core = getCore();
             Spec spec = getSpec(formatString, core);
             if (isDoubleSpec(spec)) {
-                // Note: this should really call PyNumber_Float
-                double doubleVal = PythonObjectLibrary.getUncached().asJavaDouble(self);
-                return formatDouble(core, spec, doubleVal);
+                return formatDouble(core, spec, asDouble(frame, self));
             }
             validateIntegerSpec(core, spec);
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
-            formatter.format(self.getValue());
-            return formatter.pad().getResult();
+            return formatPInt(self, core, spec);
         }
 
-        @Fallback
-        Object doOther(@SuppressWarnings("unused") Object self, Object format) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", format);
+        private double asDouble(VirtualFrame frame, Object self) {
+            if (floatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create());
+            }
+            // We cannot use asJavaDouble, because this should have the semantics of PyNumber_Float
+            return (double) floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, self);
         }
 
         private static Spec getSpec(String formatString, PythonCore core) {
@@ -2620,9 +2640,24 @@ public class IntBuiltins extends PythonBuiltins {
                             spec.type == 'G' || spec.type == '%';
         }
 
+        @TruffleBoundary
         private static String formatDouble(PythonCore core, Spec spec, double value) {
             FloatFormatter formatter = new FloatFormatter(core, spec);
             formatter.format(value);
+            return formatter.pad().getResult();
+        }
+
+        @TruffleBoundary
+        private static String formatInt(int self, PythonCore core, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+            formatter.format(self);
+            return formatter.pad().getResult();
+        }
+
+        @TruffleBoundary
+        private static String formatPInt(PInt self, PythonCore core, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+            formatter.format(self.getValue());
             return formatter.pad().getResult();
         }
 

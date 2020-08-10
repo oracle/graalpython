@@ -83,18 +83,19 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -734,27 +735,25 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
+    abstract static class FormatNode extends FormatNodeBase {
+        @Specialization
+        Object format(VirtualFrame frame, PComplex self, Object formatStringObj,
+                        @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            PythonCore core = getCore();
+            InternalFormat.Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+            validateSpec(spec);
+            return doFormat(self, spec, core);
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
         @TruffleBoundary
-        String format(PComplex self, String formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            validateSpec(spec);
-            ComplexFormatter formatter = new ComplexFormatter(getCore(), validateAndPrepareForFloat(spec, getCore(), "complex"));
+        private static Object doFormat(PComplex self, Spec spec, PythonCore core) {
+            ComplexFormatter formatter = new ComplexFormatter(core, validateAndPrepareForFloat(spec, core, "complex"));
             formatter.format(self);
             return formatter.pad().getResult();
-        }
-
-        @Fallback
-        Object doOther(@SuppressWarnings("unused") Object self, Object format) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", format);
         }
 
         private void validateSpec(Spec spec) {

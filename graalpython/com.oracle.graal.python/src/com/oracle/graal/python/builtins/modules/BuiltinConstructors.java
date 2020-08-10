@@ -957,8 +957,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromPInt(Object cls, PInt arg) {
+        @Specialization(guards = {"!isNativeClass(cls)", "cannotBeOverridden(plib.getLazyPythonClass(arg))"})
+        Object floatFromPInt(Object cls, PInt arg,
+                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary plib) {
             double value = arg.doubleValue();
             if (Double.isInfinite(value)) {
                 throw raise(OverflowError, ErrorMessages.TOO_LARGE_TO_CONVERT_TO, "int", "float");
@@ -1096,11 +1097,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        static boolean isHandledType(Object o) {
+        static boolean isHandledType(PythonObjectLibrary lib, Object o) {
+            if (o instanceof PInt) {
+                return PGuards.cannotBeOverridden(lib.getLazyPythonClass(o));
+            }
             return PGuards.canBeInteger(o) || PGuards.isDouble(o) || o instanceof String || PGuards.isPNone(o);
         }
 
-        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(obj)"})
+        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(lib, obj)"})
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // Follows logic from PyNumber_Float:
@@ -3180,11 +3184,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
-        }
-
-        @TruffleBoundary
-        private static byte[] toBytes(String data) {
-            return data.getBytes();
         }
     }
 

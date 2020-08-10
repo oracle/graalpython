@@ -93,6 +93,10 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
 
+    public abstract Object executeObject(VirtualFrame frame, int receiver);
+
+    public abstract Object executeObject(VirtualFrame frame, double receiver);
+
     public static LookupAndCallUnaryNode create(String name) {
         return LookupAndCallUnaryNodeGen.create(name, null, false);
     }

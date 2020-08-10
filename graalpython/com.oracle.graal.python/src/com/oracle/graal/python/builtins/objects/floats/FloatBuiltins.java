@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -81,13 +80,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -97,7 +96,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -169,27 +170,33 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
+    abstract static class FormatNode extends FormatNodeBase {
+        @Specialization
+        Object formatPF(VirtualFrame frame, PFloat self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormat(self.getValue(), formatString, getCore());
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
+        @Specialization
+        Object formatD(VirtualFrame frame, double self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormat(self, formatString, getCore());
+        }
+
         @TruffleBoundary
-        String format(double self, String formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            FloatFormatter formatter = new FloatFormatter(getCore(), validateAndPrepareForFloat(spec, getCore(), "float"));
+        private String doFormat(double self, String formatString, PythonCore core) {
+            InternalFormat.Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+            FloatFormatter formatter = new FloatFormatter(core, validateAndPrepareForFloat(spec, getCore(), "float"));
             formatter.format(self);
             return formatter.pad().getResult();
-        }
-
-        @Fallback
-        String other(@SuppressWarnings("unused") Object self, Object formatString) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
         }
     }
 
