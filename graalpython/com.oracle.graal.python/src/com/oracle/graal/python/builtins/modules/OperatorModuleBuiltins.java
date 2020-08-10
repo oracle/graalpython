@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -70,6 +71,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
 @CoreFunctions(defineModule = OperatorModuleBuiltins.MODULE_NAME)
 public class OperatorModuleBuiltins extends PythonBuiltins {
@@ -223,5 +227,15 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
             return arg1.equals(arg2);
         }
 
+    }
+
+    @Builtin(name = "index", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IndexNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object asIndex(Object value,
+                       @CachedLibrary(value = "value") PythonObjectLibrary pol) {
+            return pol.asIndex(value);
+        }
     }
 }
