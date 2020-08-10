@@ -88,6 +88,14 @@ def test_formatting():
     assert format(1234.5, "+n").startswith("+")
 
 
+def test_int_format():
+    class PolymorphInt(int):
+        def __float__(self):
+            return 42.5
+
+    assert format(PolymorphInt(2), "g") == '42.5'
+
+
 class MyComplex(complex):
     def __repr__(self):
         return 'wrong answer'
