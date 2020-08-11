@@ -87,6 +87,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNodeGen SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __root
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -101,6 +102,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNodeGen SourceSection: [95,104]`root.prev`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: prev
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -117,6 +119,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                 GetAttributeNodeGen SourceSection: [155,163]`curr.key`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: key
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -132,6 +135,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: prev
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None

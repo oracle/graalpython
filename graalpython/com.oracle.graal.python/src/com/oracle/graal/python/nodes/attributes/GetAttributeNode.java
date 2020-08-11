@@ -45,10 +45,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetAnyAttributeNodeGen;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -113,40 +115,41 @@ public abstract class GetAttributeNode extends ExpressionNode implements ReadNod
 
     abstract static class GetAttributeBaseNode extends Node {
 
-        @Child private LookupInheritedAttributeNode lookupGetattrNode;
+        @Child private LookupSpecialMethodNode lookupGetattrNode;
         @Child private CallBinaryMethodNode callBinaryMethodNode;
+        @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(1);
 
         @CompilationFinal private ConditionProfile hasGetattrProfile;
 
         int dispatchGetAttrOrRethrowInt(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
-            return ensureCallGetattrNode().executeInt(frame, lookupGetattrOrRethrow(object, pe), object, key);
+            return ensureCallGetattrNode().executeInt(frame, lookupGetattrOrRethrow(frame, object, pe), object, key);
         }
 
         long dispatchGetAttrOrRethrowLong(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
-            return ensureCallGetattrNode().executeLong(frame, lookupGetattrOrRethrow(object, pe), object, key);
+            return ensureCallGetattrNode().executeLong(frame, lookupGetattrOrRethrow(frame, object, pe), object, key);
         }
 
         boolean dispatchGetAttrOrRethrowBool(VirtualFrame frame, Object object, Object key, PException pe) throws UnexpectedResultException {
-            return ensureCallGetattrNode().executeBool(frame, lookupGetattrOrRethrow(object, pe), object, key);
+            return ensureCallGetattrNode().executeBool(frame, lookupGetattrOrRethrow(frame, object, pe), object, key);
         }
 
         Object dispatchGetAttrOrRethrowObject(VirtualFrame frame, Object object, Object key, PException pe) {
-            return ensureCallGetattrNode().executeObject(frame, lookupGetattrOrRethrow(object, pe), object, key);
+            return ensureCallGetattrNode().executeObject(frame, lookupGetattrOrRethrow(frame, object, pe), object, key);
         }
 
         /** Lookup {@code __getattr__} or rethrow {@code pe} if it does not exist. */
-        private Object lookupGetattrOrRethrow(Object object, PException pe) {
-            Object getattrAttribute = ensureLookupGetattrNode().execute(object);
+        private Object lookupGetattrOrRethrow(VirtualFrame frame, Object object, PException pe) {
+            Object getattrAttribute = ensureLookupGetattrNode().execute(frame, lib.getLazyPythonClass(object), object);
             if (ensureHasGetattrProfile().profile(getattrAttribute == PNone.NO_VALUE)) {
                 throw pe;
             }
             return getattrAttribute;
         }
 
-        private LookupInheritedAttributeNode ensureLookupGetattrNode() {
+        private LookupSpecialMethodNode ensureLookupGetattrNode() {
             if (lookupGetattrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetattrNode = insert(LookupInheritedAttributeNode.create(__GETATTR__));
+                lookupGetattrNode = insert(LookupSpecialMethodNode.create(__GETATTR__));
             }
             return lookupGetattrNode;
         }

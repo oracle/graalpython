@@ -168,6 +168,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             GetAttributeNodeGen SourceSection: [502,511]`self.name`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: name
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -178,6 +179,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             GetAttributeNodeGen SourceSection: [513,521]`self.eof`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: eof
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -242,6 +244,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               GetAttributeNodeGen SourceSection: [689,698]`sys.stdin`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: stdin
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -473,6 +476,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             GetAttributeNodeGen SourceSection: [1121,1128]`os.path`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: path
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -576,6 +580,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         GetAttributeNodeGen SourceSection: [1279,1291]`self.__lines`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __lines
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -652,6 +657,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           GetAttributeNodeGen SourceSection: [1356,1372]`self.__filenames`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __filenames
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -674,6 +680,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         GetAttributeNodeGen SourceSection: [1587,1598]`self.__data`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __data
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -707,6 +714,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         GetAttributeNodeGen SourceSection: [1668,1680]`self.__lines`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __lines
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -774,6 +782,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             GetAttributeNodeGen SourceSection: [1745,1757]`self.__lines`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __lines
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -784,6 +793,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           GetAttributeNodeGen SourceSection: [1762,1775]`self.MAXLINES`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: MAXLINES
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -803,6 +813,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             GetAttributeNodeGen SourceSection: [1806,1818]`self.__lines`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __lines
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -826,6 +837,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 GetAttributeNodeGen SourceSection: [1893,1904]`self.__name`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __name
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -920,6 +932,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                           GetAttributeNodeGen SourceSection: None
                                                             GetFixedAttributeNodeGen SourceSection: None
                                                               Key: __lines
+                                                              CachedDispatchFirst SourceSection: None
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
@@ -949,6 +962,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         GetAttributeNodeGen SourceSection: [2127,2140]`self.MAXLINES`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: MAXLINES
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -974,6 +988,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     GetAttributeNodeGen SourceSection: [2283,2296]`self.MAXLINES`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: MAXLINES
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None

@@ -17,6 +17,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
               GetAttributeNodeGen SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: to
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
@@ -24,6 +25,7 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                 GetAttributeNodeGen SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
+                    CachedDispatchFirst SourceSection: None
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                     IsBuiltinClassProfile SourceSection: None

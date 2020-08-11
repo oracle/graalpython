@@ -684,6 +684,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [2257,2273]`self.groupwidths`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groupwidths
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -745,6 +746,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: [2325,2336]`self.groups`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: groups
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -759,6 +761,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [2345,2361]`self.groupwidths`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: groupwidths
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -777,6 +780,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [2386,2397]`self.groups`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: groups
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -816,6 +820,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [2502,2516]`self.groupdict`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: groupdict
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -863,6 +868,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: None
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: groupdict
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -942,6 +948,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: groupwidths
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -1019,6 +1026,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [2894,2905]`self.groups`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groups
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -1034,6 +1042,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 GetAttributeNodeGen SourceSection: None
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: groupwidths
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -1109,6 +1118,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [3005,3026]`self.lookbehindgroup...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: lookbehindgroups
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1154,6 +1164,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [3171,3192]`self.lookbehindgroup...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: lookbehindgroups
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -1889,6 +1900,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [3670,3679]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -1948,6 +1960,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5023,5032]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2006,6 +2019,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5076,5085]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2063,6 +2077,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2147,6 +2162,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [5251,5263]`self.pattern`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: pattern
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -2158,6 +2174,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: None
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -2178,6 +2195,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: None
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2245,6 +2263,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: data
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -2318,6 +2337,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5430,5439]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2384,6 +2404,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5496,5505]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2440,6 +2461,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5615,5625]`self.width`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: width
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2456,6 +2478,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5658,5668]`self.width`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: width
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -2933,6 +2956,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             GetAttributeNodeGen SourceSection: None
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: groupwidths
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -2940,6 +2964,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               GetAttributeNodeGen SourceSection: [6555,6567]`self.pattern`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: pattern
+                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -3167,6 +3192,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [5711,5720]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3217,6 +3243,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         GetAttributeNodeGen SourceSection: [7107,7117]`self.width`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: width
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -3349,6 +3376,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         GetAttributeNodeGen SourceSection: [7258,7269]`self.istext`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: istext
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -3443,6 +3471,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: [7459,7469]`self.index`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: index
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -3460,6 +3489,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: decoded_string
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -3519,6 +3549,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   GetAttributeNodeGen SourceSection: None
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: decoded_string
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3540,6 +3571,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   GetAttributeNodeGen SourceSection: [7838,7849]`self.string`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: string
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -3558,6 +3590,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       GetAttributeNodeGen SourceSection: [7855,7866]`self.string`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: string
+                                                          CachedDispatchFirst SourceSection: None
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
@@ -3653,6 +3686,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [7985,7994]`self.next`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: next
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -3726,6 +3760,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       GetAttributeNodeGen SourceSection: [8101,8110]`self.next`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: next
+                                          CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
@@ -3822,6 +3857,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [8252,8261]`self.next`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -3950,6 +3986,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [8481,8490]`self.next`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4130,6 +4167,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [8999,9009]`self.index`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: index
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -4146,6 +4184,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 GetAttributeNodeGen SourceSection: [9016,9025]`self.next`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: next
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -4206,6 +4245,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [9068,9078]`self.index`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: index
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4222,6 +4262,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [9085,9094]`self.next`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -4365,6 +4406,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           GetAttributeNodeGen SourceSection: [9241,9252]`self.string`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: string
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -4641,6 +4683,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   GetAttributeNodeGen SourceSection: [9857,9870]`source.istext`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -4754,6 +4797,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     GetAttributeNodeGen SourceSection: [10163,10176]`source.istext`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: istext
+                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -5346,6 +5390,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   GetAttributeNodeGen SourceSection: [11750,11763]`source.istext`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -5459,6 +5504,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     GetAttributeNodeGen SourceSection: [12056,12069]`source.istext`
                                       GetFixedAttributeNodeGen SourceSection: None
                                         Key: istext
+                                        CachedDispatchFirst SourceSection: None
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
@@ -5661,6 +5707,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [12664,12675]`source.next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -5734,6 +5781,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   GetAttributeNodeGen SourceSection: [12820,12831]`source.next`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: next
+                                                      CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
@@ -5866,6 +5914,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [13402,13414]`state.groups`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: groups
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -6268,6 +6317,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [14372,14384]`items.append`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: append
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6282,6 +6332,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [14403,14415]`source.match`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: match
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6788,6 +6839,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [16053,16070]`subpattern.append`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: append
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6802,6 +6854,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [16087,16097]`source.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6816,6 +6869,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [16116,16128]`source.match`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: match
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -6853,6 +6907,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 GetAttributeNodeGen SourceSection: [16192,16203]`source.next`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: next
+                                    CachedDispatchFirst SourceSection: None
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
@@ -7091,6 +7146,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         GetAttributeNodeGen SourceSection: [17016,17026]`set.append`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: append
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -7108,6 +7164,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [17123,17134]`source.next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -7293,6 +7350,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             GetAttributeNodeGen SourceSection: [17888,17899]`source.next`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: next
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -8156,6 +8214,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         GetAttributeNodeGen SourceSection: [21177,21188]`source.next`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: next
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -8251,6 +8310,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             GetAttributeNodeGen SourceSection: [21378,21389]`source.next`
                                                               GetFixedAttributeNodeGen SourceSection: None
                                                                 Key: next
+                                                                CachedDispatchFirst SourceSection: None
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
@@ -8300,6 +8360,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               GetAttributeNodeGen SourceSection: [21502,21513]`source.next`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: next
+                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -9085,6 +9146,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               GetAttributeNodeGen SourceSection: [24512,24527]`state.groupdict`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: groupdict
+                                                                  CachedDispatchFirst SourceSection: None
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -9306,6 +9368,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       GetAttributeNodeGen SourceSection: [25612,25623]`source.next`
                                                                         GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: next
+                                                                          CachedDispatchFirst SourceSection: None
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
@@ -9470,6 +9533,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 GetAttributeNodeGen SourceSection: [26473,26495]`state.lookbehindgrou...`
                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                     Key: lookbehindgroups
+                                                                    CachedDispatchFirst SourceSection: None
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -9494,6 +9558,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   GetAttributeNodeGen SourceSection: [26602,26614]`state.groups`
                                                                     GetFixedAttributeNodeGen SourceSection: None
                                                                       Key: groups
+                                                                      CachedDispatchFirst SourceSection: None
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
@@ -9684,6 +9749,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       GetAttributeNodeGen SourceSection: [27463,27478]`state.groupdict`
                                                                         GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: groupdict
+                                                                          CachedDispatchFirst SourceSection: None
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
@@ -9982,6 +10048,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       GetAttributeNodeGen SourceSection: [28743,28754]`source.next`
                                                                         GetFixedAttributeNodeGen SourceSection: None
                                                                           Key: next
+                                                                          CachedDispatchFirst SourceSection: None
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
@@ -10154,6 +10221,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                                 GetAttributeNodeGen SourceSection: None
                                                                                   GetFixedAttributeNodeGen SourceSection: None
                                                                                     Key: string
+                                                                                    CachedDispatchFirst SourceSection: None
                                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                                       Op: __getattribute__
                                                                                     IsBuiltinClassProfile SourceSection: None
@@ -10182,6 +10250,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                                       GetAttributeNodeGen SourceSection: [29794,29807]`source.string`
                                                                                         GetFixedAttributeNodeGen SourceSection: None
                                                                                           Key: string
+                                                                                          CachedDispatchFirst SourceSection: None
                                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                                             Op: __getattribute__
                                                                                           IsBuiltinClassProfile SourceSection: None
@@ -10226,6 +10295,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           GetAttributeNodeGen SourceSection: [29990,30001]`state.flags`
                                                                             GetFixedAttributeNodeGen SourceSection: None
                                                                               Key: flags
+                                                                              CachedDispatchFirst SourceSection: None
                                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                                 Op: __getattribute__
                                                                               IsBuiltinClassProfile SourceSection: None
@@ -10348,6 +10418,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         GetAttributeNodeGen SourceSection: [30559,30566]`err.msg`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: msg
+                                                            CachedDispatchFirst SourceSection: None
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
@@ -10827,6 +10898,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [31731,31741]`source.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -10883,6 +10955,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   GetAttributeNodeGen SourceSection: [31864,31877]`source.istext`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: istext
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
@@ -11129,6 +11202,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             GetAttributeNodeGen SourceSection: [32807,32818]`state.flags`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: flags
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
@@ -11885,6 +11959,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [35406,35415]`p.pattern`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: pattern
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -11903,6 +11978,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                         GetAttributeNodeGen SourceSection: [35439,35454]`p.pattern.flags`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: flags
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -11910,6 +11986,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           GetAttributeNodeGen SourceSection: [35439,35448]`p.pattern`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: pattern
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -11925,6 +12002,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           GetAttributeNodeGen SourceSection: [35464,35475]`source.next`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: next
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -11944,6 +12022,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               GetAttributeNodeGen SourceSection: [35504,35515]`source.next`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: next
+                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
@@ -12055,6 +12134,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [35799,35804]`s.get`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: get
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -12092,6 +12172,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [35870,35884]`literal.append`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: append
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -12156,6 +12237,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         GetAttributeNodeGen SourceSection: [35934,35948]`pattern.groups`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: groups
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -12270,6 +12352,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                       GetAttributeNodeGen SourceSection: [36205,36223]`pattern.groupindex`
                         GetFixedAttributeNodeGen SourceSection: None
                           Key: groupindex
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
@@ -12589,6 +12672,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             GetAttributeNodeGen SourceSection: [37421,37427]`s.next`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: next
+                                                CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
@@ -12628,6 +12712,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 GetAttributeNodeGen SourceSection: [37500,37506]`s.next`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: next
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -12723,6 +12808,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               GetAttributeNodeGen SourceSection: [37695,37701]`s.next`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: next
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -12794,6 +12880,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     GetAttributeNodeGen SourceSection: [37840,37846]`s.next`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: next
+                                                        CachedDispatchFirst SourceSection: None
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
@@ -13229,6 +13316,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           GetAttributeNodeGen SourceSection: [38999,39010]`match.group`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: group
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -13244,6 +13332,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             GetAttributeNodeGen SourceSection: None
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: string
+                                CachedDispatchFirst SourceSection: None
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None

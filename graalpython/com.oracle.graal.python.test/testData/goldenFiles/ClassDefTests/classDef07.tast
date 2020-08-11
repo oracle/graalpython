@@ -57,6 +57,7 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                               GetAttributeNodeGen SourceSection: [52,68]`dict.__setitem__`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: __setitem__
+                                  CachedDispatchFirst SourceSection: None
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None

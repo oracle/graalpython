@@ -14,6 +14,7 @@ ModuleRootNode Name: <module 'basic07'> SourceSection: [0,29]`import encodings.a
           GetAttributeNodeGen SourceSection: None
             GetFixedAttributeNodeGen SourceSection: None
               Key: aliases
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None

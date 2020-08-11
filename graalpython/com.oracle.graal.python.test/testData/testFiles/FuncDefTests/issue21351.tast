@@ -106,6 +106,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
         GetAttributeNodeGen SourceSection: [130,142]`fnc.__code__`
           GetFixedAttributeNodeGen SourceSection: None
             Key: __code__
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -125,6 +126,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
           GetAttributeNodeGen SourceSection: [161,174]`c.co_freevars`
             GetFixedAttributeNodeGen SourceSection: None
               Key: co_freevars
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -143,6 +145,7 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
         GetAttributeNodeGen SourceSection: [193,206]`c.co_cellvars`
           GetFixedAttributeNodeGen SourceSection: None
             Key: co_cellvars
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None

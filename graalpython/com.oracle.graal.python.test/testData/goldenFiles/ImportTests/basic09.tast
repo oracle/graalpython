@@ -14,6 +14,7 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
           GetAttributeNodeGen SourceSection: None
             GetFixedAttributeNodeGen SourceSection: None
               Key: something
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -21,6 +22,7 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
             GetAttributeNodeGen SourceSection: None
               GetFixedAttributeNodeGen SourceSection: None
                 Key: aliases
+                CachedDispatchFirst SourceSection: None
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __getattribute__
                 IsBuiltinClassProfile SourceSection: None
