@@ -131,9 +131,7 @@ def make_hash_info_class():
          "seed_bits",
          "width"]
     )
-hash_info = make_hash_info_class()(
-    ("java", 0, 64, 0, float('inf').__hash__(), 7, float('nan').__hash__(), 0, 64)
-)
+hash_info = make_hash_info_class()(hash_info)
 del make_hash_info_class
 
 

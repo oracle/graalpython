@@ -2681,18 +2681,18 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        int hash(int self) {
-            return self;
+        long hash(int self) {
+            return PythonObjectLibrary.hash(self);
         }
 
         @Specialization
         long hash(long self) {
-            return self;
+            return PythonObjectLibrary.hash(self);
         }
 
         @Specialization
         long hash(PInt self) {
-            return self.longValue();
+            return self.hash();
         }
 
         @Specialization
@@ -2700,6 +2700,7 @@ public class IntBuiltins extends PythonBuiltins {
         long hash(PythonNativeVoidPtr self) {
             return self.object.hashCode();
         }
+
     }
 
     @Builtin(name = "bit_length", minNumOfPositionalArgs = 1)

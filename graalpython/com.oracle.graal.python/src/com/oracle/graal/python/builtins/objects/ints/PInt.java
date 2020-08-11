@@ -31,6 +31,7 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -537,5 +538,16 @@ public final class PInt extends PythonBuiltinObject {
 
     public BigInteger add(PInt other) {
         return add(other.value);
+    }
+
+    @ExportMessage
+    public long hash() {
+        return hashBigInteger(value);
+    }
+
+    @TruffleBoundary
+    public static long hashBigInteger(BigInteger i) {
+        long h = i.remainder(BigInteger.valueOf(SysModuleBuiltins.HASH_MODULUS)).longValue();
+        return h == -1 ? -2 : h;
     }
 }

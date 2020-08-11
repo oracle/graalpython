@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
@@ -830,7 +831,7 @@ public class ComplexBuiltins extends PythonBuiltins {
             // just like CPython
             long realHash = PythonObjectLibrary.hash(self.getReal());
             long imagHash = PythonObjectLibrary.hash(self.getImag());
-            return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
+            return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
         }
     }
 

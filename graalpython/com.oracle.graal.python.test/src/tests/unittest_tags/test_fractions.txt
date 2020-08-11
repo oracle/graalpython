@@ -11,6 +11,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromDecimal
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromFloat
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testFromString
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testHash
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testImmutable
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testInit
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testInitFromDecimal

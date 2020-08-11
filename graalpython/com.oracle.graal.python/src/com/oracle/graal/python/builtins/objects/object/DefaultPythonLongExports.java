@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -113,12 +114,13 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static long hash(Long value) {
-        return value;
+        return hash(value.longValue());
     }
 
     @Ignore
     static long hash(long value) {
-        return value;
+        long h = value % SysModuleBuiltins.HASH_MODULUS;
+        return h == -1 ? -2 : h;
     }
 
     @ExportMessage
