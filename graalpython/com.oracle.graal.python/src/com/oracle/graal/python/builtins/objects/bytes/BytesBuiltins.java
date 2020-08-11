@@ -444,7 +444,7 @@ public class BytesBuiltins extends PythonBuiltins {
             return factory().createByteArray(res);
         }
 
-        private int getTimesInt(VirtualFrame frame, Object times, ConditionProfile hasFrame, PythonObjectLibrary lib) {
+        private static int getTimesInt(VirtualFrame frame, Object times, ConditionProfile hasFrame, PythonObjectLibrary lib) {
             if (hasFrame.profile(frame != null)) {
                 return lib.asSizeWithState(times, PArguments.getThreadState(frame));
             } else {
