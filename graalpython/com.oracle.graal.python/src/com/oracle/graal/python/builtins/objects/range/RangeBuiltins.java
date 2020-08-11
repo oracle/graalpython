@@ -339,31 +339,112 @@ public class RangeBuiltins extends PythonBuiltins {
             return slice.getStart() == PNone.NONE && slice.getStop() == PNone.NONE && slice.getStep() == PNone.NONE;
         }
 
-        protected static boolean isNotSlice(Object value) {
-            return !(value instanceof PSlice);
+        protected static boolean canBeIndexOrInteger(Object idx, PythonObjectLibrary pol) {
+            return pol.canBeIndex(idx) || PGuards.canBeInteger(idx);
         }
 
         @Specialization(guards = "allNone(slice)")
-        Object doPRangeObj(PRange range, @SuppressWarnings("unused") PObjectSlice slice) {
-            return range;
+        Object doPRangeObj(PRange self, @SuppressWarnings("unused") PObjectSlice slice) {
+            return self;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isNotSlice(idx)")
-        Object doPRange(PIntRange primary, Object idx,
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "canBeIndexOrInteger(idx, pol)")
+        Object doPRange(PIntRange self, Object idx,
                         @CachedLibrary(value = "idx") PythonObjectLibrary pol) {
-            return primary.getIntItemNormalized(normalize.execute(pol.asSize(idx), primary.getIntLength()));
+            return self.getIntItemNormalized(normalize.execute(pol.asSize(idx), self.getIntLength()));
         }
 
-        @Specialization(guards = "isNotSlice(idx)")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "canBeIndexOrInteger(idx, pol)")
         Object doPRange(PBigRange self, Object idx,
-                        @Cached CastToJavaBigIntegerNode toBigInt) {
+                        @Cached CastToJavaBigIntegerNode toBigInt,
+                        @SuppressWarnings("unused") @CachedLibrary(value = "idx") PythonObjectLibrary pol) {
             return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(self, idx, toBigInt)));
         }
 
+        @Specialization
+        Object doPRangeSliceSlowPath(PIntRange self, PSlice slice,
+                        @Cached ComputeIndices compute,
+                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached CoerceToBigRange toBigIntRange,
+                        @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
+            try {
+                final int rStart = self.getIntStart();
+                final int rStep = self.getIntStep();
+                SliceInfo info = compute.execute(slice, self.getIntLength());
+                return createRange(info, rStart, rStep, lenOfRangeNode);
+            } catch (PException pe) {
+                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
+                // pass
+            } catch (CannotCastException | ArithmeticException e) {
+                // pass
+            }
+            PBigRange rangeBI = toBigIntRange.execute(self, factory());
+            BigInteger rangeStart = rangeBI.getBigIntegerStart();
+            BigInteger rangeStep = rangeBI.getBigIntegerStep();
+
+            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
+            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
+        }
+
+        @Specialization
+        Object doPRangeSliceSlowPath(PBigRange self, PSlice slice,
+                        @Cached ComputeIndices compute,
+                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached CoerceToBigRange toBigIntRange,
+                        @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            try {
+                int rStart = lib.asSize(self.getStart());
+                int rStep = lib.asSize(self.getStep());
+                SliceInfo info = compute.execute(slice, lib.asSize(self.getLength()));
+                return createRange(info, rStart, rStep, lenOfRangeNode);
+            } catch (PException pe) {
+                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
+                // pass
+            } catch (CannotCastException | ArithmeticException e) {
+                // pass
+            }
+            PBigRange rangeBI = toBigIntRange.execute(self, factory());
+            BigInteger rangeStart = rangeBI.getBigIntegerStart();
+            BigInteger rangeStep = rangeBI.getBigIntegerStep();
+
+            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
+            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
+        }
+
+        @Specialization
+        Object doGeneric(PRange self, Object idx,
+                        @Cached ConditionProfile isNumIndexProfile,
+                        @Cached ConditionProfile isSliceIndexProfile,
+                        @Cached ComputeIndices compute,
+                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached CoerceToBigRange toBigIntRange,
+                        @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Cached CastToJavaBigIntegerNode toBigInt,
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+            if (isNumIndexProfile.profile(canBeIndexOrInteger(idx, pol))) {
+                if (self instanceof PIntRange) {
+                    return doPRange((PIntRange) self, idx, pol);
+                }
+                return doPRange((PBigRange) self, idx, toBigInt, pol);
+            }
+            if (isSliceIndexProfile.profile(idx instanceof PSlice)) {
+                PSlice slice = (PSlice) idx;
+                if (self instanceof PIntRange) {
+                    return doPRangeSliceSlowPath((PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNode);
+                }
+                return doPRangeSliceSlowPath((PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNode, pol);
+            }
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
+        }
+
         @TruffleBoundary
-        private BigInteger computeBigRangeItem(PBigRange self, Object idx, CastToJavaBigIntegerNode toBigInt) {
+        private BigInteger computeBigRangeItem(PBigRange range, Object idx, CastToJavaBigIntegerNode toBigInt) {
             BigInteger index = toBigInt.execute(idx);
-            BigInteger length = self.getBigIntegerLength();
+            BigInteger length = range.getBigIntegerLength();
             BigInteger i;
             if (index.compareTo(BigInteger.ZERO) < 0) {
                 i = length.add(index);
@@ -397,70 +478,6 @@ public class RangeBuiltins extends PythonBuiltins {
             BigInteger len = (BigInteger) lenOfRangeNode.execute(start, stop, step);
             return factory().createBigRange(factory().createInt(start), factory().createInt(stop), factory().createInt(step), factory().createInt(len));
         }
-
-        @Specialization
-        Object doPRangeObjWithSlowPath(PIntRange range, PSlice slice,
-                        @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
-                        @Cached CoerceToBigRange toBigIntRange,
-                        @Cached CoerceToObjectSlice toBigIntSlice,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            try {
-                final int rStart = range.getIntStart();
-                final int rStep = range.getIntStep();
-                SliceInfo info = compute.execute(slice, range.getIntLength());
-                return createRange(info, rStart, rStep, lenOfRangeNode);
-            } catch (PException pe) {
-                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
-                // pass
-            } catch (CannotCastException | ArithmeticException e) {
-                // pass
-            }
-            PBigRange rangeBI = toBigIntRange.execute(range, factory());
-            BigInteger rangeStart = rangeBI.getBigIntegerStart();
-            BigInteger rangeStep = rangeBI.getBigIntegerStep();
-
-            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
-            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
-        }
-
-        @Specialization
-        Object doPRangePSliceSlowPath(PBigRange range, PSlice slice,
-                        @Cached ComputeIndices compute,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile profileError,
-                        @Cached CoerceToBigRange toBigIntRange,
-                        @Cached CoerceToObjectSlice toBigIntSlice,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            try {
-                int rStart = lib.asSize(range.getStart());
-                int rStep = lib.asSize(range.getStep());
-                SliceInfo info = compute.execute(slice, lib.asSize(range.getLength()));
-                return createRange(info, rStart, rStep, lenOfRangeNode);
-            } catch (PException pe) {
-                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
-                // pass
-            } catch (CannotCastException | ArithmeticException e) {
-                // pass
-            }
-            PBigRange rangeBI = toBigIntRange.execute(range, factory());
-            BigInteger rangeStart = rangeBI.getBigIntegerStart();
-            BigInteger rangeStep = rangeBI.getBigIntegerStep();
-
-            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
-            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
-        }
-
-        @Specialization
-        Object doPRange(@SuppressWarnings("unused") PRange primary, PNone idx) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object range, @SuppressWarnings("unused") Object idx) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
     }
 
     @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
