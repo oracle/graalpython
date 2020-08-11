@@ -87,7 +87,6 @@ MICRO_BENCHMARKS = {
     'member-access': ITER_10 + ['5000'],
     'magic-bool-sized': ITER_10 + ['300_000_000'],
     'magic-iter': ITER_10 + ['50000000'],
-    'instantiation': ITER_10 + ['50000000'],
     'call-classmethod-sized': ITER_10 + ['500_000_000'],
     'mmap-anonymous-sized': ITER_10 + ['20_000'],
     'mmap-file': ITER_10 + ['1000'],
