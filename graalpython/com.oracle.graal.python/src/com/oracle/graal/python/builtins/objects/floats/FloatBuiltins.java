@@ -855,26 +855,31 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class DivNode extends FloatBinaryBuiltinNode {
         @Specialization
         double doDD(double left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left / right;
         }
 
         @Specialization
         double doDL(double left, long right) {
+            raiseDivisionByZero(right == 0);
             return left / right;
         }
 
         @Specialization
         double doDPi(double left, PInt right) {
+            raiseDivisionByZero(right.isZero());
             return left / right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
         double div(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left / right;
         }
 
         @Specialization
         double div(PInt left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left.doubleValueWithOverflow(getRaiseNode()) / right;
         }
 
@@ -883,6 +888,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached FromNativeSubclassNode getFloat) {
             Double rPrimitive = getFloat.execute(frame, right);
             if (rPrimitive != null) {
+                raiseDivisionByZero(rPrimitive == 0.0);
                 return left / rPrimitive;
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
