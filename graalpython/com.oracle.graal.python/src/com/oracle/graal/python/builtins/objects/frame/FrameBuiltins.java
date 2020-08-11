@@ -40,8 +40,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -136,7 +136,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
             // already set
-            if (isCurrentFrameProfile.profile(PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+            if (isCurrentFrameProfile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
                 PFrame pyFrame = materializeNode.execute(frame, this, false, false);
                 assert pyFrame == self;
             }
@@ -205,7 +205,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
-            if (profile.profile(PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+            if (profile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
                 PFrame pyFrame = materializeNode.execute(frame, false, true, frame);
                 assert pyFrame == self;
             }

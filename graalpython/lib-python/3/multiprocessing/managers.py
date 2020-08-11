@@ -59,7 +59,7 @@ if view_types[0] is not list:       # only needed in Py3.0
 
 class Token(object):
     '''
-    Type to uniquely indentify a shared object
+    Type to uniquely identify a shared object
     '''
     __slots__ = ('typeid', 'address', 'id')
 
@@ -821,7 +821,7 @@ class BaseProxy(object):
 
     def _callmethod(self, methodname, args=(), kwds={}):
         '''
-        Try to call a method of the referrent and return a copy of the result
+        Try to call a method of the referent and return a copy of the result
         '''
         try:
             conn = self._tls.connection
@@ -1289,8 +1289,12 @@ if HAS_SHMEM:
 
         def __init__(self, *args, **kwargs):
             Server.__init__(self, *args, **kwargs)
+            address = self.address
+            # The address of Linux abstract namespaces can be bytes
+            if isinstance(address, bytes):
+                address = os.fsdecode(address)
             self.shared_memory_context = \
-                _SharedMemoryTracker(f"shmm_{self.address}_{getpid()}")
+                _SharedMemoryTracker(f"shm_{address}_{getpid()}")
             util.debug(f"SharedMemoryServer started by pid {getpid()}")
 
         def create(*args, **kwargs):
