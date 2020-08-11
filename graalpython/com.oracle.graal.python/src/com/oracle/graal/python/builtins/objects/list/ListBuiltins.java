@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.SORT;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -118,7 +118,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -349,18 +348,18 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization(guards = "lib.fitsInInt(key) || isPSlice(key)")
+        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.fitsInInt(key)", "!isPSlice(key)"})
+        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
         public Object doListError(VirtualFrame frame, PList primary, Object key, Object value,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
@@ -1061,8 +1060,8 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return false;
+        Object doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -1078,8 +1077,8 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        boolean doOther(Object left, Object right) {
-            return true;
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

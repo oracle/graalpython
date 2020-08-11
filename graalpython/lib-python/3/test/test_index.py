@@ -71,6 +71,7 @@ class BaseTestCase(unittest.TestCase):
         self.assertIs(type(direct_index), int)
         #self.assertIs(type(operator_index), int)
 
+    @support.impl_detail("missing _warnings support", graalvm=False)
     def test_index_returns_int_subclass(self):
         class BadInt:
             def __index__(self):

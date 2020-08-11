@@ -106,7 +106,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -1533,20 +1532,14 @@ public final class StringBuiltins extends PythonBuiltins {
         String doStringObject(VirtualFrame frame, String left, Object right,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile typeErrorProfile) {
-            try {
-                int repeat;
-                if (hasFrame.profile(frame != null)) {
-                    repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
-                } else {
-                    repeat = lib.asSize(right);
-                }
-                return doStringIntGeneric(left, repeat, loopProfile);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
-                throw raise(MemoryError);
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            int repeat;
+            if (hasFrame.profile(frame != null)) {
+                repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
+            } else {
+                repeat = lib.asSize(right);
             }
+            return doStringIntGeneric(left, repeat, loopProfile);
         }
 
         @Specialization
@@ -1554,10 +1547,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile typeErrorProfile) {
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib, typeErrorProfile);
+            return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib);
         }
 
         public String doStringIntGeneric(String left, int right, LoopConditionProfile loopProfile) {
