@@ -2661,22 +2661,9 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long hash(PythonNativeVoidPtr self,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            if (lib.isPointer(self.object)) {
-                try {
-                    long ptrVal = lib.asPointer(self.object);
-                    return PythonObjectLibrary.hash(ptrVal);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            return doHashCode(self.object);
-        }
-
         @TruffleBoundary
-        long doHashCode(Object o) {
-            return o.hashCode();
+        long hash(PythonNativeVoidPtr self) {
+            return self.object.hashCode();
         }
 
     }
