@@ -24,6 +24,9 @@
 *graalpython.lib-python.3.test.test_robotparser.InvalidCrawlDelayTest.test_bad_urls
 *graalpython.lib-python.3.test.test_robotparser.InvalidCrawlDelayTest.test_good_urls
 *graalpython.lib-python.3.test.test_robotparser.InvalidCrawlDelayTest.test_site_maps
+*graalpython.lib-python.3.test.test_robotparser.NetworkTestCase.test_basic
+*graalpython.lib-python.3.test.test_robotparser.NetworkTestCase.test_can_fetch
+*graalpython.lib-python.3.test.test_robotparser.NetworkTestCase.test_read_404
 *graalpython.lib-python.3.test.test_robotparser.RejectAllRobotsTest.test_bad_urls
 *graalpython.lib-python.3.test.test_robotparser.RejectAllRobotsTest.test_good_urls
 *graalpython.lib-python.3.test.test_robotparser.RejectAllRobotsTest.test_site_maps

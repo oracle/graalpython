@@ -1,5 +1,12 @@
 *graalpython.lib-python.3.test.test_decimal.CContextAPItests.test_from_legacy_strings
 *graalpython.lib-python.3.test.test_decimal.CExplicitConstructionTest.test_from_legacy_strings
+*graalpython.lib-python.3.test.test_decimal.CFunctionality.test_c_context
+*graalpython.lib-python.3.test.test_decimal.CFunctionality.test_c_ieee_context
+*graalpython.lib-python.3.test.test_decimal.CFunctionality.test_constants
+*graalpython.lib-python.3.test.test_decimal.CWhitebox.test_c_context_errors_extra
+*graalpython.lib-python.3.test.test_decimal.CWhitebox.test_c_context_templates
+*graalpython.lib-python.3.test.test_decimal.CWhitebox.test_c_signal_dict
+*graalpython.lib-python.3.test.test_decimal.CWhitebox.test_c_valid_context_extra
 *graalpython.lib-python.3.test.test_decimal.ContextAPItests.test_from_legacy_strings
 *graalpython.lib-python.3.test.test_decimal.ExplicitConstructionTest.test_from_legacy_strings
 *graalpython.lib-python.3.test.test_decimal.PyArithmeticOperatorsTest.test_addition

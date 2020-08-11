@@ -5,10 +5,13 @@
 *graalpython.lib-python.3.test.test_pathlib.NTFlavourTest.test_splitroot
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_chmod
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_complex_symlinks_absolute
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_complex_symlinks_relative
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_complex_symlinks_relative_dot_dot
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_concrete_class
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_cwd
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_empty_path
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_expanduser_common
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_common
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_dotdot
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_empty_pattern
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_glob_many_open_files
@@ -18,8 +21,10 @@
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_socket_true
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_iterdir
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_iterdir_nodir
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_iterdir_symlink
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_link_to
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_link_to_not_implemented
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_lstat
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_lstat_nosymlink
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_mkdir
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_mkdir_concurrent_parent_creation

@@ -183,6 +183,7 @@
 *graalpython.lib-python.3.test.test_set.TestCopyingTriple.test_deep_copy
 *graalpython.lib-python.3.test.test_set.TestCopyingTuple.test_copy
 *graalpython.lib-python.3.test.test_set.TestCopyingTuple.test_deep_copy
+*graalpython.lib-python.3.test.test_set.TestExceptionPropagation.test_changingSizeWhileIterating
 *graalpython.lib-python.3.test.test_set.TestExceptionPropagation.test_instanceWithException
 *graalpython.lib-python.3.test.test_set.TestExceptionPropagation.test_instancesWithoutException
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_badcmp
@@ -200,6 +201,7 @@
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_init
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_intersection
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_isdisjoint
+*graalpython.lib-python.3.test.test_set.TestFrozenSet.test_iterator_pickling
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_len
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_pickling
 *graalpython.lib-python.3.test.test_set.TestFrozenSet.test_setOfFrozensets

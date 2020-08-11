@@ -1,1 +1,3 @@
 *test.pickletester.AbstractHookTests.test_reducer_override_no_reference_cycle
+*test.pickletester.AbstractPickleModuleTests.test_highest_protocol
+*test.pickletester.AbstractPickleTests.test_buffers_numpy

@@ -1,6 +1,8 @@
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_builtin_function
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_class
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_instance
+*graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_method
+*graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_module
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_object
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_type
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_builtin_function

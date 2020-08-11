@@ -1,3 +1,10 @@
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_and
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_and_or
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_binop
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_chained_comparison
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_func_and
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_if_else
+*graalpython.lib-python.3.test.test_compile.TestExpressionStackSize.test_or
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_annotation_limit
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_handling
 *graalpython.lib-python.3.test.test_compile.TestSpecifics.test_argument_order
