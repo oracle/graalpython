@@ -222,6 +222,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __TRUNC__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1560,44 +1561,6 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "conjugate", minNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any float.")
     abstract static class ConjugateNode extends RealNode {
-
-    }
-
-    @Builtin(name = __TRUNC__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class TruncNode extends PythonUnaryBuiltinNode {
-
-        @TruffleBoundary
-        protected static int truncate(double value) {
-            return (int) (value < 0 ? Math.ceil(value) : Math.floor(value));
-        }
-
-        @Specialization
-        int trunc(double value,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
-            if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
-            }
-            if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
-            }
-            return truncate(value);
-        }
-
-        @Specialization
-        int trunc(PFloat pValue,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
-            double value = pValue.getValue();
-            if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
-            }
-            if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
-            }
-            return truncate(value);
-        }
 
     }
 

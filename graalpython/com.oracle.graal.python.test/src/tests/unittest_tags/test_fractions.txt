@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testApproximatePi
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testArithmetic
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testBigComplexComparisons
+*graalpython.lib-python.3.test.test_fractions.FractionTest.testBigFloatComparisons
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testBoolGuarateesBoolReturn
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testComparisons
 *graalpython.lib-python.3.test.test_fractions.FractionTest.testComparisonsDummyFloat
