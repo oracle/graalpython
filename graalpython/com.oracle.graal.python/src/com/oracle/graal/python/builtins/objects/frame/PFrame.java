@@ -181,6 +181,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.location = code.getRootNode();
         this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
         this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+        this.arguments = frameArgs;
 
         localsDict = locals;
     }
