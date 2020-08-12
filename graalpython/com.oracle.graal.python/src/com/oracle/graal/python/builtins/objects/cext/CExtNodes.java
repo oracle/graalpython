@@ -913,12 +913,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"object.isInt()", "mayUsePrimitive(isPointerNode, object)"}, limit = "1")
-        static int doIntNativeWrappe(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
+        static int doIntNativeWrapper(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
                         @Shared("isPointerNode") @Cached @SuppressWarnings("unused") IsPointerNode isPointerNode) {
             return object.getInt();
         }
 
-        @Specialization(guards = {"object.isLong()", "mayUsePrimitive(isPointerNode, object)"}, limit = "1")
+        @Specialization(guards = {"object.isInt() || object.isLong()", "mayUsePrimitive(isPointerNode, object)"}, //
+                        limit = "1", //
+                        replaces = "doIntNativeWrapper")
         static long doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
                         @Shared("isPointerNode") @Cached @SuppressWarnings("unused") IsPointerNode isPointerNode) {
             return object.getLong();
