@@ -3059,7 +3059,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createMappingproxy(klass, getStorage.execute(obj));
         }
 
-        @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"}, limit = "1")
+        @Specialization(guards = {"isMapping(frame, obj, lib)", "!isBuiltinMapping(obj)"}, limit = "1")
         Object doMapping(VirtualFrame frame, Object klass, PythonObject obj,
                         @Cached("create()") HashingStorage.InitNode initNode,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
@@ -3072,7 +3072,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
         }
 
-        @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
+        @Specialization(guards = {"!isMapping(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object klass, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
@@ -3082,11 +3082,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return o instanceof PHashingCollection;
         }
 
-        protected boolean isSequence(VirtualFrame frame, Object o, PythonObjectLibrary library) {
+        protected boolean isMapping(VirtualFrame frame, Object o, PythonObjectLibrary library) {
             PythonContext context = getContextRef().get();
+            if (o instanceof PList || o instanceof PTuple) {
+                return false;
+            }
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return library.isSequence(o);
+                return library.isMapping(o);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
