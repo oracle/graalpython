@@ -26,14 +26,18 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -45,6 +49,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeChild(value = "slice", type = ExpressionNode.class)
 @NodeChild(value = "right", type = ExpressionNode.class)
 public abstract class SetItemNode extends StatementNode implements WriteNode {
+    @Child private PRaiseNode raiseNode;
 
     public abstract ExpressionNode getPrimary();
 
@@ -105,22 +110,34 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     public abstract void executeWith(VirtualFrame frame, Object primary, Object slice, Object value);
 
     @Specialization
-    void doSpecialObject(VirtualFrame frame, PythonObject primary, int index, Object value,
-                    @Cached("create()") GetattributeNode getSetitemNode,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") CallTernaryMethodNode callNode) {
-        Object primaryClass = getClassNode.execute(primary);
-        Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
-        callNode.execute(frame, setItemMethod, primary, index, value);
+    void doIntIndex(VirtualFrame frame, Object primary, int index, Object value,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(__SETITEM__)") LookupSpecialMethodNode lookupSetitem,
+                    @Cached CallTernaryMethodNode callSetitem) {
+        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
+        if (setitem == PNone.NO_VALUE) {
+            getRaiseNode().raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+        }
+        callSetitem.execute(frame, setitem, primary, index, value);
     }
 
-    @Specialization
-    void doSpecialObject1(VirtualFrame frame, Object primary, Object index, Object value,
-                    @Cached("create()") GetattributeNode getSetitemNode,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") CallTernaryMethodNode callNode) {
-        Object primaryClass = getClassNode.execute(primary);
-        Object setItemMethod = getSetitemNode.execute(frame, primaryClass, __SETITEM__);
-        callNode.execute(frame, setItemMethod, primary, index, value);
+    @Specialization(replaces = "doIntIndex")
+    void doGeneric(VirtualFrame frame, Object primary, Object index, Object value,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(__SETITEM__)") LookupSpecialMethodNode lookupSetitem,
+                    @Cached CallTernaryMethodNode callSetitem) {
+        Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
+        if (setitem == PNone.NO_VALUE) {
+            getRaiseNode().raise(TypeError, ErrorMessages.P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT, primary);
+        }
+        callSetitem.execute(frame, setitem, primary, index, value);
+    }
+
+    private PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
     }
 }
