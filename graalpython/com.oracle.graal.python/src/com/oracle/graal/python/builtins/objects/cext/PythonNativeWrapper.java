@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonNativeWrapperLibrary.class)
 public abstract class PythonNativeWrapper implements TruffleObject {
@@ -186,8 +187,9 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         @Specialization(replaces = "isCachedNative")
-        protected static boolean isNative(PythonNativeWrapper wrapper) {
-            if (wrapper.nativePointer != null) {
+        protected static boolean isNative(PythonNativeWrapper wrapper,
+                                          @Cached ConditionProfile hasNativePointerProfile) {
+            if (hasNativePointerProfile.profile(wrapper.nativePointer != null)) {
                 Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
                 // If an assumption exists, it must be valid
                 return handleValidAssumption == null || isValid(handleValidAssumption);
