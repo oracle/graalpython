@@ -985,13 +985,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqDbLn(double a, long b) {
-            return compareDoubleToLong(a, b) == 0;
+        boolean eqDbLn(double a, long b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(a, b, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean eqLnDb(long a, double b) {
-            return compareDoubleToLong(b, a) == 0;
+        boolean eqLnDb(long a, double b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(b, a, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
@@ -1024,17 +1026,9 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         // adapted from CPython's float_richcompare in floatobject.c
-        @TruffleBoundary(allowInlining = true)
-        public static double compareDoubleToLong(double v, long w) {
-            if (!Double.isFinite(v)) {
-                return v;
-            }
-            int vsign = v == 0.0 ? 0 : v < 0.0 ? -1 : 1;
-            int wsign = Long.signum(w);
-            if (vsign != wsign) {
-                return vsign - wsign;
-            }
-            if (w > -0x1000000000000L && w < 0x1000000000000L) {    // w is at most 48 bits
+        public static double compareDoubleToLong(double v, long w, ConditionProfile wFitsInDoubleProfile) {
+            if (wFitsInDoubleProfile.profile(w > -0x1000000000000L && w < 0x1000000000000L)) {
+                // w is at most 48 bits and thus fits into a double without any loss
                 return v - w;
             } else {
                 return compareUsingBigDecimal(v, PInt.longToBigInteger(w));
@@ -1074,13 +1068,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean neDbLn(double a, long b) {
-            return EqNode.compareDoubleToLong(a, b) != 0;
+        boolean neDbLn(double a, long b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(a, b, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
-        boolean neLnDb(long a, double b) {
-            return EqNode.compareDoubleToLong(b, a) != 0;
+        boolean neLnDb(long a, double b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(b, a, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
@@ -1123,13 +1119,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
-            return EqNode.compareDoubleToLong(x, y) < 0;
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y) {
-            return EqNode.compareDoubleToLong(y, x) > 0;
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
@@ -1193,13 +1191,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
-            return EqNode.compareDoubleToLong(x, y) <= 0;
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y) {
-            return EqNode.compareDoubleToLong(y, x) >= 0;
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
@@ -1263,13 +1263,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
-            return EqNode.compareDoubleToLong(x, y) > 0;
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y) {
-            return EqNode.compareDoubleToLong(y, x) < 0;
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
@@ -1333,13 +1335,15 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
-            return EqNode.compareDoubleToLong(x, y) >= 0;
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y) {
-            return EqNode.compareDoubleToLong(y, x) <= 0;
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
