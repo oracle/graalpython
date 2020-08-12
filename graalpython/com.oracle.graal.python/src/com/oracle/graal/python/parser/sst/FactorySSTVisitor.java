@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -347,8 +348,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     private void checkCannotAssignTo(SSTNode lhs) throws RuntimeException {
         if (lhs instanceof ForComprehensionSSTNode) {
+            PythonBuiltinClassType resultType = ((ForComprehensionSSTNode) lhs).resultType;
+            if (resultType == PythonBuiltinClassType.PGenerator) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), "cannot assign to generator expression");
+            }
             String calleeName;
-            switch (((ForComprehensionSSTNode) lhs).resultType) {
+            switch (resultType) {
                 case PList:
                     calleeName = BuiltinNames.LIST;
                     break;
