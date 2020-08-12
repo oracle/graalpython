@@ -860,32 +860,62 @@ class compress():
         return (type(self), (self.data, self.selectors))
 
 
-def tee(iterable, n=2):
-    import collections
-    class _tee:
-        @__graalpython__.builtin_method
-        def __init__(self, it, deque, deques):
+class _tee:
+    # This uses a linked list of fixed size lists where
+    # the last item in the fixed size list is a link to
+    # another fixed size list. Once all _tee instances have
+    # traversed given fixed size list, it'll become a garbage
+    # to be collected
+    @__graalpython__.builtin_method
+    def __init__(self, it, buffer=None):
+        self.itemIndex = 0
+        if buffer is None:
+            # Support for direct creation of _tee from user code,
+            # where the ctor takes a single iterable object
+            self.it = iter(it)
+            self.buffer = [None] * 8
+        else:
             self.it = it
-            self.deque = deque
-            self.deques = deques
+            self.buffer = buffer
 
-        @__graalpython__.builtin_method
-        def __iter__(self):
-            return self
+    @__graalpython__.builtin_method
+    def __iter__(self):
+        return self
 
-        @__graalpython__.builtin_method
-        def __next__(self):
-            if not self.deque:
-                newval = next(self.it)
-                for d in self.deques:
-                    d.append(newval)
-            return self.deque.popleft()
+    @__graalpython__.builtin_method
+    def __next__(self):
+        # jump to the next buffer if necessary
+        lastIndex = len(self.buffer) - 1
+        if self.itemIndex == lastIndex:
+            if self.buffer[lastIndex] is None:
+                self.buffer[lastIndex] = [None] * 8
+            self.buffer = self.buffer[lastIndex]
+            self.itemIndex = 0
+        # take existing item from the buffer or advance the iterator
+        if self.buffer[self.itemIndex] is None:
+            result = next(self.it)
+            self.buffer[self.itemIndex] = result
+        else:
+            result = self.buffer[self.itemIndex]
+        self.itemIndex += 1
+        return result
 
+    @__graalpython__.builtin_method
+    def __copy__(self):
+        return _tee(self.it, self.buffer)
+
+
+def tee(iterable, n=2):
     if not isinstance(n, int):
         raise TypeError()
     if n < 0:
         raise ValueError("n must be >=0")
-
-    deques = [collections.deque() for i in range(n)]
+    # if the iterator can be copied, use that instead of _tee
+    # note: this works for _tee itself
     it = iter(iterable)
-    return tuple(_tee(it, d, deques) for d in deques)
+    copy = getattr(it, "__copy__", None)
+    if callable(copy):
+        return tuple([it] + [it.__copy__() for i in range(1, n)])
+    else:
+        queue = [None] * 8
+        return tuple(_tee(it, queue) for i in range(0, n))

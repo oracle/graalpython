@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,15 @@ class TestPickle(unittest.TestCase):
         b_obj = pickle.dumps(obj, protocol=0)
         r_obj = pickle.loads(b_obj)
         self.assertEqual(r_obj, obj)
+
+    def test_teeiterator(self):
+        import itertools
+        teeit = itertools.tee([i for i in range(1, 20)])[0]
+        [next(teeit) for i in range(1, 16)]
+        b_obj = pickle.dumps(teeit, protocol=0)
+        teeit2 = pickle.loads(b_obj)
+        assert [16,17,18,19] == [next(teeit2) for i in range(1, 5)]
+        assert [16,17,18,19] == [next(teeit) for i in range(1, 5)]
 
 if __name__ == '__main__':
     unittest.main()
