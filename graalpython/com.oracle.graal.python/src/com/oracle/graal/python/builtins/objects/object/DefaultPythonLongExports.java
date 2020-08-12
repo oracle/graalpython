@@ -47,8 +47,10 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -327,13 +329,13 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Long receiver, String name, boolean strict,
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Long receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
         return lookup.execute(PythonBuiltinClassType.PInt, name, strict);
     }
 
     @ExportMessage
-    public static Object lookupAndCallSpecialMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallSpecialMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -341,10 +343,18 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    public static Object lookupAndCallRegularMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallRegularMethodWithState(Long receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    static boolean typeCheck(@SuppressWarnings("unused") Long receiver, Object type,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PInt;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

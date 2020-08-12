@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -75,7 +75,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -104,6 +103,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -460,28 +460,14 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // Equivalent of PyType_IsSubtype
-    @Builtin(name = "is_subtype", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class IsSubtypeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        public boolean isSubtype(VirtualFrame frame, Object derived, Object cls,
-                        @Cached com.oracle.graal.python.nodes.classes.IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(frame, derived, cls);
-        }
-    }
-
     // Equivalent of PyObject_TypeCheck
     @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TypeCheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        boolean typeCheck(VirtualFrame frame, Object instance, Object cls,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached com.oracle.graal.python.nodes.classes.IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls);
+        boolean typeCheck(Object instance, Object cls,
+                        @CachedLibrary("instance") PythonObjectLibrary lib) {
+            return lib.typeCheck(instance, cls);
         }
     }
 }

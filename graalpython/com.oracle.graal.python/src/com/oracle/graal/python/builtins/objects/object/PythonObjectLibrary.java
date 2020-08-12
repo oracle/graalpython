@@ -1094,6 +1094,17 @@ public abstract class PythonObjectLibrary extends Library {
         return receiver;
     }
 
+    /**
+     * Equivalent of CPython's {@code PyObject_TypeCheck}. Performs a strict isinstance check
+     * without calling to python or considering changed {@code __class__}
+     *
+     * @param receiver the instance to be checked
+     * @param type the class to be checked against
+     */
+    public boolean typeCheck(Object receiver, Object type) {
+        return false;
+    }
+
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
         PythonContext context = contextRef.get();
         Object state = IndirectCallContext.enter(frame, context, callNode);

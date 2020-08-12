@@ -329,7 +329,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
+    static Object lookupAttributeInternal(Object receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
         VirtualFrame frame = null;
@@ -340,14 +340,14 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
+    static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
         return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
     }
 
     @ExportMessage
-    public static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -355,7 +355,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    public static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
