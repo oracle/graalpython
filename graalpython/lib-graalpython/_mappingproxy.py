@@ -48,7 +48,4 @@ def __repr__(self):
     return "".join(["mappingproxy({", dstr, "})"])
 mappingproxy.__repr__ = __repr__
 mappingproxy.__str__ = __repr__
-
-
-mappingproxy.update = dict.update
 mappingproxy.__hash__ = dict.__hash__

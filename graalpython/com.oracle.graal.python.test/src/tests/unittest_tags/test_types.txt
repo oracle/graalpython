@@ -27,6 +27,7 @@
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_get
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_iterators
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_len
+*graalpython.lib-python.3.test.test_types.MappingProxyTests.test_methods
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_as_dict
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_attrdel
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_attrget
