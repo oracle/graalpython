@@ -127,9 +127,11 @@ Verify late binding for the innermost for-expression
     [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 1), (1, 2), (1, 3), (2, 0), (2, 1), (2, 2), (2, 3)]
 
 Verify re-use of tuples (a side benefit of using genexps over listcomps)
+(Note: CPython keeps a free list of small tuples and reuses them.
+This CPython specific optimization check is skipped in GraalPython.)
 
     >>> tupleids = list(map(id, ((i,i) for i in range(10))))
-    >>> int(max(tupleids) - min(tupleids))
+    >>> int(max(tupleids) - min(tupleids)) # doctest: +SKIP
     0
 
 Verify that syntax error's are raised for genexps used as lvalues
