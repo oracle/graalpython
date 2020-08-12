@@ -985,6 +985,16 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doDI(double x, int y) {
+            return x == y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x == y;
+        }
+
+        @Specialization
         boolean eqDbLn(double a, long b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return compareDoubleToLong(a, b, longFitsToDoubleProfile) == 0;
@@ -1068,6 +1078,16 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doDI(double x, int y) {
+            return x != y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x != y;
+        }
+
+        @Specialization
         boolean neDbLn(double a, long b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(a, b, longFitsToDoubleProfile) != 0;
@@ -1115,6 +1135,16 @@ public final class FloatBuiltins extends PythonBuiltins {
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doDD(double x, double y) {
+            return x < y;
+        }
+
+        @Specialization
+        boolean doDI(double x, int y) {
+            return x < y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
             return x < y;
         }
 
@@ -1191,6 +1221,16 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doDI(double x, int y) {
+            return x <= y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x <= y;
+        }
+
+        @Specialization
         boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) <= 0;
@@ -1263,6 +1303,16 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        boolean doDI(double x, int y) {
+            return x > y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x > y;
+        }
+
+        @Specialization
         boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) > 0;
@@ -1331,6 +1381,16 @@ public final class FloatBuiltins extends PythonBuiltins {
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doDD(double x, double y) {
+            return x >= y;
+        }
+
+        @Specialization
+        boolean doDI(double x, int y) {
+            return x >= y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
             return x >= y;
         }
 
