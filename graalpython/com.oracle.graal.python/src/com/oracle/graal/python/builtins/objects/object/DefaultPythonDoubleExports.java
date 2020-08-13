@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -195,7 +196,7 @@ final class DefaultPythonDoubleExports {
     static Object asPString(Double receiver,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
-                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raise) {
         return PythonAbstractObject.asPString(lib, receiver, null, isSubtypeNode, resultLib, raise);
     }
@@ -234,7 +235,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
+    static Object lookupAttributeInternal(Double receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
         VirtualFrame frame = null;
@@ -245,13 +246,13 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Double receiver, String name, boolean strict,
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Double receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
         return lookup.execute(PythonBuiltinClassType.PFloat, name, strict);
     }
 
     @ExportMessage
-    public static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallSpecialMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -259,10 +260,18 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    public static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallRegularMethodWithState(Double receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    static boolean typeCheck(@SuppressWarnings("unused") Double receiver, Object type,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PFloat;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

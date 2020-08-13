@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -103,6 +103,9 @@ def prepare_class(name, bases=(), kwds=None):
         meta = _calculate_meta(meta, bases)
     if hasattr(meta, '__prepare__'):
         ns = meta.__prepare__(name, bases, **kwds)
+        if not hasattr(ns, '__getitem__'):
+            raise TypeError("%s.__prepare__() must return a mapping, not %s" %
+                            (meta.__name__ if isinstance(meta, type) else '<metaclass>', type(ns).__name__))
     else:
         ns = {}
     return meta, ns, kwds

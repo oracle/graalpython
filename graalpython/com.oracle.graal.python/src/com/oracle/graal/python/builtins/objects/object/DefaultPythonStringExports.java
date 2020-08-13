@@ -47,8 +47,10 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -198,7 +200,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
+    static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
                     @Cached ConditionProfile gotState,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
         VirtualFrame frame = null;
@@ -209,13 +211,13 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    public static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") String receiver, String name, boolean strict,
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") String receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
         return lookup.execute(PythonBuiltinClassType.PString, name, strict);
     }
 
     @ExportMessage
-    public static Object lookupAndCallSpecialMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallSpecialMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
@@ -223,10 +225,18 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    public static Object lookupAndCallRegularMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
+    static Object lookupAndCallRegularMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
                     @CachedLibrary("receiver") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    static boolean typeCheck(@SuppressWarnings("unused") String receiver, Object type,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PString;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

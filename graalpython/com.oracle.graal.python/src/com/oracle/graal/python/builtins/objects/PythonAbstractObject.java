@@ -822,7 +822,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
                     @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached IsSubtypeNode isSubtype,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached ConditionProfile noIndex,
                     @Exclusive @Cached ConditionProfile resultProfile) {
         // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
@@ -863,7 +863,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object asPStringWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
-                    @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Shared("raise") @Cached PRaiseNode raise) {
         return asPString(lib, this, state, isSubtypeNode, resultLib, raise);
     }
@@ -1158,6 +1158,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         } catch (CannotCastException e) {
             throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
         }
+    }
+
+    @ExportMessage
+    public boolean typeCheck(Object type,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = lib.getLazyPythonClass(this);
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 
     @ExportMessage
