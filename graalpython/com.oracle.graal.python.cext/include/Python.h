@@ -123,5 +123,7 @@
 #include "sysmodule.h"
 #include "fileutils.h"
 #include "pystrtod.h"
+#include "tracemalloc.h"
+#include "genobject.h"
 
 #endif
