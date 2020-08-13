@@ -105,7 +105,7 @@ public abstract class CopyKeywordsNode extends Node {
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
             Object value = lib.getItem(state.hashingStorage, key);
-            state.keywords[state.i++] = new PKeyword(castToJavaStringNode.execute(key), value);
+            state.addKeyword(castToJavaStringNode.execute(key), value);
             return state;
         }
 
