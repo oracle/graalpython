@@ -42,10 +42,7 @@ package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import java.util.Iterator;
-
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -58,7 +55,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNodeGen.ExpandKeywordStarargsNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -104,13 +100,14 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
 
         @Specialization(guards = {"len(lib, starargs) == cachedLen", "cachedLen < 32"}, limit = "getVariableArgumentInlineCacheLimit()")
         static PKeyword[] doDictCached(PDict starargs,
+                        @Cached CopyKeywordsNode copyKeywordsNode,
                         @SuppressWarnings("unused") @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
                         @Cached("len(lib, starargs)") int cachedLen,
                         @Cached PRaiseNode raise,
                         @Cached BranchProfile errorProfile) {
             try {
                 PKeyword[] keywords = new PKeyword[cachedLen];
-                copyKeywords(starargs, cachedLen, keywords);
+                copyKeywordsNode.execute(starargs, keywords);
                 return keywords;
             } catch (KeywordNotStringException e) {
                 errorProfile.enter();
@@ -118,21 +115,13 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
             }
         }
 
-        @TruffleBoundary
-        private static void copyKeywords(PDict starargs, int cachedLen, PKeyword[] keywords) throws KeywordNotStringException {
-            Iterator<DictEntry> iterator = starargs.entries().iterator();
-            for (int i = 0; i < cachedLen; i++) {
-                DictEntry entry = iterator.next();
-                keywords[i] = new PKeyword(castToString(entry.getKey()), entry.getValue());
-            }
-        }
-
         @Specialization(replaces = "doDictCached", limit = "1")
         static PKeyword[] doDict(PDict starargs,
+                        @Cached CopyKeywordsNode copyKeywordsNode,
                         @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
                         @Cached PRaiseNode raise,
                         @Cached BranchProfile errorProfile) {
-            return doDictCached(starargs, lib, len(lib, starargs), raise, errorProfile);
+            return doDictCached(starargs, copyKeywordsNode, lib, len(lib, starargs), raise, errorProfile);
         }
 
         @Specialization(guards = "!isDict(object)")
@@ -142,6 +131,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
 
         @Specialization(replaces = {"doKeywordsArray", "doKeywordsStorage", "doEmptyStorage", "doDictCached", "doDict", "doNonMapping"})
         static PKeyword[] doGeneric(Object kwargs,
+                        @Cached CopyKeywordsNode copyKeywordsNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached PRaiseNode raise,
                         @Cached BranchProfile errorProfile) {
@@ -152,7 +142,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
                 } else if (isEmptyStorage(d)) {
                     return doEmptyStorage(d);
                 }
-                return doDict(d, lib, raise, errorProfile);
+                return doDict(d, copyKeywordsNode, lib, raise, errorProfile);
             }
             return PKeyword.EMPTY_KEYWORDS;
         }
