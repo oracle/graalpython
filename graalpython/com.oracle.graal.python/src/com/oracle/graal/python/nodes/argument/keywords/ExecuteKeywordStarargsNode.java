@@ -107,7 +107,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
                         @Cached BranchProfile errorProfile) {
             try {
                 PKeyword[] keywords = new PKeyword[cachedLen];
-                copyKeywordsNode.execute(starargs, keywords);
+                copyKeywordsNode.executeWithoutState(starargs, keywords);
                 return keywords;
             } catch (KeywordNotStringException e) {
                 errorProfile.enter();

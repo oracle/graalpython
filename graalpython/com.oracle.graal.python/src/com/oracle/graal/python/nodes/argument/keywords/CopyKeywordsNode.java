@@ -41,12 +41,15 @@
 package com.oracle.graal.python.nodes.argument.keywords;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
@@ -66,8 +69,6 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 public abstract class CopyKeywordsNode extends Node {
-    public abstract void execute(PDict starargs, PKeyword[] keywords);
-
     @CompilerDirectives.ValueType
     protected static final class CopyKeywordsState {
         private final HashingStorage hashingStorage;
@@ -124,12 +125,18 @@ public abstract class CopyKeywordsNode extends Node {
         }
     }
 
+    public final void executeWithoutState(PDict starargs, PKeyword[] keywords) {
+        execute(null, starargs, keywords);
+    }
+
+    public abstract void execute(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords);
+
     protected static boolean isBuiltinDict(Object object, IsBuiltinClassProfile profile) {
         return object instanceof PDict && profile.profileObject(object, PythonBuiltinClassType.PDict);
     }
 
     @Specialization(guards = "isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
-    void doBuiltinDict(PDict starargs, PKeyword[] keywords,
+    void doBuiltinDict(@SuppressWarnings("unused") PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
                     @Cached AddKeywordNode addKeywordNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile,
                     @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib) {
@@ -137,13 +144,13 @@ public abstract class CopyKeywordsNode extends Node {
         lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
-    @Specialization(guards = "!isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
-    void doDict(PDict starargs, PKeyword[] keywords,
+    @Specialization(guards = "!isBuiltinDict(starargs, classProfile)")
+    void doDict(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
                     @Cached GetIteratorExpressionNode.GetIteratorWithoutFrameNode getIteratorNode,
                     @Cached GetNextNode.GetNextWithoutFrameNode getNextNode,
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib,
+                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile) {
         Object iter = getIteratorNode.executeWithGlobalState(starargs);
         int i = 0;
@@ -151,7 +158,7 @@ public abstract class CopyKeywordsNode extends Node {
             Object key;
             try {
                 key = getNextNode.executeWithGlobalState(iter);
-                Object value = lib.getItem(starargs.getDictStorage(), key);
+                Object value = pol.lookupAndCallSpecialMethodWithState(starargs, state, __GETITEM__, key);
                 keywords[i++] = new PKeyword(castToJavaStringNode.execute(key), value);
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
