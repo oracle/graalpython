@@ -153,6 +153,7 @@ graalpython/com.oracle.graal.python.cext/modules/clinic/unicodedata.c.h,python.c
 graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_lib.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright

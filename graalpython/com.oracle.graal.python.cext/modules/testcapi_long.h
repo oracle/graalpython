@@ -1,3 +1,9 @@
+/* Copyright (c) 2020, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
+
 /* Poor-man's template.  Macros used:
    TESTNAME     name of the test (like test_long_api_inner)
    TYPENAME     the signed type (like long)
