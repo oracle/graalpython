@@ -188,7 +188,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
 
         @Specialization(replaces = "isCachedNative")
         protected static boolean isNative(PythonNativeWrapper wrapper,
-                                          @Cached ConditionProfile hasNativePointerProfile) {
+                        @Cached ConditionProfile hasNativePointerProfile) {
             if (hasNativePointerProfile.profile(wrapper.nativePointer != null)) {
                 Assumption handleValidAssumption = wrapper.getHandleValidAssumption();
                 // If an assumption exists, it must be valid
