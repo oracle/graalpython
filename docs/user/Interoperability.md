@@ -1,5 +1,10 @@
 # Interoperability
 
+GraalVM supports several other programming languages, including JavaScript, R,
+Ruby, and LLVM. GraalVM provides a Python API to interact with other languages
+available on the GraalVM. In fact, GraalVM uses this API internally to
+execute Python C extensions using the LLVM implementation in GraalVM.
+
 You can import the `polyglot` module to interact with other languages.
 
 ```python
@@ -45,6 +50,85 @@ is used as the globally exported name:
 def python_method():
     return "Hello from Python!"
 ```
+
+Here is an example of how to use JavaScript regular expression engine to
+match Python strings. Save this code to the `polyglot_example.py` file:
+
+```python
+import polyglot
+
+re = polyglot.eval(string="RegExp()", language="js")
+
+pattern = re.compile(".*(?:we have (?:a )?matching strings?(?:[!\\?] )?)(.*)")
+
+if pattern.exec("This string does not match"):
+    raise SystemError("that shouldn't happen")
+
+md = pattern.exec("Look, we have matching strings! This string was matched by Graal.js")
+if not md:
+    raise SystemError("this should have matched")
+
+print("Here is what we found: '%s'" % md[1])
+```
+
+To run it, pass the `--jvm --polyglot` options to `graalpython` binary:
+```shell
+$ graalpython --jvm --polyglot polyglot_example.py
+```
+
+This example matches Python strings using the JavaScript regular expression object
+and Python reads the captured group from the JavaScript result and prints: `Here
+is what we found: 'This string was matched by Graal.js'`.
+
+As a more complex example, we can read a file using R, process the data in
+Python, and use R again to display the resulting data image, using both R and
+Python libraries in conjunction. To run it, first install the
+required R library:
+```shell
+$ R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
+```
+
+This example also uses [image_magix.py](http://graalvm.org/docs/examples/image_magix.py) and works
+on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder the script below is located in and executed from.
+
+```python
+import polyglot
+import sys
+import time
+sys.path.insert(0, ".")
+from image_magix import Image
+
+load_jpeg = polyglot.eval(string="""function(file.name) {
+    library(jpeg)
+    jimg <- readJPEG(file.name)
+    jimg <- jimg*255
+    jimg
+}""", language="R")
+
+raw_data = load_jpeg("python_demo_picture.jpg")
+
+# the dimensions are R attributes; define function to access them
+getDim = polyglot.eval(string="function(v, pos) dim(v)[[pos]]", language="R")
+
+# Create object of Python class 'Image' with loaded JPEG data
+image = Image(getDim(raw_data, 2), getDim(raw_data, 1), raw_data)
+
+# Run Sobel filter
+result = image.sobel()
+
+draw = polyglot.eval(string="""function(processedImgObj) {
+    require(grDevices)
+    require(grid)
+    mx <- matrix(processedImgObj$`@data`/255, nrow=processedImgObj$`@height`, ncol=processedImgObj$`@width`)
+    grDevices:::awt()
+    grid.raster(mx, height=unit(nrow(mx),"points"))
+}""", language="R")
+
+draw(result)
+time.sleep(10)
+```
+
+## Java Interoperability
 
 Finally, to interoperate with Java (only when running on the JVM), you can use
 the `java` module:
@@ -94,3 +178,6 @@ print(java.is_object(ArrayList))    # prints True, symbols are also host objects
 print(java.is_function(my_list.add))# prints True, the add method of ArrayList
 print(java.instanceof(my_list, ArrayList)) # prints True
 ```
+
+See the [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/docs/reference-manual/embed-languages/#Function_Python) reference
+for more information about interoperability with other programming languages.
