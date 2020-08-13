@@ -125,7 +125,13 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization(guards = "isNoValue(defaultValue)", limit = "1")
+        public Object get(VirtualFrame frame, PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue,
+                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "get", key);
+        }
+
+        @Specialization(guards = "!isNoValue(defaultValue)", limit = "1")
         public Object get(VirtualFrame frame, PMappingproxy self, Object key, Object defaultValue,
                         @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
             return lib.lookupAndCallRegularMethod(self.getMapping(), frame, "get", key, defaultValue);

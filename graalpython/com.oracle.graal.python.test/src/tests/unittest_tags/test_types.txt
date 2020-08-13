@@ -22,9 +22,11 @@
 *graalpython.lib-python.3.test.test_types.CoroutineTests.test_non_gen_values
 *graalpython.lib-python.3.test.test_types.CoroutineTests.test_wrapper_object
 *graalpython.lib-python.3.test.test_types.CoroutineTests.test_wrong_args
+*graalpython.lib-python.3.test.test_types.MappingProxyTests.test_chainmap
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_constructor
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_contains
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_copy
+*graalpython.lib-python.3.test.test_types.MappingProxyTests.test_customdict
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_get
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_iterators
 *graalpython.lib-python.3.test.test_types.MappingProxyTests.test_len
