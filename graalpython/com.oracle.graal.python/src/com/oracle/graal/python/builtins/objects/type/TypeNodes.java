@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
@@ -894,6 +895,9 @@ public abstract class TypeNodes {
         private Object getSlotsFromDict(VirtualFrame frame, Object type) {
             Object dict = getObjectLibrary().lookupAttribute(type, frame, __DICT__);
             if (dict != PNone.NO_VALUE) {
+                if (dict instanceof PMappingproxy) {
+                    dict = ((PMappingproxy) dict).getMapping();
+                }
                 HashingStorage storage = getDictStorageNode().execute((PHashingCollection) dict);
                 return getHashingStorageLibrary().getItem(storage, __SLOTS__);
             }
@@ -1054,6 +1058,9 @@ public abstract class TypeNodes {
             Object getAttr = lookupGetAttribute.execute(type, __GETATTRIBUTE__, type, false);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
+                if (dict instanceof PMappingproxy) {
+                    dict = ((PMappingproxy) dict).getMapping();
+                }
                 HashingStorage storage = getDictStorageNode.execute((PHashingCollection) dict);
                 return lib.getItem(storage, __SLOTS__);
             }
