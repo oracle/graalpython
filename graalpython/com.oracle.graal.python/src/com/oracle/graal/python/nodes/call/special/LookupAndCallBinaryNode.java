@@ -64,6 +64,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
 //
 //       [*] only when v->ob_type != w->ob_type && w->ob_type is a subclass of v->ob_type
+//
+// The (long, double) and (double, long) specializations are needed since long->double conversion
+// is not always correct (it can lose information). See FloatBuiltins.EqNode.compareDoubleToLong().
+// The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
+// Although it would produce correct results, the special handling of long to double comparison
+// is slower than converting int->double, which is always correct.
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -92,6 +98,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract long executeLong(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
+    public abstract double executeDouble(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
+
     public abstract double executeDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
 
     public abstract double executeDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
@@ -99,6 +109,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
     public abstract double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
 
@@ -261,6 +275,32 @@ public abstract class LookupAndCallBinaryNode extends Node {
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
+    }
+
+    // int, double
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolean(VirtualFrame frame, int left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    boolean callBoolean(VirtualFrame frame, double left, int right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    double callDouble(VirtualFrame frame, int left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    double callDouble(VirtualFrame frame, double left, int right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
     }
 
     // long, double

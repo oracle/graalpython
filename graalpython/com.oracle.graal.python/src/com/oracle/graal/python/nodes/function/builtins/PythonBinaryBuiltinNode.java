@@ -60,6 +60,14 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
         return PGuards.expectInteger(execute(frame, arg, arg2));
     }
 
+    public double executeDouble(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectDouble(execute(frame, arg, arg2));
+    }
+
+    public double executeDouble(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException {
+        return PGuards.expectDouble(execute(frame, arg, arg2));
+    }
+
     public long executeLong(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException {
         return PGuards.expectLong(execute(frame, arg, arg2));
     }
@@ -77,6 +85,14 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
     }
 
     public boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(frame, arg, arg2));
+    }
+
+    public boolean executeBool(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(frame, arg, arg2));
+    }
+
+    public boolean executeBool(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(frame, arg, arg2));
     }
 

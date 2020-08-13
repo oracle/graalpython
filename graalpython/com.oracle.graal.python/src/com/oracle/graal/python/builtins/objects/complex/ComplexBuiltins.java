@@ -596,8 +596,9 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, long right) {
-            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) == 0;
+        boolean doComplexInt(PComplex left, long right,
+                        @Cached ConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
@@ -691,8 +692,9 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doComplex(PComplex left, long right) {
-            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right) != 0;
+        boolean doComplex(PComplex left, long right,
+                        @Cached ConditionProfile longFitsToDoubleProfile) {
+            return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
