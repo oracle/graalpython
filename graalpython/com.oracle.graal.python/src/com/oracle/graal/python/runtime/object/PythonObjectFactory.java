@@ -226,6 +226,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonNativeVoidPtr(obj));
     }
 
+    public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj, long nativePtr) {
+        return trace(new PythonNativeVoidPtr(obj, nativePtr));
+    }
+
     public SuperObject createSuperObject(Object self) {
         return trace(new SuperObject(self, getShape(self)));
     }

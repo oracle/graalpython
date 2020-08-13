@@ -128,6 +128,13 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.VoidPtrToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
@@ -144,13 +151,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
@@ -162,11 +162,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -2513,9 +2513,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyLong_FromVoidPtr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyLongFromVoidPtr extends PythonUnaryBuiltinNode {
-        @Specialization
+        @Specialization(limit = "2")
         Object doPointer(TruffleObject pointer,
-                        @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            // We capture the native pointer at the time when we create the wrapper if it exists.
+            if (lib.isPointer(pointer)) {
+                try {
+                    return toSulongNode.execute(factory().createNativeVoidPtr(pointer, lib.asPointer(pointer)));
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
             return toSulongNode.execute(factory().createNativeVoidPtr(pointer));
         }
     }
@@ -2547,8 +2556,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static TruffleObject doPointer(PythonNativeVoidPtr n) {
-            return n.object;
+        static Object doPointer(PythonNativeVoidPtr n) {
+            return n.getPointerObject();
         }
 
         @Fallback

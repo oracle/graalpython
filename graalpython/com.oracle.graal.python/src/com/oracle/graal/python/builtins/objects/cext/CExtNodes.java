@@ -1461,7 +1461,7 @@ public abstract class CExtNodes {
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            return executeCFunction(op, a.object, b, interopLibrary, importCAPISymbolNode);
+            return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
         public static int findOp(String specialMethodName) {
@@ -2221,7 +2221,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object doPythonNativeVoidPtr(PythonNativeVoidPtr object) {
-            return object.object;
+            return object.getPointerObject();
         }
 
         @Specialization(guards = "!object.isDouble()")
