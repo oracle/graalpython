@@ -40,19 +40,22 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import java.util.Iterator;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -65,20 +68,73 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class CopyKeywordsNode extends Node {
     public abstract void execute(PDict starargs, PKeyword[] keywords);
 
+    @CompilerDirectives.ValueType
+    protected static final class CopyKeywordsState {
+        private final HashingStorage hashingStorage;
+        private final PKeyword[] keywords;
+        private int i = 0;
+
+        public CopyKeywordsState(HashingStorage hashingStorage, PKeyword[] keywords) {
+            this.hashingStorage = hashingStorage;
+            this.keywords = keywords;
+        }
+
+        void addKeyword(String key, Object value) {
+            keywords[i++] = new PKeyword(key, value);
+        }
+
+        public HashingStorage getHashingStorage() {
+            return hashingStorage;
+        }
+    }
+
+    @ImportStatic(PythonOptions.class)
+    abstract static class AbstractKeywordsNode extends HashingStorageLibrary.ForEachNode<CopyKeywordsState> {
+        public abstract CopyKeywordsState executeWithState(Object key, CopyKeywordsState state);
+
+        @Override
+        public CopyKeywordsState execute(Object key, CopyKeywordsState state) {
+            return executeWithState(key, state);
+        }
+    }
+
+    @GenerateUncached
+    abstract static class AddKeywordNode extends AbstractKeywordsNode {
+        @Specialization(rewriteOn = ClassCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
+        public CopyKeywordsState add(Object key, CopyKeywordsState state,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
+            Object value = lib.getItem(state.hashingStorage, key);
+            state.keywords[state.i++] = new PKeyword(castToJavaStringNode.execute(key), value);
+            return state;
+        }
+
+        @Specialization(replaces = "add", limit = "getCallSiteInlineCacheMaxDepth()")
+        public CopyKeywordsState addExc(Object key, CopyKeywordsState state,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
+            try {
+                Object value = lib.getItem(state.hashingStorage, key);
+                state.addKeyword(castToJavaStringNode.execute(key), value);
+            } catch (ClassCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
+            }
+            return state;
+        }
+    }
+
     protected static boolean isBuiltinDict(Object object, IsBuiltinClassProfile profile) {
         return object instanceof PDict && profile.profileObject(object, PythonBuiltinClassType.PDict);
     }
 
     @Specialization(guards = "isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
     void doBuiltinDict(PDict starargs, PKeyword[] keywords,
-                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached AddKeywordNode addKeywordNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile,
                     @CachedLibrary(value = "starargs.getDictStorage()") HashingStorageLibrary lib) {
-        Iterator<HashingStorage.DictEntry> iterator = lib.entries(starargs.getDictStorage()).iterator();
-        for (int i = 0; i < keywords.length; i++) {
-            HashingStorage.DictEntry entry = iterator.next();
-            keywords[i] = new PKeyword(castToJavaStringNode.execute(entry.getKey()), entry.getValue());
-        }
+        HashingStorage hashingStorage = starargs.getDictStorage();
+        lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
     @Specialization(guards = "!isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
