@@ -68,6 +68,10 @@ public abstract class ContainsNode extends BinaryOpNode {
         return ContainsNodeGen.create(left, right);
     }
 
+    public static ContainsNode create() {
+        return ContainsNodeGen.create(null, null);
+    }
+
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {

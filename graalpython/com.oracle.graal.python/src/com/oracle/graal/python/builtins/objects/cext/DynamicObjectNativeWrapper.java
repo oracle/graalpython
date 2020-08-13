@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -599,8 +598,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage = storageLib.addAllToOther(dictStorage, storage);
             }
-            lib.setDict(object, factory.createMappingproxy(storage));
-            return toSulongNode.execute(factory.createDict(storage));
+            PDict newDict = factory.createDict(storage);
+            lib.setDict(object, newDict);
+            return toSulongNode.execute(newDict);
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
@@ -775,14 +775,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
             PHashingCollection dict = lib.getDict(object);
-            if (!(dict instanceof PDict)) {
-                assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a dict.
+            if (dict == null) {
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }
-            assert dict != null;
+            assert dict instanceof PDict;
             return toSulongNode.execute(dict);
         }
 

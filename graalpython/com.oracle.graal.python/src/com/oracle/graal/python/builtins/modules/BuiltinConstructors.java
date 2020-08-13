@@ -121,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -174,6 +173,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -1872,6 +1872,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
 
+        public final Object executeWith(VirtualFrame frame, Object arg) {
+            return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
+
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
         @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
@@ -1969,6 +1973,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 isPStringProfile = ConditionProfile.createBinaryProfile();
             }
             return isPStringProfile;
+        }
+
+        public static StrNode create() {
+            return BuiltinConstructorsFactory.StrNodeFactory.create(new ReadArgumentNode[0]);
         }
     }
 
@@ -3053,17 +3061,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization
-        Object doMapping(Object klass, PHashingCollection obj,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage) {
-            return factory().createMappingproxy(klass, getStorage.execute(obj));
-        }
-
-        @Specialization(guards = {"isMapping(frame, obj, lib)", "!isBuiltinMapping(obj)"}, limit = "1")
-        Object doMapping(VirtualFrame frame, Object klass, PythonObject obj,
-                        @Cached("create()") HashingStorage.InitNode initNode,
+        @Specialization(guards = "isMapping(frame, obj, lib)", limit = "1")
+        Object doMapping(@SuppressWarnings("unused") VirtualFrame frame, Object klass, PythonObject obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
+            return factory().createMappingproxy(klass, obj);
         }
 
         @Specialization(guards = "isNoValue(none)")
@@ -3076,10 +3077,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object klass, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
-        }
-
-        protected static boolean isBuiltinMapping(Object o) {
-            return o instanceof PHashingCollection;
         }
 
         protected boolean isMapping(VirtualFrame frame, Object o, PythonObjectLibrary library) {

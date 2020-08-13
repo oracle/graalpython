@@ -219,7 +219,6 @@ public final class Python3Core implements PythonCore {
                         "_descriptor",
                         "object",
                         "sys",
-                        "_mappingproxy",
                         "str",
                         "type",
                         "_imp",

@@ -571,19 +571,12 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.getInstanceShape(), new DynamicObjectStorage(object.getStorage())));
+        PythonBuiltinClassType mpClass = PythonBuiltinClassType.PMappingproxy;
+        return trace(new PMappingproxy(mpClass, mpClass.getInstanceShape(), object));
     }
 
-    public PMappingproxy createMappingproxy(HashingStorage storage) {
-        return trace(new PMappingproxy(PythonBuiltinClassType.PMappingproxy, PythonBuiltinClassType.PMappingproxy.getInstanceShape(), storage));
-    }
-
-    public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, getShape(cls), new DynamicObjectStorage(object.getStorage())));
-    }
-
-    public PMappingproxy createMappingproxy(Object cls, HashingStorage storage) {
-        return trace(new PMappingproxy(cls, getShape(cls), storage));
+    public PMappingproxy createMappingproxy(Object cls, PythonObject object) {
+        return trace(new PMappingproxy(cls, getShape(cls), object));
     }
 
     public PReferenceType createReferenceType(Object cls, Object object, Object callback, ReferenceQueue<Object> queue) {
