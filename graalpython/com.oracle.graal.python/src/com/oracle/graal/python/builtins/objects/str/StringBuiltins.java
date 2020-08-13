@@ -146,10 +146,6 @@ import com.oracle.truffle.api.profiles.LoopConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
 
-    private static final String INVALID_RECEIVER = "'%s' requires a 'str' object but received a '%p'";
-    public static final String INVALID_FIRST_ARG = "%s first arg must be str or a tuple of str, not %p";
-    public static final String MUST_BE_STR = "must be str, not %p";
-
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StringBuiltinsFactory.getFactories();
@@ -161,7 +157,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return castToJavaStringNode.cast(self, INVALID_RECEIVER, __STR__, self);
+            return castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self);
         }
     }
 
@@ -178,7 +174,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (formatString.isEmpty()) {
                 return ensureStrCallNode().executeObject(frame, self);
             }
-            String str = ensureCastSelfToStringNode().cast(self, INVALID_RECEIVER, __STR__, self);
+            String str = ensureCastSelfToStringNode().cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self);
             return formatString(getCore(), getAndValidateSpec(formatString), str);
         }
 
@@ -219,7 +215,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return repr(castToJavaStringNode.cast(self, INVALID_RECEIVER, __STR__, self));
+            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self));
         }
 
         @TruffleBoundary
@@ -293,7 +289,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringNode castOtherNode,
                         @Cached BranchProfile noStringBranch) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __EQ__, self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __EQ__, self);
             String otherStr;
             try {
                 otherStr = castOtherNode.execute(other);
@@ -555,18 +551,18 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean doObjectPrefixGeneric(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castPrefixNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "startswith", self);
             int len = selfStr.length();
             int istart = adjustStart(castSlicePart(frame, start), len);
             int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
-            String prefixStr = castPrefixNode.cast(substr, INVALID_FIRST_ARG, "startswith", substr);
+            String prefixStr = castPrefixNode.cast(substr, ErrorMessages.FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P, "startswith", "str", substr);
             return doIt(selfStr, prefixStr, istart, iend);
         }
 
         @Specialization(replaces = {"doTuplePrefixStartEnd", "doTuplePrefixStart", "doTuplePrefix"})
         boolean doTuplePrefixGeneric(VirtualFrame frame, Object self, PTuple substrs, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "startswith", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "startswith", self);
             int len = selfStr.length();
             int istart = adjustStart(castSlicePart(frame, start), len);
             int iend = PGuards.isPNone(end) ? len : adjustEnd(castSlicePart(frame, end), len);
@@ -711,7 +707,7 @@ public final class StringBuiltins extends PythonBuiltins {
         public int rfind(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.RFindNode rFindNode) {
-            return rFindNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "rfind", self), substr, start, end);
+            return rFindNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rfind", self), substr, start, end);
         }
     }
 
@@ -730,7 +726,7 @@ public final class StringBuiltins extends PythonBuiltins {
         public int find(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.FindNode findNode) {
-            return findNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "find", self), substr, start, end);
+            return findNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "find", self), substr, start, end);
         }
     }
 
@@ -743,7 +739,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String join(VirtualFrame frame, Object self, Object iterable,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode,
                         @Cached JoinInternalNode join) {
-            return join.execute(frame, castToJavaStringNode.cast(self, INVALID_RECEIVER, "join", self), iterable);
+            return join.execute(frame, castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "join", self), iterable);
         }
     }
 
@@ -755,7 +751,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String upper(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return toUpperCase(castToJavaStringNode.cast(self, INVALID_RECEIVER, "upper", self));
+            return toUpperCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "upper", self));
         }
 
         @TruffleBoundary
@@ -836,7 +832,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonObjectLibrary plib,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached SpliceNode spliceNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "translate", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
 
             char[] translatedChars = new char[selfStr.length()];
 
@@ -874,7 +870,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return toLowerCase(castToJavaStringNode.cast(self, INVALID_RECEIVER, "lower", self));
+            return toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
         }
 
         @TruffleBoundary
@@ -891,7 +887,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return capitalize(castToJavaStringNode.cast(self, INVALID_RECEIVER, "capitalize", self));
+            return capitalize(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "capitalize", self));
         }
 
         @TruffleBoundary
@@ -931,8 +927,8 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castSepNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "rpartition", self);
-            String sepStr = castSepNode.cast(sep, MUST_BE_STR, sep);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rpartition", self);
+            String sepStr = castSepNode.cast(sep, ErrorMessages.MUST_BE_STR_NOT_P, sep);
             return doString(selfStr, sepStr, appendNode);
         }
     }
@@ -990,7 +986,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @CachedLibrary("maxsplit") PythonObjectLibrary lib,
                         @Cached CastToJavaStringCheckedNode castSepNode,
                         @Cached AppendNode appendNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "split", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "split", self);
             int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return splitfields(selfStr, imaxsplit, appendNode);
@@ -1124,7 +1120,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSepNode,
                         @Cached AppendNode appendNode,
                         @Cached ListReverseNode reverseNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "rsplit", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rsplit", self);
             int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
             if (PGuards.isPNone(sep)) {
                 return rsplitfields(frame, selfStr, imaxsplit, appendNode, reverseNode);
@@ -1234,7 +1230,7 @@ public final class StringBuiltins extends PythonBuiltins {
         PList doGeneric(Object self, Object keepends,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "splitlines", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "splitlines", self);
             boolean bKeepends = !PGuards.isPNone(keepends) && castToJavaIntNode.execute(keepends) != 0;
             return doStringKeepends(selfStr, bKeepends);
         }
@@ -1274,7 +1270,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @CachedLibrary("maxCount") PythonObjectLibrary lib) {
 
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "replace", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "replace", self);
             String oldStr = castSelfNode.cast(old, "replace() argument 1 must be str, not %p", "replace", old);
             String withStr = castSelfNode.cast(with, "replace() argument 2 must be str, not %p", "replace", with);
             if (PGuards.isPNone(maxCount)) {
@@ -1301,7 +1297,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = {"doStringString", "doStringNone"})
         static String doGeneric(Object self, Object chars,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "strip", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "strip", self);
             if (PGuards.isPNone(chars)) {
                 return doStringNone(selfStr, PNone.NO_VALUE);
             }
@@ -1327,7 +1323,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(Object self, Object chars,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castCharsNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "rstrip", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rstrip", self);
             if (PGuards.isPNone(chars)) {
                 return doStringNone(selfStr, PNone.NO_VALUE);
             }
@@ -1353,7 +1349,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(Object self, Object chars,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castCharsNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "lstrip", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lstrip", self);
             if (PGuards.isPNone(chars)) {
                 return doStringNone(selfStr, PNone.NO_VALUE);
             }
@@ -1389,7 +1385,7 @@ public final class StringBuiltins extends PythonBuiltins {
         public int index(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.FindNode findNode) {
-            int idx = findNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "index", self), substr, start, end);
+            int idx = findNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self), substr, start, end);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1414,7 +1410,7 @@ public final class StringBuiltins extends PythonBuiltins {
         public int rindex(VirtualFrame frame, Object self, Object substr, Object start, Object end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.RFindNode rFindNode) {
-            int idx = rFindNode.execute(frame, castNode.cast(self, INVALID_RECEIVER, "rindex", self), substr, start, end);
+            int idx = rFindNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rindex", self), substr, start, end);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1453,9 +1449,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached CastToJavaStringCheckedNode castEncodingNode,
                         @Cached CastToJavaStringCheckedNode castErrorsNode) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            String encodingStr = PGuards.isPNone(encoding) ? "utf-8" : castEncodingNode.cast(encoding, MUST_BE_STR, encoding);
-            String errorsStr = PGuards.isPNone(errors) ? "strict" : castErrorsNode.cast(errors, MUST_BE_STR, errors);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
+            String encodingStr = PGuards.isPNone(encoding) ? "utf-8" : castEncodingNode.cast(encoding, ErrorMessages.MUST_BE_STR_NOT_P, encoding);
+            String errorsStr = PGuards.isPNone(errors) ? "strict" : castErrorsNode.cast(errors, ErrorMessages.MUST_BE_STR_NOT_P, errors);
             return encodeString(selfStr, encodingStr, errorsStr);
         }
 
@@ -1549,7 +1545,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
             return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib);
         }
 
@@ -1609,7 +1605,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
 
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __MOD__, self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __MOD__, self);
             return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode, context);
         }
     }
@@ -1628,7 +1624,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isascii", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isascii", self));
         }
     }
 
@@ -1652,7 +1648,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isalnum", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalnum", self));
         }
     }
 
@@ -1676,7 +1672,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isalpha", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalpha", self));
         }
     }
 
@@ -1700,7 +1696,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isdecimal", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isdecimal", self));
         }
     }
 
@@ -1725,7 +1721,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isidentifier", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isidentifier", self));
         }
     }
 
@@ -1755,7 +1751,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "islower", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "islower", self));
         }
     }
 
@@ -1785,7 +1781,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isprintable", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isprintable", self));
         }
     }
 
@@ -1811,7 +1807,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isspace", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isspace", self));
         }
     }
 
@@ -1851,7 +1847,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "istitle", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "istitle", self));
         }
     }
 
@@ -1881,7 +1877,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "isupper", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isupper", self));
         }
     }
 
@@ -1895,7 +1891,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(VirtualFrame frame, Object self, Object width,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @CachedLibrary("width") PythonObjectLibrary lib) {
-            return zfill(castSelfNode.cast(self, INVALID_RECEIVER, "zfill", self), lib.asSizeWithState(width, PArguments.getThreadState(frame)));
+            return zfill(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "zfill", self), lib.asSizeWithState(width, PArguments.getThreadState(frame)));
 
         }
 
@@ -1937,7 +1933,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doTitle(castSelfNode.cast(self, INVALID_RECEIVER, "title", self));
+            return doTitle(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "title", self));
         }
 
         @TruffleBoundary
@@ -2030,7 +2026,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, __ITER__, self);
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __ITER__, self);
             return doStringObjectObject(frame, selfStr, width, fill, lib, castFillNode, errorProfile);
         }
 
@@ -2184,7 +2180,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         PStringIterator doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, __ITER__, self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __ITER__, self));
         }
     }
 
@@ -2203,7 +2199,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doString")
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, INVALID_RECEIVER, "casefold", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "casefold", self));
         }
     }
 }

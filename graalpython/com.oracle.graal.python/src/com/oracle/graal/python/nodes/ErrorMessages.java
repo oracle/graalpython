@@ -218,6 +218,7 @@ public abstract class ErrorMessages {
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
     public static final String FILTER_SPECIFIER_MUST_HAVE = "Filter specifier must have an \"id\" entry";
     public static final String FIRST_ARG_MUST_BE_CALLABLE = "first argument must be callable";
+    public static final String FIRST_ARG_MUST_BE_S_OR_TUPLE_NOT_P = "%s first arg must be %s or a tuple of str, not %p";
     public static final String FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH = "the first two maketrans arguments must have equal length";
     public static final String FLOAT_ARG_REQUIRED = "float argument required, not %p";
     public static final String FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG = "foreign invocation does not support keyword arguments";
@@ -348,6 +349,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
     public static final String MUST_BE_REAL_NUMBER = "must be real number, not %p";
+    public static final String MUST_BE_STR_NOT_P = "must be str, not %p";
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
     public static final String MUST_BE_S_OR_S = "%s must be %s or %s";
     public static final String MUST_BE_SET_TO_S_OBJ = "%s must be set to a %s object";
@@ -428,6 +430,7 @@ public abstract class ErrorMessages {
     public static final String C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = "%%c requires an integer in range(256) or a single byte";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
+    public static final String REQUIRES_STR_OBJECT_BUT_RECEIVED_P = "'%s' requires a 'str' object but received a '%p'";
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
     public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
