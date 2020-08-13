@@ -346,6 +346,7 @@ builtin_exts = (
     NativeBuiltinModule("_memoryview"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
+    NativeBuiltinModule("_testcapi"),
     # the above modules are more core, we need them first to deal with later, more complex modules with dependencies
     NativeBuiltinModule("_bz2", deps=[Bzip2Depedency("bz2", "bzip2==1.0.8", "BZIP2")], extra_link_args=["-Wl,-rpath,%s/../lib/%s/" % (relative_rpath, SOABI)]),
 )
