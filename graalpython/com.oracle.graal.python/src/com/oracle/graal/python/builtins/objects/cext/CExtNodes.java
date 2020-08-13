@@ -149,6 +149,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -317,6 +318,7 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
+    @ReportPolymorphism
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ToSulongNode extends CExtToNativeNode {
 
@@ -351,17 +353,8 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        @Specialization(guards = "!isSmallInteger(i)")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
-            return PrimitiveNativeWrapper.createInt(i);
-        }
-
-        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
-        static PrimitiveNativeWrapper doIntegerGeneric(@SuppressWarnings("unused") CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
-                return doIntegerSmall(cextContext, i, contextRef);
-            }
             return PrimitiveNativeWrapper.createInt(i);
         }
 
@@ -375,17 +368,8 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        @Specialization(guards = "!isSmallLong(l)")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
-            return PrimitiveNativeWrapper.createLong(l);
-        }
-
-        @Specialization(replaces = {"doLongSmall", "doLong"})
-        static PrimitiveNativeWrapper doLongGeneric(@SuppressWarnings("unused") CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
-                return doLongSmall(cextContext, l, contextRef);
-            }
             return PrimitiveNativeWrapper.createLong(l);
         }
 
@@ -548,6 +532,7 @@ public abstract class CExtNodes {
      */
     @GenerateUncached
     @ImportStatic({PGuards.class, CApiGuards.class})
+    @ReportPolymorphism
     public abstract static class ToNewRefNode extends CExtToNativeNode {
 
         public final Object executeInt(int i) {
@@ -597,17 +582,8 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        @Specialization(guards = "!isSmallInteger(i)")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
-            return PrimitiveNativeWrapper.createInt(i);
-        }
-
-        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
-        static PrimitiveNativeWrapper doIntegerGeneric(CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallInteger(i)) {
-                return doIntegerSmall(cextContext, i, contextRef);
-            }
             return PrimitiveNativeWrapper.createInt(i);
         }
 
@@ -623,17 +599,8 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        @Specialization(guards = "!isSmallLong(l)")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
-            return PrimitiveNativeWrapper.createLong(l);
-        }
-
-        @Specialization(replaces = {"doLongSmall", "doLong"})
-        static PrimitiveNativeWrapper doLongGeneric(CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            if (CApiGuards.isSmallLong(l)) {
-                return doLongSmall(cextContext, l, contextRef);
-            }
             return PrimitiveNativeWrapper.createLong(l);
         }
 
@@ -811,15 +778,9 @@ public abstract class CExtNodes {
             return ToNewRefNode.doIntegerSmall(cextContext, i, contextRef);
         }
 
-        @Specialization(guards = "!isSmallInteger(i)", replaces = "doIntegerSmall")
+        @Specialization(guards = "!isSmallInteger(i)")
         static PrimitiveNativeWrapper doInteger(CExtContext cextContext, int i) {
             return ToNewRefNode.doInteger(cextContext, i);
-        }
-
-        @Specialization(replaces = {"doIntegerSmall", "doInteger"})
-        static PrimitiveNativeWrapper doIntegerGeneric(CExtContext cextContext, int i,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doIntegerGeneric(cextContext, i, contextRef);
         }
 
         @Specialization(guards = "isSmallLong(l)")
@@ -828,15 +789,9 @@ public abstract class CExtNodes {
             return ToNewRefNode.doLongSmall(cextContext, l, contextRef);
         }
 
-        @Specialization(guards = "!isSmallLong(l)", replaces = "doLongSmall")
+        @Specialization(guards = "!isSmallLong(l)")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
             return ToNewRefNode.doLong(cextContext, l);
-        }
-
-        @Specialization(replaces = {"doLongSmall", "doLong"})
-        static PrimitiveNativeWrapper doLongGeneric(CExtContext cextContext, long l,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            return ToNewRefNode.doLongGeneric(cextContext, l, contextRef);
         }
 
         @Specialization(guards = "!isNaN(d)")
@@ -958,12 +913,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"object.isInt()", "mayUsePrimitive(isPointerNode, object)"}, limit = "1")
-        static int doIntNativeWrappe(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
+        static int doIntNativeWrapper(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
                         @Shared("isPointerNode") @Cached @SuppressWarnings("unused") IsPointerNode isPointerNode) {
             return object.getInt();
         }
 
-        @Specialization(guards = {"object.isLong()", "mayUsePrimitive(isPointerNode, object)"}, limit = "1")
+        @Specialization(guards = {"object.isInt() || object.isLong()", "mayUsePrimitive(isPointerNode, object)"}, //
+                        limit = "1", //
+                        replaces = "doIntNativeWrapper")
         static long doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cextContext, PrimitiveNativeWrapper object,
                         @Shared("isPointerNode") @Cached @SuppressWarnings("unused") IsPointerNode isPointerNode) {
             return object.getLong();
