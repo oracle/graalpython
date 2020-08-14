@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
@@ -221,7 +222,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object[] warnoptions = new Object[strWarnoptions.length];
         System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
         sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
-        sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
+        sys.setAttribute(__FLAGS__, core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
                         context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
