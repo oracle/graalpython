@@ -195,6 +195,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -1142,9 +1143,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
         }
 
-        private boolean isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls) {
+        private TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls) {
             Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-            return instanceCheckResult != NOT_IMPLEMENTED && castToBooleanNode.executeBoolean(frame, instanceCheckResult);
+            if (instanceCheckResult == NOT_IMPLEMENTED) {
+                return TriState.UNDEFINED;
+            }
+            return TriState.valueOf(castToBooleanNode.executeBoolean(frame, instanceCheckResult));
         }
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
@@ -1154,7 +1158,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
+            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls) == TriState.TRUE;
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
@@ -1193,7 +1197,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
                 }
             }
-            return isInstanceCheckInternal(frame, instance, cls) || typeInstanceCheckNode.executeWith(frame, cls, instance);
+            TriState check = isInstanceCheckInternal(frame, instance, cls);
+            if (check == TriState.UNDEFINED) {
+                return typeInstanceCheckNode.executeWith(frame, cls, instance);
+            }
+            return check == TriState.TRUE;
         }
 
         protected int getLength(PTuple t) {
