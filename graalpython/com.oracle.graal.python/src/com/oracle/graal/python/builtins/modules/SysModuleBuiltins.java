@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
