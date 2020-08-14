@@ -173,3 +173,17 @@ int _PyTraceMalloc_NewReference(PyObject *op) {
 	// 0 = success, -1 = not tracing
 	return _jls_PyTruffle_TraceMalloc_NewReference(op);
 }
+
+/* */
+
+PyObject *
+_PyObject_GC_Malloc(size_t basicsize)
+{
+    return PyObject_Malloc(basicsize);
+}
+
+PyObject *
+_PyObject_GC_Calloc(size_t basicsize)
+{
+    return PyMem_RawCalloc(1, basicsize);
+}
