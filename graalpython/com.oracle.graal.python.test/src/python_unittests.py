@@ -186,7 +186,12 @@ def scp(results_file_path, destination_path, destination_name=None):
 
 def _run_unittest(test_path, timeout, with_cpython=False):
     if with_cpython:
-        cmd = ["python3", test_path, "-v"]
+        exe = os.environ.get("PYTHON3_HOME", None)
+        if exe:
+            exe = os.path.join(exe, "python")
+        else:
+            exe = "python3"
+        cmd = [exe, test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
     _, output, msg = _run_cmd(cmd, timeout)
