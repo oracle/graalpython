@@ -31,7 +31,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -173,12 +173,12 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @ExportMessage
-    public PHashingCollection getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-        return (PHashingCollection) dylib.getOrDefault(this, DICT, null);
+    public PDict getDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        return (PDict) dylib.getOrDefault(this, DICT, null);
     }
 
     @ExportMessage
-    public final void setDict(PHashingCollection dict,
+    public final void setDict(PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         dylib.put(this, DICT, dict);
     }

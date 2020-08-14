@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -70,7 +69,7 @@ public abstract class GetDictNode extends PNodeWithContext {
     Object dict(PythonModule self,
                     @CachedLibrary("self") PythonObjectLibrary lib,
                     @Cached PythonObjectFactory factory) {
-        PHashingCollection dict = lib.getDict(self);
+        PDict dict = lib.getDict(self);
         if (dict == null) {
             dict = factory.createDictFixedStorage(self);
             try {

@@ -40,16 +40,11 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PMappingproxy;
-
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -69,9 +64,8 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         }
     }
 
-    protected static boolean hasBuiltinDict(PythonObject object, PythonObjectLibrary lib, IsBuiltinClassProfile profileDict, IsBuiltinClassProfile profileMapping) {
-        PHashingCollection dict = lib.getDict(object);
-        return dict != null && (profileDict.profileObject(dict, PDict) || profileMapping.profileObject(dict, PMappingproxy));
+    protected static boolean hasBuiltinDict(PythonObject object, PythonObjectLibrary lib) {
+        return lib.getDict(object) != null;
     }
 
     protected static Location getLocationOrNull(Property prop) {

@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.module;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -65,9 +69,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -166,7 +167,7 @@ public class ModuleBuiltins extends PythonBuiltins {
         }
 
         private String getName(PythonModule self, PythonObjectLibrary pol, HashingStorageLibrary hashLib, CastToJavaStringNode castToJavaStringNode) {
-            PHashingCollection dict = pol.getDict(self);
+            PDict dict = pol.getDict(self);
             if (dict != null) {
                 Object name = hashLib.getItem(dict.getDictStorage(), __NAME__);
                 if (name != null) {
@@ -187,7 +188,7 @@ public class ModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(none)"}, limit = "1")
         Object dict(PythonModule self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 return PNone.NONE;
             }
@@ -209,11 +210,16 @@ public class ModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)", limit = "1")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 raise(self, none);
             }
             return dict;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Fallback

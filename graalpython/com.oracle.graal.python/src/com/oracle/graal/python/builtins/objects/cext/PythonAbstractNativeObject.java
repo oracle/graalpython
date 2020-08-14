@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -165,7 +165,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public void setDict(PHashingCollection value) throws UnsupportedMessageException {
+    public void setDict(PDict value) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -190,7 +190,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @GenerateUncached
     public abstract static class GetDict {
         @Specialization
-        public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
+        public static PDict getNativeDictionary(PythonAbstractNativeObject self,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ToSulongNode toSulong,
                         @Exclusive @Cached ToJavaNode toJava,
@@ -199,8 +199,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             try {
                 Object func = importCAPISymbolNode.execute(FUN_PY_OBJECT_GENERIC_GET_DICT);
                 Object javaDict = toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
-                if (javaDict instanceof PHashingCollection) {
-                    return (PHashingCollection) javaDict;
+                if (javaDict instanceof PDict) {
+                    return (PDict) javaDict;
                 } else if (javaDict == PNone.NO_VALUE) {
                     return null;
                 } else {

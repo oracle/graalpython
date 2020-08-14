@@ -115,10 +115,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
      */
     protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
-        return ((PDict) cachedGlobals).getDictStorage();
+        return cachedGlobals.getDictStorage();
     }
 
-    protected static PHashingCollection getDict(Object object) {
+    protected static PDict getDict(Object object) {
         return PythonObjectLibrary.getUncached().getDict(object);
     }
 
@@ -145,12 +145,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // read from a builtin dict
-    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"})
+    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib)"})
     protected static Object readFromBuiltinDict(PythonObject object, String key,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
                     // limit 2: string only or mixed dict
                     @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(getDictStorageNode.execute(lib.getDict(object)), key);

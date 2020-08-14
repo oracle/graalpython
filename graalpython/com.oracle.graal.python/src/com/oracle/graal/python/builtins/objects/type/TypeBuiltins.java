@@ -71,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -677,7 +677,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object doManaged(PythonManagedClass self,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 // The mapping is unmodifiable, so we don't have to assign it back

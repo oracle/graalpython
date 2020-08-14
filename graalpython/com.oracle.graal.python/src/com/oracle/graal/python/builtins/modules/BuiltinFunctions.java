@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -612,7 +611,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins, PythonObjectLibrary lib) {
             if (builtins != null) {
-                PHashingCollection builtinsDict = lib.getDict(builtins);
+                PDict builtinsDict = lib.getDict(builtins);
                 if (builtinsDict == null) {
                     builtinsDict = factory().createDictFixedStorage(builtins);
                     try {
@@ -1954,7 +1953,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
-                PHashingCollection dict = lib.getDict(globals);
+                PDict dict = lib.getDict(globals);
                 if (dict == null) {
                     CompilerDirectives.transferToInterpreter();
                     dict = factory().createDictFixedStorage(globals);

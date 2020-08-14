@@ -36,7 +36,7 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -317,22 +317,22 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @ExportMessage
     static class GetDict {
         protected static boolean dictExists(Object dict) {
-            return dict instanceof PHashingCollection;
+            return dict instanceof PDict;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self == cachedManagedClass", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
-        static PHashingCollection getConstant(PythonManagedClass self,
+        static PDict getConstant(PythonManagedClass self,
                         @Cached(value = "self", weak = true) PythonManagedClass cachedManagedClass,
                         @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
             // type.__dict__ is a read-only attribute
-            return (PHashingCollection) dict;
+            return (PDict) dict;
         }
 
         @Specialization(replaces = "getConstant")
-        static PHashingCollection getDict(PythonManagedClass self,
+        static PDict getDict(PythonManagedClass self,
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
+            return (PDict) dylib.getOrDefault(self, DICT, null);
         }
     }
 }

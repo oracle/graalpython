@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATU
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -45,7 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -153,7 +154,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             // see the make_globals_function from lib-graalpython/functions.py
             PythonObject globals = self.getGlobals();
             if (moduleGlobals.profile(globals instanceof PythonModule)) {
-                PHashingCollection dict = lib.getDict(globals);
+                PDict dict = lib.getDict(globals);
                 if (moduleHasNoDict.profile(dict == null)) {
                     dict = factory().createDictFixedStorage(globals);
                     try {
@@ -245,7 +246,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        PNone dict(PFunction self, PHashingCollection mapping,
+        PNone dict(PFunction self, PDict mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, mapping);
@@ -259,7 +260,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(mapping)", limit = "1")
         Object dict(PFunction self, @SuppressWarnings("unused") PNone mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 try {
@@ -270,6 +271,11 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
                 }
             }
             return dict;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        PNone dict(@SuppressWarnings("unused") PFunction self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Specialization

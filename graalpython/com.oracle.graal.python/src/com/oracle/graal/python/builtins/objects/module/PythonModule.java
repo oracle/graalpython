@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -84,22 +83,22 @@ public final class PythonModule extends PythonObject {
     @ExportMessage
     static class GetDict {
         protected static boolean dictExists(Object dict) {
-            return dict instanceof PHashingCollection;
+            return dict instanceof PDict;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self == cachedModule", "dictExists(dict)"}, assumptions = "singleContextAssumption()", limit = "1")
-        static PHashingCollection getConstant(PythonModule self,
+        static PDict getConstant(PythonModule self,
                         @Cached(value = "self", weak = true) PythonModule cachedModule,
                         @Cached(value = "self.getAttribute(DICT)", weak = true) Object dict) {
             // module.__dict__ is a read-only attribute
-            return (PHashingCollection) dict;
+            return (PDict) dict;
         }
 
         @Specialization(replaces = "getConstant")
-        static PHashingCollection getDict(PythonModule self,
+        static PDict getDict(PythonModule self,
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return (PHashingCollection) dylib.getOrDefault(self, DICT, null);
+            return (PDict) dylib.getOrDefault(self, DICT, null);
         }
     }
 }
