@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIte
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -102,7 +103,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                         @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached.Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
             // global state
             return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, methodLib, isIteratorObjectNode, factory,
@@ -111,7 +112,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
         @Specialization
         static PythonObject doNone(PNone none,
-                        @Cached.Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             return GetIteratorNode.doNone(none, raiseNode);
         }
 
@@ -124,7 +125,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class GetIteratorNode extends Node {
         public abstract Object executeWith(VirtualFrame frame, Object value);
 
@@ -133,14 +134,14 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
             return value;
         }
 
-        @Specialization(guards = {"!isNoValue(value)"}, limit = "4")
+        @Specialization(guards = {"!isNoValue(value)"}, limit = "5")
         static Object doGeneric(VirtualFrame frame, Object value,
                         @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
                         @CachedLibrary("value") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached IsIteratorObjectNode isIteratorObjectNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached.Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             Object v = plib.getDelegatedValue(value);
             Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(value, __ITER__));
             if (iterMethod != PNone.NONE) {
@@ -158,6 +159,17 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
                 }
             }
             throw notIterable(raiseNode, v);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)"}, replaces = "doGeneric")
+        static Object doGenericUncached(VirtualFrame frame, Object value,
+                        @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary plib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached IsIteratorObjectNode isIteratorObjectNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
+            return doGeneric(frame, value, iterMethodProfile, plib, methodLib, isIteratorObjectNode, factory, raiseNode);
         }
 
         @Specialization

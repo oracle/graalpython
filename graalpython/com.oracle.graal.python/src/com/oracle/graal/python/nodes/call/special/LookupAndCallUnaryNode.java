@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,6 +62,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ReportPolymorphism
+@ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallUnaryNode extends Node {
 
     public abstract static class NoAttributeHandler extends PNodeWithContext {
@@ -214,7 +216,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     // Object
 
-    @Specialization
+    @Specialization(limit = "5")
     Object callObject(VirtualFrame frame, Object receiver,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
@@ -232,6 +234,14 @@ public abstract class LookupAndCallUnaryNode extends Node {
         } else {
             return dispatchNode.executeObject(frame, attr, receiver);
         }
+    }
+
+    @Specialization(replaces = "callObject")
+    Object callObjectUncached(VirtualFrame frame, Object receiver,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create()") CallUnaryMethodNode dispatchNode) {
+        return callObject(frame, receiver, lib, getattr, dispatchNode);
     }
 
     @GenerateUncached

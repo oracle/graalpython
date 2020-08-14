@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // Although it would produce correct results, the special handling of long to double comparison
 // is slower than converting int->double, which is always correct.
 @ReportPolymorphism
+@ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -283,25 +285,25 @@ public abstract class LookupAndCallBinaryNode extends Node {
     // int, double
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(VirtualFrame frame, int left, double right,
+    static boolean callBoolean(VirtualFrame frame, int left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(VirtualFrame frame, double left, int right,
+    static boolean callBoolean(VirtualFrame frame, double left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, int left, double right,
+    static double callDouble(VirtualFrame frame, int left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeDouble(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, double left, int right,
+    static double callDouble(VirtualFrame frame, double left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeDouble(frame, left, right);
     }
@@ -309,25 +311,25 @@ public abstract class LookupAndCallBinaryNode extends Node {
     // long, double
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(VirtualFrame frame, long left, double right,
+    static boolean callBoolean(VirtualFrame frame, long left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    boolean callBoolean(VirtualFrame frame, double left, long right,
+    static boolean callBoolean(VirtualFrame frame, double left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, long left, double right,
+    static double callDouble(VirtualFrame frame, long left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeDouble(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, double left, long right,
+    static double callDouble(VirtualFrame frame, double left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         return function.executeDouble(frame, left, right);
     }
@@ -356,7 +358,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     // Object, Object
 
-    @Specialization(guards = {"!isReversible()"}, limit = "2")
+    @Specialization(guards = {"!isReversible()"}, limit = "5")
     Object callObject(VirtualFrame frame, Object left, Object right,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
@@ -373,8 +375,15 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return ensureDispatch().executeObject(frame, leftCallable, leftValue, right);
     }
 
-    @Specialization(guards = {"isReversible()"}, limit = "4")
-    Object callObject(VirtualFrame frame, Object left, Object right,
+    @Specialization(guards = {"!isReversible()"}, replaces = "callObject")
+    Object callObjectUncached(VirtualFrame frame, Object left, Object right,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        return callObject(frame, left, right, libLeft, getattr);
+    }
+
+    @Specialization(guards = {"isReversible()"}, limit = "5")
+    Object callObjectR(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
@@ -422,6 +431,18 @@ public abstract class LookupAndCallBinaryNode extends Node {
             return runErrorHandler(leftValue, rightValue);
         }
         return result;
+    }
+
+    @Specialization(guards = {"isReversible()"}, replaces = "callObjectR")
+    Object callObjectRUncached(VirtualFrame frame, Object left, Object right,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libRight,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached("create()") IsSubtypeNode isSubtype,
+                    @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
+        return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype, notImplementedBranch);
     }
 
     private Object runErrorHandler(Object left, Object right) {
