@@ -275,7 +275,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
-        PNode assignmentNode = visit((AssignmentSSTNode) node);
+        PNode assignmentNode = createAssignment(node, true);
         if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
             // annotations in a function we ignore at all. Even there are not evalueated, whether
             // the type is wrong
@@ -303,12 +303,25 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AssignmentSSTNode node) {
+        return createAssignment(node, false);
+    }
+
+    public StatementNode createAssignment(AssignmentSSTNode node, boolean checkAnnotationPermitted) {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
         int numYields = getCurrentNumberOfYields();
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
             checkCannotAssignTo(sstLhs);
             lhs[i] = (ExpressionNode) sstLhs.accept(this);
+            if (checkAnnotationPermitted) {
+                if (lhs[i] instanceof TupleLiteralNode) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "tuple");
+                } else if (lhs[i] instanceof ListLiteralNode) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "list");
+                } else if (!(lhs[i] instanceof ReadNode)) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
+                }
+            }
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
 
