@@ -41,8 +41,6 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -62,10 +60,6 @@ public abstract class ObjectAttributeNode extends PNodeWithContext {
         } catch (CannotCastException e) {
             return key;
         }
-    }
-
-    protected static boolean hasBuiltinDict(PythonObject object, PythonObjectLibrary lib) {
-        return lib.getDict(object) != null;
     }
 
     protected static Location getLocationOrNull(Property prop) {

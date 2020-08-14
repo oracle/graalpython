@@ -144,26 +144,11 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         }
     }
 
-    // read from a builtin dict
-    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib)"})
-    protected static Object readFromBuiltinDict(PythonObject object, String key,
-                    @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                    // limit 2: string only or mixed dict
-                    @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(getDictStorageNode.execute(lib.getDict(object)), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
     // read from the Dict
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"})
+    }, replaces = "readFromBuiltinModuleDict")
     protected static Object readFromDict(PythonObject object, Object key,
                     @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
