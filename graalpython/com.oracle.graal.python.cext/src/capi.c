@@ -111,6 +111,7 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     allocfunc alloc_fun = structure->tp_alloc;
     destructor dealloc_fun = structure->tp_dealloc;
     freefunc free_fun = structure->tp_free;
+    Py_ssize_t vectorcall_offset = structure->tp_vectorcall_offset;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
@@ -123,6 +124,12 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     }
     if (free_fun) {
     	type_handle->tp_free = free_fun;
+    }
+    if (free_fun) {
+    	type_handle->tp_free = free_fun;
+    }
+    if (vectorcall_offset) {
+    	type_handle->tp_vectorcall_offset = vectorcall_offset;
     }
 }
 

@@ -49,7 +49,7 @@ typedef struct {
 PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
 PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
 PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
-PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyMethodDescrObject));
+PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
 PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
 
 POLYGLOT_DECLARE_TYPE(mappingproxyobject);

@@ -99,6 +99,7 @@ public enum NativeMember {
     TP_TRAVERSE("tp_traverse"),
     TP_CLEAR("tp_clear"),
     _BASE("_base"),
+    TP_VECTORCALL_OFFSET("tp_vectorcall_offset", PRIMITIVE),
 
     // PySequenceMethods
     SQ_ITEM("sq_item"),

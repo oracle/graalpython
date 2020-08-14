@@ -42,7 +42,7 @@
 
 typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
+PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyCFunctionObject), offsetof(PyCFunctionObject, vectorcall));
 
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,

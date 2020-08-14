@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBC
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_VECTORCALL;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
@@ -180,10 +181,12 @@ public abstract class TypeNodes {
                     break;
                 case PFunction:
                 case PBuiltinFunction:
-                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
+                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR | HAVE_VECTORCALL;
                     break;
                 case PMethod:
                 case PBuiltinMethod:
+                    result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
+                    break;
                 case GetSetDescriptor:
                 case PMappingproxy:
                 case PFrame:

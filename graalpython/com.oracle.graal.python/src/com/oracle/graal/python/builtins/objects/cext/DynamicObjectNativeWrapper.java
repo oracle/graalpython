@@ -53,6 +53,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DICT
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_SUBCLASSES;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_VECTORCALL_OFFSET;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
@@ -490,7 +491,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         static long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
@@ -501,17 +502,26 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
-        static Object doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+        static long doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
-                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object val = getAttrNode.execute(object, __WEAKLISTOFFSET__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
             if (val == PNone.NO_VALUE) {
-                return toSulongNode.execute(getNativeNullNode.execute());
+                return 0L;
             }
-            return val;
+            return lib.asSize(val);
+        }
+
+        @Specialization(guards = "eq(TP_VECTORCALL_OFFSET, key)")
+        static long doTpVectorcallOffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
+                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+            Object val = lookupNativeMemberNode.execute(object, TP_VECTORCALL_OFFSET, TypeBuiltins.TYPE_VECTORCALL_OFFSET);
+            return val == PNone.NO_VALUE ? 0L : lib.asSize(val);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
@@ -1022,7 +1032,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
-
         static long doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile profile) {
@@ -1040,6 +1049,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
             return allocFunc;
+        }
+
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_VECTORCALL_OFFSET, key)"})
+        static long doTpVectorcallOffset(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long offset,
+                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(object, TypeBuiltins.TYPE_VECTORCALL_OFFSET, offset);
+            return offset;
         }
 
         @ValueType
