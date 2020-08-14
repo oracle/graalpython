@@ -222,7 +222,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object[] warnoptions = new Object[strWarnoptions.length];
         System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
         sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
-        sys.setAttribute(__FLAGS__, core.factory().createTuple(new Object[]{
+        sys.setAttribute("__graalpython_flags__", core.factory().createTuple(new Object[]{
                         false, // bytes_warning
                         !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
                         context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode

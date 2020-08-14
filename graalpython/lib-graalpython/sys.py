@@ -72,7 +72,7 @@ def make_flags_class():
 
     def make_func(i):
         def func(self):
-            return __flags__[i]
+            return __graalpython_flags__[i]
         return func
 
     for i, f in enumerate(names):
