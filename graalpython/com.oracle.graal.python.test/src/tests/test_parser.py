@@ -158,3 +158,12 @@ def test_cannot_assign():
         assert_raise("''", "cannot assign to literal")
         assert_raise("f''", "cannot assign to f-string expression")
         assert_raise("(None,)", "cannot assign to None")
+
+
+def test_invalid_ann_assignment():
+    try:
+        exec("lambda: x:x")
+    except SyntaxError as e:
+        assert e.msg == 'illegal target for annotation'
+        return
+    assert False, "SyntaxError not raised"

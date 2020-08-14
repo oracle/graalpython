@@ -546,4 +546,6 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = "can't convert negative value to unsigned int";
     public static final String SEND_NON_NONE_TO_UNSTARTED_GENERATOR = "can't send non-None value to a just-started generator";
     public static final String UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = "unsupported format string passed to %p.__format__";
+    public static final String ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED = "only single target (not %s) can be annotated";
+    public static final String ILLEGAL_TARGET_FOR_ANNOTATION = "illegal target for annotation";
 }
