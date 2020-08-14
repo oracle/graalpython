@@ -173,7 +173,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -1975,7 +1974,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         public static StrNode create() {
-            return BuiltinConstructorsFactory.StrNodeFactory.create(new ReadArgumentNode[0]);
+            return BuiltinConstructorsFactory.StrNodeFactory.create(null);
         }
     }
 
