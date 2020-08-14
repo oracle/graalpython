@@ -586,8 +586,13 @@ def graalpython_gate_runner(args, tasks):
             if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 # TODO: drop condition when python3 is available on darwin
                 mx.log("Running tests with CPython")
-                test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+                exe = os.environ.get("PYTHON3_HOME", None)
+                if exe:
+                    exe = os.path.join(exe, "python")
+                else:
+                    exe = "python3"
+                test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
+                mx.run(test_args, nonZeroIsFatal=True)
             mx.run(["env"])
             run_python_unittests(python_gvm())
 
