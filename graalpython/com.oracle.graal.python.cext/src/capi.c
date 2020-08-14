@@ -188,6 +188,7 @@ declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);
+declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
 declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
