@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_deepcopy_recursive
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_diamond_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_dict_constructors
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_dir
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_doc_descriptor
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_dynamics
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_evil_type_name

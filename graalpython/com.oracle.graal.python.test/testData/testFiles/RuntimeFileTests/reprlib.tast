@@ -380,18 +380,18 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: None
             ClassBodyRootNode SourceSection: [1178,4965]`class Repr:↵↵    def...`
               Name: Repr
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: namespace
-              CelVars: __class__
+              CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 15 slots [__init__, repr, repr1, _repr_iterable, repr_tuple, repr_list, repr_array, repr_set, repr_frozenset, repr_deque, repr_dict, repr_str, repr_int, repr_instance, __class__]
+              FrameDescriptor: 14 slots [__init__, repr, repr1, _repr_iterable, repr_tuple, repr_list, repr_array, repr_set, repr_frozenset, repr_deque, repr_dict, repr_str, repr_int, repr_instance]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               InnerRootNode SourceSection: [1178,4965]`class Repr:↵↵    def...`
                 ReturnTargetNode SourceSection: [1178,4965]`class Repr:↵↵    def...`
                   Body: BlockNode SourceSection: None
@@ -414,20 +414,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1195,1509]`def __init__(self):↵...`
                             Name: __init__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            FrameDescriptor: 2 slots [self, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1195,1509]`def __init__(self):↵...`
                               ReturnTargetNode SourceSection: [1195,1509]`def __init__(self):↵...`
@@ -518,7 +518,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       IntegerLiteralNode SourceSection: [1501,1503]`30`
                                         Value: 30
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1509,1577]`def repr(self, x):↵ ...`
                         ArgumentExpressionNode SourceSection: None
@@ -529,20 +529,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1509,1577]`def repr(self, x):↵ ...`
                             Name: repr
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, x, __class__, <return_val>]
+                            FrameDescriptor: 3 slots [self, x, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1509,1577]`def repr(self, x):↵ ...`
                               ReturnTargetNode SourceSection: [1509,1577]`def repr(self, x):↵ ...`
@@ -567,7 +567,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [3,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Illegal]
                                         PythonCallBinary SourceSection: [1543,1571]`self.repr1(x, self.m...`
                                           CallBinaryMethodNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -589,7 +589,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1577,1920]`def repr1(self, x, l...`
                         ArgumentExpressionNode SourceSection: None
@@ -600,20 +600,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1577,1920]`def repr1(self, x, l...`
                             Name: repr1
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [self, x, level, typename, parts, __class__, <return_val>]
+                            FrameDescriptor: 6 slots [self, x, level, typename, parts, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1577,1920]`def repr1(self, x, l...`
                               ReturnTargetNode SourceSection: [1577,1920]`def repr1(self, x, l...`
@@ -721,7 +721,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [6,<return_val>,Illegal]
+                                            Frame: [5,<return_val>,Illegal]
                                           PythonCallBinary SourceSection: [1809,1852]`getattr(self, 'repr_...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             PythonCallBinary SourceSection: [1809,1842]`getattr(self, 'repr_...`
@@ -749,7 +749,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [6,<return_val>,Illegal]
+                                            Frame: [5,<return_val>,Illegal]
                                           PythonCallBinary SourceSection: [1886,1914]`self.repr_instance(x...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -763,7 +763,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [2,level,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [6,<return_val>,Illegal]
+                                  Frame: [5,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1920,2400]`def _repr_iterable(s...`
                         ArgumentExpressionNode SourceSection: None
@@ -775,20 +775,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                             StringLiteralNode SourceSection: [1983,1985]`''`
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: newlevel, , repr1, 
                           FunctionRootNode SourceSection: [1920,2400]`def _repr_iterable(s...`
                             Name: _repr_iterable
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level, left, right, maxiter, trail
                             CelVars: newlevel, repr1
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 14 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, __class__, <return_val>]
+                            FrameDescriptor: 13 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: newlevel, , repr1, 
                             InnerRootNode SourceSection: [1920,2400]`def _repr_iterable(s...`
                               ReturnTargetNode SourceSection: [1920,2400]`def _repr_iterable(s...`
@@ -923,7 +923,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Name: <genexpr>
                                               FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
                                               Enclosing
-                                                FrameDescriptor: 14 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, __class__, <return_val>]
+                                                FrameDescriptor: 13 slots [self, x, level, left, right, maxiter, trail, n, s, newlevel, repr1, pieces, <return_val>]
                                               Active Flags: 2
                                               For Nodes: 1
                                               Block Nodes: 0
@@ -1064,7 +1064,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [13,<return_val>,Illegal]
+                                          Frame: [12,<return_val>,Illegal]
                                         BinaryArithmeticExpression SourceSection: [2367,2394]`'%s%s%s' % (left, s,...`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mod__
@@ -1081,7 +1081,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [13,<return_val>,Illegal]
+                                  Frame: [12,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [2400,2512]`def repr_tuple(self,...`
                         ArgumentExpressionNode SourceSection: None
@@ -1092,20 +1092,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [2400,2512]`def repr_tuple(self,...`
                             Name: repr_tuple
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [2400,2512]`def repr_tuple(self,...`
                               ReturnTargetNode SourceSection: [2400,2512]`def repr_tuple(self,...`
@@ -1137,7 +1137,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [2447,2506]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2467,2468]`x`
@@ -1165,7 +1165,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [2512,2617]`def repr_list(self, ...`
                         ArgumentExpressionNode SourceSection: None
@@ -1176,20 +1176,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [2512,2617]`def repr_list(self, ...`
                             Name: repr_list
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [2512,2617]`def repr_list(self, ...`
                               ReturnTargetNode SourceSection: [2512,2617]`def repr_list(self, ...`
@@ -1221,7 +1221,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [2558,2611]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2578,2579]`x`
@@ -1248,7 +1248,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [2617,2838]`def repr_array(self,...`
                         ArgumentExpressionNode SourceSection: None
@@ -1259,20 +1259,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [2617,2838]`def repr_array(self,...`
                             Name: repr_array
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, x, level, header, __class__, <return_val>]
+                            FrameDescriptor: 5 slots [self, x, level, header, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [2617,2838]`def repr_array(self,...`
                               ReturnTargetNode SourceSection: [2617,2838]`def repr_array(self,...`
@@ -1311,7 +1311,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [5,<return_val>,Illegal]
+                                            Frame: [4,<return_val>,Illegal]
                                           BinaryArithmeticExpression SourceSection: [2686,2712]`"array('%s')" % x.ty...`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
@@ -1351,7 +1351,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [5,<return_val>,Illegal]
+                                          Frame: [4,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [2774,2832]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2794,2795]`x`
@@ -1380,7 +1380,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [2838,3018]`def repr_set(self, x...`
                         ArgumentExpressionNode SourceSection: None
@@ -1391,20 +1391,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [2838,3018]`def repr_set(self, x...`
                             Name: repr_set
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [2838,3018]`def repr_set(self, x...`
                               ReturnTargetNode SourceSection: [2838,3018]`def repr_set(self, x...`
@@ -1443,7 +1443,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [4,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [2905,2912]`'set()'`
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [2921,2944]`x = _possibly_sorted...`
@@ -1462,7 +1462,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [2960,3012]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [2980,2981]`x`
@@ -1489,7 +1489,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3018,3262]`def repr_frozenset(s...`
                         ArgumentExpressionNode SourceSection: None
@@ -1500,20 +1500,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3018,3262]`def repr_frozenset(s...`
                             Name: repr_frozenset
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [3018,3262]`def repr_frozenset(s...`
                               ReturnTargetNode SourceSection: [3018,3262]`def repr_frozenset(s...`
@@ -1552,7 +1552,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [4,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [3091,3104]`'frozenset()'`
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [3113,3136]`x = _possibly_sorted...`
@@ -1571,7 +1571,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [3152,3256]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3172,3173]`x`
@@ -1598,7 +1598,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3262,3376]`def repr_deque(self,...`
                         ArgumentExpressionNode SourceSection: None
@@ -1609,20 +1609,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3262,3376]`def repr_deque(self,...`
                             Name: repr_deque
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, x, level, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, x, level, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [3262,3376]`def repr_deque(self,...`
                               ReturnTargetNode SourceSection: [3262,3376]`def repr_deque(self,...`
@@ -1654,7 +1654,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [4,<return_val>,Illegal]
+                                          Frame: [3,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [3309,3370]`self._repr_iterable(...`
                                           CallNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3329,3330]`x`
@@ -1681,7 +1681,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3376,3893]`def repr_dict(self, ...`
                         ArgumentExpressionNode SourceSection: None
@@ -1692,20 +1692,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3376,3893]`def repr_dict(self, ...`
                             Name: repr_dict
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 13 slots [self, x, level, n, newlevel, repr1, pieces, keyrepr, valrepr, key, s, __class__, <return_val>]
+                            FrameDescriptor: 12 slots [self, x, level, n, newlevel, repr1, pieces, keyrepr, valrepr, key, s, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [3376,3893]`def repr_dict(self, ...`
                               ReturnTargetNode SourceSection: [3376,3893]`def repr_dict(self, ...`
@@ -1761,7 +1761,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [12,<return_val>,Illegal]
+                                            Frame: [11,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [3452,3456]`'{}'`
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [3465,3494]`if level <= 0: retur...`
@@ -1780,7 +1780,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [12,<return_val>,Illegal]
+                                            Frame: [11,<return_val>,Illegal]
                                           StringLiteralNode SourceSection: [3487,3494]`'{...}'`
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [3503,3523]`newlevel = level - 1...`
@@ -1950,7 +1950,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [12,<return_val>,Illegal]
+                                          Frame: [11,<return_val>,Illegal]
                                         BinaryArithmeticExpression SourceSection: [3874,3887]`'{%s}' % (s,)`
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __mod__
@@ -1961,7 +1961,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [12,<return_val>,Illegal]
+                                  Frame: [11,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [3893,4213]`def repr_str(self, x...`
                         ArgumentExpressionNode SourceSection: None
@@ -1972,20 +1972,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [3893,4213]`def repr_str(self, x...`
                             Name: repr_str
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, x, level, s, i, j, __class__, <return_val>]
+                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [3893,4213]`def repr_str(self, x...`
                               ReturnTargetNode SourceSection: [3893,4213]`def repr_str(self, x...`
@@ -2229,12 +2229,12 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,<return_val>,Illegal]
+                                          Frame: [6,<return_val>,Illegal]
                                         ReadLocalVariableNode SourceSection: [4206,4207]`s`
                                           Frame: [3,s,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [7,<return_val>,Illegal]
+                                  Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [4213,4492]`def repr_int(self, x...`
                         ArgumentExpressionNode SourceSection: None
@@ -2245,20 +2245,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [4213,4492]`def repr_int(self, x...`
                             Name: repr_int
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, x, level, s, i, j, __class__, <return_val>]
+                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [4213,4492]`def repr_int(self, x...`
                               ReturnTargetNode SourceSection: [4213,4492]`def repr_int(self, x...`
@@ -2440,12 +2440,12 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,<return_val>,Illegal]
+                                          Frame: [6,<return_val>,Illegal]
                                         ReadLocalVariableNode SourceSection: [4485,4486]`s`
                                           Frame: [3,s,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [7,<return_val>,Illegal]
+                                  Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [4492,4965]`def repr_instance(se...`
                         ArgumentExpressionNode SourceSection: None
@@ -2456,20 +2456,20 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [4492,4965]`def repr_instance(se...`
                             Name: repr_instance
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, x, level
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, x, level, s, i, j, __class__, <return_val>]
+                            FrameDescriptor: 7 slots [self, x, level, s, i, j, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [4492,4965]`def repr_instance(se...`
                               ReturnTargetNode SourceSection: [4492,4965]`def repr_instance(se...`
@@ -2517,7 +2517,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [7,<return_val>,Illegal]
+                                                Frame: [6,<return_val>,Illegal]
                                               BinaryArithmeticExpression SourceSection: [4724,4778]`'<%s instance at %#x...`
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __mod__
@@ -2696,21 +2696,13 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,<return_val>,Illegal]
+                                          Frame: [6,<return_val>,Illegal]
                                         ReadLocalVariableNode SourceSection: [4961,4962]`s`
                                           Frame: [3,s,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [7,<return_val>,Illegal]
+                                  Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [14,__class__,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [4965,5234]`def _possibly_sorted...`

@@ -30,9 +30,9 @@ Scope: []
         FreeVars: Empty
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __new__
             Kind: Function
             FrameDescriptor: [name, self, cls, value, <return_val>, __class__]

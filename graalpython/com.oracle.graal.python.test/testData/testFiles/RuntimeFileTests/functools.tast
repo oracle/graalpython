@@ -2014,18 +2014,18 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           FreeVarSlots: mycmp, 
                           ExecutionSlots:
                             FreeVarsSlots: mycmp, 
-                            CellVarsSlots: __class__, 
+                            CellVarsSlots: None
                           ClassBodyRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                             Name: K
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: namespace
-                            CelVars: __class__
+                            CelVars: None
                             FreeVars: mycmp
                             NeedsCellFrame: False
-                            FrameDescriptor: 10 slots [__slots__, __init__, __lt__, __gt__, __eq__, __le__, __ge__, __hash__, mycmp, __class__]
+                            FrameDescriptor: 9 slots [__slots__, __init__, __lt__, __gt__, __eq__, __le__, __ge__, __hash__, mycmp]
                             ExecutionSlots:
                               FreeVarsSlots: mycmp, 
-                              CellVarsSlots: __class__, 
+                              CellVarsSlots: None
                             InnerRootNode SourceSection: [8164,8715]`class K(object):↵   ...`
                               ReturnTargetNode SourceSection: [8164,8715]`class K(object):↵   ...`
                                 Body: BlockNode SourceSection: None
@@ -2056,20 +2056,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, 
+                                        FreeVarSlots: None
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, 
+                                          FreeVarsSlots: None
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8217,8277]`def __init__(self, o...`
                                           Name: __init__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, obj
                                           CelVars: None
-                                          FreeVars: __class__
+                                          FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 4 slots [self, obj, __class__, <return_val>]
+                                          FrameDescriptor: 3 slots [self, obj, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: None
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8217,8277]`def __init__(self, o...`
                                             ReturnTargetNode SourceSection: [8217,8277]`def __init__(self, o...`
@@ -2099,7 +2099,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       Frame: [1,obj,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [3,<return_val>,Illegal]
+                                                Frame: [2,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8277,8360]`def __lt__(self, oth...`
                                       ArgumentExpressionNode SourceSection: None
@@ -2110,20 +2110,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , mycmp, 
+                                        FreeVarSlots: mycmp, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , mycmp, 
+                                          FreeVarsSlots: mycmp, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                           Name: __lt__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, other
                                           CelVars: None
-                                          FreeVars: __class__, mycmp
+                                          FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 5 slots [self, other, mycmp, __class__, <return_val>]
+                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , mycmp, 
+                                            FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8277,8360]`def __lt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8277,8360]`def __lt__(self, oth...`
@@ -2148,7 +2148,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       BinaryComparisonNodeGen SourceSection: [8321,8351]`mycmp(self.obj, othe...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __lt__
@@ -2184,7 +2184,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         IntegerLiteralNode SourceSection: [8350,8351]`0`
                                                           Value: 0
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8360,8443]`def __gt__(self, oth...`
                                       ArgumentExpressionNode SourceSection: None
@@ -2195,20 +2195,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , mycmp, 
+                                        FreeVarSlots: mycmp, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , mycmp, 
+                                          FreeVarsSlots: mycmp, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                           Name: __gt__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, other
                                           CelVars: None
-                                          FreeVars: __class__, mycmp
+                                          FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 5 slots [self, other, mycmp, __class__, <return_val>]
+                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , mycmp, 
+                                            FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8360,8443]`def __gt__(self, oth...`
                                             ReturnTargetNode SourceSection: [8360,8443]`def __gt__(self, oth...`
@@ -2233,7 +2233,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       BinaryComparisonNodeGen SourceSection: [8404,8434]`mycmp(self.obj, othe...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __gt__
@@ -2269,7 +2269,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         IntegerLiteralNode SourceSection: [8433,8434]`0`
                                                           Value: 0
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8443,8527]`def __eq__(self, oth...`
                                       ArgumentExpressionNode SourceSection: None
@@ -2280,20 +2280,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , mycmp, 
+                                        FreeVarSlots: mycmp, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , mycmp, 
+                                          FreeVarsSlots: mycmp, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                           Name: __eq__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, other
                                           CelVars: None
-                                          FreeVars: __class__, mycmp
+                                          FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 5 slots [self, other, mycmp, __class__, <return_val>]
+                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , mycmp, 
+                                            FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8443,8527]`def __eq__(self, oth...`
                                             ReturnTargetNode SourceSection: [8443,8527]`def __eq__(self, oth...`
@@ -2318,7 +2318,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       BinaryComparisonNodeGen SourceSection: [8487,8518]`mycmp(self.obj, othe...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __eq__
@@ -2354,7 +2354,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         IntegerLiteralNode SourceSection: [8517,8518]`0`
                                                           Value: 0
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8527,8611]`def __le__(self, oth...`
                                       ArgumentExpressionNode SourceSection: None
@@ -2365,20 +2365,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , mycmp, 
+                                        FreeVarSlots: mycmp, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , mycmp, 
+                                          FreeVarsSlots: mycmp, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                           Name: __le__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, other
                                           CelVars: None
-                                          FreeVars: __class__, mycmp
+                                          FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 5 slots [self, other, mycmp, __class__, <return_val>]
+                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , mycmp, 
+                                            FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8527,8611]`def __le__(self, oth...`
                                             ReturnTargetNode SourceSection: [8527,8611]`def __le__(self, oth...`
@@ -2403,7 +2403,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       BinaryComparisonNodeGen SourceSection: [8571,8602]`mycmp(self.obj, othe...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __le__
@@ -2439,7 +2439,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         IntegerLiteralNode SourceSection: [8601,8602]`0`
                                                           Value: 0
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8611,8695]`def __ge__(self, oth...`
                                       ArgumentExpressionNode SourceSection: None
@@ -2450,20 +2450,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , mycmp, 
+                                        FreeVarSlots: mycmp, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , mycmp, 
+                                          FreeVarsSlots: mycmp, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                           Name: __ge__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self, other
                                           CelVars: None
-                                          FreeVars: __class__, mycmp
+                                          FreeVars: mycmp
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 5 slots [self, other, mycmp, __class__, <return_val>]
+                                          FrameDescriptor: 4 slots [self, other, mycmp, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , mycmp, 
+                                            FreeVarsSlots: mycmp, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [8611,8695]`def __ge__(self, oth...`
                                             ReturnTargetNode SourceSection: [8611,8695]`def __ge__(self, oth...`
@@ -2488,7 +2488,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [4,<return_val>,Illegal]
+                                                        Frame: [3,<return_val>,Illegal]
                                                       BinaryComparisonNodeGen SourceSection: [8655,8686]`mycmp(self.obj, othe...`
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __ge__
@@ -2524,7 +2524,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         IntegerLiteralNode SourceSection: [8685,8686]`0`
                                                           Value: 0
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [4,<return_val>,Illegal]
+                                                Frame: [3,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [8695,8710]`__hash__ = None`
                                       ArgumentExpressionNode SourceSection: None
@@ -2532,14 +2532,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Index: 0
                                       StringLiteralNode SourceSection: None
                                       ObjectLiteralNode SourceSection: [8706,8710]`None`
-                                  SetItemNodeGen SourceSection: None
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    StringLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [9,__class__,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                         StringLiteralNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [8172,8178]`object`
@@ -2602,7 +2594,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 8 slots [__slots__, __new__, __call__, __repr__, __reduce__, __setstate__, __class__, __doc__]
+              FrameDescriptor: 8 slots [__class__, __slots__, __new__, __call__, __repr__, __reduce__, __setstate__, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -2953,20 +2945,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [10003,10310]`def __call__(*args, ...`
                             Name: __call__
                             Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                               Keyword Names: None
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [args, keywords, self, newkeywords, __class__, <>temp5, <>temp6, <return_val>]
+                            FrameDescriptor: 7 slots [args, keywords, self, newkeywords, <>temp4, <>temp5, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [10003,10310]`def __call__(*args, ...`
                               ReturnTargetNode SourceSection: [10003,10310]`def __call__(*args, ...`
@@ -3008,26 +3000,26 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [0,args,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <>temp4
+                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                          Frame: [4,<>temp4,Illegal]
+                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp5
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,<>temp5,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp6
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [6,<>temp6,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: self
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,self,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [5,<>temp5,Illegal]
+                                          Frame: [4,<>temp4,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [0,args,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [6,<>temp6,Illegal]
+                                          Frame: [5,<>temp5,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [10174,10208]`newkeywords = self.k...`
                                       Identifier: newkeywords
@@ -3061,7 +3053,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,<return_val>,Illegal]
+                                          Frame: [6,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [10261,10304]`self.func(*self.args...`
                                           CallNodeGen SourceSection: None
                                           PositionalArgumentsNode SourceSection: None
@@ -3094,7 +3086,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [2,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [7,<return_val>,Illegal]
+                                  Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [10310,10710]`@recursive_repr()↵  ...`
                         ArgumentExpressionNode SourceSection: None
@@ -3118,20 +3110,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [10332,10710]`def __repr__(self):↵...`
                               Name: __repr__
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: self
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, qualname, args, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [10332,10710]`def __repr__(self):↵...`
                                 ReturnTargetNode SourceSection: [10332,10710]`def __repr__(self):↵...`
@@ -3197,7 +3189,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Name: <genexpr>
                                             FrameDescriptor: 2 slots [x, <return_val>]
                                             Enclosing
-                                              FrameDescriptor: 5 slots [self, qualname, args, __class__, <return_val>]
+                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -3272,7 +3264,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Name: <genexpr>
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                             Enclosing
-                                              FrameDescriptor: 5 slots [self, qualname, args, __class__, <return_val>]
+                                              FrameDescriptor: 4 slots [self, qualname, args, <return_val>]
                                             Active Flags: 2
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -3400,7 +3392,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [4,<return_val>,Illegal]
+                                              Frame: [3,<return_val>,Illegal]
                                             FormatStringLiteralNode SourceSection: [10614,10656]`f"functools.{qualnam...`
                                               PythonCallUnary SourceSection: [0,18]`format((qualname))`
                                                 CallUnaryMethodNodeGen SourceSection: None
@@ -3427,7 +3419,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [4,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           FormatStringLiteralNode SourceSection: [10672,10704]`f"{qualname}({', '.j...`
                                             PythonCallUnary SourceSection: [0,18]`format((qualname))`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -3450,7 +3442,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Frame: [2,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [10710,10862]`def __reduce__(self)...`
                         ArgumentExpressionNode SourceSection: None
@@ -3461,20 +3453,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [10710,10862]`def __reduce__(self)...`
                             Name: __reduce__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            FrameDescriptor: 2 slots [self, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [10710,10862]`def __reduce__(self)...`
                               ReturnTargetNode SourceSection: [10710,10862]`def __reduce__(self)...`
@@ -3491,7 +3483,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Illegal]
                                         TupleLiteralNode SourceSection: [10747,10856]`type(self), (self.fu...`
                                           PythonCallUnary SourceSection: [10747,10757]`type(self)`
                                             CallUnaryMethodNodeGen SourceSection: None
@@ -3572,7 +3564,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [10862,11795]`def __setstate__(sel...`
                         ArgumentExpressionNode SourceSection: None
@@ -3583,20 +3575,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [10862,11795]`def __setstate__(sel...`
                             Name: __setstate__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, state
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 12 slots [self, state, func, args, kwds, namespace, __class__, <>temp7, <>temp8, <>temp9, <>temp10, <return_val>]
+                            FrameDescriptor: 11 slots [self, state, func, args, kwds, namespace, <>temp6, <>temp7, <>temp8, <>temp9, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [10862,11795]`def __setstate__(sel...`
                               ReturnTargetNode SourceSection: [10862,11795]`def __setstate__(sel...`
@@ -3685,6 +3677,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [1,state,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
+                                        Identifier: <>temp6
+                                        WriteLocalFrameSlotNodeGen SourceSection: None
+                                          Frame: [6,<>temp6,Illegal]
+                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <>temp7
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [7,<>temp7,Illegal]
@@ -3697,36 +3693,32 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [9,<>temp9,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <>temp10
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [10,<>temp10,Illegal]
-                                      WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: func
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [2,func,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [7,<>temp7,Illegal]
+                                          Frame: [6,<>temp6,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: args
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [3,args,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [8,<>temp8,Illegal]
+                                          Frame: [7,<>temp7,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: kwds
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [4,kwds,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [9,<>temp9,Illegal]
+                                          Frame: [8,<>temp8,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: namespace
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [5,namespace,Illegal]
                                         ReadLocalVariableNode SourceSection: None
-                                          Frame: [10,<>temp10,Illegal]
+                                          Frame: [9,<>temp9,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                     IfNode SourceSection: [11162,11418]`if (not callable(fun...`
                                       YesNodeGen SourceSection: None
@@ -3935,7 +3927,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [4,kwds,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [11,<return_val>,Illegal]
+                                  Frame: [10,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                     SetItemNodeGen SourceSection: None
                       ArgumentExpressionNode SourceSection: None
@@ -3943,7 +3935,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Index: 0
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [6,__class__,Illegal]
+                        Frame: [0,__class__,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
@@ -3985,18 +3977,18 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: None
             ClassBodyRootNode SourceSection: [11886,15107]`class partialmethod(...`
               Name: partialmethod
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: namespace
-              CelVars: __class__
+              CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 7 slots [__init__, __repr__, _make_unbound_method, __get__, __isabstractmethod__, __class__, __doc__]
+              FrameDescriptor: 6 slots [__init__, __repr__, _make_unbound_method, __get__, __isabstractmethod__, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               InnerRootNode SourceSection: [11886,15107]`class partialmethod(...`
                 ReturnTargetNode SourceSection: [11886,15107]`class partialmethod(...`
                   Body: BlockNode SourceSection: None
@@ -4025,9 +4017,9 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [12125,13009]`def __init__(self, f...`
                             Name: __init__
@@ -4035,11 +4027,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               Param Names: self, func
                               Keyword Names: None
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, func, args, keywords, __class__, <return_val>]
+                            FrameDescriptor: 5 slots [self, func, args, keywords, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [12125,13009]`def __init__(self, f...`
                               ReturnTargetNode SourceSection: [12125,13009]`def __init__(self, f...`
@@ -4237,7 +4229,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Frame: [3,keywords,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [13009,13563]`def __repr__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
@@ -4248,20 +4240,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [13009,13563]`def __repr__(self):↵...`
                             Name: __repr__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 6 slots [self, args, keywords, format_string, __class__, <return_val>]
+                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [13009,13563]`def __repr__(self):↵...`
                               ReturnTargetNode SourceSection: [13009,13563]`def __repr__(self):↵...`
@@ -4313,7 +4305,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                           Enclosing
-                                            FrameDescriptor: 6 slots [self, args, keywords, format_string, __class__, <return_val>]
+                                            FrameDescriptor: 5 slots [self, args, keywords, format_string, <return_val>]
                                           Active Flags: 2
                                           For Nodes: 1
                                           Block Nodes: 0
@@ -4410,7 +4402,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [5,<return_val>,Illegal]
+                                          Frame: [4,<return_val>,Illegal]
                                         PythonCallNodeGen SourceSection: [13280,13557]`format_string.format...`
                                           CallNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
@@ -4482,7 +4474,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [3,format_string,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [4,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [13563,14019]`def _make_unbound_me...`
                         ArgumentExpressionNode SourceSection: None
@@ -4493,20 +4485,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: self, 
                           FunctionRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                             Name: _make_unbound_method
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: self
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 4 slots [self, _method, __class__, <return_val>]
+                            FrameDescriptor: 3 slots [self, _method, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: self, 
                             InnerRootNode SourceSection: [13563,14019]`def _make_unbound_me...`
                               ReturnTargetNode SourceSection: [13563,14019]`def _make_unbound_me...`
@@ -4713,12 +4705,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [3,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Illegal]
                                         ReadLocalVariableNode SourceSection: [14006,14013]`_method`
                                           Frame: [1,_method,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [14019,14798]`def __get__(self, ob...`
                         ArgumentExpressionNode SourceSection: None
@@ -4729,20 +4721,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [14019,14798]`def __get__(self, ob...`
                             Name: __get__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, obj, cls
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 8 slots [self, obj, cls, get, result, new_func, __class__, <return_val>]
+                            FrameDescriptor: 7 slots [self, obj, cls, get, result, new_func, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [14019,14798]`def __get__(self, ob...`
                               ReturnTargetNode SourceSection: [14019,14798]`def __get__(self, ob...`
@@ -4941,12 +4933,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [7,<return_val>,Illegal]
+                                          Frame: [6,<return_val>,Illegal]
                                         ReadLocalVariableNode SourceSection: [14786,14792]`result`
                                           Frame: [4,result,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [7,<return_val>,Illegal]
+                                  Frame: [6,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [14798,15107]`@property↵    def __...`
                         ArgumentExpressionNode SourceSection: None
@@ -4968,20 +4960,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [14812,15107]`def __isabstractmeth...`
                               Name: __isabstractmethod__
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: self
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                              FrameDescriptor: 2 slots [self, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [14812,15107]`def __isabstractmeth...`
                                 ReturnTargetNode SourceSection: [14812,15107]`def __isabstractmeth...`
@@ -4998,7 +4990,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                            Frame: [1,<return_val>,Illegal]
                                           PythonCallTernary SourceSection: [14859,14908]`getattr(self.func, "...`
                                             CallTernaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [14859,14866]`getattr`
@@ -5018,16 +5010,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             StringLiteralNode SourceSection: [14878,14900]`"__isabstractmethod_...`
                                             BooleanLiteralNode SourceSection: [14902,14907]`False`
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [5,__class__,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [11906,11912]`object`
@@ -5062,18 +5046,18 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: None
             ClassBodyRootNode SourceSection: [15188,15601]`class _HashedSeq(lis...`
               Name: _HashedSeq
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: namespace
-              CelVars: __class__
+              CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 5 slots [__slots__, __init__, __hash__, __class__, __doc__]
+              FrameDescriptor: 4 slots [__slots__, __init__, __hash__, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               InnerRootNode SourceSection: [15188,15601]`class _HashedSeq(lis...`
                 ReturnTargetNode SourceSection: [15188,15601]`class _HashedSeq(lis...`
                   Body: BlockNode SourceSection: None
@@ -5117,20 +5101,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [15452,15550]`def __init__(self, t...`
                             Name: __init__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self, tup, hash
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 5 slots [self, tup, hash, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, tup, hash, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [15452,15550]`def __init__(self, t...`
                               ReturnTargetNode SourceSection: [15452,15550]`def __init__(self, t...`
@@ -5184,7 +5168,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [1,tup,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [15550,15601]`def __hash__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
@@ -5195,20 +5179,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [15550,15601]`def __hash__(self):↵...`
                             Name: __hash__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            FrameDescriptor: 2 slots [self, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [15550,15601]`def __hash__(self):↵...`
                               ReturnTargetNode SourceSection: [15550,15601]`def __hash__(self):↵...`
@@ -5225,7 +5209,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Illegal]
                                         GetAttributeNodeGen SourceSection: [15585,15599]`self.hashvalue`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: hashvalue
@@ -5238,16 +5222,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [3,__class__,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           ReadNameNodeGen SourceSection: [15205,15209]`list`

@@ -66,18 +66,18 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                             FreeVarSlots: fields, , name, 
                             ExecutionSlots:
                               FreeVarsSlots: fields, , name, 
-                              CellVarsSlots: __class__, 
+                              CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [46,264]`class named_tuple(tu...`
                               Name: named_tuple
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: namespace
-                              CelVars: __class__
+                              CelVars: None
                               FreeVars: fields, name
                               NeedsCellFrame: False
-                              FrameDescriptor: 6 slots [__name__, n_sequence_fields, fields, __repr__, name, __class__]
+                              FrameDescriptor: 5 slots [__name__, n_sequence_fields, fields, __repr__, name]
                               ExecutionSlots:
                                 FreeVarsSlots: fields, , name, 
-                                CellVarsSlots: __class__, 
+                                CellVarsSlots: None
                               InnerRootNode SourceSection: [46,264]`class named_tuple(tu...`
                                 ReturnTargetNode SourceSection: [46,264]`class named_tuple(tu...`
                                   Body: BlockNode SourceSection: None
@@ -168,20 +168,20 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: __class__, , fields, , name, 
+                                          FreeVarSlots: fields, , name, 
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , fields, , name, 
+                                            FreeVarsSlots: fields, , name, 
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [168,264]`def __repr__(self):↵...`
                                             Name: __repr__
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: self
                                             CelVars: None
-                                            FreeVars: __class__, fields, name
+                                            FreeVars: fields, name
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 7 slots [self, sb, f, name, fields, __class__, <return_val>]
+                                            FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
                                             ExecutionSlots:
-                                              FreeVarsSlots: __class__, , fields, , name, 
+                                              FreeVarsSlots: fields, , name, 
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [168,264]`def __repr__(self):↵...`
                                               ReturnTargetNode SourceSection: [168,264]`def __repr__(self):↵...`
@@ -222,16 +222,8 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                             ReadFromCellNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [6,<return_val>,Illegal]
+                                                  Frame: [5,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                    SetItemNodeGen SourceSection: None
-                                      ArgumentExpressionNode SourceSection: None
-                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                          Index: 0
-                                      StringLiteralNode SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [5,__class__,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`

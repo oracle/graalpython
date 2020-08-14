@@ -239,4 +239,58 @@ public class ClassDefTests extends ParserTestBase {
         checkScopeFromFile(testFile, true);
         checkTreeFromFile(testFile, true);
     }
+
+    @Test
+    public void using__class__01() throws Exception {
+        checkScopeAndTree(
+                        "class X:\n" +
+                                        "     def fn(self):\n" +
+                                        "       return __class__\n");
+    }
+
+    @Test
+    public void using__class__02() throws Exception {
+        checkScopeAndTree(
+                        "class X:\n" +
+                                        "            def createY(this):\n" +
+                                        "                class Y:\n" +
+                                        "                    z = __class__\n" +
+                                        "                    def methodY(this):\n" +
+                                        "                        y = __class__\n" +
+                                        "                return Y\n" +
+                                        "            def methodX(this):\n" +
+                                        "                yy = __class__\n");
+    }
+
+    @Test
+    public void using__class__03() throws Exception {
+        checkScopeAndTree(
+                        "class XN:\n" +
+                                        "            def fn1(self):\n" +
+                                        "                nonlocal __class__\n" +
+                                        "                __class__ = YN\n" +
+                                        "            def fn2(self):\n" +
+                                        "                return __class__\n" +
+                                        "            def fn3(slef):\n" +
+                                        "                nonlocal __class__\n" +
+                                        "                return __class__\n");
+    }
+
+    @Test
+    public void usingSuper01() throws Exception {
+        checkScopeAndTree(
+                        "class X:\n" +
+                                        "    def run(self):\n" +
+                                        "      def f():\n" +
+                                        "        super()\n");
+    }
+
+    @Test
+    public void usingSuper02() throws Exception {
+        checkScopeAndTree(
+                        "class X:\n" +
+                                        "    def run(self):\n" +
+                                        "        super()\n");
+    }
+
 }

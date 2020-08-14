@@ -5,44 +5,44 @@ Scope: []
     FreeVars: Empty
     Scope: _Helper
         Kind: Class
-        FrameDescriptor: [__call__, __repr__, __doc__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__call__, __repr__, __doc__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [args, self, kwds, pydoc, <return_val>, __class__]
+            FrameDescriptor: [args, self, kwds, pydoc, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: _Printer
         Kind: Class
-        FrameDescriptor: [MAXLINES, __call__, __repr__, __doc__, __init__, __setup, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [MAXLINES, __call__, __repr__, __doc__, __init__, __setup]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [lineno, self, i, prompt, <return_val>, key, __class__]
+            FrameDescriptor: [lineno, self, i, prompt, <return_val>, key]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __setup
             Kind: Function
-            FrameDescriptor: [filename, data, self, fp, <return_val>, __class__]
+            FrameDescriptor: [filename, data, self, fp, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [data, os, name, self, files, dirs, <return_val>, __class__]
+            FrameDescriptor: [data, os, name, self, files, dirs, <return_val>]
             CellVars: [files, os]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [filename, os, files, dir, <return_val>]
@@ -50,21 +50,21 @@ Scope: []
                 FreeVars: [files, os]
     Scope: Quitter
         Kind: Class
-        FrameDescriptor: [__call__, __repr__, __init__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__call__, __repr__, __init__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [code, self, <return_val>, __class__]
+            FrameDescriptor: [code, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [name, self, eof, <return_val>, __class__]
+            FrameDescriptor: [name, self, eof, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty

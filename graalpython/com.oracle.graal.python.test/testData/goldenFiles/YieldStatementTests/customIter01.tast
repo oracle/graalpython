@@ -50,18 +50,18 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             FreeVarSlots: None
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: __class__, 
+                              CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [14,148]`class MyIter:↵      ...`
                               Name: MyIter
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: namespace
-                              CelVars: __class__
+                              CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [__iter__, __next__, __class__]
+                              FrameDescriptor: 2 slots [__iter__, __next__]
                               ExecutionSlots:
                                 FreeVarsSlots: None
-                                CellVarsSlots: __class__, 
+                                CellVarsSlots: None
                               InnerRootNode SourceSection: [14,148]`class MyIter:↵      ...`
                                 ReturnTargetNode SourceSection: [14,148]`class MyIter:↵      ...`
                                   Body: BlockNode SourceSection: None
@@ -84,20 +84,20 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: __class__, 
+                                          FreeVarSlots: None
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: None
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [36,88]`def __iter__(self):↵...`
                                             Name: __iter__
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: self
                                             CelVars: None
-                                            FreeVars: __class__
+                                            FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                            FrameDescriptor: 2 slots [self, <return_val>]
                                             ExecutionSlots:
-                                              FreeVarsSlots: __class__, 
+                                              FreeVarsSlots: None
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [36,88]`def __iter__(self):↵...`
                                               ReturnTargetNode SourceSection: [36,88]`def __iter__(self):↵...`
@@ -114,12 +114,12 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                       WriteLocalVariableNodeGen SourceSection: None
                                                         Identifier: <return_val>
                                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                                          Frame: [2,<return_val>,Illegal]
+                                                          Frame: [1,<return_val>,Illegal]
                                                         ReadLocalVariableNode SourceSection: [75,79]`self`
                                                           Frame: [0,self,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [2,<return_val>,Illegal]
+                                                  Frame: [1,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                       SetItemNodeGen SourceSection: [88,148]`def __next__(self):↵...`
                                         ArgumentExpressionNode SourceSection: None
@@ -130,20 +130,20 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                           Arguments: None
                                           KwArguments: None
                                           Documentation: None
-                                          FreeVarSlots: __class__, 
+                                          FreeVarSlots: None
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: None
                                             CellVarsSlots: None
                                           FunctionRootNode SourceSection: [88,148]`def __next__(self):↵...`
                                             Name: __next__
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: self
                                             CelVars: None
-                                            FreeVars: __class__
+                                            FreeVars: None
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                            FrameDescriptor: 2 slots [self, <return_val>]
                                             ExecutionSlots:
-                                              FreeVarsSlots: __class__, 
+                                              FreeVarsSlots: None
                                               CellVarsSlots: None
                                             InnerRootNode SourceSection: [88,148]`def __next__(self):↵...`
                                               ReturnTargetNode SourceSection: [88,148]`def __next__(self):↵...`
@@ -166,16 +166,8 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                           Value: 42
                                                       NoValueNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                  Frame: [2,<return_val>,Illegal]
+                                                  Frame: [1,<return_val>,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                    SetItemNodeGen SourceSection: None
-                                      ArgumentExpressionNode SourceSection: None
-                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                          Index: 0
-                                      StringLiteralNode SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [2,__class__,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [148,218]`def gen():↵        n...`

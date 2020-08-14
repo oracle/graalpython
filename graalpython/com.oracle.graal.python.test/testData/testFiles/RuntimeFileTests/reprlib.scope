@@ -10,64 +10,64 @@ Scope: []
         FreeVars: Empty
     Scope: Repr
         Kind: Class
-        FrameDescriptor: [repr, repr_array, repr_int, repr1, repr_tuple, repr_str, repr_frozenset, __class__, repr_instance, repr_set, repr_list, __init__, repr_dict, _repr_iterable, repr_deque]
-        CellVars: [__class__]
+        FrameDescriptor: [repr, repr_array, repr_int, repr1, repr_tuple, repr_str, repr_frozenset, repr_instance, repr_set, repr_list, __init__, repr_dict, _repr_iterable, repr_deque]
+        CellVars: Empty
         FreeVars: Empty
         Scope: repr_instance
             Kind: Function
-            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_int
             Kind: Function
-            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_str
             Kind: Function
-            FrameDescriptor: [s, level, x, self, i, j, <return_val>, __class__]
+            FrameDescriptor: [s, level, x, self, i, j, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_dict
             Kind: Function
-            FrameDescriptor: [level, keyrepr, repr1, newlevel, n, __class__, pieces, s, x, self, valrepr, <return_val>, key]
+            FrameDescriptor: [pieces, s, level, keyrepr, x, self, repr1, valrepr, newlevel, <return_val>, n, key]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_deque
             Kind: Function
-            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_frozenset
             Kind: Function
-            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_set
             Kind: Function
-            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_array
             Kind: Function
-            FrameDescriptor: [level, x, self, header, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, header, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_list
             Kind: Function
-            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr_tuple
             Kind: Function
-            FrameDescriptor: [level, x, self, <return_val>, __class__]
+            FrameDescriptor: [level, x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _repr_iterable
             Kind: Function
-            FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, __class__, pieces, trail, s, left, x, self, <return_val>]
+            FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, pieces, trail, s, left, x, self, <return_val>]
             CellVars: [newlevel, repr1]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [elem, repr1, newlevel, <return_val>]
@@ -75,19 +75,19 @@ Scope: []
                 FreeVars: [newlevel, repr1]
         Scope: repr1
             Kind: Function
-            FrameDescriptor: [level, x, parts, self, <return_val>, typename, __class__]
+            FrameDescriptor: [level, x, parts, self, <return_val>, typename]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: repr
             Kind: Function
-            FrameDescriptor: [x, self, <return_val>, __class__]
+            FrameDescriptor: [x, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: recursive_repr
         Kind: Function
         FrameDescriptor: [decorating_function, fillvalue, <return_val>]

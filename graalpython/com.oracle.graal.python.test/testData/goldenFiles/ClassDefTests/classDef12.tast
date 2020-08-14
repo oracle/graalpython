@@ -82,18 +82,18 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                           FreeVarSlots: method_and_var, 
                                           ExecutionSlots:
                                             FreeVarsSlots: method_and_var, 
-                                            CellVarsSlots: __class__, 
+                                            CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [77,375]`class Test(object):↵...`
                                             Name: Test
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: namespace
-                                            CelVars: __class__
+                                            CelVars: None
                                             FreeVars: method_and_var
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 5 slots [method_and_var, test, actual_global, str, __class__]
+                                            FrameDescriptor: 4 slots [method_and_var, test, actual_global, str]
                                             ExecutionSlots:
                                               FreeVarsSlots: method_and_var, 
-                                              CellVarsSlots: __class__, 
+                                              CellVarsSlots: None
                                             InnerRootNode SourceSection: [77,375]`class Test(object):↵...`
                                               ReturnTargetNode SourceSection: [77,375]`class Test(object):↵...`
                                                 Body: BlockNode SourceSection: None
@@ -116,20 +116,20 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: __class__, 
+                                                        FreeVarSlots: None
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: __class__, 
+                                                          FreeVarsSlots: None
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [109,179]`def method_and_var(s...`
                                                           Name: method_and_var
                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                             Param Names: self
                                                           CelVars: None
-                                                          FreeVars: __class__
+                                                          FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                                          FrameDescriptor: 2 slots [self, <return_val>]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, 
+                                                            FreeVarsSlots: None
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [109,179]`def method_and_var(s...`
                                                             ReturnTargetNode SourceSection: [109,179]`def method_and_var(s...`
@@ -146,10 +146,10 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [2,<return_val>,Illegal]
+                                                                        Frame: [1,<return_val>,Illegal]
                                                                       StringLiteralNode SourceSection: [158,166]`"method"`
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
+                                                                Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                     SetItemNodeGen SourceSection: [179,245]`def test(self):↵    ...`
                                                       ArgumentExpressionNode SourceSection: None
@@ -160,20 +160,20 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: __class__, , method_and_var, 
+                                                        FreeVarSlots: method_and_var, 
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: __class__, , method_and_var, 
+                                                          FreeVarsSlots: method_and_var, 
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [179,245]`def test(self):↵    ...`
                                                           Name: test
                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                             Param Names: self
                                                           CelVars: None
-                                                          FreeVars: __class__, method_and_var
+                                                          FreeVars: method_and_var
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 4 slots [self, method_and_var, __class__, <return_val>]
+                                                          FrameDescriptor: 3 slots [self, method_and_var, <return_val>]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, , method_and_var, 
+                                                            FreeVarsSlots: method_and_var, 
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [179,245]`def test(self):↵    ...`
                                                             ReturnTargetNode SourceSection: [179,245]`def test(self):↵    ...`
@@ -190,14 +190,14 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [3,<return_val>,Illegal]
+                                                                        Frame: [2,<return_val>,Illegal]
                                                                       ReadLocalCellNodeGen SourceSection: [218,232]`method_and_var`
                                                                         ReadLocalVariableNode SourceSection: None
                                                                           Frame: [1,method_and_var,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         ReadFromCellNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                Frame: [3,<return_val>,Illegal]
+                                                                Frame: [2,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                     SetItemNodeGen SourceSection: [245,319]`def actual_global(se...`
                                                       ArgumentExpressionNode SourceSection: None
@@ -208,20 +208,20 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: __class__, 
+                                                        FreeVarSlots: None
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: __class__, 
+                                                          FreeVarsSlots: None
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [245,319]`def actual_global(se...`
                                                           Name: actual_global
                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                             Param Names: self
                                                           CelVars: None
-                                                          FreeVars: __class__
+                                                          FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                                          FrameDescriptor: 2 slots [self, <return_val>]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, 
+                                                            FreeVarsSlots: None
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [245,319]`def actual_global(se...`
                                                             ReturnTargetNode SourceSection: [245,319]`def actual_global(se...`
@@ -238,7 +238,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [2,<return_val>,Illegal]
+                                                                        Frame: [1,<return_val>,Illegal]
                                                                       PythonCallUnary SourceSection: [293,306]`str("global")`
                                                                         CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [293,296]`str`
@@ -246,7 +246,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                         StringLiteralNode SourceSection: [297,305]`"global"`
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
+                                                                Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                     SetItemNodeGen SourceSection: [319,375]`def str(self):↵     ...`
                                                       ArgumentExpressionNode SourceSection: None
@@ -257,20 +257,20 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: __class__, 
+                                                        FreeVarSlots: None
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: __class__, 
+                                                          FreeVarsSlots: None
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [319,375]`def str(self):↵     ...`
                                                           Name: str
                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                             Param Names: self
                                                           CelVars: None
-                                                          FreeVars: __class__
+                                                          FreeVars: None
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                                          FrameDescriptor: 2 slots [self, <return_val>]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, 
+                                                            FreeVarsSlots: None
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [319,375]`def str(self):↵     ...`
                                                             ReturnTargetNode SourceSection: [319,375]`def str(self):↵     ...`
@@ -287,7 +287,7 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [2,<return_val>,Illegal]
+                                                                        Frame: [1,<return_val>,Illegal]
                                                                       PythonCallUnary SourceSection: [357,366]`str(self)`
                                                                         CallUnaryMethodNodeGen SourceSection: None
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [357,360]`str`
@@ -297,16 +297,8 @@ ModuleRootNode Name: <module 'classDef12'> SourceSection: [0,416]`def fn():↵  
                                                                           Frame: [0,self,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
+                                                                Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                  SetItemNodeGen SourceSection: None
-                                                    ArgumentExpressionNode SourceSection: None
-                                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                                        Index: 0
-                                                    StringLiteralNode SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
-                                                      Frame: [4,__class__,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [88,94]`object`

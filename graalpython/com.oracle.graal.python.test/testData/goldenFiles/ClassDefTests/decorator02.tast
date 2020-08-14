@@ -34,18 +34,18 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                   FreeVarSlots: None
                   ExecutionSlots:
                     FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
+                    CellVarsSlots: None
                   ClassBodyRootNode SourceSection: [24,40]`class foo():pass`
                     Name: foo
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
-                    CelVars: __class__
+                    CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 1 slots [__class__]
+                    FrameDescriptor:  Empty
                     ExecutionSlots:
                       FreeVarsSlots: None
-                      CellVarsSlots: __class__, 
+                      CellVarsSlots: None
                     InnerRootNode SourceSection: [24,40]`class foo():pass`
                       ReturnTargetNode SourceSection: [24,40]`class foo():pass`
                         Body: BlockNode SourceSection: None
@@ -61,13 +61,5 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
                           FunctionBodyNode SourceSection: [36,40]`pass`
                             ExpressionStatementNode SourceSection: [36,40]`pass`
                               EmptyNode SourceSection: [36,40]`pass`
-                          SetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
-                              Frame: [0,__class__,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None

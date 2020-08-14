@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -256,7 +258,17 @@ public final class ScopeInfo {
         }
         freeVars.add(identifier);
         if (createFrameSlot) {
-            this.createSlotIfNotPresent(identifier);
+            if (scopeKind == ScopeKind.Class && __CLASS__.equals(identifier)) {
+                // This is preventing corner situation, when body of class has two variables with
+                // the same name __class__. The first one is __class__ freevar comming from outer
+                // scope
+                // and the second one is __class__ (implicit) closure for inner methods,
+                // where __class__ or super is used. Both of them can have different values.
+                // So the first one is stored in slot with different identifier.
+                this.createSlotIfNotPresent(FrameSlotIDs.FREEVAR__CLASS__);
+            } else {
+                this.createSlotIfNotPresent(identifier);
+            }
         }
     }
 
@@ -300,7 +312,27 @@ public final class ScopeInfo {
     }
 
     public FrameSlot[] getFreeVarSlots() {
-        return getFrameSlots(freeVars, this);
+        FrameSlot[] result = getFrameSlots(freeVars, this);
+        if (freeVars != null && scopeKind == ScopeKind.Class && freeVars.contains(__CLASS__)) {
+            for (int i = 0; i < result.length; i++) {
+                FrameSlot slot = result[i];
+                if (slot == null || __CLASS__.equals(slot.getIdentifier())) {
+                    // If __class__ is freevar in the class scope, then is stored in frameslot with
+                    // different name.
+                    // This is preventing corner situation, when body of class has two variables
+                    // with
+                    // the same name __class__. The first one is __class__ freevar comming from
+                    // outer scope
+                    // and the second one is __class__ (implicit) closure for inner methods,
+                    // where __class__ or super is used. Both of them can have different values.
+                    // slot can be null, when there is not used __class__ / super in a method, so
+                    // __class__ is defined only as freevar not cellvar
+                    result[i] = findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     public FrameSlot[] getFreeVarSlotsInParentScope() {

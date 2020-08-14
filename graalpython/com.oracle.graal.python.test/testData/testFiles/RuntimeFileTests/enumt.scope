@@ -45,74 +45,74 @@ Scope: []
         FreeVars: Empty
     Scope: IntFlag
         Kind: Class
-        FrameDescriptor: [__xor__, __and__, __ror__, __rand__, __or__, __invert__, __doc__, _create_pseudo_member_, _missing_, __rxor__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__xor__, __and__, __ror__, __rand__, __or__, __invert__, __doc__, _create_pseudo_member_, _missing_, __rxor__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __invert__
             Kind: Function
-            FrameDescriptor: [result, self, <return_val>, __class__]
+            FrameDescriptor: [result, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __xor__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __and__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __or__
             Kind: Function
-            FrameDescriptor: [result, other, self, <return_val>, __class__]
+            FrameDescriptor: [result, other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _create_pseudo_member_
             Kind: Function
-            FrameDescriptor: [pseudo_member, extra_flags, flag_value, need_to_create, <>temp9, <>temp10, cls, bit, value, <return_val>, __class__, _]
+            FrameDescriptor: [pseudo_member, extra_flags, flag_value, need_to_create, <>temp8, <>temp9, cls, bit, value, <return_val>, _]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _missing_
             Kind: Function
-            FrameDescriptor: [new_member, cls, value, <return_val>, __class__]
+            FrameDescriptor: [new_member, cls, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: Flag
         Kind: Class
-        FrameDescriptor: [__bool__, __xor__, __and__, __str__, __or__, _create_pseudo_member_, __contains__, _missing_, __class__, __repr__, __invert__, __doc__, _generate_next_value_]
-        CellVars: [__class__]
+        FrameDescriptor: [__bool__, __xor__, __and__, __str__, __or__, __repr__, __invert__, __doc__, _create_pseudo_member_, __contains__, _generate_next_value_, _missing_]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __invert__
             Kind: Function
-            FrameDescriptor: [uncovered, <>temp6, <>temp7, members, self, inverted, m, <return_val>, __class__]
+            FrameDescriptor: [uncovered, <>temp6, members, self, <>temp5, inverted, m, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __xor__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __and__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __or__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __bool__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [uncovered, <>temp6, <>temp7, members, self, cls, <return_val>, __class__]
+            FrameDescriptor: [uncovered, <>temp6, members, self, cls, <>temp5, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
@@ -120,9 +120,9 @@ Scope: []
                 FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [uncovered, <>temp6, <>temp7, members, self, cls, <return_val>, __class__]
+            FrameDescriptor: [uncovered, <>temp6, members, self, cls, <>temp5, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [m, <return_val>]
@@ -130,24 +130,24 @@ Scope: []
                 FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [other, warnings, self, <return_val>, __class__]
+            FrameDescriptor: [other, warnings, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _create_pseudo_member_
             Kind: Function
-            FrameDescriptor: [pseudo_member, extra_flags, <>temp6, <>temp7, cls, value, <return_val>, __class__, _]
+            FrameDescriptor: [pseudo_member, extra_flags, <>temp6, cls, <>temp5, value, <return_val>, _]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _missing_
             Kind: Function
-            FrameDescriptor: [original_value, cls, possible_member, value, <return_val>, __class__]
+            FrameDescriptor: [original_value, cls, possible_member, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _generate_next_value_
             Kind: Function
-            FrameDescriptor: [last_values, high_bit, last_value, name, start, count, <return_val>, __class__]
+            FrameDescriptor: [last_values, high_bit, last_value, name, start, count, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: _reduce_ex_by_name
         Kind: Function
         FrameDescriptor: [proto, self, <return_val>]
@@ -155,19 +155,19 @@ Scope: []
         FreeVars: Empty
     Scope: IntEnum
         Kind: Class
-        FrameDescriptor: [__doc__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__doc__]
+        CellVars: Empty
         FreeVars: Empty
     Scope: Enum
         Kind: Class
-        FrameDescriptor: [__reduce_ex__, __str__, __new__, __hash__, _missing_, __class__, __dir__, _convert, name, __repr__, __doc__, _generate_next_value_, value, __format__]
-        CellVars: [__class__]
+        FrameDescriptor: [__reduce_ex__, __str__, __new__, __hash__, _missing_, __dir__, _convert, name, __repr__, __doc__, _generate_next_value_, value, __format__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: _convert
             Kind: Function
-            FrameDescriptor: [filter, module_globals, module, members, name, cls, source, <return_val>, __class__]
+            FrameDescriptor: [filter, module_globals, module, members, name, cls, source, <return_val>]
             CellVars: [filter, source]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: lambda
                 Kind: Function
                 FrameDescriptor: [t, <return_val>]
@@ -185,34 +185,34 @@ Scope: []
                 FreeVars: [filter, source]
         Scope: value
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: name
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __reduce_ex__
             Kind: Function
-            FrameDescriptor: [proto, self, <return_val>, __class__]
+            FrameDescriptor: [proto, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __hash__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __format__
             Kind: Function
-            FrameDescriptor: [val, format_spec, self, cls, <return_val>, __class__]
+            FrameDescriptor: [val, format_spec, self, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __dir__
             Kind: Function
-            FrameDescriptor: [self, added_behavior, <return_val>, __class__]
+            FrameDescriptor: [self, added_behavior, <return_val>]
             CellVars: [self]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: ListComp
                 FrameDescriptor: [self, cls, m, <return_val>]
@@ -220,29 +220,29 @@ Scope: []
                 FreeVars: [self]
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _missing_
             Kind: Function
-            FrameDescriptor: [cls, value, <return_val>, __class__]
+            FrameDescriptor: [cls, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _generate_next_value_
             Kind: Function
-            FrameDescriptor: [last_values, last_value, name, start, count, <return_val>, __class__]
+            FrameDescriptor: [last_values, last_value, name, start, count, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __new__
             Kind: Function
-            FrameDescriptor: [member, cls, value, <return_val>, __class__]
+            FrameDescriptor: [member, cls, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: EnumMeta
         Kind: Class
         FrameDescriptor: [__bool__, __iter__, _find_new_, __call__, __reversed__, __new__, __contains__, __delattr__, __class__, __prepare__, __dir__, __setattr__, __getattr__, __len__, __getitem__, __members__, __repr__, _get_mixins_, __doc__, _create_]
@@ -250,19 +250,19 @@ Scope: []
         FreeVars: Empty
         Scope: _find_new_
             Kind: Function
-            FrameDescriptor: [member_type, first_enum, method, save_new, __new__, possible, classdict, use_args, <return_val>, __class__, target]
+            FrameDescriptor: [member_type, first_enum, method, save_new, __new__, possible, classdict, use_args, <return_val>, target]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _get_mixins_
             Kind: Function
-            FrameDescriptor: [bases, member_type, first_enum, <>temp6, <return_val>, __class__, base]
+            FrameDescriptor: [bases, member_type, first_enum, <>temp5, <return_val>, base]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _create_
             Kind: Function
-            FrameDescriptor: [last_values, <>temp32, <>temp31, <>temp33, type, <>temp30, bases, exc, qualname, first_enum, class_name, classdict, value, _, <>temp29, <>temp28, item, <>temp25, <>temp24, <>temp27, module, <>temp26, start, count, *, cls, original_names, member_name, enum_class, __class__, names, metacls, member_value, name, <return_val>]
+            FrameDescriptor: [last_values, <>temp32, <>temp31, type, <>temp30, bases, exc, qualname, first_enum, class_name, classdict, value, _, <>temp29, <>temp28, item, <>temp25, <>temp24, <>temp27, module, <>temp26, start, count, *, <>temp23, cls, original_names, member_name, enum_class, names, metacls, member_value, name, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __setattr__
             Kind: Function
             FrameDescriptor: [member_map, name, cls, value, <return_val>, __class__]
@@ -270,9 +270,9 @@ Scope: []
             FreeVars: [__class__]
         Scope: __reversed__
             Kind: Function
-            FrameDescriptor: [cls, <return_val>, __class__]
+            FrameDescriptor: [cls, <return_val>]
             CellVars: [cls]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
@@ -280,24 +280,24 @@ Scope: []
                 FreeVars: [cls]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [cls, <return_val>, __class__]
+            FrameDescriptor: [cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __members__
             Kind: Function
-            FrameDescriptor: [cls, <return_val>, __class__]
+            FrameDescriptor: [cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __len__
             Kind: Function
-            FrameDescriptor: [cls, <return_val>, __class__]
+            FrameDescriptor: [cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [cls, <return_val>, __class__]
+            FrameDescriptor: [cls, <return_val>]
             CellVars: [cls]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [name, cls, <return_val>]
@@ -305,19 +305,19 @@ Scope: []
                 FreeVars: [cls]
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [name, cls, <return_val>, __class__]
+            FrameDescriptor: [name, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __getattr__
             Kind: Function
-            FrameDescriptor: [name, cls, <return_val>, __class__]
+            FrameDescriptor: [name, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __dir__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __delattr__
             Kind: Function
             FrameDescriptor: [cls, attr, <return_val>, __class__]
@@ -325,19 +325,19 @@ Scope: []
             FreeVars: [__class__]
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [warnings, member, cls, <return_val>, __class__]
+            FrameDescriptor: [warnings, member, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [names, qualname, module, start, *, cls, type, value, <return_val>, __class__]
+            FrameDescriptor: [names, qualname, module, start, *, cls, type, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __bool__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __new__
             Kind: Function
             FrameDescriptor: [member_type, base_attributes, methods, <>temp32, <>temp31, <>temp33, use_args, <>temp30, bases, invalid_names, first_enum, canonical_member, class_method, obj_method, ignore, classdict, value, key, <>temp29, <>temp28, save_new, <>temp27, __new__, cls, member_name, enum_class, __class__, args, metacls, enum_members, name, enum_member, enum_method, <return_val>, _order_]
@@ -360,9 +360,9 @@ Scope: []
                 FreeVars: [classdict]
         Scope: __prepare__
             Kind: Function
-            FrameDescriptor: [bases, enum_dict, member_type, first_enum, metacls, <>temp7, <>temp8, cls, <return_val>, __class__]
+            FrameDescriptor: [bases, enum_dict, member_type, first_enum, <>temp6, metacls, <>temp7, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: _EnumDict
         Kind: Class
         FrameDescriptor: [__setitem__, __doc__, __init__, __class__]
@@ -380,8 +380,8 @@ Scope: []
             FreeVars: [__class__]
     Scope: auto
         Kind: Class
-        FrameDescriptor: [__doc__, value, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__doc__, value]
+        CellVars: Empty
         FreeVars: Empty
     Scope: _make_class_unpicklable
         Kind: Function

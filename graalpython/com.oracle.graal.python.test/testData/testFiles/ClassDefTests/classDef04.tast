@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,110]`class Complex:↵    d...`
                 Name: Complex
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [__init__, __class__]
+                FrameDescriptor: 1 slots [__init__]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,110]`class Complex:↵    d...`
                   ReturnTargetNode SourceSection: [0,110]`class Complex:↵    d...`
                     Body: BlockNode SourceSection: None
@@ -56,20 +56,20 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [19,110]`def __init__(self, r...`
                               Name: __init__
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: self, realpart, imagpart
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, realpart, imagpart, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [self, realpart, imagpart, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [19,110]`def __init__(self, r...`
                                 ReturnTargetNode SourceSection: [19,110]`def __init__(self, r...`
@@ -114,15 +114,7 @@ ModuleRootNode Name: <module 'classDef04'> SourceSection: [0,110]`class Complex:
                                           Frame: [2,imagpart,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

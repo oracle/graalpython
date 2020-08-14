@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: Complex
         Kind: Class
-        FrameDescriptor: [__init__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__init__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [imagpart, realpart, self, <return_val>, __class__]
+            FrameDescriptor: [imagpart, realpart, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty

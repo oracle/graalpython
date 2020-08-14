@@ -20,29 +20,29 @@ Scope: []
         FreeVars: Empty
     Scope: map
         Kind: Class
-        FrameDescriptor: [__iter__, __init__, __contains__, __class__, __next__]
-        CellVars: [__class__]
+        FrameDescriptor: [__iter__, __init__, __contains__, __next__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __contains__
             Kind: Function
-            FrameDescriptor: [x, self, i, <return_val>, __class__]
+            FrameDescriptor: [x, self, i, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [args, self, it, <return_val>, __class__]
+            FrameDescriptor: [args, self, it, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [args, iterators, func, self, iterable, i, <return_val>, __class__]
+            FrameDescriptor: [args, iterators, func, self, iterable, i, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: __build_class__
         Kind: Function
         FrameDescriptor: [bases, func, ns, name, kwargs, metaclass, <return_val>, _posix]

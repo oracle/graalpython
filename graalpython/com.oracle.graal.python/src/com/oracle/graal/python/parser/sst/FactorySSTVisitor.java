@@ -121,7 +121,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -456,17 +455,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         scopeEnvironment.setCurrentScope(classScope);
         String qualifiedName = getQualifiedName(classScope, node.name);
 
-        // 1) create a cellvar in the class body (__class__), the class itself is stored here
-        classScope.addCellVar(__CLASS__, true);
-        // 2) all class methods receive a __class__ freevar
-        ScopeInfo childScope = classScope.getFirstChildScope();
-        while (childScope != null) {
-            if (childScope.getScopeKind() == ScopeKind.Function || childScope.getScopeKind() == ScopeKind.Generator) {
-                childScope.addFreeVar(__CLASS__, true);
-            }
-            childScope = childScope.getNextChildScope();
-        }
-
         int delta = 0;
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
         ExpressionNode doc = null;
@@ -493,7 +481,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         classBody.assignSourceSection(createSourceSection(classBodyStart, node.body.endOffset));
 
         delta = delta + (classScope.hasAnnotations() ? 1 : 0);
-        StatementNode[] classStatements = new StatementNode[3 + delta];
+        boolean hasImplicitClass = classScope.isCellVar(__CLASS__);
+        StatementNode[] classStatements = new StatementNode[2 + delta + (hasImplicitClass ? 1 : 0)];
         // ClassStatemtns look like:
         // [0] ClassDefinitionPrologueNode
         classStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
@@ -508,9 +497,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         // [last - 1] class body statements
         classStatements[1 + delta] = classBody;
-        // [last] assign __class__ cell to __classcell__
-        classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
-                        nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+        if (hasImplicitClass) {
+            // [last] assign __class__ cell to __classcell__
+            // Only if __class__ is generated in the class scope. The __class__ is in class scope,
+            // when an inner method uses __class__ or super is used.
+            classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
+                            nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+        }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
         StatementNode body = nodeFactory.createBlock(classStatements);
