@@ -208,11 +208,11 @@ class test_flags():
 
     cached = functools.lru_cache(1)(testfunction)
 
-    assert not type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
-    assert type(list.append).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
-    assert type(list.__add__).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
-    assert type(testfunction).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
-    assert type(cached).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+    assert not type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, 0)
+    assert type(list.append).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)
+    assert type(list.__add__).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)
+    assert type(testfunction).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)
+    assert type(cached).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, "masked __flags__ = {}, expected {}".format(type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR, TPFLAGS_METHOD_DESCRIPTOR)
 
     class MyInt(int):
         pass
@@ -251,4 +251,4 @@ class test_flags():
         ({"1":1, "2": 2}, TPFLAGS_DICT_SUBCLASS),
         (MyDict({"1":1, "2": 2}), TPFLAGS_DICT_SUBCLASS),
     ]:
-        assert type(x).__flags__ & flag
+        assert type(x).__flags__ & flag, "masked __flags__ = {}, expected {}".format(type(x).__flags__ & flag, flag)

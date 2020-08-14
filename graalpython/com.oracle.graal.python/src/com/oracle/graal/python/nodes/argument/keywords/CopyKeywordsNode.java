@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -101,7 +102,7 @@ public abstract class CopyKeywordsNode extends Node {
 
     @GenerateUncached
     abstract static class AddKeywordNode extends AbstractKeywordsNode {
-        @Specialization(rewriteOn = ClassCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(rewriteOn = CannotCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
         public CopyKeywordsState add(Object key, CopyKeywordsState state,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary(value = "state.getHashingStorage()") HashingStorageLibrary lib) {
@@ -118,7 +119,7 @@ public abstract class CopyKeywordsNode extends Node {
             try {
                 Object value = lib.getItem(state.hashingStorage, key);
                 state.addKeyword(castToJavaStringNode.execute(key), value);
-            } catch (ClassCastException e) {
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
             }
             return state;
@@ -151,6 +152,7 @@ public abstract class CopyKeywordsNode extends Node {
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
+                    @Cached PRaiseNode raiseNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile) {
         Object iter = getIteratorNode.executeWithGlobalState(starargs);
         int i = 0;
@@ -163,6 +165,8 @@ public abstract class CopyKeywordsNode extends Node {
             } catch (PException e) {
                 e.expectStopIteration(errorProfile);
                 break;
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_STRINGS, "keywords");
             }
         }
     }
