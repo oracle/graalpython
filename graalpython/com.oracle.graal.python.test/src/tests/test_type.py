@@ -176,3 +176,8 @@ def test_dir_sorted():
 
     assert dir(C) == sorted(dir(C))
     assert dir(C()) == sorted(dir(C()))
+
+
+def test_isinstance_non_type():
+    import typing
+    assert isinstance(1, typing.AbstractSet) is False
