@@ -50,7 +50,7 @@ from json import dumps
 from multiprocessing import Pool, TimeoutError
 from pprint import pformat
 
-   
+
 import argparse
 import sys
 from time import gmtime, strftime
@@ -67,10 +67,12 @@ CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
 HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
 LATEST_HTML_NAME = "latest.html"
 
+TIMEOUT_LINE = "\nTEST TIMED OUT WITH GRAAL PYTHON RUNNER"
+
 HR = "".join(['-' for _ in range(120)])
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
-PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>[\w.]+).*$', re.DOTALL)
+PTRN_UNITTEST = re.compile(r'^#### running: (?P<unittest_path>graalpython/lib-python/3/test/(?P<unittest>[\w.]+)).*$', re.DOTALL)
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
 PTRN_FAILED = re.compile(
     r'^FAILED \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
@@ -149,6 +151,8 @@ def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
     cmd_string = ' '.join(cmd)
     log("[EXEC] starting '{}' ...".format(cmd_string))
 
+    expired = False
+
     start_time = time.monotonic()
     # os.setsid is used to create a process group, to be able to call os.killpg upon timeout
     proc = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -161,12 +165,16 @@ def _run_cmd(cmd, timeout=TIMEOUT, capture_on_failure=True):
         msg = "TimeoutExpired: {:.3f}s".format(delta)
         tail = get_tail(output.decode('utf-8', 'ignore'))
         log("[ERR] timeout '{}' after {:.3f}s, killing process group {}, last lines of output:\n{}\n{}", cmd_string, delta, proc.pid, tail, HR)
+        expired = True
     else:
         delta = time.monotonic() - start_time
         log("[EXEC] finished '{}' with exit code {} in {:.3f}s", cmd_string, proc.returncode, delta)
         msg = "Finished: {:.3f}s".format(delta)
-    
-    return proc.returncode == 0, output.decode("utf-8", "ignore"), msg
+
+    output = output.decode("utf-8", "ignore")
+    if expired:
+        output += TIMEOUT_LINE
+    return proc.returncode == 0, output, msg
 
 
 def scp(results_file_path, destination_path, destination_name=None):
@@ -178,7 +186,12 @@ def scp(results_file_path, destination_path, destination_name=None):
 
 def _run_unittest(test_path, timeout, with_cpython=False):
     if with_cpython:
-        cmd = ["python3", test_path, "-v"]
+        exe = os.environ.get("PYTHON3_HOME", None)
+        if exe:
+            exe = os.path.join(exe, "python")
+        else:
+            exe = "python3"
+        cmd = [exe, test_path, "-v"]
     else:
         cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
     _, output, msg = _run_cmd(cmd, timeout)
@@ -200,16 +213,16 @@ def run_unittests(unittests, timeout, with_cpython=False):
 
     start_time = time.monotonic()
     pool = Pool(processes=(os.cpu_count() // 4) or 1) # to account for hyperthreading and some additional overhead
-    
+
     out = []
     def callback(result):
         out.append(result)
         log("[PROGRESS] {} / {}: \t {:.1f}%", len(out), num_unittests, len(out) * 100 / num_unittests)
-        
+
     # schedule all unittest runs
     for ut in unittests:
         pool.apply_async(_run_unittest, args=(ut, timeout, with_cpython), callback=callback)
-        
+
     pool.close()
     pool.join()
     pool.terminate()
@@ -336,6 +349,7 @@ def process_output(output_lines):
     if isinstance(output_lines, str):
         output_lines = output_lines.split("\n")
 
+    current_unittest_path = None
     unittests = []
     # stats tracked per unittest
     unittest_tests = defaultdict(list)
@@ -346,6 +360,7 @@ def process_output(output_lines):
     for line in output_lines:
         match = re.match(PTRN_UNITTEST, line)
         if match:
+            current_unittest_path = match.group('unittest_path')
             unittest = match.group('unittest')
             unittests.append(unittest)
             unittest_tests.clear()
@@ -413,6 +428,55 @@ def process_output(output_lines):
             stats[unittests[-1]].num_fails = int(fails) if fails else 0
             stats[unittests[-1]].num_errors = int(errs) if errs else 0
             stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
+            continue
+
+        if line.strip() == TIMEOUT_LINE.strip():
+            if current_unittest_path is None or len(unittests) == 0:
+                # we timed out here before even running something
+                continue
+            ran_tests = {}
+            fails = 0
+            errs = 0
+            ok = 0
+            skip = 0
+            for test,status in unittest_tests.items():
+                status = " ".join(status).lower()
+                ran_tests[test.strip()] = status
+                if "skipped" in status:
+                    skip += 1
+                elif "fail" in status:
+                    fails += 1
+                elif "ok" in status:
+                    ok += 1
+                else:
+                    errs += 1
+
+            tagfile = ".".join([os.path.splitext(unittests[-1])[0], "txt"])
+            prefix = os.path.splitext(current_unittest_path)[0].replace("/", ".")
+            import glob
+            candidates = glob.glob("**/" + tagfile, recursive=True)
+            for candidate in candidates:
+                with open(candidate) as f:
+                    for tagline in f.readlines():
+                        tagline = tagline.replace(prefix, "__main__") # account different runner for tagged and this
+                        tagline = tagline.replace("*", "").strip()
+                        tstcls, tst = tagline.rsplit(".", 1)
+                        test = "{} ({})".format(tst, tstcls)
+                        if test not in ran_tests:
+                            ran_tests[test] = "ok"
+                            # count the tagged test we didn't get to as an additional passing test
+                            ok += 1
+                        else:
+                            status = ran_tests[test]
+                            if "error" in status or "fail" in status:
+                                # interesting: it's tagged but failed here
+                                log("{} did not pass here but is tagged as passing", test)
+
+            stats[unittests[-1]].num_tests = ok + fails + errs + skip
+            stats[unittests[-1]].num_fails = fails
+            stats[unittests[-1]].num_errors = errs
+            stats[unittests[-1]].num_skipped = skip
+            unittest_tests.clear()
             continue
 
     return unittests, error_messages, java_exceptions, stats
@@ -811,7 +875,7 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
         '<b>{}</b>'.format(r[Col.UNITTEST])
         for r in rows if r[Col.NUM_ERRORS] == -1
     ])
-    
+
     usecase_scores = dict()
     for usecase_name, usecase_modules in USE_CASE_GROUPS.items():
         score_sum = 0
@@ -821,9 +885,9 @@ def save_as_html(report_name, rows, totals, missing_modules, cannot_import_modul
                     if r[Col.NUM_PASSES] > 0 and r[Col.NUM_TESTS] > 0:
                         score_sum += r[Col.NUM_PASSES] / r[Col.NUM_TESTS]
         usecase_scores[usecase_name] = score_sum / len(usecase_modules)
-            
-    
-    use_case_stats_info = ul("<b>Summary per Use Case</b>", 
+
+
+    use_case_stats_info = ul("<b>Summary per Use Case</b>",
                                 [ grid((progress_bar(avg_score * 100, color="info"), 3), '<b>{}</b>'.format(usecase_name)) +
                                   grid(", ".join(USE_CASE_GROUPS[usecase_name])) for usecase_name, avg_score in usecase_scores.items()])
 
