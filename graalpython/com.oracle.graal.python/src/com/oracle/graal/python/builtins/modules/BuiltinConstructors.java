@@ -208,7 +208,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2879,18 +2878,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object func, Object self,
+        Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (dataModelLibrary.isCallable(func)) {
-                    return factory().createMethod(self, func);
-                } else {
-                    throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+            if (dataModelLibrary.isCallable(func)) {
+                return factory().createMethod(self, func);
+            } else {
+                throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
             }
         }
     }
@@ -3061,8 +3054,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization(guards = "isMapping(frame, obj, lib)", limit = "1")
-        Object doMapping(@SuppressWarnings("unused") VirtualFrame frame, Object klass, PythonObject obj,
+        @Specialization(guards = "isMapping(obj, lib)", limit = "1")
+        Object doMapping(Object klass, PythonObject obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             return factory().createMappingproxy(klass, obj);
         }
@@ -3073,23 +3066,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
         }
 
-        @Specialization(guards = {"!isMapping(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
-        Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object klass, Object obj,
+        @Specialization(guards = {"!isMapping(obj, lib)", "!isNoValue(obj)"}, limit = "1")
+        Object doInvalid(@SuppressWarnings("unused") Object klass, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
-        protected boolean isMapping(VirtualFrame frame, Object o, PythonObjectLibrary library) {
-            PythonContext context = getContextRef().get();
+        protected boolean isMapping(Object o, PythonObjectLibrary library) {
             if (o instanceof PList || o instanceof PTuple) {
                 return false;
             }
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                return library.isMapping(o);
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
-            }
+            return library.isMapping(o);
         }
     }
 
