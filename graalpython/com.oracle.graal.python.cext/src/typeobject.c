@@ -456,12 +456,6 @@ int PyType_Ready(PyTypeObject* cls) {
         } else {
             bases = PyTuple_Pack(1, base);
         }
-    } else {
-    	// we need to resolve pointers to Python classes
-    	Py_ssize_t n_bases = PyObject_Length(bases);
-    	for(Py_ssize_t i=0; i < n_bases; i++) {
-    		PyTuple_SetItem(bases, i, PyTuple_GetItem(bases, i));
-    	}
     }
     cls->tp_bases = bases;
 
