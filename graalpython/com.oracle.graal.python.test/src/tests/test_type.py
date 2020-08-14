@@ -37,6 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+import unittest
+
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -44,6 +48,7 @@ def assert_raises(err, fn, *args, **kwargs):
     except err:
         raised = True
     assert raised
+
 
 def test_base():
     A = type('A', (), {})
@@ -181,3 +186,69 @@ def test_dir_sorted():
 def test_isinstance_non_type():
     import typing
     assert isinstance(1, typing.AbstractSet) is False
+
+
+@unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
+class test_flags():
+    import functools
+
+    def testfunction(self):
+        """some doc"""
+        return self
+
+    TPFLAGS_METHOD_DESCRIPTOR = 1 << 17
+    TPFLAGS_LONG_SUBCLASS = 1 << 24
+    TPFLAGS_LIST_SUBCLASS = 1 << 25
+    TPFLAGS_TUPLE_SUBCLASS = 1 << 26
+    TPFLAGS_BYTES_SUBCLASS = 1 << 27
+    TPFLAGS_UNICODE_SUBCLASS = 1 << 28
+    TPFLAGS_DICT_SUBCLASS = 1 << 29
+    TPFLAGS_BASE_EXC_SUBCLASS = 1 << 30
+    TPFLAGS_TYPE_SUBCLASS = 1 << 31
+
+    cached = functools.lru_cache(1)(testfunction)
+
+    assert not type(repr).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+    assert type(list.append).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+    assert type(list.__add__).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+    assert type(testfunction).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+    assert type(cached).__flags__ & TPFLAGS_METHOD_DESCRIPTOR
+
+    class MyInt(int):
+        pass
+
+    class MyList(list):
+        pass
+
+    class MyTuple(tuple):
+        pass
+
+    class MyBytes(bytes):
+        pass
+
+    class MyStr(str):
+        pass
+
+    class MyDict(dict):
+        pass
+
+    for x, flag in [
+        (1, TPFLAGS_LONG_SUBCLASS),
+        (MyInt(1), TPFLAGS_LONG_SUBCLASS),
+
+        ([1,2], TPFLAGS_LIST_SUBCLASS),
+        (MyList([1,2]), TPFLAGS_LIST_SUBCLASS),
+
+        ((1,2), TPFLAGS_TUPLE_SUBCLASS),
+        (MyTuple((1,2)), TPFLAGS_TUPLE_SUBCLASS),
+
+        (b"123", TPFLAGS_BYTES_SUBCLASS),
+        (MyBytes(b"123"), TPFLAGS_BYTES_SUBCLASS),
+
+        ("123", TPFLAGS_UNICODE_SUBCLASS),
+        (MyStr("123"), TPFLAGS_UNICODE_SUBCLASS),
+
+        ({"1":1, "2": 2}, TPFLAGS_DICT_SUBCLASS),
+        (MyDict({"1":1, "2": 2}), TPFLAGS_DICT_SUBCLASS),
+    ]:
+        assert type(x).__flags__ & flag
