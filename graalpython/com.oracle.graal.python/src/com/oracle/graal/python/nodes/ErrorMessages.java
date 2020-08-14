@@ -54,6 +54,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD = "argument must be an int, or have a fileno() method.";
     public static final String ARG_MUST_BE_NUMBER = "%s argument must be a number, not '%p'";
     public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
+    public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
@@ -557,4 +558,5 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = "unsupported format string passed to %p.__format__";
     public static final String ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED = "only single target (not %s) can be annotated";
     public static final String ILLEGAL_TARGET_FOR_ANNOTATION = "illegal target for annotation";
+    public static final String SLICE_INDICES_TYPE_ERROR = "slice indices must be integers or have an __index__ method";
 }

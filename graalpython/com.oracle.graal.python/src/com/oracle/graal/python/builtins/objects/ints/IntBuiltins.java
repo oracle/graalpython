@@ -638,7 +638,7 @@ public class IntBuiltins extends PythonBuiltins {
         PTuple doGenericInt(VirtualFrame frame, Object left, Object right,
                         @Cached FloorDivNode floorDivNode,
                         @Cached ModNode modNode) {
-            return factory().createTuple(new Object[]{floorDivNode.execute(frame, left, right), modNode.execute(frame, left, right)});
+            return factory().createTuple(new Object[]{floorDivNode.call(frame, left, right), modNode.call(frame, left, right)});
         }
 
         @SuppressWarnings("unused")
@@ -2723,7 +2723,7 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class AsIntegerRatioNode extends PythonBuiltinNode {
         @Specialization
         Object get(VirtualFrame frame, Object self, @Cached IntNode intNode) {
-            return factory().createTuple(new Object[]{intNode.execute(frame, self), 1});
+            return factory().createTuple(new Object[]{intNode.call(frame, self), 1});
         }
     }
 

@@ -194,11 +194,33 @@ suite = {
             "checkstyle": "com.oracle.graal.python",
         },
 
+        "com.oracle.graal.python.annotations": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "jacoco": "include",
+            "javaCompliance": "8+",
+            "checkstyle": "com.oracle.graal.python",
+        },
+
+        # GRAALPYTHON-PROCESSOR
+        "com.oracle.graal.python.processor": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.graal.python.annotations"
+            ],
+            "jacoco": "exclude",
+            "javaCompliance": "8+",
+            "checkstyle": "com.oracle.graal.python",
+            "workingSets": "Truffle,Python",
+        },
+
         # GRAALPYTHON
         "com.oracle.graal.python": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
+                "com.oracle.graal.python.annotations",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
@@ -212,7 +234,10 @@ suite = {
             "jacoco": "include",
             "javaCompliance": "8+",
             "checkstyleVersion": "8.8",
-            "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
+            "annotationProcessors": [
+                "GRAALPYTHON_PROCESSOR",
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
         },
@@ -356,6 +381,15 @@ suite = {
             ],
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
+        },
+
+        "GRAALPYTHON_PROCESSOR": {
+            "dependencies": [
+                "com.oracle.graal.python.processor",
+            ],
+            "sourcesPath": "graalpython-processor.src.zip",
+            "description": "GraalPython Java annotations processor",
+            "overlaps": ["GRAALPYTHON"], # sharing the annotations
         },
 
         "GRAALPYTHON_PYTHON_LIB": {

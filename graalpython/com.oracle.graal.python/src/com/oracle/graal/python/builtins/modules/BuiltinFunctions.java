@@ -1733,7 +1733,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isString(obj)")
         public Object asciiGeneric(VirtualFrame frame, Object obj,
                         @Cached ReprNode reprNode) {
-            String repr = (String) reprNode.execute(frame, obj);
+            String repr = (String) reprNode.call(frame, obj);
             byte[] bytes = BytesUtils.unicodeEscape(repr);
             return newString(bytes);
         }

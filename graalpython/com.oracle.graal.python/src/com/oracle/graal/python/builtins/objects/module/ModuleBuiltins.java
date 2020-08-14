@@ -258,7 +258,7 @@ public class ModuleBuiltins extends PythonBuiltins {
             }
 
             try {
-                return objectGetattrNode.execute(frame, self, key);
+                return objectGetattrNode.call(frame, self, key);
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.AttributeError, isAttrError);
                 Object getAttr = readGetattr.execute(self, __GETATTR__);

@@ -104,7 +104,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeInt(frame, receiver);
+        return builtinNode.callInt(frame, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
@@ -113,7 +113,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeInt(frame, receiver);
+        return builtinNode.callInt(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -123,7 +123,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeLong(frame, receiver);
+        return builtinNode.callLong(frame, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
@@ -132,7 +132,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeLong(frame, receiver);
+        return builtinNode.callLong(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -142,7 +142,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeDouble(frame, receiver);
+        return builtinNode.callDouble(frame, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
@@ -151,7 +151,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeDouble(frame, receiver);
+        return builtinNode.callDouble(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -161,7 +161,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeBool(frame, receiver);
+        return builtinNode.callBool(frame, receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
@@ -170,7 +170,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.executeBool(frame, receiver);
+        return builtinNode.callBool(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
@@ -178,7 +178,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return builtinNode.call(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -188,7 +188,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return builtinNode.call(frame, receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
@@ -198,7 +198,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg);
+        return builtinNode.call(frame, func.getSelf(), arg);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -207,7 +207,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, receiver);
+        return builtinNode.call(frame, receiver);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -216,7 +216,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg);
+        return builtinNode.call(frame, func.getSelf(), arg);
     }
 
     @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",

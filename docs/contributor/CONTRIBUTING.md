@@ -86,6 +86,13 @@ that library. If something is missing that is commonly used, we probably have
 some Node for it, but it may be a good idea to add it to the
 `PythonObjectLibrary` for easier discovery.
 
+GraalPython has its own variant of the argument clinic preprocessor. It is
+activated by: extending `PythonXXXClinicBuiltinNode` (e.g.,
+`PythonBinaryClinicBuiltinNode`), using `@ArgumentClinic` annotations
+on the builtin node class, and overriding the `getArgumentClinic` method
+to return the class that will be generated from the annotations (it will be
+named the same as the node class plus `ClinicProviderGen` suffix).
+
 Sometimes, you will not easily find what exactly happens for a given piece of
 code when that involves more than just a simple built-in call. The `dis` module
 on CPython can often help get an angle on what a particular piece of code is

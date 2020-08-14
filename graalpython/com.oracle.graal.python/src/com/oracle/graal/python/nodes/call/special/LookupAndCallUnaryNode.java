@@ -137,19 +137,19 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static int callInt(VirtualFrame frame, int receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeInt(frame, receiver);
+        return function.callInt(frame, receiver);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBool(VirtualFrame frame, int receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, receiver);
+        return function.callBool(frame, receiver);
     }
 
     @Specialization(guards = "function != null")
     static Object callObject(VirtualFrame frame, int receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.execute(frame, receiver);
+        return function.call(frame, receiver);
     }
 
     // long
@@ -157,19 +157,19 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static long callInt(VirtualFrame frame, long receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeLong(frame, receiver);
+        return function.callLong(frame, receiver);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBool(VirtualFrame frame, long receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, receiver);
+        return function.callBool(frame, receiver);
     }
 
     @Specialization(guards = "function != null")
     static Object callObject(VirtualFrame frame, long receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.execute(frame, receiver);
+        return function.call(frame, receiver);
     }
 
     // double
@@ -177,19 +177,19 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static double callInt(VirtualFrame frame, double receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeDouble(frame, receiver);
+        return function.callDouble(frame, receiver);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBool(VirtualFrame frame, double receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, receiver);
+        return function.callBool(frame, receiver);
     }
 
     @Specialization(guards = "function != null")
     static Object callObject(VirtualFrame frame, double receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.execute(frame, receiver);
+        return function.call(frame, receiver);
     }
 
     // bool
@@ -197,13 +197,13 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBool(VirtualFrame frame, boolean receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, receiver);
+        return function.callBool(frame, receiver);
     }
 
     @Specialization(guards = "function != null")
     static Object callObject(VirtualFrame frame, boolean receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.execute(frame, receiver);
+        return function.call(frame, receiver);
     }
 
     // PNone
@@ -211,7 +211,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(guards = "function != null")
     static Object callObject(VirtualFrame frame, PNone receiver,
                     @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.execute(frame, receiver);
+        return function.call(frame, receiver);
     }
 
     // Object

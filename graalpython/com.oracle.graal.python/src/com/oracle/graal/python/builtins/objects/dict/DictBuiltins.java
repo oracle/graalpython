@@ -335,7 +335,7 @@ public final class DictBuiltins extends PythonBuiltins {
         protected static Object misssing(VirtualFrame frame, Object self, Object key,
                         @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
                         @Exclusive @Cached DefaultMissingNode missing) {
-            return missing.execute(frame, self, key);
+            return missing.call(frame, self, key);
         }
 
         protected static boolean hasMissing(Object self, PythonObjectLibrary lib) {

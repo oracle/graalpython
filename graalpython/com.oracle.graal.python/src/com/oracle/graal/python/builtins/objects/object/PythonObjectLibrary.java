@@ -874,6 +874,17 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * @see #asJavaLongWithState
+     */
+    public final long asJavaLong(Object receiver, VirtualFrame frame) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return asJavaLongWithState(receiver, state);
+    }
+
+    /**
      * Coerces the receiver into an index-sized integer, using the same mechanism as
      * {@code PyNumber_AsSsize_t}:
      * <ol>
@@ -955,6 +966,17 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public boolean isTrue(Object receiver) {
         return isTrueWithState(receiver, null);
+    }
+
+    /**
+     * @see #isTrueWithState
+     */
+    public final boolean isTrue(Object receiver, VirtualFrame frame) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return isTrueWithState(receiver, state);
     }
 
     /**

@@ -1119,7 +1119,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             appendNode.execute(list, remainder);
-            reverseNode.execute(frame, list);
+            reverseNode.call(frame, list);
             return list;
         }
 
@@ -1204,7 +1204,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 end = index - 1;
             }
 
-            reverseNode.execute(frame, list);
+            reverseNode.call(frame, list);
             return list;
         }
     }

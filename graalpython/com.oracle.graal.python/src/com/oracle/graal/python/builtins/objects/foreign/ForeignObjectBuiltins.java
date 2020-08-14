@@ -866,7 +866,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         protected Object doIt(VirtualFrame frame, Object object) {
-            return getObjectStrNode().execute(frame, object);
+            return getObjectStrNode().call(frame, object);
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {
