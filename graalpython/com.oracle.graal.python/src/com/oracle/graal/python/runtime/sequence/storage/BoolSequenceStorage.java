@@ -258,6 +258,11 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
+    @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (boolean[]) arrayObject;
     }

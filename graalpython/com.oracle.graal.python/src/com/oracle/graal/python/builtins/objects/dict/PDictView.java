@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
@@ -120,9 +121,14 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
 
+        @CompilerDirectives.TruffleBoundary
+        private DictEntry nextVal() {
+            return (DictEntry) super.next();
+        }
+
         @Override
         public Object next(PythonObjectFactory factory) {
-            DictEntry value = (DictEntry) super.next();
+            DictEntry value = nextVal();
             return factory.createTuple(new Object[]{value.getKey(), value.getValue()});
         }
     }

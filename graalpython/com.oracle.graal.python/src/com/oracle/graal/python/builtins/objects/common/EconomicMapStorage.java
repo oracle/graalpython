@@ -282,13 +282,32 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
+    @TruffleBoundary
+    static boolean advance(MapCursor<DictKey, Object> cursor) {
+        return cursor.advance();
+    }
+
+    @TruffleBoundary
+    static DictKey getDictKey(MapCursor<DictKey, Object> cursor) {
+        return cursor.getKey();
+    }
+
+    static Object getKey(MapCursor<DictKey, Object> cursor) {
+        return getDictKey(cursor).value;
+    }
+
+    @TruffleBoundary
+    static Object getValue(MapCursor<DictKey, Object> cursor) {
+        return cursor.getValue();
+    }
+
     @Override
     @ExportMessage
     Object forEachUntyped(ForEachNode<Object> node, Object arg) {
         Object result = arg;
         MapCursor<DictKey, Object> cursor = map.getEntries();
-        while (cursor.advance()) {
-            result = node.execute(cursor.getKey().value, result);
+        while (advance(cursor)) {
+            result = node.execute(getKey(cursor), result);
         }
         return result;
     }
@@ -325,8 +344,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                result = lib.setItem(result, cursor.getKey().value, cursor.getValue());
+            while (advance(cursor)) {
+                result = lib.setItem(result, getKey(cursor), getValue(cursor));
             }
             return result;
         }
@@ -387,9 +406,9 @@ public class EconomicMapStorage extends HashingStorage {
             Object[] entries = new Object[self.map.size() * 2];
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
             int i = 0;
-            while (cursor.advance()) {
-                Object key = cursor.getKey().value;
-                Object value = cursor.getValue();
+            while (advance(cursor)) {
+                Object key = getKey(cursor);
+                Object value = getValue(cursor);
                 entries[i++] = hasSideEffect(key, lookup) ? key : null;
                 entries[i++] = hasSideEffect(value, lookup) ? value : null;
             }
@@ -423,9 +442,9 @@ public class EconomicMapStorage extends HashingStorage {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                Object otherValue = other.map.get(cursor.getKey(), compareLib1, compareLib2, findProfile, gotState, state);
-                if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
+            while (advance(cursor)) {
+                Object otherValue = other.map.get(getDictKey(cursor), compareLib1, compareLib2, findProfile, gotState, state);
+                if (otherValue != null && !compareLib1.equalsWithState(otherValue, getValue(cursor), compareLib2, state)) {
                     return false;
                 }
             }
@@ -443,9 +462,9 @@ public class EconomicMapStorage extends HashingStorage {
                 return false;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                Object otherValue = selflib.getItemWithState(self, cursor.getKey().value, state);
-                if (otherValue != null && !compareLib1.equalsWithState(otherValue, cursor.getValue(), compareLib2, state)) {
+            while (advance(cursor)) {
+                Object otherValue = selflib.getItemWithState(self, getKey(cursor), state);
+                if (otherValue != null && !compareLib1.equalsWithState(otherValue, getValue(cursor), compareLib2, state)) {
                     return false;
                 }
             }
@@ -467,8 +486,8 @@ public class EconomicMapStorage extends HashingStorage {
                 return 1;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey(), lib, lib, findProfile, gotState, state)) {
+            while (advance(cursor)) {
+                if (!other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
                     return 1;
                 }
             }
@@ -489,8 +508,8 @@ public class EconomicMapStorage extends HashingStorage {
                 return 1;
             }
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (!lib.hasKeyWithState(other, cursor.getKey().value, state)) {
+            while (advance(cursor)) {
+                if (!lib.hasKeyWithState(other, getKey(cursor), state)) {
                     return 1;
                 }
             }
@@ -512,9 +531,9 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (other.map.containsKey(cursor.getKey(), lib, lib, findProfile, gotState, state)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+            while (advance(cursor)) {
+                if (other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
+                    result.map.put(getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -526,9 +545,9 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("other") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (hlib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+            while (advance(cursor)) {
+                if (hlib.hasKey(other, getKey(cursor))) {
+                    result.map.put(getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -545,9 +564,9 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (!other.map.containsKey(cursor.getKey(), lib, lib, findProfile, gotState, state)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+            while (advance(cursor)) {
+                if (!other.map.containsKey(getDictKey(cursor), lib, lib, findProfile, gotState, state)) {
+                    result.map.put(getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -559,9 +578,9 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("other") HashingStorageLibrary hlib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
-            while (cursor.advance()) {
-                if (!hlib.hasKey(other, cursor.getKey().value)) {
-                    result.map.put(cursor.getKey(), cursor.getValue());
+            while (advance(cursor)) {
+                if (!hlib.hasKey(other, getKey(cursor))) {
+                    result.map.put(getDictKey(cursor), getValue(cursor));
                 }
             }
             return result;
@@ -607,9 +626,9 @@ public class EconomicMapStorage extends HashingStorage {
         builder.append("map(size=").append(length()).append(", {");
         String sep = "";
         MapCursor<DictKey, Object> cursor = map.getEntries();
-        while (cursor.advance()) {
+        while (advance(cursor)) {
             builder.append(sep);
-            builder.append("(").append(cursor.getKey().value).append(",").append(cursor.getValue()).append(")");
+            builder.append("(").append(getKey(cursor)).append(",").append(getValue(cursor)).append(")");
             sep = ",";
         }
         builder.append("})");

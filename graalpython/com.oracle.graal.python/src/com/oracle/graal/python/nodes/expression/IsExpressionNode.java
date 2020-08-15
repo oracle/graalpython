@@ -310,13 +310,13 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             if (left == right) {
                 return true;
             }
-            if (lib.isForeignObject(left) || lib.isReflectedObject(left, left)) {
+            if (lib.isForeignObject(left)) {
                 // If left is foreign, this will check its identity via the interop message. If left
                 // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
                 // will not appear foreign, but the isSame call will unpack it from its wrapper and
                 // may lead straight back to this node, but this time with the unwrapped Python
                 // object that will no longer satisfy the isReflectedObject condition.
-                return lib.isSame(left, right);
+                return lib.isSame(lib.getDelegatedValue(left), right);
             }
             return false;
         }

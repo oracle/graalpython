@@ -1319,7 +1319,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(limit = "6")
         public int len(VirtualFrame frame, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             return lib.lengthWithFrame(obj, frame);

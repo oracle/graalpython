@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -140,9 +141,10 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         public Object args(VirtualFrame frame, PBaseException self, Object value,
-                        @Cached("create()") CastToListNode castToList) {
+                        @Cached CastToListNode castToList,
+                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
             PList list = castToList.execute(frame, value);
-            self.setArgs(factory().createTuple(list.getSequenceStorage().getCopyOfInternalArray()));
+            self.setArgs(factory().createTuple(copy.execute(list.getSequenceStorage())));
             return PNone.NONE;
         }
 

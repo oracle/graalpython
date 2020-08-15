@@ -88,7 +88,7 @@ public abstract class IteratorNodes {
             return -1;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "2")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "4")
         int length(VirtualFrame frame, Object iterable,
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary toInt,

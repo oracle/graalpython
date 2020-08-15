@@ -92,6 +92,11 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
     public PTuple[] getInternalPTupleArray() {
         return values;
     }

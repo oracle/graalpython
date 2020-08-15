@@ -42,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -100,8 +101,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PByteArray add(PByteArray self, PIBytesLike other,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
-            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
+            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), getStorage.execute(other));
             updateSequenceStorage(self, res);
             return self;
         }

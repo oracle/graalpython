@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -402,9 +403,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer) {
+        void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
             writeByte(TYPE_LIST, version, buffer);
-            Object[] items = l.getSequenceStorage().getInternalArray();
+            Object[] items = getArray.execute(l.getSequenceStorage());
             writeInt(items.length, version, buffer);
             for (int i = 0; i < items.length; i++) {
                 getRecursiveNode().execute(frame, items[i], version, buffer);

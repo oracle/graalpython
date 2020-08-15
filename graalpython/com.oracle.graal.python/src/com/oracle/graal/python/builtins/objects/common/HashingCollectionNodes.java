@@ -44,6 +44,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFac
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
@@ -61,17 +64,11 @@ public abstract class HashingCollectionNodes {
     public abstract static class LenNode extends PNodeWithContext {
         public abstract int execute(PHashingCollection c);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        static int getLenCached(PHashingCollection c,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            return lib.length(cachedClass.cast(c).getDictStorage());
-        }
-
-        @Specialization(replaces = "getLenCached", limit = "1")
-        static int getLenGeneric(PHashingCollection c,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(c.getDictStorage());
+        @Specialization(limit = "4")
+        static int getLen(PHashingCollection c,
+                        @Cached GetDictStorageNode getStorage,
+                        @CachedLibrary("getStorage.execute(c)") HashingStorageLibrary lib) {
+            return lib.length(getStorage.execute(c));
         }
 
         public static LenNode create() {
@@ -83,23 +80,15 @@ public abstract class HashingCollectionNodes {
     public abstract static class SetItemNode extends PNodeWithContext {
         public abstract void execute(VirtualFrame frame, PHashingCollection c, Object key, Object value);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void doSetItemCached(VirtualFrame frame, PHashingCollection c, Object key, Object value,
+        @Specialization(limit = "4")
+        void doSetItem(VirtualFrame frame, PHashingCollection c, Object key, Object value,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            HashingStorage storage = cachedClass.cast(c).getDictStorage();
-            storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
-            cachedClass.cast(c).setDictStorage(storage);
-        }
-
-        @Specialization(replaces = "doSetItemCached", limit = "1")
-        void doSetItemGeneric(VirtualFrame frame, PHashingCollection c, Object key, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached GetDictStorageNode getStorage,
+                        @Cached SetDictStorageNode setStorage,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = c.getDictStorage();
+            HashingStorage storage = getStorage.execute(c);
             storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
-            c.setDictStorage(storage);
+            setStorage.execute(c, storage);
         }
 
         public static SetItemNode create() {
@@ -113,14 +102,18 @@ public abstract class HashingCollectionNodes {
 
         public abstract HashingStorage execute(PHashingCollection c);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        HashingStorage getStorageCached(PHashingCollection c,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            return cachedClass.cast(c).getDictStorage();
+        @Specialization
+        static HashingStorage get(PBaseSet c) {
+            return c.getDictStorage();
         }
 
-        @Specialization(replaces = "getStorageCached")
-        static HashingStorage getStorageGeneric(PHashingCollection c) {
+        @Specialization
+        static HashingStorage get(PDict c) {
+            return c.getDictStorage();
+        }
+
+        @Specialization
+        static HashingStorage get(PMappingproxy c) {
             return c.getDictStorage();
         }
 
@@ -139,14 +132,18 @@ public abstract class HashingCollectionNodes {
 
         public abstract void execute(PHashingCollection c, HashingStorage storage);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void setStorageCached(PHashingCollection c, HashingStorage storage,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(storage);
+        @Specialization
+        static void set(PBaseSet c, HashingStorage storage) {
+            c.setDictStorage(storage);
         }
 
-        @Specialization(replaces = "setStorageCached")
-        static void getStorageGeneric(PHashingCollection c, HashingStorage storage) {
+        @Specialization
+        static void set(PDict c, HashingStorage storage) {
+            c.setDictStorage(storage);
+        }
+
+        @Specialization
+        static void set(PMappingproxy c, HashingStorage storage) {
             c.setDictStorage(storage);
         }
 

@@ -333,4 +333,9 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         lookupStableAssumption.invalidate(msg);
     }
 
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
 }

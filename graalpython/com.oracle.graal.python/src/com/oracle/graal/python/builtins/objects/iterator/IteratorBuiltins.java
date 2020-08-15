@@ -184,6 +184,11 @@ public class IteratorBuiltins extends PythonBuiltins {
             throw raise(StopIteration);
         }
 
+        @CompilerDirectives.TruffleBoundary
+        private Object nextDictValue(PDictView.PBaseDictIterator<?> self) {
+            return self.next(factory());
+        }
+
         @Specialization(guards = "!self.isExhausted()")
         public Object next(PDictView.PBaseDictIterator<?> self,
                         @Cached ConditionProfile sizeChanged,
@@ -193,7 +198,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {
                     throw raise(RuntimeError, ErrorMessages.CHANGED_SIZE_DURING_ITERATION, "dictionary");
                 }
-                return self.next(factory());
+                return nextDictValue(self);
             }
             self.setExhausted();
             throw raise(PythonErrorType.StopIteration);

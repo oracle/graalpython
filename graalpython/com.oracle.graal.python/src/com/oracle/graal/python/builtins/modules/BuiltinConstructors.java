@@ -268,7 +268,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, Object cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "5") PythonObjectLibrary lib) {
             int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
@@ -302,13 +302,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
-        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
 
             Object it = getIteratorNode.executeWith(frame, iterable);
             byte[] arr = new byte[16];
@@ -887,7 +887,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createStringReverseIterator(cls, value);
         }
 
-        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "3")
+        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "4")
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @CachedLibrary("sequence") PythonObjectLibrary lib,
                         @Cached("create(__REVERSED__)") LookupSpecialMethodNode reversedNode,
@@ -1602,7 +1602,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
-        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "2")
+        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
@@ -3105,7 +3105,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
 
         // limit is 2 because we expect PBytes or String
-        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
+        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
         Object call(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -3113,12 +3113,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
-                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
+            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             Object[] namesArr = getObjectArrayNode.execute(names);
@@ -3134,7 +3133,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             lnotabBytes);
         }
 
-        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
+        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
         Object call(VirtualFrame frame, Object cls, Object argcount,
                         int posonlyargcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
@@ -3142,13 +3141,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         Object firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
-                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary objectLibrary,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
+            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             Object[] namesArr = getObjectArrayNode.execute(names);
