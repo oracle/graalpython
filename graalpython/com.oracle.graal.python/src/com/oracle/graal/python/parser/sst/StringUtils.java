@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public class StringUtils {
@@ -148,33 +149,24 @@ public class StringUtils {
                         continue;
                     // Hex Unicode: u????
                     case 'u':
-                        if (i >= st.length() - 5) {
-                            ch = 'u';
-                            break;
-                        }
-                        int code = Integer.parseInt(
-                                        "" + st.charAt(i + 2) + st.charAt(i + 3) + st.charAt(i + 4) + st.charAt(i + 5), 16);
+                        int code = getHexValue(st, i + 2, 4);
                         sb.append(Character.toChars(code));
                         i += 5;
                         continue;
                     // Hex Unicode: U????????
                     case 'U':
-                        if (i >= st.length() - 9) {
-                            ch = 'U';
-                            break;
+                        code = getHexValue(st, i + 2, 8);
+                        if (Character.isValidCodePoint(code)) {
+                            sb.append(Character.toChars(code));
+                        } else {
+                            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + ILLEGAl_CHARACTER, i, i + 9);
                         }
-                        code = Integer.parseInt(st.substring(i + 2, i + 10), 16);
-                        sb.append(Character.toChars(code));
                         i += 9;
                         continue;
                     // Hex Unicode: x??
                     case 'x':
-                        if (i >= st.length() - 3) {
-                            ch = 'u';
-                            break;
-                        }
-                        int hexCode = Integer.parseInt("" + st.charAt(i + 2) + st.charAt(i + 3), 16);
-                        sb.append(Character.toChars(hexCode));
+                        code = getHexValue(st, i + 2, 2);
+                        sb.append(Character.toChars(code));
                         i += 3;
                         continue;
                     case 'N':
@@ -204,7 +196,46 @@ public class StringUtils {
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";
     private static final String MALFORMED_ERROR = " malformed \\N character escape";
+    private static final String TRUNCATED_XXX_ERROR = "truncated \\xXX escape";
+    private static final String TRUNCATED_UXXXX_ERROR = "truncated \\uXXXX escape";
+    private static final String TRUNCATED_UXXXXXXXX_ERROR = "truncated \\UXXXXXXXX escape";
     private static final String UNKNOWN_UNICODE_ERROR = " unknown Unicode character name";
+    private static final String ILLEGAl_CHARACTER = "illegal Unicode character";
+
+    private static int getHexValue(String text, int start, int len) {
+        int digit;
+        int result = 0;
+        for (int index = start; index < (start + len); index++) {
+            if (index < text.length()) {
+                digit = Character.digit(text.charAt(index), 16);
+                if (digit == -1) {
+                    // Like cpython, raise error with the wrong character first,
+                    // even if there are not enough characters
+                    throw createTruncatedError(start - 2, index - 1, len);
+                }
+                result = result * 16 + digit;
+            } else {
+                throw createTruncatedError(start - 2, index - 1, len);
+            }
+        }
+        return result;
+    }
+
+    private static PException createTruncatedError(int startIndex, int endIndex, int len) {
+        String truncatedMessage = null;
+        switch (len) {
+            case 2:
+                truncatedMessage = TRUNCATED_XXX_ERROR;
+                break;
+            case 4:
+                truncatedMessage = TRUNCATED_UXXXX_ERROR;
+                break;
+            case 8:
+                truncatedMessage = TRUNCATED_UXXXXXXXX_ERROR;
+                break;
+        }
+        return PythonLanguage.getCore().raise(PythonBuiltinClassType.UnicodeDecodeError, UNICODE_ERROR + truncatedMessage, startIndex, endIndex);
+    }
 
     /**
      * Replace '/N{Unicode Character Name}' with the code point of the character.

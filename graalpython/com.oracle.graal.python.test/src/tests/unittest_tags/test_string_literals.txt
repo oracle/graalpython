@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_bytes_incomplete
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_bytes_normal
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_bytes_raw
+*graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_str_incomplete
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_str_normal
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_str_raw
 *graalpython.lib-python.3.test.test_string_literals.TestLiterals.test_eval_str_u
