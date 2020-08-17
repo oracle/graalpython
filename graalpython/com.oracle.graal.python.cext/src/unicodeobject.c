@@ -278,6 +278,8 @@ MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) 
                 c[1] = 's';
                 allocated = variable = as_char_pointer(converter(va_arg(va, PyObject*)));
                 break;
+            case 'd':
+            	break;
             case '%':
                 // literal %
                 break;
