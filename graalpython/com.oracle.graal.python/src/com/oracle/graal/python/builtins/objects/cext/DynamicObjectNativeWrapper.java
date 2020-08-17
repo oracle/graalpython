@@ -504,8 +504,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
         static long doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
-                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object val = getAttrNode.execute(object, __WEAKLISTOFFSET__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
@@ -518,8 +517,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_VECTORCALL_OFFSET, key)")
         static long doTpVectorcallOffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
-                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object val = lookupNativeMemberNode.execute(object, TP_VECTORCALL_OFFSET, TypeBuiltins.TYPE_VECTORCALL_OFFSET);
             return val == PNone.NO_VALUE ? 0L : lib.asSize(val);
         }
