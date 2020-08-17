@@ -201,7 +201,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1498,26 +1497,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
 
             return 0;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_GetTpFlags", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
-
-        @Specialization(limit = "1")
-        static long doPythonObject(PythonNativeWrapper nativeWrapper,
-                        @Shared("getTypeFlagsNode") @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Shared("objectLib") @CachedLibrary(limit = "3") PythonObjectLibrary objectLib,
-                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
-            return getTypeFlagsNode.execute(objectLib.getLazyPythonClass(lib.getDelegate(nativeWrapper)));
-        }
-
-        @Specialization
-        static long doPythonObject(PythonAbstractObject object,
-                        @Shared("getTypeFlagsNode") @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Shared("objectLib") @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) {
-            return getTypeFlagsNode.execute(objectLib.getLazyPythonClass(object));
         }
     }
 
