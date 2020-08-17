@@ -1505,36 +1505,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
 
-        @Child private GetTypeFlagsNode getTypeFlagsNode;
-        @Child private GetClassNode getClassNode;
-
         @Specialization(limit = "1")
-        long doPythonObject(PythonNativeWrapper nativeWrapper,
+        static long doPythonObject(PythonNativeWrapper nativeWrapper,
+                        @Shared("getTypeFlagsNode") @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Shared("objectLib") @CachedLibrary(limit = "3") PythonObjectLibrary objectLib,
                         @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
-            Object pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
-            return getGetTypeFlagsNode().execute(pclass);
+            return getTypeFlagsNode.execute(objectLib.getLazyPythonClass(lib.getDelegate(nativeWrapper)));
         }
 
         @Specialization
-        long doPythonObject(PythonAbstractObject object) {
-            Object pclass = getGetClassNode().execute(object);
-            return getGetTypeFlagsNode().execute(pclass);
-        }
-
-        private GetClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode;
-        }
-
-        private GetTypeFlagsNode getGetTypeFlagsNode() {
-            if (getTypeFlagsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTypeFlagsNode = insert(GetTypeFlagsNode.create());
-            }
-            return getTypeFlagsNode;
+        static long doPythonObject(PythonAbstractObject object,
+                        @Shared("getTypeFlagsNode") @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Shared("objectLib") @CachedLibrary(limit = "3") PythonObjectLibrary objectLib) {
+            return getTypeFlagsNode.execute(objectLib.getLazyPythonClass(object));
         }
     }
 

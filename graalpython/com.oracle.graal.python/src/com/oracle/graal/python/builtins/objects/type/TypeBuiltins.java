@@ -33,11 +33,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FLAGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -76,15 +78,21 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -132,12 +140,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1143,19 +1145,17 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__flags__", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __FLAGS__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class FlagsNode extends PythonUnaryBuiltinNode {
-        @Child TypeNodes.GetTypeFlagsNode getFlagsNode = TypeNodes.GetTypeFlagsNode.create();
-
-        @Specialization
-        Object flags(PythonAbstractClass self) {
-            return getFlagsNode.execute(self);
-        }
-
-        @Specialization
-        Object flags(PythonBuiltinClassType self) {
-            return getFlagsNode.execute(getCore().lookupType(self));
+        @Specialization(limit = "3")
+        static Object doGeneric(Object self,
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached GetTypeFlagsNode getTypeFlagsNode) {
+            if (PGuards.isClass(self, lib)) {
+                return getTypeFlagsNode.execute(self);
+            }
+            return PNone.NO_VALUE;
         }
     }
 }

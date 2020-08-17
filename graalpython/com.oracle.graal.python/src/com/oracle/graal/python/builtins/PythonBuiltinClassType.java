@@ -78,7 +78,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PDictValueIterator(BuiltinNames.DICT_VALUEITERATOR),
     PDictReverseValueIterator(BuiltinNames.DICT_REVERSE_VALUEITERATOR),
     PDictValuesView(BuiltinNames.DICT_VALUES),
-    PEllipsis("ellipsis"),
+    PEllipsis("ellipsis", false),
     PEnumerate("enumerate", BuiltinNames.BUILTINS),
     PMap("map", BuiltinNames.BUILTINS),
     PFloat("float", BuiltinNames.BUILTINS),
@@ -92,8 +92,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMemoryView("memoryview", BuiltinNames.BUILTINS),
     PMethod("method"),
     PMMap("mmap", "mmap"),
-    PNone("NoneType"),
-    PNotImplemented("NotImplementedType"),
+    PNone("NoneType", false),
+    PNotImplemented("NotImplementedType", false),
     PRandom("Random", "_random"),
     PRange("range", BuiltinNames.BUILTINS, false),
     PReferenceType("ReferenceType", "_weakref"),
@@ -109,7 +109,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PythonModule("module"),
     PythonObject("object", BuiltinNames.BUILTINS),
     Super("super", BuiltinNames.BUILTINS),
-    PCode("code"),
+    PCode("code", false),
     PZip("zip", BuiltinNames.BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", BuiltinNames.BUILTINS),
@@ -238,6 +238,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     PythonBuiltinClassType(String name, String publicInModule) {
         this(name, publicInModule, true);
+    }
+
+    PythonBuiltinClassType(String name, boolean basetype) {
+        this(name, null, basetype);
     }
 
     PythonBuiltinClassType(String name) {

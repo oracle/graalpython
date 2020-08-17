@@ -793,6 +793,7 @@ class PyCapsule:
     name = None
     pointer = None
     context = None
+    __flags__ = 0
 
     def __init__(self, name, pointer, destructor):
         self.name = name

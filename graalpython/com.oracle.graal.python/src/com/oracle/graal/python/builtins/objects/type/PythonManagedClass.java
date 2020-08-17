@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -49,13 +50,12 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import java.util.ArrayList;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
 
@@ -65,7 +65,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
     private final Shape instanceShape;
-    private final FlagsContainer flags;
     private String name;
     private String qualName;
 
@@ -86,8 +85,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         } else {
             unsafeSetSuperClass(baseClasses);
         }
-
-        this.flags = new FlagsContainer(getSuperClass());
 
         // Compute MRO
         this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
@@ -286,34 +283,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public PythonAbstractClass[] getBaseClasses() {
         return baseClasses;
-    }
-
-    public void setFlags(long flags) {
-        this.flags.setValue(flags);
-    }
-
-    FlagsContainer getFlagsContainer() {
-        return flags;
-    }
-
-    /**
-     * Flags are copied from the initial dominant base class. However, classes may already be
-     * created before the C API was initialized, i.e., flags were not set.
-     */
-    static final class FlagsContainer {
-        PythonAbstractClass initialDominantBase;
-        long flags;
-
-        public FlagsContainer(PythonAbstractClass superClass) {
-            this.initialDominantBase = superClass;
-        }
-
-        private void setValue(long flags) {
-            if (initialDominantBase != null) {
-                initialDominantBase = null;
-            }
-            this.flags = flags;
-        }
     }
 
     public PythonClassNativeWrapper getClassNativeWrapper() {
