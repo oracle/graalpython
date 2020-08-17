@@ -78,7 +78,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
-        public abstract Object execute(Object arg, Object arg2);
+        public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
     }
 
     protected final String name;
@@ -367,7 +367,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
         Object leftCallable = getattr.execute(frame, leftClass, leftValue);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
-                return runErrorHandler(leftValue, right);
+                return runErrorHandler(frame, leftValue, right);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -428,7 +428,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
             result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            return runErrorHandler(leftValue, rightValue);
+            return runErrorHandler(frame, leftValue, rightValue);
         }
         return result;
     }
@@ -445,12 +445,12 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype, notImplementedBranch);
     }
 
-    private Object runErrorHandler(Object left, Object right) {
+    private Object runErrorHandler(VirtualFrame frame, Object left, Object right) {
         if (handler == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             handler = insert(handlerFactory.get());
         }
-        return handler.execute(left, right);
+        return handler.execute(frame, left, right);
     }
 
     public String getName() {

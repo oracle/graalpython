@@ -134,7 +134,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
                 @Child private GetAttributeNode getClassGetItemNode;
 
                 @Override
-                public Object execute(Object arg, Object arg2) {
+                public Object execute(VirtualFrame frame, Object arg, Object arg2) {
                     if (PGuards.isPythonClass(arg)) {
                         if (getClassGetItemNode == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
