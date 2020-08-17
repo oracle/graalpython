@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,7 +78,16 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
         return null;
     }
 
-    @Specialization(guards = "localsDict != null")
+    @Specialization(guards = {"localsDict != null", "getLocalsDict(frame) == localsDict"}, //
+                    assumptions = "singleContextAssumption()", limit = "2")
+    void deleteFromLocalsSingleCtx(VirtualFrame frame,
+                    @Cached(value = "getLocalsDict(frame)", weak = true) Object localsDict,
+                    @Cached("create()") DeleteItemNode delItemNode) {
+        // class namespace overrides closure
+        delItemNode.executeWith(frame, localsDict, identifier);
+    }
+
+    @Specialization(guards = "localsDict != null", replaces = "deleteFromLocalsSingleCtx")
     void deleteFromLocals(VirtualFrame frame,
                     @Bind("getLocalsDict(frame)") Object localsDict,
                     @Cached("create()") DeleteItemNode delItemNode) {
@@ -87,8 +96,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     }
 
     @Specialization(guards = "localsDict == null")
-    void delete(VirtualFrame frame,
-                    @Bind("getLocalsDict(frame)") Object localsDict,
+    void deleteSingleCtx(VirtualFrame frame,
+                    @SuppressWarnings("unused") @Bind("getLocalsDict(frame)") Object localsDict,
                     @Cached("createDeleteNsItem()") StatementNode deleteNsItem) {
         // delete attribute actual attribute
         deleteNsItem.executeVoid(frame);
