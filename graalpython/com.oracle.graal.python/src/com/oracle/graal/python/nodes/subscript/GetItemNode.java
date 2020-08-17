@@ -41,6 +41,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
@@ -57,8 +58,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     private static final String P_OBJECT_IS_NOT_SUBSCRIPTABLE = "'%p' object is not subscriptable";
-
-    @Child private LookupAndCallBinaryNode callGetitemNode;
 
     public ExpressionNode getPrimary() {
         return getLeftNode();
@@ -124,47 +123,49 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     @Specialization(replaces = {"doBuiltinList", "doBuiltinTuple"})
-    Object doAnyObject(VirtualFrame frame, Object primary, Object index) {
-        if (callGetitemNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callGetitemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__, null, () -> new LookupAndCallBinaryNode.NotImplementedHandler() {
-                @Child private IsBuiltinClassProfile isBuiltinClassProfile;
-                @Child private PRaiseNode raiseNode;
-                @Child private CallNode callClassGetItemNode;
-                @Child private GetAttributeNode getClassGetItemNode;
-
-                @Override
-                public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                    if (PGuards.isPythonClass(arg)) {
-                        if (getClassGetItemNode == null) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
-                            isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
-                        }
-                        Object classGetItem = null;
-                        try {
-                            classGetItem = getClassGetItemNode.executeObject(frame, arg);
-                        } catch (PException e) {
-                            e.expect(AttributeError, isBuiltinClassProfile);
-                            // fall through to normal error handling
-                        }
-                        if (classGetItem != null) {
-                            if (callClassGetItemNode == null) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                callClassGetItemNode = insert(CallNode.create());
-                            }
-                            return callClassGetItemNode.execute(frame, classGetItem, arg2);
-                        }
-                    }
-                    if (raiseNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseNode.create());
-                    }
-                    throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
-                }
-            }));
-        }
+    Object doAnyObject(VirtualFrame frame, Object primary, Object index,
+                    @Cached("createGetItemLookupAndCall()") LookupAndCallBinaryNode callGetitemNode) {
         return callGetitemNode.executeObject(frame, primary, index);
     }
 
+    public static LookupAndCallBinaryNode createGetItemLookupAndCall() {
+        return LookupAndCallBinaryNode.create(__GETITEM__, null, GetItemNodeNotImplementedHandler::new);
+    }
+
+    private static final class GetItemNodeNotImplementedHandler extends NotImplementedHandler {
+        @Child private IsBuiltinClassProfile isBuiltinClassProfile;
+        @Child private PRaiseNode raiseNode;
+        @Child private CallNode callClassGetItemNode;
+        @Child private GetAttributeNode getClassGetItemNode;
+
+        @Override
+        public Object execute(VirtualFrame frame, Object arg, Object arg2) {
+            if (PGuards.isPythonClass(arg)) {
+                if (getClassGetItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getClassGetItemNode = insert(GetAttributeNode.create(__CLASS_GETITEM__));
+                    isBuiltinClassProfile = insert(IsBuiltinClassProfile.create());
+                }
+                Object classGetItem = null;
+                try {
+                    classGetItem = getClassGetItemNode.executeObject(frame, arg);
+                } catch (PException e) {
+                    e.expect(AttributeError, isBuiltinClassProfile);
+                    // fall through to normal error handling
+                }
+                if (classGetItem != null) {
+                    if (callClassGetItemNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        callClassGetItemNode = insert(CallNode.create());
+                    }
+                    return callClassGetItemNode.execute(frame, classGetItem, arg2);
+                }
+            }
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(TypeError, P_OBJECT_IS_NOT_SUBSCRIPTABLE, arg);
+        }
+    }
 }
