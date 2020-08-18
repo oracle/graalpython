@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallWi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;

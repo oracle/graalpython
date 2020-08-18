@@ -130,7 +130,6 @@ public abstract class NativeCAPISymbols {
     private static final String FUN_GET_DOUBLE_PTR_T_TYPEID = "get_double_ptr_t_typeid";
     private static final String FUN_GET_PY_SSIZE_PTR_T_TYPEID = "get_Py_ssize_ptr_t_typeid";
 
-
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {
         Field[] declaredFields = NativeCAPISymbols.class.getDeclaredFields();
