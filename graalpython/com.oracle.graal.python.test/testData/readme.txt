@@ -59,7 +59,7 @@ $ cd graalpython/com.oracle.graal.python.test/testData
 
 $ find . -name "*.tast" -delete
 
-$ mx unittest BasicTests FunctionDefFromCPTests FuncDefTests ExpressionsFromCPTests LambdaInFunctionTests AssignmentTests ImportTests ListAndSlicingTests DictAndSetTests AwaitAndAsyncTests ClassDefTests GeneratorAndCompForTests YieldStatementTests RuntimeFileTests
+$ mx punittest com.oracle.graal.python.test.parser
 
 --------------------------------------------------
 

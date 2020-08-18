@@ -155,39 +155,39 @@ Scope: []
             FreeVars: [type]
     Scope: _HashedSeq
         Kind: Class
-        FrameDescriptor: [__doc__, __slots__, __hash__, __init__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__doc__, __slots__, __hash__, __init__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __hash__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, tup, hash, __class__]
+            FrameDescriptor: [self, <return_val>, tup, hash]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: partialmethod
         Kind: Class
-        FrameDescriptor: [__get__, __repr__, __doc__, __init__, __isabstractmethod__, __class__, _make_unbound_method]
-        CellVars: [__class__]
+        FrameDescriptor: [__get__, __repr__, __doc__, __init__, __isabstractmethod__, _make_unbound_method]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __isabstractmethod__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __get__
             Kind: Function
-            FrameDescriptor: [result, new_func, obj, get, self, cls, <return_val>, __class__]
+            FrameDescriptor: [result, new_func, obj, get, self, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _make_unbound_method
             Kind: Function
-            FrameDescriptor: [_method, self, <return_val>, __class__]
+            FrameDescriptor: [_method, self, <return_val>]
             CellVars: [self]
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: _method
                 Kind: Function
                 FrameDescriptor: [args, rest, call_args, keywords, cls_or_self, <>temp7, <>temp8, self, call_keywords, <return_val>]
@@ -195,9 +195,9 @@ Scope: []
                 FreeVars: [self]
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [args, keywords, self, format_string, <return_val>, __class__]
+            FrameDescriptor: [args, keywords, self, format_string, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
@@ -205,9 +205,9 @@ Scope: []
                 FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [args, func, keywords, self, <return_val>, __class__]
+            FrameDescriptor: [args, func, keywords, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: partial
         Kind: Class
         FrameDescriptor: [__reduce__, __setstate__, __call__, __repr__, __doc__, __slots__, __new__, __class__]
@@ -215,19 +215,19 @@ Scope: []
         FreeVars: Empty
         Scope: __setstate__
             Kind: Function
-            FrameDescriptor: [args, func, <>temp7, <>temp8, <>temp9, namespace, <>temp10, self, kwds, state, <return_val>, __class__]
+            FrameDescriptor: [args, func, <>temp6, <>temp7, <>temp8, <>temp9, namespace, self, kwds, state, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __reduce__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [args, qualname, self, <return_val>, __class__]
+            FrameDescriptor: [args, qualname, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
@@ -240,9 +240,9 @@ Scope: []
                 FreeVars: Empty
         Scope: __call__
             Kind: Function
-            FrameDescriptor: [args, keywords, <>temp6, newkeywords, self, <>temp5, <return_val>, __class__]
+            FrameDescriptor: [args, keywords, newkeywords, self, <>temp4, <>temp5, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __new__
             Kind: Function
             FrameDescriptor: [args, keywords, func, <>temp7, tmpkw, <>temp8, <>temp9, self, cls, <return_val>, __class__]
@@ -255,39 +255,39 @@ Scope: []
         FreeVars: Empty
         Scope: K
             Kind: Class
-            FrameDescriptor: [__le__, __lt__, mycmp, __ge__, __slots__, __gt__, __eq__, __hash__, __init__, __class__]
-            CellVars: [__class__]
+            FrameDescriptor: [__le__, __lt__, mycmp, __ge__, __slots__, __gt__, __eq__, __hash__, __init__]
+            CellVars: Empty
             FreeVars: [mycmp]
             Scope: __ge__
                 Kind: Function
-                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__, mycmp]
+                FreeVars: [mycmp]
             Scope: __le__
                 Kind: Function
-                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__, mycmp]
+                FreeVars: [mycmp]
             Scope: __eq__
                 Kind: Function
-                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__, mycmp]
+                FreeVars: [mycmp]
             Scope: __gt__
                 Kind: Function
-                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__, mycmp]
+                FreeVars: [mycmp]
             Scope: __lt__
                 Kind: Function
-                FrameDescriptor: [other, mycmp, self, <return_val>, __class__]
+                FrameDescriptor: [other, mycmp, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__, mycmp]
+                FreeVars: [mycmp]
             Scope: __init__
                 Kind: Function
-                FrameDescriptor: [obj, self, <return_val>, __class__]
+                FrameDescriptor: [obj, self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__]
+                FreeVars: Empty
     Scope: total_ordering
         Kind: Function
         FrameDescriptor: [opfunc, <>temp6, root, cls, roots, opname, <>temp5, <return_val>]

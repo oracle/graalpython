@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,106]`class OrderedDict(di...`
                 Name: OrderedDict
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [setup, __class__]
+                FrameDescriptor: 1 slots [setup]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,106]`class OrderedDict(di...`
                   ReturnTargetNode SourceSection: [0,106]`class OrderedDict(di...`
                     Body: BlockNode SourceSection: None
@@ -73,20 +73,20 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [27,106]`def setup(dict_setit...`
                               Name: setup
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: dict_setitem
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [dict_setitem, __class__, <return_val>]
+                              FrameDescriptor: 2 slots [dict_setitem, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [27,106]`def setup(dict_setit...`
                                 ReturnTargetNode SourceSection: [27,106]`def setup(dict_setit...`
@@ -113,16 +113,8 @@ ModuleRootNode Name: <module 'classDef07'> SourceSection: [0,106]`class OrderedD
                                               Identifier: dict
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [18,22]`dict`

@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,129]`class Test():â†µ    de...`
                 Name: Test
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 3 slots [fn1, fn2, __class__]
+                FrameDescriptor: 2 slots [fn1, fn2]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,129]`class Test():â†µ    de...`
                   ReturnTargetNode SourceSection: [0,129]`class Test():â†µ    de...`
                     Body: BlockNode SourceSection: None
@@ -56,20 +56,20 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [18,70]`def fn1(format):â†µ   ...`
                               Name: fn1
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: format
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 3 slots [format, __class__, <return_val>]
+                              FrameDescriptor: 2 slots [format, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [18,70]`def fn1(format):â†µ   ...`
                                 ReturnTargetNode SourceSection: [18,70]`def fn1(format):â†µ   ...`
@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                            Frame: [1,<return_val>,Illegal]
                                           BinaryArithmeticExpression SourceSection: [51,64]`format % args`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __mod__
@@ -97,7 +97,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                               Identifier: args
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         SetItemNodeGen SourceSection: [70,129]`def fn2(*args, **kwd...`
                           ArgumentExpressionNode SourceSection: None
@@ -108,20 +108,20 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [70,129]`def fn2(*args, **kwd...`
                               Name: fn2
                               Signature: varArgs=True, varKeywordArgs=True, noArguments=False, positionalOnly=False, requiresKeywordArgs=False, varArgsIdx=0
                                 Keyword Names: None
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 4 slots [args, kwds, __class__, <return_val>]
+                              FrameDescriptor: 3 slots [args, kwds, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [70,129]`def fn2(*args, **kwd...`
                                 ReturnTargetNode SourceSection: [70,129]`def fn2(*args, **kwd...`
@@ -146,7 +146,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [3,<return_val>,Illegal]
+                                            Frame: [2,<return_val>,Illegal]
                                           PythonCallNodeGen SourceSection: [109,128]`self(*args, **kwds)`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None
@@ -164,15 +164,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                               Identifier: self
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [2,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

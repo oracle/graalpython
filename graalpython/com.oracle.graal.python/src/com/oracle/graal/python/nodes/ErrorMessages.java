@@ -188,6 +188,7 @@ public abstract class ErrorMessages {
     public static final String S_DIVISION_BY_ZERO = "%s division by zero";
     public static final String S_DIVISION_OR_MODULO_BY_ZERO = "%s division or modulo by zero";
     public static final String SUPER_NO_CLASS = "super(): no arguments";
+    public static final String SUPER_EMPTY_CLASS = "super(): empty __class__ cell";
     public static final String EMPTY_SEPARATOR = "empty separator";
     public static final String EMPTY_STR_FOR_COMPLEX = "empty string for complex()";
     public static final String END_MUST_BE_NONE_OR_STRING = "end must be None or a string, not %p";

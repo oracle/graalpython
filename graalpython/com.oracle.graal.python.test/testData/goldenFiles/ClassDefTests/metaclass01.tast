@@ -32,18 +32,18 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                 FreeVarSlots: None
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [0,35]`class A:↵    class B...`
                   Name: A
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                     Param Names: namespace
-                  CelVars: __class__
+                  CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 2 slots [B, __class__]
+                  FrameDescriptor: 1 slots [B]
                   ExecutionSlots:
                     FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
+                    CellVarsSlots: None
                   InnerRootNode SourceSection: [0,35]`class A:↵    class B...`
                     ReturnTargetNode SourceSection: [0,35]`class A:↵    class B...`
                       Body: BlockNode SourceSection: None
@@ -73,18 +73,18 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                 FreeVarSlots: None
                                 ExecutionSlots:
                                   FreeVarsSlots: None
-                                  CellVarsSlots: __class__, 
+                                  CellVarsSlots: None
                                 ClassBodyRootNode SourceSection: [13,35]`class B:↵        pas...`
                                   Name: B
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                     Param Names: namespace
-                                  CelVars: __class__
+                                  CelVars: None
                                   FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 1 slots [__class__]
+                                  FrameDescriptor:  Empty
                                   ExecutionSlots:
                                     FreeVarsSlots: None
-                                    CellVarsSlots: __class__, 
+                                    CellVarsSlots: None
                                   InnerRootNode SourceSection: [13,35]`class B:↵        pas...`
                                     ReturnTargetNode SourceSection: [13,35]`class B:↵        pas...`
                                       Body: BlockNode SourceSection: None
@@ -100,23 +100,7 @@ ModuleRootNode Name: <module> SourceSection: [0,35]`class A:↵    class B...`
                                         FunctionBodyNode SourceSection: [30,34]`pass`
                                           ExpressionStatementNode SourceSection: [30,34]`pass`
                                             EmptyNode SourceSection: [30,34]`pass`
-                                        SetItemNodeGen SourceSection: None
-                                          ArgumentExpressionNode SourceSection: None
-                                            ReadIndexedArgumentNodeGen SourceSection: None
-                                              Index: 0
-                                          StringLiteralNode SourceSection: None
-                                          ReadLocalVariableNode SourceSection: None
-                                            Frame: [0,__class__,Illegal]
-                                            ReadVariableFromFrameNodeGen SourceSection: None
                                       Return Expresssion: ObjectLiteralNode SourceSection: None
                               StringLiteralNode SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
-                            Frame: [1,__class__,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None

@@ -15,16 +15,16 @@ Scope: []
             FreeVars: [MyIter, ret]
         Scope: MyIter
             Kind: Class
-            FrameDescriptor: [__iter__, __class__, __next__]
-            CellVars: [__class__]
+            FrameDescriptor: [__iter__, __next__]
+            CellVars: Empty
             FreeVars: Empty
             Scope: __next__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>, __class__]
+                FrameDescriptor: [self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__]
+                FreeVars: Empty
             Scope: __iter__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>, __class__]
+                FrameDescriptor: [self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__]
+                FreeVars: Empty

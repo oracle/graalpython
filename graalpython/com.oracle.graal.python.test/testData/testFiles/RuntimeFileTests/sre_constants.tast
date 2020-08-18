@@ -51,7 +51,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__module__, __init__, __class__, __doc__]
+              FrameDescriptor: 4 slots [__class__, __module__, __init__, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -374,7 +374,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Index: 0
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [2,__class__,Illegal]
+                        Frame: [0,__class__,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
@@ -403,7 +403,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
               CelVars: __class__
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 4 slots [__new__, __str__, __repr__, __class__]
+              FrameDescriptor: 4 slots [__class__, __new__, __str__, __repr__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: __class__, 
@@ -522,20 +522,20 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Arguments: None
                           KwArguments: None
                           Documentation: None
-                          FreeVarSlots: __class__, 
+                          FreeVarSlots: None
                           ExecutionSlots:
-                            FreeVarsSlots: __class__, 
+                            FreeVarsSlots: None
                             CellVarsSlots: None
                           FunctionRootNode SourceSection: [1799,1848]`def __str__(self):↵ ...`
                             Name: __str__
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: self
                             CelVars: None
-                            FreeVars: __class__
+                            FreeVars: None
                             NeedsCellFrame: False
-                            FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                            FrameDescriptor: 2 slots [self, <return_val>]
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             InnerRootNode SourceSection: [1799,1848]`def __str__(self):↵ ...`
                               ReturnTargetNode SourceSection: [1799,1848]`def __str__(self):↵ ...`
@@ -552,7 +552,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Illegal]
                                         GetAttributeNodeGen SourceSection: [1833,1842]`self.name`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: name
@@ -565,7 +565,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                       SetItemNodeGen SourceSection: [1848,1866]`__repr__ = __str__`
                         ArgumentExpressionNode SourceSection: None
@@ -587,7 +587,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Index: 0
                       StringLiteralNode SourceSection: None
                       ReadLocalVariableNode SourceSection: None
-                        Frame: [3,__class__,Illegal]
+                        Frame: [0,__class__,Illegal]
                         ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None

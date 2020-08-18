@@ -15,26 +15,26 @@ Scope: []
             FreeVars: Empty
             Scope: Test
                 Kind: Class
-                FrameDescriptor: [str, test, actual_global, method_and_var, __class__]
-                CellVars: [__class__]
+                FrameDescriptor: [str, test, actual_global, method_and_var]
+                CellVars: Empty
                 FreeVars: [method_and_var]
                 Scope: str
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [self, <return_val>]
                     CellVars: Empty
-                    FreeVars: [__class__]
+                    FreeVars: Empty
                 Scope: actual_global
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [self, <return_val>]
                     CellVars: Empty
-                    FreeVars: [__class__]
+                    FreeVars: Empty
                 Scope: test
                     Kind: Function
-                    FrameDescriptor: [self, method_and_var, <return_val>, __class__]
+                    FrameDescriptor: [self, method_and_var, <return_val>]
                     CellVars: Empty
-                    FreeVars: [__class__, method_and_var]
+                    FreeVars: [method_and_var]
                 Scope: method_and_var
                     Kind: Function
-                    FrameDescriptor: [self, <return_val>, __class__]
+                    FrameDescriptor: [self, <return_val>]
                     CellVars: Empty
-                    FreeVars: [__class__]
+                    FreeVars: Empty

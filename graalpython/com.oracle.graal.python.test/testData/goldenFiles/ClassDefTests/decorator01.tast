@@ -28,18 +28,18 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                 FreeVarSlots: None
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [17,33]`class foo():pass`
                   Name: foo
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                     Param Names: namespace
-                  CelVars: __class__
+                  CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 1 slots [__class__]
+                  FrameDescriptor:  Empty
                   ExecutionSlots:
                     FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
+                    CellVarsSlots: None
                   InnerRootNode SourceSection: [17,33]`class foo():pass`
                     ReturnTargetNode SourceSection: [17,33]`class foo():pass`
                       Body: BlockNode SourceSection: None
@@ -55,13 +55,5 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,33]`@class_decorat
                         FunctionBodyNode SourceSection: [29,33]`pass`
                           ExpressionStatementNode SourceSection: [29,33]`pass`
                             EmptyNode SourceSection: [29,33]`pass`
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
-                            Frame: [0,__class__,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None

@@ -20,18 +20,18 @@ ModuleRootNode Name: <module 'classDef06'> SourceSection: [0,49]`class DerivedCl
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,49]`class DerivedClassNa...`
                 Name: DerivedClassName
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 1 slots [__class__]
+                FrameDescriptor:  Empty
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,49]`class DerivedClassNa...`
                   ReturnTargetNode SourceSection: [0,49]`class DerivedClassNa...`
                     Body: BlockNode SourceSection: None
@@ -47,14 +47,6 @@ ModuleRootNode Name: <module 'classDef06'> SourceSection: [0,49]`class DerivedCl
                       FunctionBodyNode SourceSection: [45,49]`pass`
                         ExpressionStatementNode SourceSection: [45,49]`pass`
                           EmptyNode SourceSection: [45,49]`pass`
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [0,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [23,28]`Base1`

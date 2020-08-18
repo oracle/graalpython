@@ -2345,6 +2345,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     } catch (CannotCastException e) {
                         throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
                     }
+                } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
+                    // don't populate this attribute
                 } else {
                     pythonClass.setAttribute(key, value);
                 }

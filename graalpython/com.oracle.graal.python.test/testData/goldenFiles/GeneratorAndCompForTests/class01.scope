@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: OrderedDict
         Kind: Class
-        FrameDescriptor: [__reversed__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__reversed__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __reversed__
             Kind: Generator
-            FrameDescriptor: [root, self, curr, <return_val>, __class__]
+            FrameDescriptor: [root, self, curr, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty

@@ -24,18 +24,18 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                   FreeVarSlots: None
                   ExecutionSlots:
                     FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
+                    CellVarsSlots: None
                   ClassBodyRootNode SourceSection: [22,83]`class FalseRec:â†µ  de...`
                     Name: FalseRec
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                       Param Names: namespace
-                    CelVars: __class__
+                    CelVars: None
                     FreeVars: None
                     NeedsCellFrame: False
-                    FrameDescriptor: 2 slots [test, __class__]
+                    FrameDescriptor: 1 slots [test]
                     ExecutionSlots:
                       FreeVarsSlots: None
-                      CellVarsSlots: __class__, 
+                      CellVarsSlots: None
                     InnerRootNode SourceSection: [22,83]`class FalseRec:â†µ  de...`
                       ReturnTargetNode SourceSection: [22,83]`class FalseRec:â†µ  de...`
                         Body: BlockNode SourceSection: None
@@ -58,20 +58,20 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                 Arguments: None
                                 KwArguments: None
                                 Documentation: None
-                                FreeVarSlots: __class__, 
+                                FreeVarSlots: None
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 FunctionRootNode SourceSection: [40,83]`def test(self, arg):...`
                                   Name: test
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                     Param Names: self, arg
                                   CelVars: None
-                                  FreeVars: __class__
+                                  FreeVars: None
                                   NeedsCellFrame: False
-                                  FrameDescriptor: 4 slots [self, arg, __class__, <return_val>]
+                                  FrameDescriptor: 3 slots [self, arg, <return_val>]
                                   ExecutionSlots:
-                                    FreeVarsSlots: __class__, 
+                                    FreeVarsSlots: None
                                     CellVarsSlots: None
                                   InnerRootNode SourceSection: [40,83]`def test(self, arg):...`
                                     ReturnTargetNode SourceSection: [40,83]`def test(self, arg):...`
@@ -96,7 +96,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
                                               WriteLocalFrameSlotNodeGen SourceSection: None
-                                                Frame: [3,<return_val>,Illegal]
+                                                Frame: [2,<return_val>,Illegal]
                                               PythonCallUnary SourceSection: [72,83]`test(arg+1)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
@@ -111,16 +111,8 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                   IntegerLiteralNode SourceSection: [81,82]`1`
                                                     Value: 1
                                       Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                        Frame: [3,<return_val>,Illegal]
+                                        Frame: [2,<return_val>,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                          SetItemNodeGen SourceSection: None
-                            ArgumentExpressionNode SourceSection: None
-                              ReadIndexedArgumentNodeGen SourceSection: None
-                                Index: 0
-                            StringLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: None
-                              Frame: [1,__class__,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
       SideEffect:

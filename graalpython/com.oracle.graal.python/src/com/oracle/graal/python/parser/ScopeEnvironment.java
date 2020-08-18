@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
 import com.oracle.graal.python.nodes.cell.WriteLocalCellNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
@@ -128,9 +129,26 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
                 // was the declared variable seen before?
                 if (usedInScopes != null && !(definingScopeKind == ScopeInfo.ScopeKind.Module && definingScope.findFrameSlot(name) != null)) {
-                    // make the variable freevar and cellvar in scopes, where is used
-                    List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
-                    for (ScopeInfo scope : copy) {
+                    createCellAndFreeVars(usedInScopes, definingScope, name);
+                }
+            }
+        }
+
+        if (definingScopeKind == ScopeInfo.ScopeKind.Class) {
+            if (unresolvedVars.containsKey(__CLASS__)) {
+                // in the class scope the __class__ doesn't exist yet, but has to be treated
+                // as it is defined in enclosing class
+                String name = __CLASS__;
+                List<ScopeInfo> usedInScopes = unresolvedVars.get(name);
+                createCellAndFreeVars(usedInScopes, definingScope, name);
+            }
+            if (unresolvedVars.containsKey("super")) {
+                // when super is used in some inner socpe of class scope, then
+                // implicit __class__ has to be created.
+                List<ScopeInfo> usedInScopes = unresolvedVars.get("super");
+                List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
+                for (ScopeInfo scope : copy) {
+                    if (scope != null) {
                         // we need to find out, whether the scope is a under the defining scope
                         ScopeInfo tmpScope = scope;
                         ScopeInfo parentDefiningScope = definingScope.getParent();
@@ -139,18 +157,18 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                         }
                         if (definingScope == tmpScope) {
                             usedInScopes.remove(scope);
-                            scope.addFreeVar(name, true);
-                            definingScope.addCellVar(name);
+                            scope.addFreeVar(__CLASS__, true);
+                            definingScope.addCellVar(__CLASS__, true);
                             scope = scope.getParent();
-                            while (scope != null && scope != definingScope && (scope.findFrameSlot(name) == null || !scope.isFreeVar(name))) {
-                                scope.addFreeVar(name, true);
+                            while (scope != null && scope != definingScope && (scope.findFrameSlot(__CLASS__) == null || !scope.isFreeVar(__CLASS__))) {
+                                scope.addFreeVar(__CLASS__, true);
                                 scope = scope.getParent();
                             }
                         }
                     }
-                    if (usedInScopes.isEmpty()) {
-                        unresolvedVars.remove(name);
-                    }
+                }
+                if (usedInScopes.isEmpty()) {
+                    unresolvedVars.remove("super");
                 }
             }
         }
@@ -190,6 +208,34 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         }
         currentScope = currentScope.getParent();
         return definingScope;
+    }
+
+    private void createCellAndFreeVars(List<ScopeInfo> usedInScopes, ScopeInfo definingScope, String name) {
+        // make the variable freevar and cellvar in scopes, where is used
+        List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
+        for (ScopeInfo scope : copy) {
+            if (scope != null) {
+                // we need to find out, whether the scope is a under the defining scope
+                ScopeInfo tmpScope = scope;
+                ScopeInfo parentDefiningScope = definingScope.getParent();
+                while (tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
+                    tmpScope = tmpScope.getParent();
+                }
+                if (definingScope == tmpScope) {
+                    usedInScopes.remove(scope);
+                    scope.addFreeVar(name, true);
+                    definingScope.addCellVar(name, true);
+                    scope = scope.getParent();
+                    while (scope != null && scope != definingScope && (scope.findFrameSlot(name) == null || !scope.isFreeVar(name))) {
+                        scope.addFreeVar(name, true);
+                        scope = scope.getParent();
+                    }
+                }
+            }
+        }
+        if (usedInScopes.isEmpty()) {
+            unresolvedVars.remove(name);
+        }
     }
 
     public void addSeenVar(String name) {
@@ -324,11 +370,23 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
 
     private ReadNode findVariableNodeClass(String name) {
         FrameSlot cellSlot = null;
+        if (name.equals(__CLASS__)) {
+            boolean isFreeVar = currentScope.isFreeVar(name);
+            if (isFreeVar) {
+                // If __class__ is freevar in the class scope, then is stored in frameslot with
+                // different name.
+                // This is preventing corner situation, when body of class has two variables with
+                // the same name __class__. The first one is __class__ freevar comming from outer
+                // scope
+                // and the second one is __class__ (implicit) closure for inner methods,
+                // where __class__ or super is used. Both of them can have different values.
+                cellSlot = currentScope.findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
+                return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, isFreeVar);
+            }
+            return (ReadNode) factory.createReadClassAttributeNode(name, null, isFreeVar);
+        }
         if (isCellInCurrentScope(name)) {
             cellSlot = currentScope.findFrameSlot(name);
-        }
-        if (name.equals(__CLASS__)) {
-            return (ReadNode) factory.createReadClassAttributeNode(name, null, currentScope.isFreeVar(name));
         }
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
@@ -348,6 +406,19 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         } else if (isNonlocal(name)) {
             if (isInGeneratorScope()) {
                 return findVariableNodeInGenerator(name);
+            }
+            if (currentScope.getScopeKind() == ScopeInfo.ScopeKind.Class && __CLASS__.equals(name)) {
+                // If __class__ is freevar in the class scope, then is stored in frameslot with
+                // different name.
+                // This is preventing corner situation, when body of class has two variables with
+                // the same name __class__. The first one is __class__ freevar comming from outer
+                // scope
+                // and the second one is __class__ (implicit) closure for inner methods,
+                // where __class__ or super is used. Both of them can have different values.
+                FrameSlot slot = currentScope.findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
+                if (slot != null) {
+                    return (ReadNode) getReadNode(name, slot);
+                }
             }
             return findVariableInLocalOrEnclosingScopes(name);
         }

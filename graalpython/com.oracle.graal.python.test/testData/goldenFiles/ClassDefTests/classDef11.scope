@@ -10,11 +10,11 @@ Scope: []
         FreeVars: Empty
         Scope: named_tuple
             Kind: Class
-            FrameDescriptor: [n_sequence_fields, __name__, name, __repr__, fields, __class__]
-            CellVars: [__class__]
+            FrameDescriptor: [n_sequence_fields, __name__, name, __repr__, fields]
+            CellVars: Empty
             FreeVars: [fields, name]
             Scope: __repr__
                 Kind: Function
-                FrameDescriptor: [f, name, self, fields, <return_val>, __class__, sb]
+                FrameDescriptor: [f, name, self, fields, <return_val>, sb]
                 CellVars: Empty
-                FreeVars: [__class__, fields, name]
+                FreeVars: [fields, name]
