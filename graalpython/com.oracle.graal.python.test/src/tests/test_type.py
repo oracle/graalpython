@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 import sys
-import unittest
+from unittest import skipIf
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -188,8 +188,8 @@ def test_isinstance_non_type():
     assert isinstance(1, typing.AbstractSet) is False
 
 
-@unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
-class test_flags():
+@skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
+def test_flags():
     import functools
 
     def testfunction(self):
