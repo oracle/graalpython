@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -126,6 +127,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -224,16 +226,36 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static long doOther(PythonClass clazz) {
+        static long doPythonClass(PythonClass clazz,
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("getTpFlagsNode") @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+
             // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
             // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
             // should be fine to just set it.
-            return DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
+            long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
+
+            // flags are inherited
+            MroSequenceStorage mroStorage = getMroStorageNode.execute(clazz);
+            int n = lenNode.execute(mroStorage);
+            for (int i = 0; i < n; i++) {
+                Object mroEntry = getItemNode.execute(mroStorage, i);
+                if (mroEntry instanceof PythonBuiltinClass) {
+                    result |= doBuiltinClass((PythonBuiltinClass) mroEntry);
+                } else if (mroEntry instanceof PythonBuiltinClassType) {
+                    result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
+                } else if (mroEntry instanceof PythonAbstractNativeObject) {
+                    result |= doNative((PythonAbstractNativeObject) mroEntry, CExtNodes.GetTypeMemberNode.getUncached());
+                }
+            }
+            return result;
         }
 
         @Specialization
         static long doNative(PythonNativeClass clazz,
-                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+                        @Shared("getTpFlagsNode") @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
             return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
         }
     }
