@@ -1149,13 +1149,13 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FlagsNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        static Object doGeneric(Object self,
+        Object doGeneric(Object self,
                         @CachedLibrary("self") InteropLibrary lib,
                         @Cached GetTypeFlagsNode getTypeFlagsNode) {
             if (PGuards.isClass(self, lib)) {
                 return getTypeFlagsNode.execute(self);
             }
-            return PNone.NO_VALUE;
+            throw raise(PythonErrorType.TypeError, "descriptor '__flags__' for 'type' objects doesn't apply to '%p' object", self);
         }
     }
 }
