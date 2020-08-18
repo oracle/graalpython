@@ -82,6 +82,7 @@ public abstract class CopyKeywordsNode extends Node {
         }
 
         void addKeyword(String key, Object value) {
+            assert i < keywords.length: "CopyKeywordsNode: current index (over hashingStorage) exceeds keywords array length!";
             keywords[i++] = new PKeyword(key, value);
         }
 
