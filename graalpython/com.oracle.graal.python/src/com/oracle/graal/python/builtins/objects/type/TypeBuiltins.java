@@ -152,6 +152,7 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenPythonKey TYPE_ALLOC = new HiddenPythonKey(__ALLOC__);
     public static final HiddenPythonKey TYPE_DEALLOC = new HiddenPythonKey("__dealloc__");
     public static final HiddenPythonKey TYPE_FREE = new HiddenPythonKey("__free__");
+    public static final HiddenPythonKey TYPE_FLAGS = new HiddenPythonKey(__FLAGS__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

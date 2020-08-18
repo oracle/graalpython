@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -110,6 +112,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -127,7 +130,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -227,10 +229,28 @@ public abstract class TypeNodes {
 
         @Specialization
         static long doPythonClass(PythonClass clazz,
-                        @Cached GetMroStorageNode getMroStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
-                        @Shared("getTpFlagsNode") @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+                        @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
+                        @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Cached("createCountingProfile()") ConditionProfile profile) {
+
+            Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
+            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
+                // we have it under control; it must be a long
+                return (long) flagsObject;
+            }
+            long flags = computeFlags(clazz);
+            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+            return flags;
+        }
+
+        @Specialization
+        static long doNative(PythonNativeClass clazz,
+                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
+        }
+
+        @TruffleBoundary
+        private static long computeFlags(PythonClass clazz) {
 
             // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
             // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
@@ -238,26 +258,23 @@ public abstract class TypeNodes {
             long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
 
             // flags are inherited
-            MroSequenceStorage mroStorage = getMroStorageNode.execute(clazz);
-            int n = lenNode.execute(mroStorage);
+            MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
+            int n = SequenceStorageNodes.LenNode.getUncached().execute(mroStorage);
             for (int i = 0; i < n; i++) {
-                Object mroEntry = getItemNode.execute(mroStorage, i);
+                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
                 if (mroEntry instanceof PythonBuiltinClass) {
                     result |= doBuiltinClass((PythonBuiltinClass) mroEntry);
                 } else if (mroEntry instanceof PythonBuiltinClassType) {
                     result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
                 } else if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result |= doNative((PythonAbstractNativeObject) mroEntry, getTpFlagsNode);
+                    result |= doNative((PythonAbstractNativeObject) mroEntry, CExtNodesFactory.GetTypeMemberNodeGen.getUncached());
                 }
+                // 'PythonClass' is intentionally ignored because they do not actually add any
+                // interesting flags except that we already specify before the loop
             }
             return result;
         }
 
-        @Specialization
-        static long doNative(PythonNativeClass clazz,
-                        @Shared("getTpFlagsNode") @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
-        }
     }
 
     @GenerateUncached
