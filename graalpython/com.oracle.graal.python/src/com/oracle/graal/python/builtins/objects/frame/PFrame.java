@@ -55,6 +55,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
@@ -298,7 +299,12 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static RootCallTarget createCallTarget(Node location) {
-        return Truffle.getRuntime().createCallTarget(location.getRootNode());
+        RootNode rootNode = location.getRootNode();
+        RootCallTarget ct = rootNode.getCallTarget();
+        if (ct == null) {
+            ct = Truffle.getRuntime().createCallTarget(rootNode);
+        }
+        return ct;
     }
 
     public Object[] getArguments() {
