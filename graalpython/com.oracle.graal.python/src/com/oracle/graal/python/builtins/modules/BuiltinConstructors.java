@@ -95,7 +95,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -132,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -367,6 +367,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isComplexTypeProfile;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         private PComplex createComplex(Object cls, double real, double imaginary) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
@@ -536,11 +537,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex complexFromString(Object cls, String real, Object imaginary) {
+        PComplex complexFromString(VirtualFrame frame, Object cls, String real, Object imaginary) {
             if (imaginary != PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
-            return convertStringToComplex(real, cls);
+            return convertStringToComplex(frame, real, cls, real);
         }
 
         private IsBuiltinClassProfile getIsComplexTypeProfile() {
@@ -598,197 +599,123 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "complex.__new__(X): X", cls);
         }
 
-        // Taken from Jython PyString's __complex__() method
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private PComplex convertStringToComplex(String str, Object cls) {
-            boolean gotRe = false;
-            boolean gotIm = false;
-            boolean done = false;
-            boolean swError = false;
-            boolean openBracket = false;
-            boolean closeBracket = false;
-            int s = 0;
-            int n = str.length();
-            while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                s++;
+        // Adapted from CPython's complex_subtype_from_string
+        private PComplex convertStringToComplex(VirtualFrame frame, String src, Object cls, Object origObj) {
+            String str = FloatUtils.removeUnicodeAndUnderscores(src);
+            if (str == null) {
+                if (callReprNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                }
+                Object strStr = callReprNode.executeObject(frame, origObj);
+                if (PGuards.isString(strStr)) {
+                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_COMPLEX, strStr);
+                } else {
+                    // During the formatting of "ValueError: invalid literal ..." exception,
+                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                    // which gets later overwitten with the original "ValueError",
+                    // but without any message (since the message formatting failed)
+                    throw raise(ValueError);
+                }
             }
-
-            if (s == n) {
-                throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
+            PComplex c = convertStringToComplexOrNull(str, cls);
+            if (c == null) {
+                throw raise(ValueError, ErrorMessages.COMPLEX_ARG_IS_MALFORMED_STR);
             }
-
-            double z = -1.0;
-            double x = 0.0;
-            double y = 0.0;
-
-            int sign = 1;
-            do {
-                char c = str.charAt(s);
-
-                switch (c) {
-                    case '-':
-                    case '+':
-                        if (c == '-') {
-                            sign = -1;
-                        }
-                        if (done || s + 1 == n) {
-                            swError = true;
-                            break;
-                        }
-                        // a character is guaranteed, but it better be a digit
-                        // or J or j
-                        c = str.charAt(++s);  // eat the sign character
-                        // and check the next
-                        if (!Character.isDigit(c) && c != 'J' && c != 'j') {
-                            swError = true;
-                        }
-                        break;
-
-                    case 'J':
-                    case 'j':
-                        if (gotIm || done) {
-                            swError = true;
-                            break;
-                        }
-                        if (z < 0.0) {
-                            y = sign;
-                        } else {
-                            y = sign * z;
-                        }
-                        gotIm = true;
-                        done = gotRe;
-                        sign = 1;
-                        s++; // eat the J or j
-                        break;
-
-                    case ' ':
-                        while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                            s++;
-                        }
-                        if (s != n && !(openBracket && !closeBracket)) {
-                            swError = true;
-                        }
-                        break;
-                    case '(':
-                        if (!openBracket) {
-                            openBracket = true;
-                            s++;
-                            while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                                s++;
-                            }
-                        } else {
-                            swError = true;
-                        }
-                        break;
-                    case ')':
-                        if (!openBracket) {
-                            swError = true;
-                        } else {
-                            if (!closeBracket) {
-                                closeBracket = true;
-                                s++;
-                                while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                                    s++;
-                                }
-                            } else {
-                                swError = true;
-                            }
-                        }
-                        break;
-                    case '\\':
-                        // Handling letters defined through the unicode name database
-                        // This is a hack and should be solved in the parser itself? See issue
-                        // #GR-18284.
-                        // the current state is that we just try to skip such defined characters
-                        s++;
-                        if (s < n && 'N' == str.charAt(s)) {
-                            s++;
-                            if (s < n && '{' == str.charAt(s)) {
-                                s++;
-                                while (s < n && '}' != str.charAt(s)) {
-                                    s++;
-                                }
-                                if (s < n) {
-                                    s++; // eat '}'
-                                    break;
-                                }
-                            }
-                        }
-                        swError = true;
-                        break;
-                    default:
-                        boolean digitOrDot = (c == '.' || Character.isDigit(c));
-                        if (!digitOrDot) {
-                            swError = true;
-                            break;
-                        }
-                        int end = endDouble(str, s);
-                        try {
-                            z = Double.valueOf(str.substring(s, end)).doubleValue();
-                        } catch (NumberFormatException e) {
-                            swError = true;
-                            break;
-                        }
-
-                        s = end;
-                        if (s < n) {
-                            c = str.charAt(s);
-                            if (c == 'J' || c == 'j') {
-                                break;
-                            }
-                        }
-                        if (gotRe || gotIm /* "2j+1" is invalid string */) {
-                            swError = true;
-                            break;
-                        }
-
-                        /* accept a real part */
-                        x = sign * z;
-                        gotRe = true;
-                        done = gotIm;
-                        z = -1.0;
-                        sign = 1;
-                        break;
-
-                } /* end of switch */
-
-            } while (s < n && !swError);
-
-            if (openBracket != closeBracket) {
-                swError = true;
-            }
-
-            if (swError) {
-                throw raise(ValueError, ErrorMessages.MALFORMED_STR_FOR_COMPLEX, str.substring(s));
-            }
-
-            return createComplex(cls, x, y);
+            return c;
         }
 
-        // Taken from Jython PyString directly
-        public static int endDouble(String string, int s) {
-            int end = s;
-            int n = string.length();
-            while (end < n) {
-                char c = string.charAt(end++);
-                if (Character.isDigit(c)) {
-                    continue;
-                }
-                if (c == '.') {
-                    continue;
-                }
-                if (c == 'e' || c == 'E') {
-                    if (end < n) {
-                        c = string.charAt(end);
-                        if (c == '+' || c == '-') {
-                            end++;
-                        }
-                        continue;
-                    }
-                }
-                return end - 1;
+        // Adapted from CPython's complex_from_string_inner
+        @TruffleBoundary
+        private PComplex convertStringToComplexOrNull(String str, Object cls) {
+            int len = str.length();
+
+            // position on first nonblank
+            int i = FloatUtils.skipAsciiWhitespace(str, 0, len);
+
+            boolean gotBracket;
+            if (i < len && str.charAt(i) == '(') {
+                // Skip over possible bracket from repr().
+                gotBracket = true;
+                i = FloatUtils.skipAsciiWhitespace(str, i + 1, len);
+            } else {
+                gotBracket = false;
             }
-            return end;
+
+            double x, y;
+            boolean expectJ;
+
+            // first look for forms starting with <float>
+            FloatUtils.StringToDoubleResult res1 = FloatUtils.stringToDouble(str, i, len);
+            if (res1 != null) {
+                // all 4 forms starting with <float> land here
+                i = res1.position;
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (ch == '+' || ch == '-') {
+                    // <float><signed-float>j | <float><sign>j
+                    x = res1.value;
+                    FloatUtils.StringToDoubleResult res2 = FloatUtils.stringToDouble(str, i, len);
+                    if (res2 != null) {
+                        // <float><signed-float>j
+                        y = res2.value;
+                        i = res2.position;
+                    } else {
+                        // <float><sign>j
+                        y = ch == '+' ? 1.0 : -1.0;
+                        i++;
+                    }
+                    expectJ = true;
+                } else if (ch == 'j' || ch == 'J') {
+                    // <float>j
+                    i++;
+                    y = res1.value;
+                    x = 0;
+                    expectJ = false;
+                } else {
+                    // <float>
+                    x = res1.value;
+                    y = 0;
+                    expectJ = false;
+                }
+            } else {
+                // not starting with <float>; must be <sign>j or j
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (ch == '+' || ch == '-') {
+                    // <sign>j
+                    y = ch == '+' ? 1.0 : -1.0;
+                    i++;
+                } else {
+                    // j
+                    y = 1.0;
+                }
+                x = 0;
+                expectJ = true;
+            }
+
+            if (expectJ) {
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (!(ch == 'j' || ch == 'J')) {
+                    return null;
+                }
+                i++;
+            }
+
+            // trailing whitespace and closing bracket
+            i = FloatUtils.skipAsciiWhitespace(str, i, len);
+            if (gotBracket) {
+                // if there was an opening parenthesis, then the corresponding
+                // closing parenthesis should be right here
+                if (i >= len || str.charAt(i) != ')') {
+                    return null;
+                }
+                i = FloatUtils.skipAsciiWhitespace(str, i + 1, len);
+            }
+
+            // we should now be at the end of the string
+            if (i != len) {
+                return null;
+            }
+            return createComplex(cls, x, y);
         }
     }
 
@@ -996,97 +923,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return new String(bytes);
         }
 
-        private double convertStringToDouble(VirtualFrame frame, String str, Object origObj) {
-            try {
-                return convertStringToDoubleOrThrow(str);
-            } catch (NumberFormatException exc) {
-                if (callReprNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
-                }
-                Object strStr = callReprNode.executeObject(frame, origObj);
-                if (PGuards.isString(strStr)) {
-                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, strStr);
-                } else {
-                    // During the formatting of "ValueError: invalid literal ..." exception,
-                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
-                    // which gets later overwitten with the original "ValueError",
-                    // but without any message (since the message formatting failed)
-                    throw raise(ValueError);
-                }
-            }
-        }
-
-        // Adapted from Jython PyString's atof() method
-        @TruffleBoundary
-        private static double convertStringToDoubleOrThrow(String str) throws NumberFormatException {
-            StringBuilder s = null;
-            int n = str.length();
-
-            boolean containsUnderscores = false;
-            boolean containsN = false;
-            for (int i = 0; i < n; i++) {
-                char ch = str.charAt(i);
-                if (ch == '\u0000' || ch == 'x' || ch == 'X') {
-                    throw new NumberFormatException();
-                }
-                if (Character.isDigit(ch)) {
-                    if (s == null) {
-                        s = new StringBuilder(str);
+        private double convertStringToDouble(VirtualFrame frame, String src, Object origObj) {
+            String str = FloatUtils.removeUnicodeAndUnderscores(src);
+            // Adapted from CPython's float_from_string_inner
+            if (str != null) {
+                int len = str.length();
+                int offset = FloatUtils.skipAsciiWhitespace(str, 0, len);
+                FloatUtils.StringToDoubleResult res = FloatUtils.stringToDouble(str, offset, len);
+                if (res != null) {
+                    int end = FloatUtils.skipAsciiWhitespace(str, res.position, len);
+                    if (end == len) {
+                        return res.value;
                     }
-                    int val = Character.digit(ch, 10);
-                    s.setCharAt(i, Character.forDigit(val, 10));
-                }
-                if (Character.isWhitespace(ch)) {
-                    if (s == null) {
-                        s = new StringBuilder(str);
-                    }
-                    s.setCharAt(i, ' ');
-                }
-                containsUnderscores |= ch == '_';
-                containsN |= ch == 'n' || ch == 'N';
-            }
-            String sval = s != null ? s.toString().trim() : str;
-            if (containsUnderscores) {
-                sval = checkAndRemoveUnderscores(sval);
-            }
-            if (containsN) {
-                String lowSval = sval.toLowerCase(Locale.ENGLISH);
-                if (lowSval.equals("nan") || lowSval.equals("+nan")) {
-                    return Double.NaN;
-                } else if (lowSval.equals("-nan")) {
-                    return Math.copySign(Double.NaN, -1);
-                } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
-                    return Double.POSITIVE_INFINITY;
-                } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
-                    return Double.NEGATIVE_INFINITY;
                 }
             }
-            return Double.parseDouble(sval);
-        }
-
-        private static String checkAndRemoveUnderscores(String src) {
-            StringBuilder sb = new StringBuilder();
-            char prev = 0;
-            int len = src.length();
-            for (int i = 0; i < len; i++) {
-                char ch = src.charAt(i);
-                if (ch == '_') {
-                    if (!(prev >= '0' && prev <= '9')) {
-                        throw new NumberFormatException();
-                    }
-                } else {
-                    if (prev == '_' && !(ch >= '0' && ch <= '9')) {
-                        throw new NumberFormatException();
-                    }
-                    sb.append(ch);
-                }
-                prev = ch;
+            if (callReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
             }
-            if (prev == '_') {
-                throw new NumberFormatException();
+            Object strStr = callReprNode.executeObject(frame, origObj);
+            if (PGuards.isString(strStr)) {
+                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, strStr);
+            } else {
+                // During the formatting of "ValueError: invalid literal ..." exception,
+                // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                // which gets later overwitten with the original "ValueError",
+                // but without any message (since the message formatting failed)
+                throw raise(ValueError);
             }
-            return sb.toString();
         }
 
         @Specialization(guards = "!isNativeClass(cls)")

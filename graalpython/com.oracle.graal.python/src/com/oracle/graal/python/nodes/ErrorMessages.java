@@ -160,6 +160,7 @@ public abstract class ErrorMessages {
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
+    public static final String COMPLEX_ARG_IS_MALFORMED_STR = "complex() arg is a malformed string";
     public static final String COMPLEX_CANT_TAKE_ARG = "complex() can't take second arg if first is a string";
     public static final String COMPLEX_EXPONENTIATION = "complex exponentiation";
     public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
@@ -169,6 +170,7 @@ public abstract class ErrorMessages {
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
     public static final String CONVERTER_FUNC_FAILED_TO_SET_ERROR = "converter function failed to set an error on failure";
     public static final String CORRUPTED_CAPI_LIB_OBJ = "corrupted C API library object: %s";
+    public static final String COULD_NOT_CONVERT_STRING_TO_COMPLEX = "could not convert string to complex: %s";
     public static final String COULD_NOT_CONVERT_STRING_TO_FLOAT = "could not convert string to float: %s";
     public static final String COULD_NOT_GET_BYTES_OF_MEMORYVIEW = "could not get bytes of memoryview";
     public static final String COUNT_FUNC_MATH = "count function in Math";
@@ -323,7 +325,6 @@ public abstract class ErrorMessages {
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String LENGTH_SHOULD_NOT_BE_NEG = "length should not be negative";
-    public static final String MALFORMED_STR_FOR_COMPLEX = "malformed string for complex() %s";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
