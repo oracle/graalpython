@@ -1,0 +1,70 @@
+diff --git a/_pytest/_code/code.py b/_pytest/_code/code.py
+index 219ebb68f..b0d093f0e 100644
+--- a/_pytest/_code/code.py
++++ b/_pytest/_code/code.py
+@@ -224,15 +224,17 @@ class TracebackEntry:
+             if key is not None:
+                 astnode = astcache.get(key, None)
+         start = self.getfirstlinesource()
+-        try:
+-            astnode, _, end = getstatementrange_ast(
+-                self.lineno, source, astnode=astnode
+-            )
+-        except SyntaxError:
+-            end = self.lineno + 1
+-        else:
+-            if key is not None:
+-                astcache[key] = astnode
++        end = -1
++        # GraalPython: no support for the ast module so the source cannot be retrieved correctly
++        # try:
++        #     astnode, _, end = getstatementrange_ast(
++        #         self.lineno, source, astnode=astnode
++        #     )
++        # except SyntaxError:
++        #     end = self.lineno + 1
++        # else:
++        #     if key is not None:
++        #         astcache[key] = astnode
+         return source[start:end]
+ 
+     source = property(getsource)
+diff --git a/_pytest/assertion/__init__.py b/_pytest/assertion/__init__.py
+index 64d2267e7..760df1e49 100644
+--- a/_pytest/assertion/__init__.py
++++ b/_pytest/assertion/__init__.py
+@@ -28,7 +28,7 @@ def pytest_addoption(parser: Parser) -> None:
+         action="store",
+         dest="assertmode",
+         choices=("rewrite", "plain"),
+-        default="rewrite",
++        default="plain",
+         metavar="MODE",
+         help=(
+             "Control assertion debugging tools.\n"
+diff --git a/_pytest/python.py b/_pytest/python.py
+index aa8171486..d241aa459 100644
+--- a/_pytest/python.py
++++ b/_pytest/python.py
+@@ -548,8 +548,10 @@ class Module(nodes.File, PyCollector):
+     def _importtestmodule(self):
+         # we assume we are only called once per module
+         importmode = self.config.getoption("--import-mode")
++        imported = False
+         try:
+             mod = import_path(self.fspath, mode=importmode)
++            imported = True
+         except SyntaxError as e:
+             raise self.CollectError(
+                 ExceptionInfo.from_current().getrepr(style="short")
+@@ -589,6 +591,10 @@ class Module(nodes.File, PyCollector):
+                 "or @pytest.mark.skipif decorators instead, and to skip a "
+                 "module use `pytestmark = pytest.mark.{skip,skipif}."
+             ) from e
++        finally:
++            # this is needed for GraalPython: some modules fail with java level exceptions (the finally block still executes)
++            if not imported:
++                raise self.CollectError("Module could not be imported, the test could be unsupported by GraalPython")
+         self.config.pluginmanager.consider_module(mod)
+         return mod
+ 
