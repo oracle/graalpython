@@ -201,7 +201,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1498,43 +1497,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
 
             return 0;
-        }
-    }
-
-    @Builtin(name = "PyTruffle_GetTpFlags", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
-
-        @Child private GetTypeFlagsNode getTypeFlagsNode;
-        @Child private GetClassNode getClassNode;
-
-        @Specialization(limit = "1")
-        long doPythonObject(PythonNativeWrapper nativeWrapper,
-                        @CachedLibrary("nativeWrapper") PythonNativeWrapperLibrary lib) {
-            Object pclass = getGetClassNode().execute(lib.getDelegate(nativeWrapper));
-            return getGetTypeFlagsNode().execute(pclass);
-        }
-
-        @Specialization
-        long doPythonObject(PythonAbstractObject object) {
-            Object pclass = getGetClassNode().execute(object);
-            return getGetTypeFlagsNode().execute(pclass);
-        }
-
-        private GetClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode;
-        }
-
-        private GetTypeFlagsNode getGetTypeFlagsNode() {
-            if (getTypeFlagsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTypeFlagsNode = insert(GetTypeFlagsNode.create());
-            }
-            return getTypeFlagsNode;
         }
     }
 

@@ -42,8 +42,26 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DEFAULT;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.DICT_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HAVE_GC;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.HEAPTYPE;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LIST_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.LONG_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.METHOD_DESCRIPTOR;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.READY;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TUPLE_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.TYPE_SUBCLASS;
+import static com.oracle.graal.python.builtins.objects.type.TypeFlags.UNICODE_SUBCLASS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -70,12 +89,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonManagedClass.FlagsContainer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
@@ -84,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeFactory.GetTypeFlagsCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -92,11 +110,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -133,84 +149,132 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class TypeNodes {
 
-    public abstract static class GetTypeFlagsNode extends com.oracle.truffle.api.nodes.Node {
-        private static final int HEAPTYPE = 1 << 9;
+    @GenerateUncached
+    public abstract static class GetTypeFlagsNode extends Node {
 
         public abstract long execute(Object clazz);
 
-        abstract static class GetTypeFlagsCachedNode extends GetTypeFlagsNode {
-            @Specialization(guards = "isInitialized(clazz)")
-            long doInitialized(PythonManagedClass clazz) {
-                return clazz.getFlagsContainer().flags;
+        @Specialization
+        static long doBuiltinClassType(PythonBuiltinClassType clazz) {
+            long result;
+            switch (clazz) {
+                case PythonObject:
+                    result = DEFAULT | BASETYPE;
+                    break;
+                case PythonClass:
+                    result = DEFAULT | HAVE_GC | BASETYPE | TYPE_SUBCLASS;
+                    break;
+                case Super:
+                case PythonModule:
+                case PSet:
+                case PFrozenSet:
+                case PReferenceType:
+                    result = DEFAULT | HAVE_GC | BASETYPE;
+                    break;
+                case Boolean:
+                    result = DEFAULT | LONG_SUBCLASS;
+                    break;
+                case PBytes:
+                    result = DEFAULT | BASETYPE | BYTES_SUBCLASS;
+                    break;
+                case PBuiltinFunction:
+                    result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
+                    break;
+                case PFunction:
+                case PMethod:
+                case PBuiltinMethod:
+                case GetSetDescriptor:
+                case PMappingproxy:
+                case PFrame:
+                case PGenerator:
+                case PMemoryView:
+                case PBuffer:
+                case PSlice:
+                case PTraceback:
+                    result = DEFAULT | HAVE_GC;
+                    break;
+                case PDict:
+                    result = DEFAULT | HAVE_GC | BASETYPE | DICT_SUBCLASS;
+                    break;
+                case PBaseException:
+                    result = DEFAULT | HAVE_GC | BASETYPE | BASE_EXC_SUBCLASS;
+                    break;
+                case PList:
+                    result = DEFAULT | HAVE_GC | BASETYPE | LIST_SUBCLASS;
+                    break;
+                case PInt:
+                    result = DEFAULT | BASETYPE | LONG_SUBCLASS;
+                    break;
+                case PString:
+                    result = DEFAULT | BASETYPE | UNICODE_SUBCLASS;
+                    break;
+                case PTuple:
+                    result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS;
+                    break;
+                default:
+                    // default case; this includes:
+                    // PythonObject, PByteArray, PCode, PInstancemethod, PFloat, PNone,
+                    // PNotImplemented, PEllipsis
+                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS : 0L);
+                    break;
             }
-
-            @Specialization
-            long doGeneric(PythonManagedClass clazz) {
-                if (!isInitialized(clazz)) {
-                    return getValue(clazz, clazz.getFlagsContainer());
-                }
-                return clazz.getFlagsContainer().flags;
-            }
-
-            @Specialization
-            long doNative(PythonNativeClass clazz,
-                            @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
-                return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
-            }
+            // we always claim that all types are fully initialized
+            return result | READY;
         }
 
-        private static final class GetTypeFlagsUncachedNode extends GetTypeFlagsNode {
-            private static final GetTypeFlagsUncachedNode INSTANCE = new GetTypeFlagsUncachedNode();
+        @Specialization
+        static long doBuiltinClass(PythonBuiltinClass clazz) {
+            return doBuiltinClassType(clazz.getType());
+        }
 
-            @Override
-            public long execute(Object clazz) {
-                return doSlowPath(clazz);
+        @Specialization
+        static long doPythonClass(PythonClass clazz,
+                        @Cached ReadAttributeFromObjectNode readHiddenFlagsNode,
+                        @Cached WriteAttributeToObjectNode writeHiddenFlagsNode,
+                        @Cached("createCountingProfile()") ConditionProfile profile) {
+
+            Object flagsObject = readHiddenFlagsNode.execute(clazz, TYPE_FLAGS);
+            if (profile.profile(flagsObject != PNone.NO_VALUE)) {
+                // we have it under control; it must be a long
+                return (long) flagsObject;
             }
+            long flags = computeFlags(clazz);
+            writeHiddenFlagsNode.execute(clazz, TYPE_FLAGS, flags);
+            return flags;
+        }
 
+        @Specialization
+        static long doNative(PythonNativeClass clazz,
+                        @Cached CExtNodes.GetTypeMemberNode getTpFlagsNode) {
+            return (long) getTpFlagsNode.execute(clazz, NativeMember.TP_FLAGS);
         }
 
         @TruffleBoundary
-        private static long getValue(PythonManagedClass clazz, FlagsContainer fc) {
-            // This method is only called from C code, i.e., the flags of the initial super class
-            // must be available.
-            if (fc.initialDominantBase != null) {
-                fc.flags = doSlowPath(fc.initialDominantBase);
-                fc.initialDominantBase = null;
-                if (clazz instanceof PythonClass) {
-                    // user classes are heap types
-                    fc.flags |= HEAPTYPE;
+        private static long computeFlags(PythonClass clazz) {
+
+            // according to 'type_new' in 'typeobject.c', all have DEFAULT, HEAPTYPE, and BASETYPE.
+            // The HAVE_GC is inherited. But we do not mimic this behavior in every detail, so it
+            // should be fine to just set it.
+            long result = DEFAULT | HEAPTYPE | BASETYPE | HAVE_GC;
+
+            // flags are inherited
+            MroSequenceStorage mroStorage = GetMroStorageNodeGen.getUncached().execute(clazz);
+            int n = SequenceStorageNodes.LenNode.getUncached().execute(mroStorage);
+            for (int i = 0; i < n; i++) {
+                Object mroEntry = SequenceStorageNodes.GetItemDynamicNode.getUncached().execute(mroStorage, i);
+                if (mroEntry instanceof PythonBuiltinClass) {
+                    result |= doBuiltinClass((PythonBuiltinClass) mroEntry);
+                } else if (mroEntry instanceof PythonBuiltinClassType) {
+                    result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
+                } else if (mroEntry instanceof PythonAbstractNativeObject) {
+                    result |= doNative((PythonAbstractNativeObject) mroEntry, CExtNodesFactory.GetTypeMemberNodeGen.getUncached());
                 }
+                // 'PythonClass' is intentionally ignored because they do not actually add any
+                // interesting flags except that we already specify before the loop
             }
-            return fc.flags;
+            return result;
         }
 
-        @TruffleBoundary
-        private static long doSlowPath(Object clazz) {
-            if (PGuards.isManagedClass(clazz)) {
-                PythonManagedClass mclazz = (PythonManagedClass) clazz;
-                if (isInitialized(mclazz)) {
-                    return mclazz.getFlagsContainer().flags;
-                } else {
-                    return getValue(mclazz, mclazz.getFlagsContainer());
-                }
-            } else if (PGuards.isNativeClass(clazz)) {
-                return (long) CExtNodes.GetTypeMemberNode.getUncached().execute(clazz, NativeMember.TP_FLAGS);
-            }
-            throw new IllegalStateException("unknown type");
-
-        }
-
-        protected static boolean isInitialized(PythonManagedClass clazz) {
-            return clazz.getFlagsContainer().initialDominantBase == null;
-        }
-
-        public static GetTypeFlagsNode create() {
-            return GetTypeFlagsCachedNodeGen.create();
-        }
-
-        public static GetTypeFlagsNode getUncached() {
-            return GetTypeFlagsUncachedNode.INSTANCE;
-        }
     }
 
     @GenerateUncached

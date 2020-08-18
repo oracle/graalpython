@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,25 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.type;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+/**
+ * This class defines the type flags as specified in CPython's {@code Include/object.h}. The values
+ * should be kept in sync with this header.
+ */
+public abstract class TypeFlags {
 
-PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyWrapperDescrObject));
-PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
-PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR, sizeof(PyMethodDescrObject));
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
-
-POLYGLOT_DECLARE_TYPE(mappingproxyobject);
-
-/* Dicts */
-UPCALL_ID(PyDictProxy_New);
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
+    public static final long HEAPTYPE = (1L << 9);
+    public static final long BASETYPE = (1L << 10);
+    public static final long HAVE_VECTORCALL = (1L << 11);
+    public static final long READY = (1L << 12);
+    public static final long READYING = (1L << 13);
+    public static final long HAVE_GC = (1L << 14);
+    public static final long HAVE_STACKLESS_EXTENSION = 0;
+    public static final long METHOD_DESCRIPTOR = (1L << 17);
+    public static final long HAVE_VERSION_TAG = (1L << 18);
+    public static final long VALID_VERSION_TAG = (1L << 19);
+    public static final long IS_ABSTRACT = (1L << 20);
+    public static final long LONG_SUBCLASS = (1L << 24);
+    public static final long LIST_SUBCLASS = (1L << 25);
+    public static final long TUPLE_SUBCLASS = (1L << 26);
+    public static final long BYTES_SUBCLASS = (1L << 27);
+    public static final long UNICODE_SUBCLASS = (1L << 28);
+    public static final long DICT_SUBCLASS = (1L << 29);
+    public static final long BASE_EXC_SUBCLASS = (1L << 30);
+    public static final long TYPE_SUBCLASS = (1L << 31);
+    public static final long DEFAULT = HAVE_STACKLESS_EXTENSION | HAVE_VERSION_TAG;
+    public static final long HAVE_FINALIZE = 1L;
 }
-
