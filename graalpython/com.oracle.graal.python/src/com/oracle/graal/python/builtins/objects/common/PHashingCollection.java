@@ -55,10 +55,6 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
 
     public abstract void setDictStorage(HashingStorage newStorage);
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public abstract int size();
-
     public HashingStorageIterable<Object> items() {
         return HashingStorageLibrary.getUncached().values(getDictStorage());
     }

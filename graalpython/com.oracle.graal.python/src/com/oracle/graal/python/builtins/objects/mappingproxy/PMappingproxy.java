@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
@@ -63,10 +62,5 @@ public class PMappingproxy extends PHashingCollection {
     public void setDictStorage(HashingStorage newStorage) {
         CompilerDirectives.transferToInterpreter();
         throw new IllegalStateException();
-    }
-
-    @Override
-    public int size() {
-        return HashingStorageLibrary.getUncached().length(dictStorage);
     }
 }

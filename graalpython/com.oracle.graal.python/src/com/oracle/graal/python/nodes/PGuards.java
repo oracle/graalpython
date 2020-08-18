@@ -257,10 +257,6 @@ public abstract class PGuards {
         return none == PNone.NO_VALUE;
     }
 
-    public static boolean emptyArguments(Object arg) {
-        return arg instanceof PFrozenSet && ((PFrozenSet) arg).size() == 0;
-    }
-
     @SuppressWarnings("unused")
     public static boolean isForJSON(Object obj, String id, Object defaultValue) {
         return id.equals("for_json");
