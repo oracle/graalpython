@@ -2542,7 +2542,8 @@ public abstract class SequenceStorageNodes {
                         @Cached("create()") LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
-                SequenceStorage repeated = createEmptyNode.execute(s, Math.multiplyExact(len, times), -1);
+                int newLen = Math.multiplyExact(len, times);
+                SequenceStorage repeated = createEmptyNode.execute(s, newLen, -1);
 
                 for (int i = 0; i < len; i++) {
                     setItemNode.execute(repeated, i, getGetItemNode().execute(s, i));
@@ -2555,6 +2556,7 @@ public abstract class SequenceStorageNodes {
                     }
                 }
 
+                repeated.setNewLength(newLen);
                 return repeated;
             } catch (OutOfMemoryError | ArithmeticException e) {
                 outOfMemProfile.enter();

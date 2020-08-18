@@ -79,7 +79,7 @@ public enum BinaryArithmetic {
         this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
-            public Object execute(Object arg, Object arg2) {
+            public Object execute(VirtualFrame frame, Object arg, Object arg2) {
                 throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, operator, arg, arg2);
             }
         };
