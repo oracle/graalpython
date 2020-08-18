@@ -247,7 +247,7 @@ public abstract class TypeNodes {
                 } else if (mroEntry instanceof PythonBuiltinClassType) {
                     result |= doBuiltinClassType((PythonBuiltinClassType) mroEntry);
                 } else if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result |= doNative((PythonAbstractNativeObject) mroEntry, CExtNodes.GetTypeMemberNode.getUncached());
+                    result |= doNative((PythonAbstractNativeObject) mroEntry, getTpFlagsNode);
                 }
             }
             return result;
