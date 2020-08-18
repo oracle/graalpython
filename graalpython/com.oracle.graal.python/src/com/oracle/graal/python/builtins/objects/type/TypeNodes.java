@@ -213,7 +213,7 @@ public abstract class TypeNodes {
                     // default case; this includes:
                     // PythonObject, PByteArray, PCode, PInstancemethod, PFloat, PNone,
                     // PNotImplemented, PEllipsis
-                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0);
+                    result = DEFAULT | (clazz.isAcceptableBase() ? BASETYPE : 0) | (PythonBuiltinClassType.isExceptionType(clazz) ? BASE_EXC_SUBCLASS : 0L);
                     break;
             }
             // we always claim that all types are fully initialized

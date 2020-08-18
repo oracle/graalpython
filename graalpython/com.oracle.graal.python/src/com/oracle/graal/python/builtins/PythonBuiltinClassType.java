@@ -50,6 +50,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -278,8 +279,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return instanceShape;
     }
 
-    public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
-    public static final PythonBuiltinClassType[] EXCEPTIONS;
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] EXCEPTIONS;
 
     static {
         // fill the EXCEPTIONS array
@@ -576,5 +577,15 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     static String getMetaQualifiedName(PythonBuiltinClassType self) {
         return self.getQualifiedName();
+    }
+
+    @ExplodeLoop
+    public static boolean isExceptionType(PythonBuiltinClassType type) {
+        for (int i = 0; i < EXCEPTIONS.length; i++) {
+            if (EXCEPTIONS[i] == type) {
+                return true;
+            }
+        }
+        return false;
     }
 }
