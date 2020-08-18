@@ -165,7 +165,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
