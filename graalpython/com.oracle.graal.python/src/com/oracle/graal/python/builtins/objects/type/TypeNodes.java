@@ -177,10 +177,10 @@ public abstract class TypeNodes {
                 case PBytes:
                     result = DEFAULT | BASETYPE | BYTES_SUBCLASS;
                     break;
+                case PFunction:
                 case PBuiltinFunction:
                     result = DEFAULT | HAVE_GC | METHOD_DESCRIPTOR;
                     break;
-                case PFunction:
                 case PMethod:
                 case PBuiltinMethod:
                 case GetSetDescriptor:
