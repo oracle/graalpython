@@ -220,10 +220,13 @@ public class LocalsStorage extends HashingStorage {
         bailout();
         Object result = arg;
         for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
-            if (isUserFrameSlot(slot)) {
-                Object value = getValue(slot);
-                if (value != null) {
-                    result = node.execute(slot.getIdentifier(), result);
+            Object identifier = slot.getIdentifier();
+            if (identifier instanceof String) {
+                if (isUserFrameSlot(identifier)) {
+                    Object value = getValue(slot);
+                    if (value != null) {
+                        result = node.execute(identifier, result);
+                    }
                 }
             }
         }
