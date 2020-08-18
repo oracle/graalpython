@@ -379,14 +379,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         static boolean isLessThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached ConditionProfile sizeProfile,
-                        @Cached BaseLessEqualNode lessEqualNode) {
+                        @Cached ConditionProfile sizeProfile) {
             final int len1 = hlib.lengthWithFrame(self.getDictStorage(), hasFrameProfile, frame);
             final int len2 = hlib.lengthWithFrame(other.getDictStorage(), hasFrameProfile, frame);
             if (sizeProfile.profile(len1 >= len2)) {
                 return false;
             }
-            return (Boolean) lessEqualNode.execute(frame, self, other);
+            return BaseLessEqualNode.doLE(frame, self, other, hasFrameProfile, hlib);
         }
 
         @Specialization
@@ -409,14 +408,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         static boolean isGreaterThan(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
                         @Cached ConditionProfile hasFrameProfile,
-                        @Cached ConditionProfile sizeProfile,
-                        @Cached BaseGreaterEqualNode greaterEqualNode) {
+                        @Cached ConditionProfile sizeProfile) {
             final int len1 = hlib.lengthWithFrame(self.getDictStorage(), hasFrameProfile, frame);
             final int len2 = hlib.lengthWithFrame(other.getDictStorage(), hasFrameProfile, frame);
             if (sizeProfile.profile(len1 <= len2)) {
                 return false;
             }
-            return (Boolean) greaterEqualNode.execute(frame, self, other);
+            return BaseGreaterEqualNode.doGE(frame, self, other, hasFrameProfile, hlib);
         }
 
         @Specialization
