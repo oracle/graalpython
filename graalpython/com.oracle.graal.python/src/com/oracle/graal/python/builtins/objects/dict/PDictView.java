@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.dict;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -66,12 +67,23 @@ public abstract class PDictView extends PythonBuiltinObject {
 
     public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
 
+        protected final HashingStorage hashingStorage;
+
         public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
+            super(clazz, instanceShape, iterator, initialSize);
+            this.hashingStorage = hashingStorage;
+        }
+
+        public HashingStorage getHashingStorage() {
+            return hashingStorage;
         }
 
         public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
             return this.next();
+        }
+
+        public final boolean checkSizeChanged(HashingStorageLibrary lib) {
+            return lib.length(hashingStorage) != size;
         }
     }
 

@@ -55,7 +55,7 @@ public abstract class PBaseSet extends PHashingCollection {
     }
 
     @Override
-    public HashingStorage getDictStorage() {
+    public final HashingStorage getDictStorage() {
         return set;
     }
 

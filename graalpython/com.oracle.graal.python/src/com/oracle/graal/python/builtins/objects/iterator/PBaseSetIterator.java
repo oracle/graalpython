@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.dict.PHashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -37,12 +37,16 @@ import com.oracle.truffle.api.object.Shape;
 public final class PBaseSetIterator extends PHashingStorageIterator<Object> {
     private final PBaseSet set;
 
-    public PBaseSetIterator(Object clazz, Shape instanceShape, PBaseSet set, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        super(clazz, instanceShape, iterator, hashingStorage, initialSize);
+    public PBaseSetIterator(Object clazz, Shape instanceShape, PBaseSet set, HashingStorageIterator<Object> iterator, int initialSize) {
+        super(clazz, instanceShape, iterator, initialSize);
         this.set = set;
     }
 
     public PBaseSet getSet() {
         return set;
+    }
+
+    public final boolean checkSizeChanged(HashingStorageLibrary lib) {
+        return lib.length(set.getDictStorage()) != size;
     }
 }

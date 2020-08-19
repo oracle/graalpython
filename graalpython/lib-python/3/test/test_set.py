@@ -353,6 +353,7 @@ class TestJointOps:
         self.assertEqual(sum(elem.hash_count for elem in d), n)
         self.assertEqual(d3, dict.fromkeys(d, 123))
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_container_iterator(self):
         # Bug #3680: tp_traverse was not implemented for set iterator object
         class C(object):
@@ -365,6 +366,7 @@ class TestJointOps:
         gc.collect()
         self.assertTrue(ref() is None, "Cycle was not collected")
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, self.thetype)
 
@@ -604,6 +606,7 @@ class TestSet(TestJointOps, unittest.TestCase):
         t ^= t
         self.assertEqual(t, self.thetype())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_weakref(self):
         s = self.thetype('gallahad')
         p = weakref.proxy(s)

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -49,23 +47,17 @@ import com.oracle.truffle.api.object.Shape;
 
 public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
 
-    private final HashingStorage hashingStorage;
-    private final int size;
+    protected final int size;
     private final HashingStorageIterator<T> iterator;
 
-    public PHashingStorageIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int size) {
+    public PHashingStorageIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, int size) {
         super(clazz, instanceShape);
         this.iterator = iterator;
-        this.hashingStorage = hashingStorage;
         this.size = size;
     }
 
     public HashingStorageIterator<T> getIterator() {
         return iterator;
-    }
-
-    public HashingStorage getHashingStorage() {
-        return hashingStorage;
     }
 
     @TruffleBoundary
@@ -82,9 +74,5 @@ public abstract class PHashingStorageIterator<T> extends PBuiltinIterator {
     @TruffleBoundary
     public final boolean hasNext() {
         return iterator.hasNext();
-    }
-
-    public final boolean checkSizeChanged(HashingStorageLibrary lib) {
-        return lib.length(hashingStorage) != size;
     }
 }

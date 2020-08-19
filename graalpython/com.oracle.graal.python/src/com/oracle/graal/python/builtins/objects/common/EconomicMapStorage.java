@@ -610,12 +610,46 @@ public class EconomicMapStorage extends HashingStorage {
             return keysIterator;
         }
 
+        @Override
         public boolean hasNext() {
             return keysIterator.hasNext();
         }
 
+        @Override
         public Object next() {
             return keysIterator.next().value;
+        }
+    }
+
+    protected void setValue(DictKey key, Object value, PythonObjectLibrary lib, ConditionProfile findProfile, ConditionProfile gotState, ThreadState state) {
+        this.map.put(key, value, lib, lib, findProfile, gotState, state);
+    }
+
+    protected HashingStorageIterable<DictKey> dictKeys() {
+        return new HashingStorageIterable<>(new DictKeysIterator(map.getKeys().iterator()));
+    }
+
+    static final class DictKeysIterator implements Iterator<DictKey> {
+        private final Iterator<DictKey> keysIterator;
+
+        DictKeysIterator(Iterator<DictKey> iter) {
+            this.keysIterator = iter;
+        }
+
+        public Iterator<DictKey> getKeysIterator() {
+            return keysIterator;
+        }
+
+        @TruffleBoundary
+        @Override
+        public boolean hasNext() {
+            return keysIterator.hasNext();
+        }
+
+        @TruffleBoundary
+        @Override
+        public DictKey next() {
+            return keysIterator.next();
         }
     }
 

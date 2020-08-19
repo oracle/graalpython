@@ -633,14 +633,15 @@ class combinations():
     """
 
     @__graalpython__.builtin_method
-    def __init__(self, pool, indices, r):
-        self.pool = pool
-        self.indices = indices
+    def __init__(self, iterable, r):
+        self.pool = tuple(iterable)
+        n = len(self.pool)
         if r < 0:
             raise ValueError("r must be non-negative")
+        self.indices = [i for i in range(r)]
         self.r = r
         self.last_result = None
-        self.stopped = r > len(pool)
+        self.stopped = r > len(self.pool)
 
     @__graalpython__.builtin_method
     def get_maximum(self, i):
@@ -709,8 +710,8 @@ class combinations_with_replacement(combinations):
         pool = list(iterable)
         if r < 0:
             raise ValueError("r must be non-negative")
-        indices = [0] * r
-        super().__init__(pool, indices, r)
+        super().__init__(pool, r)
+        self.indices = [0] * r
         self.stopped = len(pool) == 0 and r > 0
 
     @__graalpython__.builtin_method

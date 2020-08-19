@@ -157,6 +157,7 @@ import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
+import com.oracle.graal.python.builtins.objects.set.BaseSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
@@ -235,7 +236,6 @@ public final class Python3Core implements PythonCore {
                         "classes",
                         "__graalpython__",
                         "_weakref",
-                        "set",
                         "itertools",
                         "faulthandler",
                         "base_exception",
@@ -334,6 +334,7 @@ public final class Python3Core implements PythonCore {
                         new SliceBuiltins(),
                         new TupleBuiltins(),
                         new StringBuiltins(),
+                        new BaseSetBuiltins(),
                         new SetBuiltins(),
                         new FrozenSetBuiltins(),
                         new IteratorBuiltins(),
