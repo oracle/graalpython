@@ -72,7 +72,7 @@ manually for now.
 
 ### Polyglot Usage
 
-We have a [document](docs/user/POLYGLOT.md) describing how we implement the
+We have a [document](docs/user/Interoperability.md) describing how we implement the
 cross-language interop. This will hopefully give you an idea how to use it.
 
 ### Jython Support
