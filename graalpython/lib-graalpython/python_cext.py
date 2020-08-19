@@ -957,6 +957,33 @@ def PyMethod_New(func, self):
     return bound_function
 
 
+# corresponds to PyInstanceMethod_Type
+class instancemethod:
+    def __init__(self, func):
+        if not callable(func):
+            raise TypeError("first argument must be callable")
+        self.__func__ = func
+
+    @property
+    def __doc__(self):
+        return self.__func__.__doc__
+
+    def __call__(self, *args, **kwargs):
+        return self.__func__(*args, **kwargs)
+
+    def __get__(self, obj, type):
+        if not obj:
+            return self.__func__
+        return PyMethod_New(self.__func__, obj)
+
+    def __repr__(self):
+        return "<instancemethod {} at ?>".format(self.__func__.__name__)
+
+
+def PyInstanceMethod_New(func):
+    return instancemethod(func)
+
+
 def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts

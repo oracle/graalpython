@@ -2893,33 +2893,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "instancemethod", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PInstancemethod, isPublic = false)
-    @GenerateNodeFactory
-    public abstract static class InstancemethodTypeNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object method(Object cls, PFunction func) {
-            // TODO(fa): not correct
-            return factory().createBuiltinMethod(cls, func);
-        }
-
-        @Specialization
-        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object func,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (dataModelLibrary.isCallable(func)) {
-                    // TODO(fa): do something useful
-                    return PNone.NONE;
-                } else {
-                    throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
-            }
-        }
-    }
-
     @Builtin(name = "builtin_function_or_method", minNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuiltinMethod, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
