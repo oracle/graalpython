@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.isUserFrameSlot;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -51,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -117,7 +118,7 @@ public class LocalsStorage extends HashingStorage {
         this.len = this.frame.getFrameDescriptor().getSize();
         for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
-            if (!FrameSlotIDs.isUserFrameSlot(identifier) || getValue(frame, slot) == null) {
+            if (!isUserFrameSlot(identifier) || getValue(frame, slot) == null) {
                 this.len--;
             }
         }
@@ -137,7 +138,7 @@ public class LocalsStorage extends HashingStorage {
 
         @Specialization(replaces = "getItemCached")
         static Object string(LocalsStorage self, String key, ThreadState state) {
-            if (!FrameSlotIDs.isUserFrameSlot(key)) {
+            if (!isUserFrameSlot(key)) {
                 return null;
             }
             FrameSlot slot = findSlot(self, key);
@@ -219,9 +220,14 @@ public class LocalsStorage extends HashingStorage {
         bailout();
         Object result = arg;
         for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
-            Object value = getValue(slot);
-            if (value != null) {
-                result = node.execute(slot.getIdentifier(), result);
+            Object identifier = slot.getIdentifier();
+            if (identifier instanceof String) {
+                if (isUserFrameSlot(identifier)) {
+                    Object value = getValue(slot);
+                    if (value != null) {
+                        result = node.execute(identifier, result);
+                    }
+                }
             }
         }
         return result;
@@ -372,7 +378,7 @@ public class LocalsStorage extends HashingStorage {
                 FrameSlot nextCandidate = this.slots.get(this.index++);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
-                    if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                    if (isUserFrameSlot(identifier)) {
                         Object nextValue = getValue(this.frame, nextCandidate);
                         if (nextValue != null) {
                             this.nextFrameSlot = nextCandidate;
@@ -399,7 +405,7 @@ public class LocalsStorage extends HashingStorage {
                 FrameSlot nextCandidate = this.slots.get(this.index--);
                 Object identifier = nextCandidate.getIdentifier();
                 if (identifier instanceof String) {
-                    if (FrameSlotIDs.isUserFrameSlot(identifier)) {
+                    if (isUserFrameSlot(identifier)) {
                         Object nextValue = getValue(this.frame, nextCandidate);
                         if (nextValue != null) {
                             this.nextFrameSlot = nextCandidate;

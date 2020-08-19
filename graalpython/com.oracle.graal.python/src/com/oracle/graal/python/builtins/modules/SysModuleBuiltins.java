@@ -221,23 +221,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Object[] warnoptions = new Object[strWarnoptions.length];
         System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
         sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
-        sys.setAttribute("__flags__", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
-                        false, // hash_randomization
-                        context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
-                        context.getOption(PythonOptions.InspectFlag), // inspect
-                        context.getOption(PythonOptions.TerminalIsInteractive), // interactive
-                        context.getOption(PythonOptions.IsolateFlag), // isolated
-                        context.getOption(PythonOptions.NoSiteFlag), // no_site
-                        context.getOption(PythonOptions.NoUserSiteFlag), // no_user_site
-                        context.getOption(PythonOptions.PythonOptimizeFlag), // optimize
-                        context.getOption(PythonOptions.QuietFlag), // quiet
-                        context.getOption(PythonOptions.VerboseFlag), // verbose
-                        false, // dev_mode
-                        0, // utf8_mode
-        }));
 
         Env env = context.getEnv();
         String option = context.getOption(PythonOptions.PythonPath);
