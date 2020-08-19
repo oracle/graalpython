@@ -218,6 +218,14 @@ public final class ScopeInfo {
         return explicitGlobalVariables != null && explicitGlobalVariables.contains(identifier);
     }
 
+    public boolean hasExplicitGlobalVariables() {
+        return explicitGlobalVariables != null && !explicitGlobalVariables.isEmpty();
+    }
+
+    public Set<String> getExplicitGlobalVariables() {
+        return explicitGlobalVariables;
+    }
+
     public boolean isExplicitNonlocalVariable(String identifier) {
         return explicitNonlocalVariables != null && explicitNonlocalVariables.contains(identifier);
     }

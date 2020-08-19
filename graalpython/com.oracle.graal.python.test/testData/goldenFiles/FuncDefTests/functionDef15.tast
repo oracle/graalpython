@@ -2,12 +2,14 @@ ModuleRootNode Name: <module 'functionDef15'> SourceSection: [0,114]`SOMETHING =
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 1 slots [SOMETHING]
+  FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,114]`SOMETHING = NONE↵def...`
     ExpressionWithSideEffects SourceSection: [0,114]`SOMETHING = NONE↵def...`
-      WriteNameNodeGen SourceSection: [0,16]`SOMETHING = NONE`
+      WriteGlobalNodeGen SourceSection: [0,16]`SOMETHING = NONE`
         Identifier: SOMETHING
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ReadNameNodeGen SourceSection: [12,16]`NONE`
           Identifier: NONE
           IsBuiltinClassProfile SourceSection: None

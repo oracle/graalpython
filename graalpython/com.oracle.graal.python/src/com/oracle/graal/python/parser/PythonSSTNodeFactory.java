@@ -161,7 +161,8 @@ public final class PythonSSTNodeFactory {
                 throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_GLOBAL, name);
             }
             scopeInfo.addExplicitGlobalVariable(name);
-            globalScope.createSlotIfNotPresent(name);
+            // place the global variable into global space, see test_global_statemnt.py
+            globalScope.addExplicitGlobalVariable(name);
         }
         return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);
     }
