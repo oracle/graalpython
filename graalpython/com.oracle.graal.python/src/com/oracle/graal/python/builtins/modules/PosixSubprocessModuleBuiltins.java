@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -246,7 +247,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         Object fdsToKeep, Object cwd, Object env,
                         Object p2cread, Object p2cwrite, Object c2pread, Object c2pwrite,
                         Object errread, Object errwrite, Object errpipe_read, Object errpipe_write,
-                        Object restore_signals, Object call_setsid, PNone preexec_fn,
+                        Object restore_signals, Object call_setsid, Object preexec_fn,
                         @Cached CastToListNode castArgs,
                         @Cached CastToListNode castExecList,
                         @Cached CastToListNode castFdsToKeep,
@@ -254,7 +255,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castEnv,
                         @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-
             String actualCwd;
             if (cwd instanceof PNone) {
                 actualCwd = getContext().getEnv().getCurrentWorkingDirectory().getPath();
@@ -273,6 +273,12 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 actualEnv = castEnv.execute(frame, env);
             }
 
+            // if we reach this point and there is a preexec_fn, we throw an error because we don't
+            // support it
+            if (!PGuards.isPNone(preexec_fn)) {
+                throw raise(PythonBuiltinClassType.RuntimeError, "preexec_fn not supported");
+            }
+
             return forkExec(castArgs.execute(frame, args), castExecList.execute(frame, executable_list),
                             lib.isTrueWithState(close_fds, PArguments.getThreadState(frame)),
                             castFdsToKeep.execute(frame, fdsToKeep), actualCwd, actualEnv,
@@ -285,7 +291,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                             lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
                             lib.isTrueWithState(restore_signals, PArguments.getThreadState(frame)),
-                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), preexec_fn, copy);
+                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), PNone.NO_VALUE, copy);
         }
+
     }
 }
