@@ -493,10 +493,6 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSet(cls, getShape(cls)));
     }
 
-    public PSet createSet(PythonClass cls, HashingStorage storage) {
-        return trace(new PSet(cls, getShape(cls), storage));
-    }
-
     public PSet createSet(HashingStorage storage) {
         return trace(new PSet(PythonBuiltinClassType.PSet, PythonBuiltinClassType.PSet.getInstanceShape(), storage));
     }
@@ -545,8 +541,12 @@ public abstract class PythonObjectFactory extends Node {
         return createDict(new DynamicObjectStorage(pythonObject.getStorage()));
     }
 
+    public PDict createDict(Object cls, HashingStorage storage) {
+        return trace(new PDict(cls, getShape(cls), storage));
+    }
+
     public PDict createDict(HashingStorage storage) {
-        return trace(new PDict(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(), storage));
+        return createDict(PythonBuiltinClassType.PDict, storage);
     }
 
     public PDictView createDictKeysView(PHashingCollection dict) {
@@ -759,8 +759,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PArrayIterator(PythonBuiltinClassType.PArrayIterator, PythonBuiltinClassType.PArrayIterator.getInstanceShape(), array));
     }
 
-    public PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), set, iterator, hashingStorage, initialSize));
+    public PBaseSetIterator createBaseSetIterator(PBaseSet set, HashingStorageIterator<Object> iterator, int initialSize) {
+        return trace(new PBaseSetIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(), set, iterator, initialSize));
     }
 
     public PDictItemIterator createDictItemIterator(HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {

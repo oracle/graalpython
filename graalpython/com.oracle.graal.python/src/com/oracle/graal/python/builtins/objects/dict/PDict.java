@@ -33,13 +33,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PDict extends PHashingCollection {
 
-    private HashingStorage dictStorage;
+    protected HashingStorage dictStorage;
 
     public PDict() {
         this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape());
@@ -94,14 +97,21 @@ public final class PDict extends PHashingCollection {
         return dictStorage;
     }
 
+    @ExportMessage(limit = "1")
+    public int lengthWithState(PArguments.ThreadState state,
+                    @CachedLibrary("this.dictStorage") HashingStorageLibrary lib) {
+        return lib.lengthWithState(dictStorage, state);
+    }
+
+    @ExportMessage(limit = "1")
+    public int length(
+                    @CachedLibrary("this.dictStorage") HashingStorageLibrary lib) {
+        return lib.length(dictStorage);
+    }
+
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
-    }
-
-    @Override
-    public int size() {
-        return HashingStorageLibrary.getUncached().length(dictStorage);
     }
 }

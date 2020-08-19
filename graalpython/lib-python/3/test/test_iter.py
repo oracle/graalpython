@@ -6,6 +6,7 @@ from test.support import run_unittest, TESTFN, unlink, cpython_only
 from test.support import check_free_after_iterating
 import pickle
 import collections.abc
+from test import support
 
 # Test result of triple loop (too big to inline)
 TRIPLETS = [(0, 0, 0), (0, 0, 1), (0, 0, 2),
@@ -1006,6 +1007,7 @@ class TestCase(unittest.TestCase):
         self.assertEqual(next(it), 0)
         self.assertEqual(next(it), 1)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         check_free_after_iterating(self, iter, SequenceClass, (0,))
 

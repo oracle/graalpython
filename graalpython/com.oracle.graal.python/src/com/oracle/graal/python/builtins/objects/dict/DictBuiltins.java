@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -149,7 +150,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == 1", "firstArgString(args)"})
-        Object doString(Object self, Object[] args, PKeyword[] kwargs,
+        static Object doString(Object self, Object[] args, PKeyword[] kwargs,
                         @Cached PRaiseNode raise) {
             throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, 0, 1);
         }
@@ -166,11 +167,11 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.EXPECTED_AT_MOST_D_ARGS_GOT_D, "dict", 1, args.length);
         }
 
-        protected boolean firstArgIterable(Object[] args, PythonObjectLibrary lib) {
+        protected static boolean firstArgIterable(Object[] args, PythonObjectLibrary lib) {
             return lib.isIterable(args[0]);
         }
 
-        protected boolean firstArgString(Object[] args) {
+        protected static boolean firstArgString(Object[] args) {
             return PGuards.isString(args[0]);
         }
     }
@@ -181,7 +182,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
 
         @Specialization(guards = "lib.hasKeyWithFrame(getStorage.execute(dict), key, hasFrame, frame)", limit = "3")
-        public Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
+        public static Object setDefault(VirtualFrame frame, PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
                         @SuppressWarnings("unused") @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(dict)") HashingStorageLibrary lib) {
@@ -189,7 +190,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!lib.hasKeyWithFrame(getStorage.execute(dict), key, hasFrame, frame)", limit = "3")
-        public Object setDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
+        public static Object setDefault(VirtualFrame frame, PDict dict, Object key, Object defaultValue,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode,
                         @SuppressWarnings("unused") @Cached GetDictStorageNode getStorage,
                         @SuppressWarnings("unused") @CachedLibrary("getStorage.execute(dict)") HashingStorageLibrary lib,
@@ -209,7 +210,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonTernaryBuiltinNode {
 
-        protected void removeItem(VirtualFrame frame, PDict dict, Object key, HashingStorage storage,
+        protected static void removeItem(VirtualFrame frame, PDict dict, Object key, HashingStorage storage,
                         HashingStorageLibrary lib, ConditionProfile hasFrame, BranchProfile updatedStorage, SetDictStorageNode setStorage) {
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
@@ -294,7 +295,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
+        public static Object doWithDefault(VirtualFrame frame, PDict self, Object key, Object defaultValue,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary(value = "getStorage.execute(self)") HashingStorageLibrary hlib,
                         @Cached ConditionProfile profile) {
@@ -307,7 +308,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getItem(VirtualFrame frame, PDict self, Object key,
+        static Object getItem(VirtualFrame frame, PDict self, Object key,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary(value = "getStorage.execute(self)") HashingStorageLibrary hlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile profile,
@@ -326,19 +327,19 @@ public final class DictBuiltins extends PythonBuiltins {
         protected abstract Object execute(VirtualFrame frame, Object self, Object key);
 
         @Specialization(guards = "hasMissing(self, lib)", limit = "1")
-        protected Object misssing(VirtualFrame frame, Object self, Object key,
+        protected static Object misssing(VirtualFrame frame, Object self, Object key,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             return lib.lookupAndCallSpecialMethod(self, frame, __MISSING__, key);
         }
 
         @Specialization(guards = "!hasMissing(self, lib)", limit = "1")
-        protected Object misssing(VirtualFrame frame, Object self, Object key,
+        protected static Object misssing(VirtualFrame frame, Object self, Object key,
                         @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib,
                         @Exclusive @Cached DefaultMissingNode missing) {
             return missing.execute(frame, self, key);
         }
 
-        protected boolean hasMissing(Object self, PythonObjectLibrary lib) {
+        protected static boolean hasMissing(Object self, PythonObjectLibrary lib) {
             return lib.lookupAttributeOnType(self, __MISSING__) != NO_VALUE;
         }
     }
@@ -368,7 +369,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object run(VirtualFrame frame, PDict self, Object key, Object value,
+        static Object run(VirtualFrame frame, PDict self, Object key, Object value,
                         @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, self, key, value);
             return PNone.NONE;
@@ -458,7 +459,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object self, Object other) {
+        static PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -468,7 +469,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        boolean run(VirtualFrame frame, PDict self, Object key,
+        static boolean run(VirtualFrame frame, PDict self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary lib) {
@@ -480,7 +481,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean repr(PDict self,
+        public static boolean repr(PDict self,
                         @Cached HashingCollectionNodes.LenNode lenNode) {
             return lenNode.execute(self) > 0;
         }
@@ -490,7 +491,7 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
-        public int len(PDict self,
+        public static int len(PDict self,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary lib) {
             return lib.length(getStorage.execute(self));
@@ -516,7 +517,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "3")
-        public PDict clear(PDict dict,
+        public static PDict clear(PDict dict,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(dict)") HashingStorageLibrary lib,
                         @Cached SetDictStorageNode setStorage) {
@@ -527,7 +528,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // values()
-    @Builtin(name = "values", minNumOfPositionalArgs = 1)
+    @Builtin(name = VALUES, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
@@ -544,18 +545,18 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == 0", "kwargs.length == 0"})
-        public Object updateEmpy(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
+        public static Object updateEmpy(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"isSelf(self, args)", "kwargs.length == 0"})
-        public Object updateSelf(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
+        public static Object updateSelf(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs) {
             return PNone.NONE;
         }
 
         @Specialization(guards = {"args.length == 0", "kwargs.length > 0"})
-        public Object update(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
+        public static Object update(VirtualFrame frame, PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
                         @Cached HashingStorage.InitNode initNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached GetDictStorageNode getStorage,
@@ -567,7 +568,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isDictButNotEconomicMap(args, getStorage)", "kwargs.length == 0"})
-        public Object updateDict(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
+        public static Object updateDict(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached GetDictStorageNode getStorage,
                         @Cached SetDictStorageNode setStorage) {
@@ -577,7 +578,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isDictButNotEconomicMap(args, getStorage)", "kwargs.length > 0"})
-        public Object updateDict(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
+        public static Object updateDict(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached HashingStorage.InitNode initNode,
                         @Cached GetDictStorageNode getStorage,
@@ -629,7 +630,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length == 1", "!isDict(args)", "hasKeysAttr(args, frame, libArg)"})
-        public Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
+        public static Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
@@ -646,7 +647,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"args.length == 1", "!isDict(args)", "!hasKeysAttr(args, frame, libArg)"})
-        public Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
+        public static Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @Cached PRaiseNode raise,
@@ -674,31 +675,31 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, args[0]);
         }
 
-        protected boolean isDict(Object[] args) {
+        protected static boolean isDict(Object[] args) {
             return args.length == 1 && args[0] instanceof PDict;
         }
 
-        protected boolean isDictEconomicMap(Object[] args, GetDictStorageNode getStorage) {
+        protected static boolean isDictEconomicMap(Object[] args, GetDictStorageNode getStorage) {
             return args.length == 1 && args[0] instanceof PDict && getStorage.execute((PDict) args[0]) instanceof EconomicMapStorage;
         }
 
-        protected boolean isDictButNotEconomicMap(Object[] args, GetDictStorageNode getStorage) {
+        protected static boolean isDictButNotEconomicMap(Object[] args, GetDictStorageNode getStorage) {
             return args.length == 1 && args[0] instanceof PDict && !(getStorage.execute((PDict) args[0]) instanceof EconomicMapStorage);
         }
 
-        protected boolean isSeq(Object[] args) {
+        protected static boolean isSeq(Object[] args) {
             return args.length == 1 && args[0] instanceof PSequence;
         }
 
-        protected boolean isIterable(Object[] args, PythonObjectLibrary lib) {
+        protected static boolean isIterable(Object[] args, PythonObjectLibrary lib) {
             return args.length == 1 && lib.isIterable(args[0]);
         }
 
-        protected boolean isSelf(PDict self, Object[] args) {
+        protected static boolean isSelf(PDict self, Object[] args) {
             return isDict(args) && args[0] == self;
         }
 
-        protected boolean hasKeysAttr(Object[] args, VirtualFrame frame, PythonObjectLibrary lib) {
+        protected static boolean hasKeysAttr(Object[] args, VirtualFrame frame, PythonObjectLibrary lib) {
             return lib.lookupAttribute(args[0], frame, KEYS) != PNone.NO_VALUE;
         }
 
@@ -711,28 +712,10 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isIterable(iterable)", "isBuiltinType(cls)", "hasBuiltinSetItem(cls, frame, lib)"})
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary libStorage,
-                        @Cached GetIteratorNode getIteratorNode,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached GetDictStorageNode getStorage,
-                        @Cached SetDictStorageNode setStorage) {
-            PDict dict = factory().createDict(cls);
-            Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            HashingStorage storage = getStorage.execute(dict);
-            Object it = getIteratorNode.executeWith(frame, iterable);
-            while (true) {
-                try {
-                    Object key = nextNode.execute(frame, it);
-                    storage = libStorage.setItem(storage, key, val);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-            }
-            setStorage.execute(dict, storage);
-            return dict;
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            HashingStorage s = getHashingStorageNode.execute(frame, iterable, value);
+            return factory().createDict(cls, s);
         }
 
         @Specialization(guards = {"lib.isIterable(iterable)", "!isBuiltinType(cls) || !hasBuiltinSetItem(cls, frame, lib)"})
@@ -770,7 +753,7 @@ public final class DictBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterable);
         }
 
-        protected boolean isBuiltinType(Object cls) {
+        protected static boolean isBuiltinType(Object cls) {
             PythonBuiltinClassType type = null;
             if (cls instanceof PythonBuiltinClass) {
                 type = ((PythonBuiltinClass) cls).getType();
@@ -780,7 +763,7 @@ public final class DictBuiltins extends PythonBuiltins {
             return type == PythonBuiltinClassType.PDict;
         }
 
-        protected boolean hasBuiltinSetItem(Object cls, VirtualFrame frame, PythonObjectLibrary lib) {
+        protected static boolean hasBuiltinSetItem(Object cls, VirtualFrame frame, PythonObjectLibrary lib) {
             // msimacek: this should rather use direct MRO lookup
             Object attr = lib.lookupAttribute(cls, frame, __SETITEM__);
             return attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction;

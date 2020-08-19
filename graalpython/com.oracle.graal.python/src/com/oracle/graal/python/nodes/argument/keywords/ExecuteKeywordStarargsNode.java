@@ -76,7 +76,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
     public abstract PKeyword[] execute(VirtualFrame frame);
 
     @Specialization
-    PKeyword[] doIt(Object starargs,
+    static PKeyword[] doIt(Object starargs,
                     @Cached ExpandKeywordStarargsNode expandKeywordStarargsNode) {
         return expandKeywordStarargsNode.executeWith(starargs);
     }
@@ -104,8 +104,8 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
 
         @Specialization(guards = {"len(lib, starargs) == cachedLen", "cachedLen < 32"}, limit = "getVariableArgumentInlineCacheLimit()")
         static PKeyword[] doDictCached(PDict starargs,
-                        @Cached("starargs.size()") int cachedLen,
                         @SuppressWarnings("unused") @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached("len(lib, starargs)") int cachedLen,
                         @Cached PRaiseNode raise,
                         @Cached BranchProfile errorProfile) {
             try {
@@ -132,7 +132,7 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
                         @CachedLibrary("starargs.getDictStorage()") HashingStorageLibrary lib,
                         @Cached PRaiseNode raise,
                         @Cached BranchProfile errorProfile) {
-            return doDictCached(starargs, lib.length(starargs.getDictStorage()), lib, raise, errorProfile);
+            return doDictCached(starargs, lib, len(lib, starargs), raise, errorProfile);
         }
 
         @Specialization(guards = "!isDict(object)")

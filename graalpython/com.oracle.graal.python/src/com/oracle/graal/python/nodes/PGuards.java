@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -255,10 +257,6 @@ public abstract class PGuards {
         return none == PNone.NO_VALUE;
     }
 
-    public static boolean emptyArguments(Object arg) {
-        return arg instanceof PFrozenSet && ((PFrozenSet) arg).size() == 0;
-    }
-
     @SuppressWarnings("unused")
     public static boolean isForJSON(Object obj, String id, Object defaultValue) {
         return id.equals("for_json");
@@ -426,6 +424,26 @@ public abstract class PGuards {
 
     public static boolean isDictItemsView(Object obj) {
         return obj instanceof PDictView.PDictItemsView;
+    }
+
+    public static boolean isPHashingCollection(Object o) {
+        return o instanceof PHashingCollection;
+    }
+
+    public static boolean isPSet(Object o) {
+        return o instanceof PSet;
+    }
+
+    public static boolean isPBaseSet(Object o) {
+        return o instanceof PBaseSet;
+    }
+
+    public static boolean isPFrozenSet(Object o) {
+        return o instanceof PFrozenSet;
+    }
+
+    public static boolean canDoSetBinOp(Object o) {
+        return isPBaseSet(o) || isDictView(o);
     }
 
     public static boolean isPSlice(Object obj) {

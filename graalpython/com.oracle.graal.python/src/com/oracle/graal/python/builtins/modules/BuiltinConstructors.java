@@ -156,7 +156,6 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -1026,7 +1025,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
         @Specialization(guards = "isSubtypeOfFloat(frame, isSubtype, cls)", limit = "1")
-        Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
+        static Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
                         @Cached FloatNode recursiveCallNode) {
@@ -1076,46 +1075,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBuiltinNode {
 
-        @Child private HashingCollectionNodes.SetItemNode setItemNode;
-
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg) {
             return factory().createFrozenSet(cls);
         }
 
-        @Specialization
-        public PFrozenSet frozenset(VirtualFrame frame, Object cls, String arg) {
-            PFrozenSet frozenSet = factory().createFrozenSet(cls);
-            for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
-            }
-            return frozenSet;
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+            return arg;
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+            return factory().createFrozenSet(cls, arg.getDictStorage());
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
         public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
-
-            Object iterator = getIterator.executeWith(frame, iterable);
-            PFrozenSet frozenSet = factory().createFrozenSet(cls);
-            while (true) {
-                try {
-                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NONE);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    return frozenSet;
-                }
-            }
-        }
-
-        private HashingCollectionNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingCollectionNodes.SetItemNode.create());
-            }
-            return setItemNode;
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
+            HashingStorage storage = getHashingStorageNode.doNoValue(frame, iterable);
+            return factory().createFrozenSet(cls, storage);
         }
     }
 
@@ -1593,7 +1574,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public boolean bool(VirtualFrame frame, Object cls, Object obj,
+        public static boolean bool(VirtualFrame frame, Object cls, Object obj,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (hasFrame.profile(frame != null)) {
@@ -1854,35 +1835,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        protected boolean isStop(Object start, Object stop, Object step) {
+        protected static boolean isStop(Object start, Object stop, Object step) {
             return isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        protected boolean isStartStop(Object start, Object stop, Object step) {
+        protected static boolean isStartStop(Object start, Object stop, Object step) {
             return !isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        protected boolean isStartStopStep(Object start, Object stop, Object step) {
+        protected static boolean isStartStopStep(Object start, Object stop, Object step) {
             return !isNoValue(start) && !isNoValue(stop) && !isNoValue(step);
         }
     }
 
     // set([iterable])
-    @Builtin(name = SET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PSet)
+    @Builtin(name = SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet)
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PSet constructSet(VirtualFrame frame, Object cls, Object value,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return constructSetNode.execute(frame, cls, value);
+        @Specialization
+        public PSet setEmpty(Object cls, @SuppressWarnings("unused") Object arg) {
+            return factory().createSet(cls);
         }
 
-        @Fallback
-        public PSet listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            throw raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, arg);
-        }
     }
 
     // str(object='')
@@ -1952,7 +1927,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * into a natively allocated subtype structure
          */
         @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"})
-        Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
+        static Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
                         @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
@@ -2003,14 +1978,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isNativeClass(cls)")
-        protected PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
+        protected static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
                         @Cached("create()") TupleNodes.ConstructTupleNode constructTupleNode) {
             return constructTupleNode.execute(frame, cls, iterable);
         }
 
         // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
         @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
-        Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
+        static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
             return subtypeNew.call(cls, iterable);
@@ -2154,7 +2129,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
-        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+        static Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
                         @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
@@ -2553,6 +2528,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (callAddNativeSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create());
+                toSulongNode = insert(CExtNodes.ToSulongNode.create());
             }
             callAddNativeSlotsNode.call(FUN_ADD_NATIVE_SLOTS, toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
         }
@@ -2743,7 +2719,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PNotImplemented module(Object cls) {
+        public static PNotImplemented module(Object cls) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -2753,7 +2729,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PEllipsis call(Object cls) {
+        public static PEllipsis call(Object cls) {
             return PEllipsis.INSTANCE;
         }
     }
@@ -2763,7 +2739,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PNone module(Object cls) {
+        public static PNone module(Object cls) {
             return PNone.NONE;
         }
     }
@@ -2934,7 +2910,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
                         @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
                         @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
                         @Cached PythonObjectFactory factory) {
@@ -2942,7 +2918,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
                         @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
                         @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
                         @Cached PythonObjectFactory factory) {
@@ -3102,7 +3078,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
-        protected boolean isBuiltinMapping(Object o) {
+        protected static boolean isBuiltinMapping(Object o) {
             return o instanceof PHashingCollection;
         }
 
@@ -3158,20 +3134,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
+        static Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
+        static Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
+        static Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, third);
         }
