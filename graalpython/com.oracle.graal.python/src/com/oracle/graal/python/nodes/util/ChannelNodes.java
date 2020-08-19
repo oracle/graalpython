@@ -44,43 +44,42 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadByteFromChannelNodeGen;
-import com.oracle.graal.python.nodes.util.ChannelNodesFactory.ReadFromChannelNodeGen;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteByteToChannelNodeGen;
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteToChannelNodeGen;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ChannelNodes {
     public abstract static class ReadErrorHandler extends PNodeWithContext {
-        public abstract Object execute(Channel channel, int nrequested, int nread);
+        public abstract Object execute(Object channel, int nrequested, int nread);
     }
 
     public abstract static class ReadByteErrorHandler extends PNodeWithContext {
-        public abstract int execute(Channel channel);
+        public abstract int execute(Object channel);
     }
 
     public abstract static class WriteByteErrorHandler extends PNodeWithContext {
-        public abstract void execute(Channel channel, byte b);
+        public abstract void execute(Object channel, byte b);
     }
 
     protected interface ChannelBaseNode {
@@ -90,8 +89,8 @@ public abstract class ChannelNodes {
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
-        static long availableSize(SeekableByteChannel channel) throws IOException {
-            return channel.size() - channel.position();
+        static long availableSize(Object channel) throws IOException {
+            return ((SeekableByteChannel) channel).size() - ((SeekableByteChannel) channel).position();
         }
     }
 
@@ -102,7 +101,7 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected static int readIntoBuffer(ReadableByteChannel readableChannel, ByteBuffer dst, BranchProfile gotException, PRaiseNode raise) {
+        protected static int readIntoBuffer(Object readableChannel, ByteBuffer dst, BranchProfile gotException, PRaiseNode raise) {
             try {
                 return read(readableChannel, dst);
             } catch (IOException e) {
@@ -112,8 +111,8 @@ public abstract class ChannelNodes {
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int read(ReadableByteChannel readableChannel, ByteBuffer dst) throws IOException {
-            return readableChannel.read(dst);
+        private static int read(Object readableChannel, ByteBuffer dst) throws IOException {
+            return ((ReadableByteChannel) readableChannel).read(dst);
         }
     }
 
@@ -124,7 +123,7 @@ public abstract class ChannelNodes {
             return dst.array();
         }
 
-        protected static int writeFromBuffer(WritableByteChannel writableChannel, ByteBuffer src, BranchProfile gotException, PRaiseNode raise) {
+        protected static int writeFromBuffer(Object writableChannel, ByteBuffer src, BranchProfile gotException, PRaiseNode raise) {
             try {
                 return write(writableChannel, src);
             } catch (IOException e) {
@@ -134,21 +133,34 @@ public abstract class ChannelNodes {
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int write(WritableByteChannel writableChannel, ByteBuffer src) throws IOException {
-            return writableChannel.write(src);
+        private static int write(Object writableChannel, ByteBuffer src) throws IOException {
+            return ((WritableByteChannel) writableChannel).write(src);
         }
     }
 
-    @GenerateUncached
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class ReadFromChannelNode extends ReadFromChannelBaseNode {
         public static final int MAX_READ = Integer.MAX_VALUE / 2;
 
-        public abstract ByteSequenceStorage execute(Channel channel, int size);
+        public abstract ByteSequenceStorage execute(Object channel, int size);
 
         @Specialization
-        static ByteSequenceStorage readSeekable(SeekableByteChannel channel, int size,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        @TruffleBoundary(allowInlining = true)
+        public static ByteSequenceStorage read(Object channel, int size,
+                        @Cached BranchProfile gotException,
+                        @Cached PRaiseNode raiseNode) {
+            if (channel instanceof SeekableByteChannel) {
+                return readSeekable(channel, size, gotException, raiseNode);
+            } else if (channel instanceof ReadableByteChannel) {
+                return readReadable(channel, size, gotException, raiseNode);
+            }
+            throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
+        }
+
+        static ByteSequenceStorage readSeekable(Object channel, int size,
+                        BranchProfile gotException,
+                        PRaiseNode raiseNode) {
             long availableSize;
             try {
                 availableSize = ChannelBaseNode.availableSize(channel);
@@ -163,10 +175,9 @@ public abstract class ChannelNodes {
             return readReadable(channel, sz, gotException, raiseNode);
         }
 
-        @Specialization
-        static ByteSequenceStorage readReadable(ReadableByteChannel channel, int size,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        static ByteSequenceStorage readReadable(Object channel, int size,
+                        BranchProfile gotException,
+                        PRaiseNode raiseNode) {
             int sz = Math.min(size, MAX_READ);
             ByteBuffer dst = allocateBuffer(sz);
             int readSize = readIntoBuffer(channel, dst, gotException, raiseNode);
@@ -182,26 +193,9 @@ public abstract class ChannelNodes {
             return byteSequenceStorage;
         }
 
-        @Specialization
-        static ByteSequenceStorage readGeneric(Channel channel, int size,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (channel instanceof SeekableByteChannel) {
-                return readSeekable((SeekableByteChannel) channel, size, gotException, raiseNode);
-            } else if (channel instanceof ReadableByteChannel) {
-                return readReadable((ReadableByteChannel) channel, size, gotException, raiseNode);
-            } else {
-                throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
-            }
-        }
-
         @TruffleBoundary(allowInlining = true)
         private static ByteBuffer allocateBuffer(int sz) {
             return ByteBuffer.allocate(sz);
-        }
-
-        public static ReadFromChannelNode create() {
-            return ReadFromChannelNodeGen.create();
         }
     }
 
@@ -215,13 +209,15 @@ public abstract class ChannelNodes {
             this.errorHandlerFactory = errorHandlerFactory;
         }
 
-        public abstract int execute(Channel channel);
+        public abstract int execute(Object channel);
 
         @Specialization
-        int readByte(ReadableByteChannel channel,
+        @TruffleBoundary(allowInlining = true)
+        int readByte(Object channel,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+            assert channel instanceof ReadableByteChannel;
             ByteBuffer buf = allocate(1);
             int read = readIntoBuffer(channel, buf, gotException, raiseNode);
             if (readProfile.profile(read != 1)) {
@@ -230,7 +226,7 @@ public abstract class ChannelNodes {
             return get(buf) & 0xFF;
         }
 
-        private int handleError(Channel channel) {
+        private int handleError(Object channel) {
             if (errorHandler == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 errorHandler = insert(errorHandlerFactory.get());
@@ -249,6 +245,7 @@ public abstract class ChannelNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class WriteByteToChannelNode extends WriteToChannelBaseNode {
 
         @Child private WriteByteErrorHandler errorHandler;
@@ -259,13 +256,15 @@ public abstract class ChannelNodes {
             this.errorHandlerFactory = errorHandlerFactory;
         }
 
-        public abstract void execute(Channel channel, byte b);
+        public abstract void execute(Object channel, byte b);
 
         @Specialization
-        void readByte(WritableByteChannel channel, byte b,
+        @TruffleBoundary(allowInlining = true)
+        void readByte(Object channel, byte b,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
                         @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+            assert channel instanceof WritableByteChannel;
             ByteBuffer buf = allocate(1);
             put(b, buf);
             int read = writeFromBuffer(channel, buf, gotException, raiseNode);
@@ -280,7 +279,7 @@ public abstract class ChannelNodes {
             buf.flip();
         }
 
-        private void handleError(Channel channel, byte b) {
+        private void handleError(Object channel, byte b) {
             if (errorHandler == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 errorHandler = insert(errorHandlerFactory.get());
@@ -293,19 +292,34 @@ public abstract class ChannelNodes {
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class WriteToChannelNode extends WriteToChannelBaseNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         public static final int MAX_WRITE = Integer.MAX_VALUE / 2;
 
-        public abstract int execute(Channel channel, SequenceStorage s, int len);
+        public abstract int execute(Object channel, SequenceStorage s, int len);
 
         @Specialization
-        int writeSeekable(SeekableByteChannel channel, SequenceStorage s, int len,
+        @TruffleBoundary(allowInlining = true)
+        int writeOp(Object channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @Cached BranchProfile gotException,
+                        @Cached PRaiseNode raiseNode) {
+            if (channel instanceof SeekableByteChannel) {
+                return writeSeekable(channel, s, len, limitProfile, maxSizeProfile, gotException, raiseNode);
+            } else if (channel instanceof WritableByteChannel) {
+                return writeWritable(channel, s, len, gotException, raiseNode, limitProfile);
+            }
+            throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
+        }
+
+        int writeSeekable(Object channel, SequenceStorage s, int len,
+                        BranchProfile limitProfile,
+                        ConditionProfile maxSizeProfile,
+                        BranchProfile gotException,
+                        PRaiseNode raiseNode) {
             long availableSize;
             try {
                 availableSize = ChannelBaseNode.availableSize(channel);
@@ -320,32 +334,16 @@ public abstract class ChannelNodes {
             return writeWritable(channel, s, sz, gotException, raiseNode, limitProfile);
         }
 
-        @Specialization
-        int writeWritable(WritableByteChannel channel, SequenceStorage s, int len,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached BranchProfile limitProfile) {
+        int writeWritable(Object channel, SequenceStorage s, int len,
+                        BranchProfile gotException,
+                        PRaiseNode raiseNode,
+                        BranchProfile limitProfile) {
             ByteBuffer src = allocateBuffer(getBytes(s));
             if (src.remaining() > len) {
                 limitProfile.enter();
                 src.limit(len);
             }
             return writeFromBuffer(channel, src, gotException, raiseNode);
-        }
-
-        @Specialization
-        int writeGeneric(Channel channel, SequenceStorage s, int len,
-                        @Cached BranchProfile limitProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
-                        @Shared("gotException") @Cached BranchProfile gotException,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (channel instanceof SeekableByteChannel) {
-                return writeSeekable((SeekableByteChannel) channel, s, len, limitProfile, maxSizeProfile, gotException, raiseNode);
-            } else if (channel instanceof ReadableByteChannel) {
-                return writeWritable((WritableByteChannel) channel, s, len, gotException, raiseNode, limitProfile);
-            } else {
-                throw raiseNode.raise(OSError, ErrorMessages.FILE_NOT_OPENED_FOR_READING);
-            }
         }
 
         @TruffleBoundary(allowInlining = true)

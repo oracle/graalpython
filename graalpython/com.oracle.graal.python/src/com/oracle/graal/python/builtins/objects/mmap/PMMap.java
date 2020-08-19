@@ -45,6 +45,7 @@ import java.nio.channels.SeekableByteChannel;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PMMap extends PythonObject {
@@ -83,7 +85,7 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isBuffer() {
+    static boolean isBuffer(@SuppressWarnings("unused") PMMap self) {
         return true;
     }
 
@@ -96,7 +98,8 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     byte[] getBufferBytes(
                     @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
-                    @Cached ReadFromChannelNode readNode) {
+                    @Cached BranchProfile gotException,
+                    @Cached PRaiseNode raiseNode) {
 
         try {
             int len = castToIntNode.execute(length);
@@ -107,7 +110,7 @@ public final class PMMap extends PythonObject {
             long oldPos = PMMap.position(mappedByteBuffer);
 
             PMMap.position(mappedByteBuffer, 0);
-            ByteSequenceStorage s = readNode.execute(mappedByteBuffer, len);
+            ByteSequenceStorage s = ReadFromChannelNode.read(mappedByteBuffer, len, gotException, raiseNode);
             return s.getInternalByteArray();
         } catch (IOException e) {
             // TODO(fa) how to handle?
