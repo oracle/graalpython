@@ -606,6 +606,20 @@ def PyNumber_Divmod(a, b):
 
 
 @may_raise
+def PyNumber_ToBase(n, base):
+    b_index = PyNumber_Index(n)
+    if base == 2:
+        return bin(b_index)
+    elif base == 8:
+        return oct(b_index)
+    elif base == 10:
+        return str(b_index)
+    elif base == 16:
+        return hex(b_index)
+    raise ValueError("Unsupported base " + str(base))
+
+
+@may_raise
 def PyIter_Next(itObj):
     try:
         return next(itObj)

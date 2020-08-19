@@ -270,6 +270,10 @@ PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
     return UPCALL_CEXT_O(_jls_PyNumber_Divmod, native_to_java(a), native_to_java(b));
 }
 
+UPCALL_ID(PyNumber_ToBase);
+PyObject * PyNumber_ToBase(PyObject *n, int base) {
+    return UPCALL_CEXT_O(_jls_PyNumber_ToBase, native_to_java(n), base);
+}
 
 UPCALL_ID(PyIter_Next);
 PyObject * PyIter_Next(PyObject *iter) {
