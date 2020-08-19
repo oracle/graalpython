@@ -91,18 +91,16 @@ public abstract class CopyKeywordsNode extends Node {
         }
     }
 
+    @GenerateUncached
     @ImportStatic(PythonOptions.class)
-    abstract static class AbstractKeywordsNode extends HashingStorageLibrary.ForEachNode<CopyKeywordsState> {
+    abstract static class AddKeywordNode extends HashingStorageLibrary.ForEachNode<CopyKeywordsState> {
         public abstract CopyKeywordsState executeWithState(Object key, CopyKeywordsState state);
 
         @Override
         public CopyKeywordsState execute(Object key, CopyKeywordsState state) {
             return executeWithState(key, state);
         }
-    }
 
-    @GenerateUncached
-    abstract static class AddKeywordNode extends AbstractKeywordsNode {
         @Specialization(rewriteOn = CannotCastException.class, limit = "getCallSiteInlineCacheMaxDepth()")
         public CopyKeywordsState add(Object key, CopyKeywordsState state,
                         @Cached CastToJavaStringNode castToJavaStringNode,
