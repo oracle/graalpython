@@ -131,6 +131,7 @@ public abstract class ExecutionContext {
                     PFrame pyFrame = materialize(frame, callNode, false, true);
                     assert thisInfo.getPyFrame() == pyFrame;
                     assert pyFrame.getRef() == thisInfo;
+                    assert PArguments.haveSynchronizedArgs(frame, pyFrame);
                 } else {
                     thisInfo = PFrame.Reference.EMPTY;
                 }

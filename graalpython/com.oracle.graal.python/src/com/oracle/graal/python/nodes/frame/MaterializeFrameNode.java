@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValu
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -125,7 +124,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory) {
         PFrame escapedFrame = factory.createPFrame(PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getGeneratorFrameLocals(frameToMaterialize), false);
-        syncArgs(frameToMaterialize, escapedFrame);
+        PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
         return escapedFrame;
@@ -222,7 +221,7 @@ public abstract class MaterializeFrameNode extends Node {
         topFrameRef.setPyFrame(escapedFrame);
 
         // on a freshly created PFrame, we do always sync the arguments
-        syncArgs(frameToMaterialize, escapedFrame);
+        PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
         if (forceSync) {
             syncValuesNode.execute(frame, escapedFrame, frameToMaterialize);
         }
@@ -230,22 +229,6 @@ public abstract class MaterializeFrameNode extends Node {
             topFrameRef.markAsEscaped();
         }
         return escapedFrame;
-    }
-
-    private static void syncArgs(Frame frameToMaterialize, PFrame escapedFrame) {
-        Object[] arguments = frameToMaterialize.getArguments();
-        Object[] copiedArgs = new Object[arguments.length];
-
-        // copy only some carefully picked internal arguments
-        PArguments.setSpecialArgument(copiedArgs, PArguments.getSpecialArgument(arguments));
-        PArguments.setGeneratorFrame(copiedArgs, PArguments.getGeneratorFrameSafe(arguments));
-        PArguments.setGlobals(copiedArgs, PArguments.getGlobals(arguments));
-        PArguments.setClosure(copiedArgs, PArguments.getClosure(arguments));
-
-        // copy all user arguments
-        PythonUtils.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, copiedArgs, PArguments.USER_ARGUMENTS_OFFSET, PArguments.getUserArgumentLength(arguments));
-
-        escapedFrame.setArguments(copiedArgs);
     }
 
     protected static boolean inClassBody(Frame frame) {
