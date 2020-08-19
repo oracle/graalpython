@@ -1038,3 +1038,18 @@ PyType_FromSpec(PyType_Spec *spec)
 {
     return PyType_FromSpecWithBases(spec, NULL);
 }
+
+// taken from CPython "Objects/typeobject.c"
+void *
+PyType_GetSlot(PyTypeObject *type, int slot)
+{
+    if (!PyType_HasFeature(type, Py_TPFLAGS_HEAPTYPE) || slot < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    if ((size_t)slot >= Py_ARRAY_LENGTH(slotoffsets)) {
+        /* Extension module requesting slot from a future version */
+        return NULL;
+    }
+    return  *(void**)(((char*)type) + slotoffsets[slot]);
+}

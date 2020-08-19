@@ -1518,6 +1518,11 @@ def PyMapping_Keys(obj):
 
 
 @may_raise
+def PyMapping_Items(obj):
+    return list(obj.items())
+
+
+@may_raise
 def PyMapping_Values(obj):
     return list(obj.values())
 

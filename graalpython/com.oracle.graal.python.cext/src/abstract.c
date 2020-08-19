@@ -351,6 +351,11 @@ PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
 }
 
+UPCALL_ID(PyMapping_Items);
+PyObject * PyMapping_Items(PyObject *o) {
+    return UPCALL_CEXT_O(_jls_PyMapping_Items, native_to_java(o));
+}
+
 UPCALL_ID(PyMapping_Values);
 PyObject * PyMapping_Values(PyObject *o) {
     if (o == NULL) {
