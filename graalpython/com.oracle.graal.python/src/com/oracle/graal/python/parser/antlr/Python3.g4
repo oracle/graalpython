@@ -632,7 +632,11 @@ kwargsparameter [ArgDefListBuilder args]
 	'**' NAME
 	{ SSTNode type = null; }
 	( ':' test { type = $test.result; } )?
-	{ args.addKwargs($NAME.text, type); }
+	{ 
+            if (args.addKwargs($NAME.text, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+                throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+            }
+        }
 ;
 
 varargslist returns [ArgDefListBuilder result]
@@ -697,7 +701,11 @@ vsplatparameter [ArgDefListBuilder args]
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
-	{args.addKwargs($NAME.text, null);}
+	{
+            if (args.addKwargs($NAME.text, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+                throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
+            }
+        }
 ;
 
 stmt
@@ -1691,7 +1699,11 @@ argument [ArgListBuilder args] returns [SSTNode result]
                 } 
                     '=' test 
                     { 
-                        args.addNamedArg(name, $test.result); 
+                        if (!args.hasNameArg(name)) {
+                            args.addNamedArg(name, $test.result); 
+                        } else {
+                            throw new PythonRecognitionException("keyword argument repeated", this, _input, _localctx, getCurrentToken());
+                        }
                     }
 	|
 		test {  

@@ -366,6 +366,11 @@ public class BasicTests extends ParserTestBase {
     }
 
     @Test
+    public void call21() throws Exception {
+        checkSyntaxErrorMessage("f(p, k1=50, *(1,2), k1=100)", "SyntaxError: keyword argument repeated");
+    }
+
+    @Test
     public void del01() throws Exception {
         checkTreeResult("del x");
     }

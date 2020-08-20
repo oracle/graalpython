@@ -143,6 +143,10 @@ public final class ArgListBuilder {
         return !(nameArgNodes == null || nameArgNodes.isEmpty());
     }
 
+    public boolean hasNameArg(String name) {
+        return nameArgNames != null && nameArgNames.contains(name);
+    }
+
     public void addKwArg(SSTNode value) {
         if (kwArg == null) {
             kwArg = new ArrayList<>();

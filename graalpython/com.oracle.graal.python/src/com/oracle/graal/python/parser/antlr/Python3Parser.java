@@ -1787,7 +1787,11 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), type); 
+			 
+			            if (args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
+			            }
+			        
 			}
 		}
 		catch (RecognitionException re) {
@@ -2321,7 +2325,11 @@ public class Python3Parser extends Parser {
 			match(POWER);
 			setState(565);
 			_localctx.NAME = match(NAME);
-			args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), null);
+
+			            if (args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
+			            }
+			        
 			}
 		}
 		catch (RecognitionException re) {
@@ -8267,7 +8275,11 @@ public class Python3Parser extends Parser {
 				setState(1595);
 				_localctx.test = test();
 				 
-				                        args.addNamedArg(name, _localctx.test.result); 
+				                        if (!args.hasNameArg(name)) {
+				                            args.addNamedArg(name, _localctx.test.result); 
+				                        } else {
+				                            throw new PythonRecognitionException("keyword argument repeated", this, _input, _localctx, getCurrentToken());
+				                        }
 				                    
 				}
 				break;
