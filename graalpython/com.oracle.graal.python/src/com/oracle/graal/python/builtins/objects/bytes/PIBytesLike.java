@@ -40,8 +40,50 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
-public interface PIBytesLike {
-    SequenceStorage getSequenceStorage();
+@ExportLibrary(PythonObjectLibrary.class)
+public abstract class PIBytesLike extends PSequence {
+
+    protected SequenceStorage store;
+
+    public PIBytesLike(Object cls, Shape instanceShape, byte[] bytes) {
+        super(cls, instanceShape);
+        store = new ByteSequenceStorage(bytes);
+    }
+
+    public PIBytesLike(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape);
+        this.store = store;
+    }
+
+    @Override
+    public final SequenceStorage getSequenceStorage() {
+        return store;
+    }
+
+    @ExportMessage
+    static boolean isBuffer(PIBytesLike self) {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength(
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(store);
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(
+                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+        return toByteArrayNode.execute(store);
+    }
 }

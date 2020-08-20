@@ -27,19 +27,21 @@ package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -56,7 +58,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PString extends PImmutableSequence {
+public final class PString extends PSequence {
 
     private CharSequence value;
 
@@ -231,7 +233,7 @@ public final class PString extends PImmutableSequence {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isHashable() {
+    public static boolean isHashable(@SuppressWarnings("unused") PString self) {
         return true;
     }
 
@@ -311,4 +313,35 @@ public final class PString extends PImmutableSequence {
         }
         return sb.toString();
     }
+
+    @Override
+    public void setSequenceStorage(SequenceStorage store) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings({"static-method", "unused"})
+    public static void setItem(int idx, Object value) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        PythonLanguage.getCore().raise(PythonBuiltinClassType.PString, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementModifiable(PString self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementInsertable(PString self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementRemovable(PString self, long index) {
+        return false;
+    }
+
 }
