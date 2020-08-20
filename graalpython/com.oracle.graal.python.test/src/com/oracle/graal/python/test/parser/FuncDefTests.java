@@ -488,6 +488,16 @@ public class FuncDefTests extends ParserTestBase {
     }
 
     @Test
+    public void positionalOnlyArg48() throws Exception {
+        checkSyntaxErrorMessage("def f(p1, *k1, k1=100): pass ", "SyntaxError: duplicate argument 'k1' in function definition");
+    }
+
+    @Test
+    public void positionalOnlyArg49() throws Exception {
+        checkSyntaxErrorMessage("def f(p1, *, k1, **k1): pass ", "SyntaxError: duplicate argument 'k1' in function definition");
+    }
+
+    @Test
     public void issue21351() throws Exception {
         // parser test for GR-21351
         checkScopeAndTree();
