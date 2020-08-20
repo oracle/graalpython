@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -257,15 +256,6 @@ public abstract class PGuards {
         return none == PNone.NO_VALUE;
     }
 
-    @SuppressWarnings("unused")
-    public static boolean isForJSON(Object obj, String id, Object defaultValue) {
-        return id.equals("for_json");
-    }
-
-    public static boolean is2ndNotTuple(@SuppressWarnings("unused") Object first, Object second) {
-        return !(second instanceof PTuple);
-    }
-
     public static boolean isIndexPositive(int idx) {
         return idx >= 0;
     }
@@ -404,10 +394,6 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
-    }
-
-    public static boolean isMemoryView(Object obj) {
-        return obj instanceof PMemoryView;
     }
 
     public static boolean isAnySet(Object obj) {

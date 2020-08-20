@@ -154,14 +154,19 @@ public class TopLevelExceptionHandler extends RootNode {
                 printExc(frame, pythonException);
                 return null;
             } catch (Exception e) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
-                        printStackTrace(e);
-                    }
-                }
+                handleException(e);
                 throw e;
+            }
+        }
+    }
+
+    @TruffleBoundary
+    private void handleException(Exception e) {
+        boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+        if (!exitException) {
+            ExceptionUtils.printPythonLikeStackTrace(e);
+            if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                printStackTrace(e);
             }
         }
     }

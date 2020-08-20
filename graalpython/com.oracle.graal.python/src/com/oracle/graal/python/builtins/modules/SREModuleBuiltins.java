@@ -219,23 +219,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } catch (RuntimeException e) {
-                if (e instanceof TruffleException) {
-                    potentialSyntaxError.enter(); // this guards the TruffleBoundary invoke
-                    if (isSyntaxError(e)) {
-                        syntaxError.enter();
-                        throw raise(ValueError, "%s", e);
-                    }
-                }
-                // just re-throw
-                throw e;
+                return handleError(e, syntaxError, potentialSyntaxError);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
         @TruffleBoundary
-        private static boolean isSyntaxError(RuntimeException e) {
-            return ((TruffleException) e).isSyntaxError();
+        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError) {
+            if (e instanceof TruffleException) {
+                potentialSyntaxError.enter(); // this guards the TruffleBoundary invoke
+                if (((TruffleException) e).isSyntaxError()) {
+                    syntaxError.enter();
+                    throw raise(ValueError, "%s", e);
+                }
+            }
+            // just re-throw
+            throw e;
         }
     }
 

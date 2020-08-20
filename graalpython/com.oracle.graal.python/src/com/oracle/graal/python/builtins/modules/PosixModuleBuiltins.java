@@ -95,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -135,6 +134,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -427,7 +427,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        long getPidFallback() {
+        static long getPidFallback() {
             String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
             return Long.parseLong(info.split("@")[0]);
         }
@@ -437,12 +437,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetUidNode extends PythonBuiltinNode {
         @Specialization
-        int getPid() {
+        static int getPid() {
             return getSystemUid();
         }
 
         @TruffleBoundary
-        int getSystemUid() {
+        static int getSystemUid() {
             String osName = System.getProperty("os.name");
             if (osName.contains("Linux")) {
                 return (int) new com.sun.security.auth.module.UnixSystem().getUid();
@@ -488,31 +488,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return statNode.executeWith(frame, resources.getFilePath(fd), PNone.NO_VALUE);
             } else {
                 fstatForNonFile.enter();
-                Channel fileChannel = resources.getFileChannel(fd, channelClassProfile);
-                int mode = 0;
-                if (fileChannel instanceof ReadableByteChannel) {
-                    mode |= 0444;
-                }
-                if (fileChannel instanceof WritableByteChannel) {
-                    mode |= 0222;
-                }
-                return factory().createTuple(new Object[]{
-                                mode,
-                                0, // ino
-                                0, // dev
-                                0, // nlink
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                });
+                return fstatWithoutPath(resources, fd, channelClassProfile);
             }
         }
 
+        @TruffleBoundary(allowInlining = true)
+        private PTuple fstatWithoutPath(PosixResources resources, int fd, ValueProfile channelClassProfile) {
+            Channel fileChannel = resources.getFileChannel(fd, channelClassProfile);
+            int mode = 0;
+            if (fileChannel instanceof ReadableByteChannel) {
+                mode |= 0444;
+            }
+            if (fileChannel instanceof WritableByteChannel) {
+                mode |= 0222;
+            }
+            return factory().createTuple(new Object[]{
+                            mode,
+                            0, // ino
+                            0, // dev
+                            0, // nlink
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+            });
+        }
+
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object fstatPInt(VirtualFrame frame, Object fd,
+        static Object fstatPInt(VirtualFrame frame, Object fd,
                         @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") FstatNode recursive) {
             return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)));
@@ -527,7 +532,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetInheritableNode extends PythonFileNode {
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
-        Object setInheritableStd(@SuppressWarnings("unused") int fd, @SuppressWarnings("unused") Object inheritable) {
+        static Object setInheritableStd(@SuppressWarnings("unused") int fd, @SuppressWarnings("unused") Object inheritable) {
             // TODO: investigate if for the stdout/in/err this flag can be set
             return PNone.NONE;
         }
@@ -571,7 +576,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        long fileTimeToSeconds(FileTime t) {
+        static long fileTimeToSeconds(FileTime t) {
             return t.to(TimeUnit.SECONDS);
         }
 
@@ -1142,26 +1147,34 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object fd, Object data);
 
+        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        private static Object writableOp(byte[] data, Object channel) throws IOException {
+            if (channel instanceof WritableByteChannel) {
+                return doWriteOp(data, channel);
+            }
+            return null;
+        }
+
         @Specialization
         Object write(VirtualFrame frame, int fd, byte[] data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             Channel channel = getResources().getFileChannel(fd, channelClassProfile);
-            if (channel instanceof WritableByteChannel) {
-                try {
-                    return doWriteOp(data, (WritableByteChannel) channel);
-                } catch (Exception e) {
-                    gotException.enter();
-                    throw raiseOSError(frame, e);
+            try {
+                Object ret = writableOp(data, channel);
+                if (ret != null) {
+                    return ret;
                 }
-            } else {
-                notWritable.enter();
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
+            } catch (Exception e) {
+                gotException.enter();
+                throw raiseOSError(frame, e);
             }
+            notWritable.enter();
+            throw raiseOSError(frame, OSErrorEnum.EBADF);
         }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int doWriteOp(byte[] data, WritableByteChannel channel) throws IOException {
-            return channel.write(ByteBuffer.wrap(data));
+        private static int doWriteOp(byte[] data, Object channel) throws IOException {
+            return ((WritableByteChannel) channel).write(ByteBuffer.wrap(data));
         }
 
         @Specialization
@@ -1178,28 +1191,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object write(VirtualFrame frame, int fd, PBytes data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(frame, fd, getByteArray(data), channelClassProfile);
+            return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
         }
 
         @Specialization
         Object write(VirtualFrame frame, int fd, PByteArray data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(frame, fd, getByteArray(data), channelClassProfile);
+            return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object writePInt(VirtualFrame frame, Object fd, Object data,
+        static Object writePInt(VirtualFrame frame, Object fd, Object data,
                         @CachedLibrary("fd") PythonObjectLibrary lib,
                         @Cached("create()") WriteNode recursive) {
             return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)), data);
         }
 
-        private byte[] getByteArray(PIBytesLike pByteArray) {
+        private byte[] getByteArray(SequenceStorage storage) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(ToByteArrayNodeGen.create());
             }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+            return toByteArrayNode.execute(storage);
         }
 
         public static WriteNode create() {
@@ -1262,7 +1275,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        boolean isATTY(@SuppressWarnings("unused") Object fd) {
+        static boolean isATTY(@SuppressWarnings("unused") Object fd) {
             return false;
         }
     }
@@ -1773,7 +1786,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CpuCountNode extends PythonBuiltinNode {
         @Specialization
-        int getCpuCount() {
+        static int getCpuCount() {
             return Runtime.getRuntime().availableProcessors();
         }
     }
@@ -1893,7 +1906,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursiveNode.execute(frame, value);
         }
 
-        protected GetTerminalSizeNode create() {
+        protected static GetTerminalSizeNode create() {
             return PosixModuleBuiltinsFactory.GetTerminalSizeNodeFactory.create();
         }
     }
@@ -1927,7 +1940,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        String getStrError(int errno) {
+        static String getStrError(int errno) {
             if (STR_ERROR_MAP.isEmpty()) {
                 for (OSErrorEnum error : OSErrorEnum.values()) {
                     STR_ERROR_MAP.put(error.getNumber(), error.getMessage());
@@ -1945,7 +1958,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CtermId extends PythonBuiltinNode {
         @Specialization
-        String ctermid() {
+        static String ctermid() {
             return "/dev/tty";
         }
     }

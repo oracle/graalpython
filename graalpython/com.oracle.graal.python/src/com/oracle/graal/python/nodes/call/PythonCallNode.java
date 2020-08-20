@@ -68,7 +68,6 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -290,13 +289,13 @@ public abstract class PythonCallNode extends ExpressionNode {
         }
 
         @Specialization(guards = "lib.isForeignObject(object)")
-        Object getForeignInvoke(TruffleObject object,
+        Object getForeignInvoke(Object object,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             return new ForeignInvoke(object, key);
         }
 
         @Specialization(guards = "!lib.isForeignObject(object)", limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getCallAttribute(VirtualFrame frame, Object object,
+        static Object getCallAttribute(VirtualFrame frame, Object object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
@@ -304,10 +303,10 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     protected static final class ForeignInvoke {
-        private final TruffleObject receiver;
+        private final Object receiver;
         private final String identifier;
 
-        public ForeignInvoke(TruffleObject object, String key) {
+        public ForeignInvoke(Object object, String key) {
             this.receiver = object;
             this.identifier = key;
         }
@@ -386,7 +385,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     @Specialization(limit = "1", guards = {"callable == callableCached", "isSysExcInfo(nodeClass)", "canDoFastSysExcInfo()"})
-    Object fastSysExcInfoCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable,
+    static Object fastSysExcInfoCached(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod callable,
                     @SuppressWarnings("unused") @Cached("callable") PBuiltinMethod callableCached,
                     @SuppressWarnings("unused") @Cached("callableCached.getFunction()") PBuiltinFunction func,
                     @SuppressWarnings("unused") @Cached("func.getNodeClass()") Class<? extends PythonBuiltinBaseNode> nodeClass,

@@ -221,22 +221,26 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
                 return resources.registerChild(process);
             } catch (IOException e) {
-                Channel err = null;
                 if (errpipe_write != -1) {
                     // write exec error information here. Data format: "exception name:hex
                     // errno:description"
-                    err = resources.getFileChannel(errpipe_write);
-                    if (!(err instanceof WritableByteChannel)) {
-                        throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
-                    } else {
-                        ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
-                        try {
-                            ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
-                        } catch (IOException e1) {
-                        }
-                    }
+                    handleIOError(errpipe_write, resources, e);
                 }
                 return -1;
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private void handleIOError(int errpipe_write, PosixResources resources, IOException e) {
+            Channel err = resources.getFileChannel(errpipe_write);
+            if (!(err instanceof WritableByteChannel)) {
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
+            } else {
+                ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
+                try {
+                    ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
+                } catch (IOException e1) {
+                }
             }
         }
 

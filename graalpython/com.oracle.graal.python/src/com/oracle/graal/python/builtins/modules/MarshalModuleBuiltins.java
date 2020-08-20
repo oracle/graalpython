@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
@@ -228,7 +226,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         public abstract void execute(VirtualFrame frame, Object x, int version, DataOutputStream buffer);
 
-        @Child private CastToJavaStringNode castStrNode;
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
         @Child private IsBuiltinClassProfile isBuiltinProfile;
@@ -373,7 +370,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handleBytesLike(VirtualFrame frame, PIBytesLike v, int version, DataOutputStream buffer,
+        void handleBytesLike(VirtualFrame frame, PBytes v, int version, DataOutputStream buffer,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            writeByte(TYPE_BYTESLIKE, version, buffer);
+            writeBytes(toBytesNode.execute(frame, v), version, buffer);
+        }
+
+        @Specialization
+        void handleBytesLike(VirtualFrame frame, PByteArray v, int version, DataOutputStream buffer,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             writeByte(TYPE_BYTESLIKE, version, buffer);
             writeBytes(toBytesNode.execute(frame, v), version, buffer);
