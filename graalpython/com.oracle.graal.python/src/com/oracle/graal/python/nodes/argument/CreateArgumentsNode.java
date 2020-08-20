@@ -81,7 +81,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.ArrayList;
+import java.util.List;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
@@ -473,6 +476,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached(value = "cachedSignature.getParameterIds()", dimensions = 1) String[] parameters,
                         @Cached("parameters.length") int positionalParamNum,
                         @Cached(value = "cachedSignature.getKeywordNames()", dimensions = 1) String[] kwNames,
+                        @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             PKeyword[] unusedKeywords = takesVarKwds ? new PKeyword[kwLen] : null;
@@ -481,6 +485,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int additionalKwds = 0;
             String lastWrongKeyword = null;
             int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
+            List<String> posArgOnlyPassedAsKeywordNames = null;
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 String name = kwArg.getName();
@@ -497,7 +502,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         if (unusedKeywords != null) {
                             unusedKeywords[k++] = kwArg;
                         } else {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
+                            posArgOnlyPassedAsKeywordProfile.enter();
+                            posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
@@ -512,13 +518,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, posArgOnlyPassedAsKeywordProfile, raise);
             return arguments;
         }
 
         @Specialization(replaces = "applyCached")
         Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
+                        @Cached BranchProfile posArgOnlyPassedAsKeywordProfile,
                         @Exclusive @Cached SearchNamedParameterNode searchParamNode,
                         @Exclusive @Cached SearchNamedParameterNode searchKwNode) {
             String[] parameters = calleeSignature.getParameterIds();
@@ -531,6 +538,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int additionalKwds = 0;
             String lastWrongKeyword = null;
             int positionalOnlyArgIndex = calleeSignature.getPositionalOnlyArgIndex();
+            List<String> posArgOnlyPassedAsKeywordNames = null;
             for (int i = 0; i < kwLen; i++) {
                 PKeyword kwArg = keywords[i];
                 String name = kwArg.getName();
@@ -547,7 +555,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         if (unusedKeywords != null) {
                             unusedKeywords[k++] = kwArg;
                         } else {
-                            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), name);
+                            posArgOnlyPassedAsKeywordProfile.enter();
+                            posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
                         if (PArguments.getArgument(arguments, kwIdx) != null) {
@@ -562,18 +571,39 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, raise);
+            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, posArgOnlyPassedAsKeywordProfile, raise);
             return arguments;
         }
 
-        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword, PRaiseNode raise) {
+        @TruffleBoundary
+        private static List<String> addPosArgOnlyPassedAsKeyword(List<String> names, String name) {
+            if (names == null) {
+                List<String> newList = new ArrayList<>();
+                newList.add(name);
+                return newList;
+            }
+            names.add(name);
+            return names;
+        }
+
+        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, String lastWrongKeyword,
+                        List<String> posArgOnlyPassedAsKeywordNames, BranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise) {
             if (tooManyKeywords == 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, CreateArgumentsNode.getName(callee), tooManyKeywords);
+            } else if (posArgOnlyPassedAsKeywordNames != null) {
+                posArgOnlyPassedAsKeywordProfile.enter();
+                String names = joinNames(posArgOnlyPassedAsKeywordNames);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, CreateArgumentsNode.getName(callee), names);
             } else if (unusedKeywords != null) {
                 PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
+        }
+
+        @TruffleBoundary
+        private static String joinNames(List<String> names) {
+            return String.join(", ", names);
         }
 
         @GenerateUncached
