@@ -175,4 +175,4 @@ For Graal Python, no dependency other than on the [GraalVM SDK](https://mvnrepos
 required. There are no APIs particular to Python that are exposed, and
 everything is done through the GraalVM API. Important to know is that as long as
 your application is executed on a GraalVM with the Python language installed,
-you can embed Python in your programs. For more detail, refer to the [Embed Languages](https://www.graalvm.org/docs/reference-manual/embed-languages/#Function_Python) reference.
+you can embed Python in your programs. For more detail, refer to the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) reference.

@@ -73,7 +73,7 @@ print("Here is what we found: '%s'" % md[1])
 
 To run it, pass the `--jvm --polyglot` options to `graalpython` binary:
 ```shell
-$ graalpython --jvm --polyglot polyglot_example.py
+graalpython --jvm --polyglot polyglot_example.py
 ```
 
 This example matches Python strings using the JavaScript regular expression object
@@ -85,7 +85,7 @@ Python, and use R again to display the resulting data image, using both R and
 Python libraries in conjunction. To run it, first install the
 required R library:
 ```shell
-$ R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
+R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 
 This example also uses [image_magix.py](http://graalvm.org/docs/examples/image_magix.py) and works
@@ -179,5 +179,5 @@ print(java.is_function(my_list.add))# prints True, the add method of ArrayList
 print(java.instanceof(my_list, ArrayList)) # prints True
 ```
 
-See the [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/docs/reference-manual/embed-languages/#Function_Python) reference
+See the [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) reference
 for more information about interoperability with other programming languages.

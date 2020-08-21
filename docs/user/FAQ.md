@@ -47,7 +47,7 @@ can expect to see between 0.1x and 0.5x performance.
 
 ### I heard languages with JIT compilers have slow startup. Is that true for GraalVM's Python?
 
-It depends. When you use the [GraalVM Native Image](https://www.graalvm.org/docs/reference-manual/graalvm-native-image/) feature with Python or
+It depends. When you use the [GraalVM Native Image](https://www.graalvm.org/reference-manual/native-image/) feature with Python or
 use the `graalpython` launcher of GraalVM, its startup is competitive with
 CPython. In any case, both with Native Image or when running on JVM you first
 need to warm up to reach peak performance. This is a complicated story in
