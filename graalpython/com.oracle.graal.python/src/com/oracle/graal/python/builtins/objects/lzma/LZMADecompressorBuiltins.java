@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -91,7 +91,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(maxLength)")
-        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
+        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] decompress;
             try {
@@ -103,7 +103,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
+        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, int maxLength,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
@@ -123,7 +123,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doBytesLikeWithMaxLengthI", limit = "getCallSiteInlineCacheMaxDepth()")
-        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
+        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, Object maxLength,
                         @CachedLibrary("maxLength") PythonObjectLibrary lib,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceNodes.LenNode lenNode,

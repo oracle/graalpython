@@ -165,7 +165,7 @@ public abstract class BytesNodes {
             return doBytesLike(byteArray, exceptionProfile);
         }
 
-        private byte[] doBytesLike(PIBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
+        private byte[] doBytesLike(PBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
                 return getToByteArrayNode().execute(bytes.getSequenceStorage());
             } catch (PException e) {
@@ -217,16 +217,16 @@ public abstract class BytesNodes {
         @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
 
-        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, Object sub, Object starting, Object ending);
+        public abstract int execute(VirtualFrame frame, PBytesLike bytes, Object sub, Object starting, Object ending);
 
-        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, Object starting, Object ending);
+        public abstract int execute(VirtualFrame frame, PBytesLike bytes, int sub, Object starting, Object ending);
 
-        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, int starting, Object ending);
+        public abstract int execute(VirtualFrame frame, PBytesLike bytes, int sub, int starting, Object ending);
 
-        public abstract int execute(VirtualFrame frame, PIBytesLike bytes, int sub, int starting, int ending);
+        public abstract int execute(VirtualFrame frame, PBytesLike bytes, int sub, int starting, int ending);
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, int starting, int ending) {
+        int find(VirtualFrame frame, PBytesLike primary, PBytesLike sub, int starting, int ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -240,7 +240,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, int starting, Object ending) {
+        int find(VirtualFrame frame, PBytesLike primary, PBytesLike sub, int starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -254,7 +254,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, PIBytesLike sub, Object starting, Object ending) {
+        int find(VirtualFrame frame, PBytesLike primary, PBytesLike sub, Object starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -295,7 +295,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, int sub, int starting, int ending) {
+        int find(VirtualFrame frame, PBytesLike primary, int sub, int starting, int ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -306,7 +306,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, int sub, int starting, Object ending) {
+        int find(VirtualFrame frame, PBytesLike primary, int sub, int starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -317,7 +317,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int find(VirtualFrame frame, PIBytesLike primary, int sub, Object starting, Object ending) {
+        int find(VirtualFrame frame, PBytesLike primary, int sub, Object starting, Object ending) {
             SequenceStorage haystack = primary.getSequenceStorage();
             int len1 = haystack.length();
 
@@ -345,7 +345,7 @@ public abstract class BytesNodes {
         }
 
         @Fallback
-        int doError(@SuppressWarnings("unused") PIBytesLike bytes, Object sub, @SuppressWarnings("unused") Object starting, @SuppressWarnings("unused") Object ending) {
+        int doError(@SuppressWarnings("unused") PBytesLike bytes, Object sub, @SuppressWarnings("unused") Object starting, @SuppressWarnings("unused") Object ending) {
             throw raise.raise(TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "a bytes-like object", sub);
         }
 
@@ -486,9 +486,9 @@ public abstract class BytesNodes {
         private final ValueProfile leftProfile = ValueProfile.createClassProfile();
         private final ValueProfile rightProfile = ValueProfile.createClassProfile();
 
-        public int execute(VirtualFrame frame, PIBytesLike left, PIBytesLike right) {
-            PIBytesLike leftProfiled = leftProfile.profile(left);
-            PIBytesLike rightProfiled = rightProfile.profile(right);
+        public int execute(VirtualFrame frame, PBytesLike left, PBytesLike right) {
+            PBytesLike leftProfiled = leftProfile.profile(left);
+            PBytesLike rightProfiled = rightProfile.profile(right);
             int leftLen = getleftLenNode().execute(leftProfiled.getSequenceStorage());
             int rightLen = getRightLenNode().execute(rightProfiled.getSequenceStorage());
             for (int i = 0; i < Math.min(leftLen, rightLen); i++) {

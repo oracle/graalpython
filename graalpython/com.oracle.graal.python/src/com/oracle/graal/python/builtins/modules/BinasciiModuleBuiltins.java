@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -120,7 +120,7 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLike(VirtualFrame frame, PIBytesLike data,
+        PBytes doBytesLike(VirtualFrame frame, PBytesLike data,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return factory().createBytes(b64decode(toBytesNode.execute(frame, data)));
         }
@@ -275,22 +275,22 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aBytesLike(PIBytesLike data, @SuppressWarnings("unused") PNone newline) {
+        PBytes b2aBytesLike(PBytesLike data, @SuppressWarnings("unused") PNone newline) {
             return b2aBytesLike(data, 1);
         }
 
         @Specialization
-        PBytes b2aBytesLike(PIBytesLike data, long newline) {
+        PBytes b2aBytesLike(PBytesLike data, long newline) {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
         }
 
         @Specialization
-        PBytes b2aBytesLike(PIBytesLike data, PInt newline) {
+        PBytes b2aBytesLike(PBytesLike data, PInt newline) {
             return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
         }
 
         @Specialization(limit = "1")
-        PBytes b2aBytesLike(VirtualFrame frame, PIBytesLike data, Object newline,
+        PBytes b2aBytesLike(VirtualFrame frame, PBytesLike data, Object newline,
                         @CachedLibrary("newline") PythonObjectLibrary lib) {
             return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }

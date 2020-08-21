@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,16 +51,16 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public abstract class PIBytesLike extends PSequence {
+public abstract class PBytesLike extends PSequence {
 
     protected SequenceStorage store;
 
-    public PIBytesLike(Object cls, Shape instanceShape, byte[] bytes) {
+    public PBytesLike(Object cls, Shape instanceShape, byte[] bytes) {
         super(cls, instanceShape);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PIBytesLike(Object cls, Shape instanceShape, SequenceStorage store) {
+    public PBytesLike(Object cls, Shape instanceShape, SequenceStorage store) {
         super(cls, instanceShape);
         this.store = store;
     }
@@ -71,7 +71,7 @@ public abstract class PIBytesLike extends PSequence {
     }
 
     @ExportMessage
-    static boolean isBuffer(PIBytesLike self) {
+    static boolean isBuffer(@SuppressWarnings("unused") PBytesLike self) {
         return true;
     }
 

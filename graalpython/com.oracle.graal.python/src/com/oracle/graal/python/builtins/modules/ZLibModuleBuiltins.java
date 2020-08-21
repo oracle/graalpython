@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -476,7 +476,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, int maxLen) {
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PBytesLike pb, int maxLen) {
             int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -492,7 +492,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object decompress(VirtualFrame frame, InflaterWrapper stream, PIBytesLike pb, long maxLen,
+        Object decompress(VirtualFrame frame, InflaterWrapper stream, PBytesLike pb, long maxLen,
                         @Cached CastToJavaIntExactNode castInt) {
             return decompress(frame, stream, pb, castInt.execute(maxLen));
         }
@@ -546,13 +546,13 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doitNone(PIBytesLike data, @SuppressWarnings("unused") PNone level) {
+        public PBytes doitNone(PBytesLike data, @SuppressWarnings("unused") PNone level) {
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(compress(array, -1));
         }
 
         @Specialization
-        public PBytes doitLong(PIBytesLike data, long level,
+        public PBytes doitLong(PBytesLike data, long level,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
                 throw raise(ZLibError, ErrorMessages.BAD_COMPRESSION_LEVEL);
@@ -605,18 +605,18 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes doit(PIBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
+        public PBytes doit(PBytesLike data, @SuppressWarnings("unused") PNone wbits, @SuppressWarnings("unused") PNone bufsize) {
             byte[] array = getToArrayNode().execute(data.getSequenceStorage());
             return factory().createBytes(decompress(array, MAX_WBITS, DEF_BUF_SIZE));
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, byte wbits, int bufsize) {
+        public PBytes decompress(PBytesLike data, byte wbits, int bufsize) {
             return decompress(data, (long) wbits, bufsize);
         }
 
         @Specialization
-        public PBytes decompress(PIBytesLike data, long wbits, int bufsize) {
+        public PBytes decompress(PBytesLike data, long wbits, int bufsize) {
             // checking bufsize
             if (bufSizeProfile.profile(bufsize < 0)) {
                 throw raise(ZLibError, ErrorMessages.MUST_BE_NON_NEGATIVE, "bufsize");
@@ -626,7 +626,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        public PBytes decompress(VirtualFrame frame, PIBytesLike data, long wbits, Object bufsize,
+        public PBytes decompress(VirtualFrame frame, PBytesLike data, long wbits, Object bufsize,
                         @Cached("create()") DecompressNode recursiveNode,
                         @CachedLibrary("bufsize") PythonObjectLibrary lib) {
             if (!lib.canBePInt(bufsize)) {

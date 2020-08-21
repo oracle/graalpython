@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -513,7 +513,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object sendAll(VirtualFrame frame, PSocket socket, PIBytesLike bytes, Object flags,
+        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, Object flags,
                         @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
             // TODO: do not ignore flags
             try {

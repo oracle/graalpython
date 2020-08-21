@@ -49,7 +49,7 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public final class PBytes extends PIBytesLike {
+public final class PBytes extends PBytesLike {
 
     public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
         super(cls, instanceShape, bytes);

@@ -100,7 +100,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray add(PByteArray self, PIBytesLike other,
+        public PByteArray add(PByteArray self, PBytesLike other,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), getStorage.execute(other));
@@ -211,7 +211,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SplitLinesNode extends BytesBuiltins.SplitLinesNode {
         @Override
-        protected PIBytesLike createElement(byte[] bytes) {
+        protected PBytesLike createElement(byte[] bytes) {
             return factory().createByteArray(bytes);
         }
     }

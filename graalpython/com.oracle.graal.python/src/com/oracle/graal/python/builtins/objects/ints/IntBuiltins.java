@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -2455,7 +2455,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             Object result = callBytesNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
-                if (!(result instanceof PIBytesLike)) {
+                if (!(result instanceof PBytesLike)) {
                     raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", result);
                 }
                 BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);

@@ -70,7 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -339,7 +339,7 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSlice(PMMap self, PSlice idx, PIBytesLike val,
+        PNone doSlice(PMMap self, PSlice idx, PBytesLike val,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile,
@@ -552,7 +552,7 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static int writeBytesLike(PMMap self, PIBytesLike bytesLike,
+        static int writeBytesLike(PMMap self, PBytesLike bytesLike,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
             SeekableByteChannel channel = self.getChannel();
@@ -630,7 +630,7 @@ public class MMapBuiltins extends PythonBuiltins {
         public abstract long execute(VirtualFrame frame, PMMap bytes, Object sub, Object starting, Object ending);
 
         @Specialization
-        long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
+        long find(VirtualFrame frame, PMMap primary, PBytesLike sub, Object starting, Object ending,
                         @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
