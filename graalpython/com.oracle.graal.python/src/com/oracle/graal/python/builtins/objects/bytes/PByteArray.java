@@ -103,12 +103,6 @@ public final class PByteArray extends PBytesLike {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    static boolean isBuffer(@SuppressWarnings("unused") PByteArray self) {
-        return true;
-    }
-
-    @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {

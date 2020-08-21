@@ -44,7 +44,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -152,9 +151,8 @@ public abstract class CastToByteNode extends Node {
 
     @Specialization(guards = "coerce")
     protected byte doBytes(VirtualFrame frame, PBytesLike value,
-                    @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
                     @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-        return doIntOvf(getItemNode.executeInt(frame, getStorageNode.execute(value), 0));
+        return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
     }
 
     @Specialization(guards = "plib.isForeignObject(value)", limit = "1")

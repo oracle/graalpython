@@ -146,14 +146,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isBytes(bytes)")
-        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") PNone errors,
+        @Specialization
+        Object encode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") PNone errors,
                         @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             return encode(frame, bytes, "", toBytes);
         }
 
-        @Specialization(guards = "isBytes(bytes)")
-        Object encode(VirtualFrame frame, Object bytes, @SuppressWarnings("unused") String errors,
+        @Specialization
+        Object encode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") String errors,
                         @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
             // for now we'll just parse this as a String, ignoring any error strategies
             PythonCore core = getCore();

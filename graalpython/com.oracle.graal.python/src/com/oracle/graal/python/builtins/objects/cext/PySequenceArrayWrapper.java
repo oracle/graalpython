@@ -47,8 +47,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -317,38 +315,34 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization
         void doBytes(PBytesLike s, long idx, byte value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
-            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx, value);
+            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, value);
         }
 
         @Specialization
         @ExplodeLoop
         void doBytes(PBytesLike s, long idx, short value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
         @Specialization
         @ExplodeLoop
         void doBytes(PBytesLike s, long idx, int value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
         @Specialization
         @ExplodeLoop
         void doBytes(PBytesLike s, long idx, long value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
@@ -543,7 +537,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     protected static boolean hasByteArrayContent(Object object) {
-        return object instanceof PBytes || object instanceof PByteArray || object instanceof PMMap;
+        return object instanceof PBytesLike || object instanceof PMMap;
     }
 
 }

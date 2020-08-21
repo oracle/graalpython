@@ -109,12 +109,6 @@ public final class PBytes extends PBytesLike {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    static boolean isBuffer(@SuppressWarnings("unused") PBytes self) {
-        return true;
-    }
-
-    @ExportMessage
     public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raise,
                     @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {

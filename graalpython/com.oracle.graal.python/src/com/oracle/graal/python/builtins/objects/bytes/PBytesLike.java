@@ -71,7 +71,7 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    static boolean isBuffer(@SuppressWarnings("unused") PBytesLike self) {
+    protected boolean isBuffer() {
         return true;
     }
 

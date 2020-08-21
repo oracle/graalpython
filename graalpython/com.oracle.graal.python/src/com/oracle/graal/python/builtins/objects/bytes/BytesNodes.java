@@ -77,7 +77,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
 
@@ -154,18 +153,8 @@ public abstract class BytesNodes {
         public abstract byte[] execute(VirtualFrame frame, Object obj);
 
         @Specialization
-        byte[] doBytes(PBytes bytes,
+        byte[] doBytes(PBytesLike bytes,
                         @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(bytes, exceptionProfile);
-        }
-
-        @Specialization
-        byte[] doByteArray(PByteArray byteArray,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
-            return doBytesLike(byteArray, exceptionProfile);
-        }
-
-        private byte[] doBytesLike(PBytesLike bytes, IsBuiltinClassProfile exceptionProfile) {
             try {
                 return getToByteArrayNode().execute(bytes.getSequenceStorage());
             } catch (PException e) {
@@ -483,17 +472,12 @@ public abstract class BytesNodes {
         @Child private SequenceStorageNodes.LenNode leftLenNode;
         @Child private SequenceStorageNodes.LenNode rightLenNode;
 
-        private final ValueProfile leftProfile = ValueProfile.createClassProfile();
-        private final ValueProfile rightProfile = ValueProfile.createClassProfile();
-
         public int execute(VirtualFrame frame, PBytesLike left, PBytesLike right) {
-            PBytesLike leftProfiled = leftProfile.profile(left);
-            PBytesLike rightProfiled = rightProfile.profile(right);
-            int leftLen = getleftLenNode().execute(leftProfiled.getSequenceStorage());
-            int rightLen = getRightLenNode().execute(rightProfiled.getSequenceStorage());
+            int leftLen = getleftLenNode().execute(left.getSequenceStorage());
+            int rightLen = getRightLenNode().execute(right.getSequenceStorage());
             for (int i = 0; i < Math.min(leftLen, rightLen); i++) {
-                int a = getGetLeftItemNode().executeInt(frame, leftProfiled.getSequenceStorage(), i);
-                int b = getGetRightItemNode().executeInt(frame, rightProfiled.getSequenceStorage(), i);
+                int a = getGetLeftItemNode().executeInt(frame, left.getSequenceStorage(), i);
+                int b = getGetRightItemNode().executeInt(frame, right.getSequenceStorage(), i);
                 if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
                     return a & 0xFF - b & 0xFF;
