@@ -6,13 +6,13 @@ environment. This generates wrapper scripts and makes the implementation usable
 from shell as standard Python interpreter. To do so execute the following from a
 GraalVM installation:
 
-```
+```shell
 graalpython -m venv <venv-dir>
 ```
 
 To activate the environment in your shell session call:
 
-```
+```shell
 source <venv-dir>/bin/activate
 ```
 
@@ -23,13 +23,13 @@ simple module to install packages is provided (including
 potential patches required for those packages). Try the following to find out
 more:
 
-```
+```shell
 graalpython -m ginstall --help
 ```
 
 As a slightly more exciting example, try:
 
-```
+```shell
 graalpython -m ginstall install numpy
 ```
 
