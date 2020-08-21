@@ -53,8 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -145,13 +144,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PBytes str) {
-            byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
-            return factory().createByteArray(bytes);
-        }
-
-        @Specialization
-        Object run(PByteArray str) {
+        Object run(PBytesLike str) {
             byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
             return factory().createByteArray(bytes);
         }

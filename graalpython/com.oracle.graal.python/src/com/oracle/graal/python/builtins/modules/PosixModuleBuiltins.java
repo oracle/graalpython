@@ -93,8 +93,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1189,13 +1189,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object write(VirtualFrame frame, int fd, PBytes data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
-        }
-
-        @Specialization
-        Object write(VirtualFrame frame, int fd, PByteArray data,
+        Object write(VirtualFrame frame, int fd, PBytesLike data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
         }

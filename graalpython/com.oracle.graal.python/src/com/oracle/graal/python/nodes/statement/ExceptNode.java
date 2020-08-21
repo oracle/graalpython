@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -267,11 +266,10 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
     @Specialization
     boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
                     @Cached ExceptMatchNode recursiveNode,
-                    @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                     @Cached SequenceStorageNodes.LenNode getLenNode,
                     @Cached SequenceStorageNodes.GetItemNode getItemNode) {
         // check for every type in the tuple
-        SequenceStorage storage = getStorageNode.execute(clause);
+        SequenceStorage storage = clause.getSequenceStorage();
         int length = getLenNode.execute(storage);
         for (int i = 0; i < length; i++) {
             Object clauseType = getItemNode.execute(frame, storage, i);

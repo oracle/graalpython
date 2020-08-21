@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -81,7 +81,7 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PBytes doBytesLike(VirtualFrame frame, PLZMACompressor self, PIBytesLike bytesLike,
+        PBytes doBytesLike(VirtualFrame frame, PLZMACompressor self, PBytesLike bytesLike,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] compressed;
             try {

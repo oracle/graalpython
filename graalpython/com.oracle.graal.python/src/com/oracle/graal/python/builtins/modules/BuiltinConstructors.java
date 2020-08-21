@@ -107,7 +107,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -913,7 +913,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factoryCreateFloat(cls, value);
         }
 
-        private double convertBytesToDouble(VirtualFrame frame, PIBytesLike arg) {
+        private double convertBytesToDouble(VirtualFrame frame, PBytesLike arg) {
             return convertStringToDouble(frame, createString(getByteArray(frame, arg)), arg);
         }
 
@@ -998,8 +998,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // These types are handled only if the object doesn't implement __float__/__index__
             if (obj instanceof PString) {
                 return convertStringToDouble(frame, ((PString) obj).getValue(), obj);
-            } else if (obj instanceof PIBytesLike) {
-                return convertBytesToDouble(frame, (PIBytesLike) obj);
+            } else if (obj instanceof PBytesLike) {
+                return convertBytesToDouble(frame, (PBytesLike) obj);
             } else if (lib.isBuffer(obj)) {
                 try {
                     return convertStringToDouble(frame, createString(lib.getBufferBytes(obj)), obj);
@@ -1046,7 +1046,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
         }
 
-        private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
+        private byte[] getByteArray(VirtualFrame frame, PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
@@ -1398,13 +1398,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // PIBytesLike
 
         @Specialization
-        Object parseBytesError(VirtualFrame frame, Object cls, PIBytesLike arg, int base) {
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base) {
             checkBase(base);
             return stringToInt(frame, cls, toString(frame, arg), base, arg);
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object parseBytesError(VirtualFrame frame, Object cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base) {
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base) {
             return parseBytesError(frame, cls, arg, 10);
         }
 
@@ -1552,7 +1552,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callTruncNode.executeObject(frame, obj);
         }
 
-        private String toString(VirtualFrame frame, PIBytesLike pByteArray) {
+        private String toString(VirtualFrame frame, PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());

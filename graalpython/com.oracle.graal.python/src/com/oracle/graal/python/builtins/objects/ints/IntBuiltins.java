@@ -62,9 +62,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -2365,26 +2364,15 @@ public class IntBuiltins extends PythonBuiltins {
             return createIntObject(cl, bi);
         }
 
-        // from PBytes
+        // from PBytesLike
         @Specialization
-        public Object fromPBytes(VirtualFrame frame, Object cl, PBytes bytes, String byteorder, boolean signed) {
+        public Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPBytes(VirtualFrame frame, Object cl, PBytes bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+        public Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
             return fromPBytes(frame, cl, bytes, byteorder, false);
-        }
-
-        // from PByteArray
-        @Specialization
-        public Object fromPByteArray(VirtualFrame frame, Object cl, PByteArray bytes, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
-        }
-
-        @Specialization
-        public Object fromPByteArray(VirtualFrame frame, Object cl, PByteArray bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPByteArray(frame, cl, bytes, byteorder, false);
         }
 
         // from PArray
@@ -2455,7 +2443,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             Object result = callBytesNode.executeObject(frame, object);
             if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
-                if (!(result instanceof PIBytesLike)) {
+                if (!(result instanceof PBytesLike)) {
                     raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", result);
                 }
                 BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);

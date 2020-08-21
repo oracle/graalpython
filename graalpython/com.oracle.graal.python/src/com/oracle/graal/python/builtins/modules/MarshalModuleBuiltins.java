@@ -44,8 +44,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -162,21 +162,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Child private UnmarshallerNode marshaller = UnmarshallerNode.create();
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object doit(VirtualFrame frame, PBytes bytes,
+        Object doit(VirtualFrame frame, PBytesLike bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        Object doit(VirtualFrame frame, PByteArray bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
-        }
-
-        @SuppressWarnings("unused")
         @Specialization
         Object doit(VirtualFrame frame, PMemoryView bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
@@ -370,14 +361,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handleBytesLike(VirtualFrame frame, PBytes v, int version, DataOutputStream buffer,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            writeByte(TYPE_BYTESLIKE, version, buffer);
-            writeBytes(toBytesNode.execute(frame, v), version, buffer);
-        }
-
-        @Specialization
-        void handleBytesLike(VirtualFrame frame, PByteArray v, int version, DataOutputStream buffer,
+        void handleBytesLike(VirtualFrame frame, PBytesLike v, int version, DataOutputStream buffer,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             writeByte(TYPE_BYTESLIKE, version, buffer);
             writeBytes(toBytesNode.execute(frame, v), version, buffer);
