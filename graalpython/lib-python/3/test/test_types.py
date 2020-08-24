@@ -1,6 +1,7 @@
 # Python test set -- part 6, built-in types
 
 from test.support import run_with_locale
+from test import support
 import collections.abc
 import inspect
 import pickle
@@ -572,6 +573,7 @@ class TypesTests(unittest.TestCase):
         for code in 'xXobns':
             self.assertRaises(ValueError, format, 0, ',' + code)
 
+    @support.impl_detail(graalvm=False)
     def test_internal_sizes(self):
         self.assertGreater(object.__basicsize__, 0)
         self.assertGreater(tuple.__itemsize__, 0)
