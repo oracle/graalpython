@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -480,20 +481,36 @@ public final class StringBuiltins extends PythonBuiltins {
             return left.toString() + right.toString();
         }
 
-        @Specialization(guards = "!isString(other)")
-        PNotImplemented doSO(@SuppressWarnings("unused") String self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @Specialization(guards = "isString(self)")
+        Object doSNative(VirtualFrame frame, Object self, PythonAbstractNativeObject other,
+                        @Cached CastToJavaStringNode cast,
+                        @Cached AddNode recurse) {
+            try {
+                return recurse.execute(frame, self, cast.execute(other));
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
+            }
         }
 
-        @Specialization(guards = "!isString(other)")
-        PNotImplemented doSO(@SuppressWarnings("unused") PString self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @Specialization
+        Object doNative(VirtualFrame frame, PythonAbstractNativeObject self, PythonAbstractNativeObject other,
+                        @Cached CastToJavaStringNode cast,
+                        @Cached AddNode recurse) {
+            try {
+                return recurse.execute(frame, cast.execute(self), cast.execute(other));
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __ADD__, "str", self);
+            }
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        PNotImplemented doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @Specialization(guards = {"isString(self)", "!isString(other)", "!isNativeObject(other)"})
+        Object doSO(@SuppressWarnings("unused") Object self, Object other) {
+            throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
+        }
+
+        @Specialization(guards = {"!isString(self)", "!isNativeObject(self)", "!isNativeObject(other)"})
+        Object doNoString(Object self, @SuppressWarnings("unused") Object other) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __ADD__, "str", self);
         }
 
         protected boolean concatGuard(CharSequence left, CharSequence right) {
