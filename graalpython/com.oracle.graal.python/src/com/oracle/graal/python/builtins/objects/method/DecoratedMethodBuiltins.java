@@ -40,19 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -104,7 +104,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         protected Object getDict(PDecoratedMethod self, @SuppressWarnings("unused") PNone mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib,
                         @Cached PythonObjectFactory factory) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory.createDictFixedStorage(self);
                 try {
@@ -118,7 +118,7 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        protected Object setDict(PDecoratedMethod self, PHashingCollection mapping,
+        protected Object setDict(PDecoratedMethod self, PDict mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, mapping);
@@ -129,9 +129,9 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isDict(value)")
-        protected Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object value) {
-            throw raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, __DICT__, "dictionary", value);
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        protected Object setDict(@SuppressWarnings("unused") PDecoratedMethod self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
     }
 }

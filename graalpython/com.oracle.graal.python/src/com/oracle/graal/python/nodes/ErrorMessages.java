@@ -181,7 +181,7 @@ public abstract class ErrorMessages {
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
-    public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must have been set to a dictionary, not a '%p'";
+    public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must be set to a dictionary, not a '%p'";
     public static final String DICT_OF_P_OBJECTS_HAS_NO_ATTR = "'%p' dict of '%p' object has no attribute '__setitem__'";
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
     public static final String DIVISION_BY_ZERO = "division by zero";

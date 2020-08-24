@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -550,7 +549,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected ListInsertNode createListInsertNode() {
-            return ListBuiltinsFactory.ListInsertNodeFactory.create(new ReadArgumentNode[0]);
+            return ListBuiltinsFactory.ListInsertNodeFactory.create(null);
         }
 
         private int getLength(SequenceStorage s) {
@@ -775,7 +774,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected ListIndexNode createIndexNode() {
-            return ListBuiltinsFactory.ListIndexNodeFactory.create(new ReadArgumentNode[0]);
+            return ListBuiltinsFactory.ListIndexNodeFactory.create(null);
         }
 
         private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
@@ -1016,7 +1015,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected IMulNode createIMulNode() {
-            return ListBuiltinsFactory.IMulNodeFactory.create(new ReadArgumentNode[0]);
+            return ListBuiltinsFactory.IMulNodeFactory.create(null);
         }
     }
 

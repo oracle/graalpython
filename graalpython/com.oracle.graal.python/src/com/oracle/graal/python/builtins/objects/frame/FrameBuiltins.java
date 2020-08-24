@@ -40,10 +40,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
@@ -144,7 +143,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         public static GetLinenoNode create() {
-            return FrameBuiltinsFactory.GetLinenoNodeFactory.create(new ReadArgumentNode[0]);
+            return FrameBuiltinsFactory.GetLinenoNodeFactory.create(null);
         }
     }
 
@@ -188,7 +187,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
 
         public static GetCodeNode create() {
-            return FrameBuiltinsFactory.GetCodeNodeFactory.create(new ReadArgumentNode[0]);
+            return FrameBuiltinsFactory.GetCodeNodeFactory.create(null);
         }
     }
 

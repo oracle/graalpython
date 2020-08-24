@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFac
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -128,11 +127,6 @@ public abstract class HashingCollectionNodes {
             return c.getDictStorage();
         }
 
-        @Specialization
-        static HashingStorage get(PMappingproxy c) {
-            return c.getDictStorage();
-        }
-
         public static GetDictStorageNode create() {
             return GetDictStorageNodeGen.create();
         }
@@ -155,11 +149,6 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static void set(PDict c, HashingStorage storage) {
-            c.setDictStorage(storage);
-        }
-
-        @Specialization
-        static void set(PMappingproxy c, HashingStorage storage) {
             c.setDictStorage(storage);
         }
 

@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -588,7 +586,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PHashingCollection dict = lib.getDict(object);
+            PDict dict = lib.getDict(object);
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
@@ -599,8 +597,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage = storageLib.addAllToOther(dictStorage, storage);
             }
-            lib.setDict(object, factory.createMappingproxy(storage));
-            return toSulongNode.execute(factory.createDict(storage));
+            PDict newDict = factory.createDict(storage);
+            lib.setDict(object, newDict);
+            return toSulongNode.execute(newDict);
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
@@ -774,15 +773,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
-            PHashingCollection dict = lib.getDict(object);
-            if (!(dict instanceof PDict)) {
-                assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a dict.
+            PDict dict = lib.getDict(object);
+            if (dict == null) {
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }
-            assert dict != null;
             return toSulongNode.execute(dict);
         }
 
@@ -1135,7 +1130,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 for (HashingStorage.DictEntry entry : d.entries()) {
                     writeAttrNode.execute(object, entry.getKey(), entry.getValue());
                 }
-                PHashingCollection existing = lib.getDict(object);
+                PDict existing = lib.getDict(object);
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {

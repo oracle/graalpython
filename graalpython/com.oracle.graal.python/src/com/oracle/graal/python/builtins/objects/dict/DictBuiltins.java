@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -435,18 +434,6 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         Object doDictDict(VirtualFrame frame, PDict self, PDict other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached GetDictStorageNode getStorage,
-                        @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.equalsWithState(getStorage.execute(self), getStorage.execute(other), PArguments.getThreadState(frame));
-            } else {
-                return lib.equals(getStorage.execute(self), getStorage.execute(other));
-            }
-        }
-
-        @Specialization(limit = "3")
-        Object doDictProxy(VirtualFrame frame, PDict self, PMappingproxy other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(self)") HashingStorageLibrary lib) {

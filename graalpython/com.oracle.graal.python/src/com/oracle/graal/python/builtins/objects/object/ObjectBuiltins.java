@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -530,7 +529,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 try {
@@ -559,11 +558,16 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)", limit = "1")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 raise(self, none);
             }
             return dict;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Fallback
