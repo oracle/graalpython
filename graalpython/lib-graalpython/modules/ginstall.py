@@ -99,14 +99,13 @@ def pip_package(name=None, try_import=False):
         return wrapper
     return decorator
 
-
-def system(cmd, msg=""):
-    print("+", cmd)
-    status = os.system(cmd)
-    if status != 0:
-        xit(msg, status=status)
-    return status
-
+def run_cmd(args, msg="", failOnError=True, cwd=None, env=None):
+    cwd_log = "cd " + cwd if cwd else ""
+    print("+", cwd_log, ' '.join(args))
+    result = subprocess.run(args, cwd=cwd, env=env)
+    if failOnError and result.returncode != 0:
+        xit(msg, status=result.returncode)
+    return result.returncode
 
 def known_packages():
     @pip_package()
@@ -377,15 +376,13 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     elif url.startswith("https://") and "HTTPS_PROXY" in os_env:
         curl_opts += ["--proxy", os_env["HTTPS_PROXY"]]
 
-    # honor env var 'CFLAGS' and 'CPPFLAGS'
-    cppflags = os_env.get("CPPFLAGS", "")
+    # honor env var 'CFLAGS' and the explicitly passed env
+    setup_env = os_env.copy()
+    setup_env.update(env)
     cflags = os_env.get("CFLAGS", "") + ((" " + add_cflags) if add_cflags else "")
+    setup_env['CFLAGS'] = cflags if cflags else ""
 
-    env_str = ('CFLAGS="%s" ' % cflags if cflags else "") + ('CPPFLAGS="%s" ' % cppflags if cppflags else "")
-    for key in env.keys():
-        env_str = env_str + ('%s="%s" ' % (key, env[key]))
-
-    if os.system("curl -L -o %s/%s %s" % (tempdir, name, url)) != 0:
+    if run_cmd(["curl", "-L", "-o", os.path.join(tempdir, name), url], failOnError=False) != 0:
         # honor env var 'HTTP_PROXY' and 'HTTPS_PROXY'
         env = os.environ
         curl_opts = []
@@ -393,16 +390,16 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
             curl_opts += ["--proxy", env["HTTP_PROXY"]]
         elif url.startswith("https://") and "HTTPS_PROXY" in env:
             curl_opts += ["--proxy", env["HTTPS_PROXY"]]
-        system("curl -L %s -o %s/%s %s" % (" ".join(curl_opts), tempdir, name, url), msg="Download error")
+        run_cmd(["curl", "-L"] + curl_opts + ["-o", os.path.join(tempdir, name), url], msg="Download error")
 
     if name.endswith(".tar.gz"):
-        system("tar xzf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.gz")
+        run_cmd(["tar", "xzf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.gz")
         bare_name = name[:-len(".tar.gz")]
     elif name.endswith(".tar.bz2"):
-        system("tar xjf %s/%s -C %s" % (tempdir, name, tempdir), msg="Error extracting tar.bz2")
+        run_cmd(["tar", "xjf", os.path.join(tempdir, name), "-C", tempdir], msg="Error extracting tar.bz2")
         bare_name = name[:-len(".tar.bz2")]
     elif name.endswith(".zip"):
-        system("unzip -u %s/%s -d %s" % (tempdir, name, tempdir), msg="Error extracting zip")
+        run_cmd(["unzip", "-u", os.path.join(tempdir, name), "-d", tempdir], msg="Error extracting zip")
         bare_name = name[:-len(".zip")]
     else:
         xit("Unknown file type: %s" % name)
@@ -415,22 +412,22 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
 
     patch_file_path = first_existing(package, versions, os.path.join(patches_dir, "sdist"), ".patch")
     if patch_file_path:
-        system("patch -d %s/%s/ -p1 < %s" %
-               (tempdir, bare_name, patch_file_path))
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, ""), "-p1", "-i", patch_file_path])
 
     whl_patches_dir = os.path.join(patches_dir, "whl")
     patch_file_path = first_existing(package, versions, whl_patches_dir, ".patch")
     subdir = read_first_existing(package, versions, whl_patches_dir, ".dir")
-    subdir = "" if subdir is None else "/" + subdir
+    subdir = "" if subdir is None else subdir
     if patch_file_path:
-        system("patch -d %s/%s%s -p1 < %s" %
-               (tempdir, bare_name, subdir, patch_file_path))
+        os.path.join(tempdir, bare_name, subdir)
+        run_cmd(["patch", "-d", os.path.join(tempdir, bare_name, subdir), "-p1", "-i", patch_file_path])
 
     if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
-        user_arg = "--user"
+        user_arg = ["--user"]
     else:
-        user_arg = ""
-    status = system("cd %s/%s; %s %s setup.py install %s %s" % (tempdir, bare_name, env_str, sys.executable, user_arg, " ".join(extra_opts)))
+        user_arg = []
+    status = run_cmd([sys.executable, "setup.py", "install"] + user_arg + extra_opts, env=setup_env,
+                     cwd=os.path.join(tempdir, bare_name))
     if status != 0 and not ignore_errors:
         xit("An error occurred trying to run `setup.py install %s %s'" % (user_arg, " ".join(extra_opts)))
 
