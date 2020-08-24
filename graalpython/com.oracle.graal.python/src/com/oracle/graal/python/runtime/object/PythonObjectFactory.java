@@ -381,6 +381,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(metaclass, getShape(metaclass), name, bases));
     }
 
+    public PythonClass createPythonClass(Object metaclass, String name, boolean invokeMro, PythonAbstractClass[] bases) {
+        return trace(new PythonClass(metaclass, getShape(metaclass), name, invokeMro, bases));
+    }
+
     public PMemoryView createMemoryView(Object cls, Object value) {
         return trace(new PMemoryView(cls, getShape(cls), value));
     }

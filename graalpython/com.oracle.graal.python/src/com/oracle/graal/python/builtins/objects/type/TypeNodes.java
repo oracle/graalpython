@@ -1208,18 +1208,30 @@ public abstract class TypeNodes {
             return computeMethodResolutionOrder(cls, invokeMro);
         }
 
+        @TruffleBoundary
+        static PythonAbstractClass[] invokeMro(PythonAbstractClass cls) {
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(cls);
+            if (PythonObjectLibrary.getUncached().isLazyPythonClass(type) && type instanceof PythonClass) {
+                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
+                if (mroMeth instanceof PFunction) {
+                    Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
+                    if (mroObj instanceof PSequence) {
+                        return mroCheck(cls, ((PSequence) mroObj).getSequenceStorage().getInternalArray());
+                    }
+                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
+                }
+            }
+            return null;
+        }
+
         private static PythonAbstractClass[] computeMethodResolutionOrder(PythonAbstractClass cls, boolean invokeMro) {
             CompilerAsserts.neverPartOfCompilation();
 
             PythonAbstractClass[] currentMRO;
-
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(cls);
             if (invokeMro) {
-                if (PythonObjectLibrary.getUncached().isLazyPythonClass(type)) {
-                    PythonAbstractClass[] typeMRO = getMRO(type, cls);
-                    if (typeMRO != null) {
-                        return typeMRO;
-                    }
+                PythonAbstractClass[] mro = invokeMro(cls);
+                if (mro != null) {
+                    return mro;
                 }
             }
 
@@ -1249,20 +1261,6 @@ public abstract class TypeNodes {
                 currentMRO = mergeMROs(toMerge, mro);
             }
             return currentMRO;
-        }
-
-        private static PythonAbstractClass[] getMRO(Object type, PythonAbstractClass cls) {
-            if (type instanceof PythonClass) {
-                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
-                if (mroMeth instanceof PFunction) {
-                    Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
-                    if (mroObj instanceof PSequence) {
-                        return mroCheck(cls, ((PSequence) mroObj).getSequenceStorage().getInternalArray());
-                    }
-                    throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
-                }
-            }
-            return null;
         }
 
         private static PythonAbstractClass[] mroCheck(Object cls, Object[] mro) {

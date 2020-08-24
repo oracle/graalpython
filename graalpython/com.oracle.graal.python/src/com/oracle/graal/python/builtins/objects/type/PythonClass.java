@@ -48,6 +48,10 @@ public final class PythonClass extends PythonManagedClass {
         super(typeClass, instanceShape, null, name, baseClasses);
     }
 
+    public PythonClass(Object typeClass, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
+        super(typeClass, instanceShape, null, name, invokeMro, baseClasses);
+    }
+
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
     @ExportMessage(library = InteropLibrary.class)
     @SuppressWarnings("static-method")
