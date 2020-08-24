@@ -9,8 +9,10 @@
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testExtraNesting
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testFreeVarInMethod
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testFreeingCell
+*graalpython.lib-python.3.test.test_scope.ScopeTests.testGlobalInParallelNestedFunctions
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testInteractionWithTraceFunc
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testLambdas
+*graalpython.lib-python.3.test.test_scope.ScopeTests.testLeaks
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testListCompLocalVars
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testLocalsClass
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testLocalsClass_WithTrace
@@ -26,6 +28,7 @@
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testNonLocalGenerator
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testNonLocalMethod
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testRecursion
+*graalpython.lib-python.3.test.test_scope.ScopeTests.testScopeOfGlobalStmt
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testSimpleAndRebinding
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testSimpleNesting
 *graalpython.lib-python.3.test.test_scope.ScopeTests.testTopIsNotSignificant

@@ -190,6 +190,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             // clean the variables
             localySeenVars.clear();
         }
+
         if (definingScopeKind == ScopeInfo.ScopeKind.Class) {
             boolean copy = false;
             for (Object identifier : identifiers) {
@@ -204,6 +205,31 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             if (copy) {
                 // we copy it because the indexes are now wrong due the issue GR-17984
                 definingScope.setFrameDescriptor(definingScope.getFrameDescriptor().copy());
+            }
+        } else {
+            if (definingScope.hasExplicitGlobalVariables()) {
+                Set<String> globalsVariables = definingScope.getExplicitGlobalVariables();
+                List<ScopeInfo> usedInScopes;
+                for (String varName : globalsVariables) {
+                    usedInScopes = unresolvedVars.get(varName);
+                    // In inner scopes, where a variable is just read and is marked as global in
+                    // some outer scope, has to be read as global as well. But if in the inner scope
+                    // it is written into to variabl, then it's local one. See
+                    // test_global_statement.py.
+                    if (usedInScopes != null) {
+                        List<ScopeInfo> copy = new ArrayList<>(usedInScopes);
+                        for (ScopeInfo scope : copy) {
+                            ScopeInfo tmpScope = scope;
+                            ScopeInfo parentDefiningScope = definingScope.getParent();
+                            while (tmpScope != null && tmpScope != definingScope && tmpScope != parentDefiningScope) {
+                                tmpScope = tmpScope.getParent();
+                            }
+                            if (definingScope == tmpScope) {
+                                usedInScopes.remove(scope);
+                            }
+                        }
+                    }
+                }
             }
         }
         currentScope = currentScope.getParent();

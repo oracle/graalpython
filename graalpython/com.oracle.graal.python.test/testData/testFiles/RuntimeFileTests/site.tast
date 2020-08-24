@@ -2,7 +2,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 4 slots [USER_BASE, USER_SITE, PREFIXES, ENABLE_USER_SITE]
+  FrameDescriptor:  Empty
   Documentation: `Append module search...`
   InnerRootNode SourceSection: [0,21269]`"""Append module sea...`
     ExpressionWithSideEffects SourceSection: [0,21269]`"""Append module sea...`
@@ -28,8 +28,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
         ImportExpression SourceSection: None
           ImportNode SourceSection: None
             Module: _sitebuiltins
-      WriteNameNodeGen SourceSection: [3140,3180]`PREFIXES = [sys.pref...`
+      WriteGlobalNodeGen SourceSection: [3140,3180]`PREFIXES = [sys.pref...`
         Identifier: PREFIXES
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ListLiteralNode SourceSection: [3151,3180]`[sys.prefix, sys.exe...`
           GetAttributeNodeGen SourceSection: [3152,3162]`sys.prefix`
             GetFixedAttributeNodeGen SourceSection: None
@@ -56,14 +58,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
           PythonObjectFactoryNodeGen SourceSection: None
-      WriteNameNodeGen SourceSection: [3293,3316]`ENABLE_USER_SITE = N...`
+      WriteGlobalNodeGen SourceSection: [3293,3316]`ENABLE_USER_SITE = N...`
         Identifier: ENABLE_USER_SITE
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ObjectLiteralNode SourceSection: [3312,3316]`None`
-      WriteNameNodeGen SourceSection: [3490,3506]`USER_SITE = None`
+      WriteGlobalNodeGen SourceSection: [3490,3506]`USER_SITE = None`
         Identifier: USER_SITE
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ObjectLiteralNode SourceSection: [3502,3506]`None`
-      WriteNameNodeGen SourceSection: [3507,3523]`USER_BASE = None`
+      WriteGlobalNodeGen SourceSection: [3507,3523]`USER_BASE = None`
         Identifier: USER_BASE
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         ObjectLiteralNode SourceSection: [3519,3523]`None`
       WriteNameNodeGen SourceSection: [3526,3696]`def makepath(*paths)...`
         Identifier: makepath
