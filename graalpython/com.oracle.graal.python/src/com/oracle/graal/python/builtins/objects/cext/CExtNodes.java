@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallWi
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PointerCompareNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.WrapVoidPt
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -1437,8 +1437,22 @@ public abstract class CExtNodes {
             }
         }
 
+        @Specialization(guards = "isEq(opName)", limit = "2")
+        static boolean doEq(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+                        @CachedLibrary("a.getPtr()") InteropLibrary aLib,
+                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+            return aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
+        }
+
+        @Specialization(guards = "isNe(opName)", limit = "2")
+        static boolean doNe(@SuppressWarnings("unused") String opName, PythonAbstractNativeObject a, PythonAbstractNativeObject b,
+                        @CachedLibrary("a.getPtr()") InteropLibrary aLib,
+                        @CachedLibrary(limit = "3") InteropLibrary bLib) {
+            return !aLib.isIdentical(a.getPtr(), b.getPtr(), bLib);
+        }
+
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        public boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, PythonNativeObject b,
+        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, PythonNativeObject b,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
@@ -1447,7 +1461,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        public boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, long b,
+        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeObject a, long b,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
@@ -1456,7 +1470,7 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
-        public boolean execute(@SuppressWarnings("unused") String opName, PythonNativeVoidPtr a, long b,
+        static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeVoidPtr a, long b,
                         @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
                         @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
@@ -1464,7 +1478,7 @@ public abstract class CExtNodes {
             return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 
-        public static int findOp(String specialMethodName) {
+        static int findOp(String specialMethodName) {
             for (int i = 0; i < SpecialMethodNames.COMPARE_OP_COUNT; i++) {
                 if (SpecialMethodNames.getCompareName(i).equals(specialMethodName)) {
                     return i;
@@ -1473,12 +1487,12 @@ public abstract class CExtNodes {
             throw new RuntimeException("The special method used for Python C API pointer comparison must be a constant literal (i.e., interned) string");
         }
 
-        public static PointerCompareNode create() {
-            return PointerCompareNodeGen.create();
+        static boolean isEq(String opName) {
+            return SpecialMethodNames.__EQ__.equals(opName);
         }
 
-        public static PointerCompareNode getUncached() {
-            return PointerCompareNodeGen.getUncached();
+        static boolean isNe(String opName) {
+            return SpecialMethodNames.__NE__.equals(opName);
         }
     }
 
@@ -3232,6 +3246,34 @@ public abstract class CExtNodes {
 
         static boolean isFallback(Object object) {
             return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetLLVMType extends Node {
+        public abstract TruffleObject execute(LLVMType llvmType);
+
+        @Specialization(guards = "llvmType == cachedType", limit = "typeCount()")
+        static TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
+                        @Cached("llvmType") LLVMType cachedType,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+
+            CApiContext cApiContext = context.getCApiContext();
+            TruffleObject llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
+
+            // TODO(fa): get rid of lazy initialization for better sharing
+            if (llvmTypeID == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                String getterFunctionName = LLVMType.getGetterFunctionName(llvmType);
+                llvmTypeID = (TruffleObject) PCallCapiFunction.getUncached().call(getterFunctionName);
+                cApiContext.setLLVMTypeID(cachedType, llvmTypeID);
+            }
+            return llvmTypeID;
+        }
+
+        static int typeCount() {
+            CompilerAsserts.neverPartOfCompilation();
+            return LLVMType.values().length;
         }
     }
 

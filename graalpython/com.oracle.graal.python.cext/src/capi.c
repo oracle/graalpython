@@ -199,7 +199,7 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
-POLYGLOT_DECLARE_TYPE(uint32_t);
+
 
 static void initialize_globals() {
     // register native NULL
@@ -349,6 +349,7 @@ polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
 }
 
+POLYGLOT_DECLARE_TYPE(uint32_t);
 /** to be used from Java code only; returns the type ID for a uint32_t array */
 polyglot_typeid get_uint32_t_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_uint32_t_typeid(), len);
@@ -700,8 +701,6 @@ int PyTruffle_Debug(void *arg) {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
     return 0;
 }
-
-#define ARG(__n) ((PyObject*)polyglot_get_arg((__n)))
 
 int truffle_ptr_compare(void* x, void* y, int op) {
     switch (op) {

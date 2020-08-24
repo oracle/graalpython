@@ -160,13 +160,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.VaListWrapper;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -3285,31 +3283,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             kwdsProfile, kwdnamesProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
         }
 
-    }
-
-    @Builtin(name = "PyTruffle_Arg_ParseTupleAndKeywords_VaList", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
-    @GenerateNodeFactory
-    abstract static class ParseTupleAndKeywordsVaListNode extends ParseTupleAndKeywordsBaseNode {
-
-        @Specialization(guards = "arguments.length == 5", limit = "2")
-        static int doConvert(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached SplitFormatStringNode splitFormatStringNode,
-                        @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsRefLib,
-                        @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
-                        @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
-                        @Cached PCallCExtFunction callMallocOutVarPtr,
-                        @Cached AsPythonObjectNode argvToJavaNode,
-                        @Cached AsPythonObjectNode kwdsToJavaNode,
-                        @Cached CastToJavaStringNode castToStringNode,
-                        @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
-            CExtContext nativeContext = context.getCApiContext();
-            Object argv = argvToJavaNode.execute(arguments[0]);
-            VaListWrapper varargs = new VaListWrapper(nativeContext, arguments[4], callMallocOutVarPtr.call(nativeContext, NativeCAPISymbols.FUN_ALLOCATE_OUTVAR));
-            return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], varargs, splitFormatStringNode, kwdsRefLib, kwdnamesRefLib, kwdsProfile,
-                            kwdnamesProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
-        }
     }
 
     @Builtin(name = "PyTruffle_Create_Lightweight_Upcall", minNumOfPositionalArgs = 1)
