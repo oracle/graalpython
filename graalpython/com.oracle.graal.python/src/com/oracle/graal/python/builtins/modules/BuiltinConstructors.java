@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -2135,9 +2136,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
-        static Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+                        @Cached IsBuiltinClassProfile profile,
                         @Cached GetClassNode getClass) {
-            return getClass.execute(obj);
+            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
+                return getClass.execute(obj);
+            } else {
+                throw raise(TypeError, TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "type.__new__", 3, 1);
+            }
         }
 
         @Specialization(guards = "isString(wName)")
