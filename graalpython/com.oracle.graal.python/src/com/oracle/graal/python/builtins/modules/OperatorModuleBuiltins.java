@@ -179,9 +179,6 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object doObject(VirtualFrame frame, Object value1, Object value2) {
-            if (value1 == value2) {
-                return true;
-            }
             if (equalsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 equalsNode = insert((BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==")));
