@@ -45,13 +45,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -71,6 +73,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
@@ -108,10 +111,22 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class DictNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDict) {
-            return getDict.executeObject(frame, self.getFunction(), __DICT__);
+        @Specialization(limit = "1")
+        protected Object doIt(PMethod self,
+                        @CachedLibrary("self.getFunction()") PythonObjectLibrary lib) {
+            PDict dict = lib.getDict(self.getFunction());
+            if (dict == null) {
+                // A native object should already have a dict,
+                // so it's safe to assume it's a PythonObject
+                dict = factory().createDictFixedStorage((PythonObject) self.getFunction());
+                try {
+                    lib.setDict(self.getFunction(), dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            }
+            return dict;
         }
     }
 

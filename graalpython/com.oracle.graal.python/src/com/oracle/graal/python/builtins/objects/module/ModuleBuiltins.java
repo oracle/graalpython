@@ -190,7 +190,16 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                return PNone.NONE;
+                if (self.getShape().getPropertyCount() == 0) {
+                    return PNone.NONE;
+                }
+                dict = factory().createDictFixedStorage(self);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
