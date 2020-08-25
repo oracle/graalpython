@@ -49,6 +49,7 @@
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_nested
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_pickle
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_recursive
+*graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_recursive_repr
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_repr
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_subclass
 *graalpython.lib-python.3.test.test_types.SimpleNamespaceTests.test_unbound
