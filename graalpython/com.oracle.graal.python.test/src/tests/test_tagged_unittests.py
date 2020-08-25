@@ -174,7 +174,7 @@ if __name__ == "__main__":
             else:
                 testfile_stem = os.path.splitext(os.path.basename(testfile))[0]
             testmod = "test." + testfile_stem
-            cmd = [timeout, "-s", "9", "120"] + executable
+            cmd = [timeout, "-s", "9", "240"] + executable
             if repeat == 0:
                 # Allow catching Java exceptions in the first iteration only, so that subsequent iterations
                 # (there will be one even if everything succeeds) filter out possible false-passes caused by
