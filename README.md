@@ -2,7 +2,7 @@
 
 This is an early-stage experimental implementation of Python. A primary goal is
 to support SciPy and its constituent libraries. This Python implementation
-currently aims to be compatible with Python 3.7, but it is a long way from
+currently aims to be compatible with Python 3.8, but it is a long way from
 there, and it is very likely that any Python program that requires any packages
 at all will hit something unsupported. At this point, the Python implementation
 is made available for experimentation and curious end-users.
@@ -79,7 +79,7 @@ cross-language interop. This will hopefully give you an idea how to use it.
 
 We are working on a mode that is "mostly compatible" with some of Jython's
 features, minus of course that Jython implements Python 2.7 and we implement
-Python 3.7+. We describe the current status of the compatibility mode
+Python 3.8+. We describe the current status of the compatibility mode
 [here](docs/user/JYTHON.md).
 
 ### Contributing
