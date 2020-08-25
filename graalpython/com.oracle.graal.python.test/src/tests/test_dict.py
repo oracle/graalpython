@@ -957,3 +957,9 @@ def test_decorated_method_dict():
             assert_bogus_dict_raises(classmethod(ff))
             assert_bogus_dict_raises(staticmethod(ff))
     A().f()
+
+def test_update():
+    x = {1: 0, 2: 1}
+    y = {}
+    y.update(x)
+    assert y == x
