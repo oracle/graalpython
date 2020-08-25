@@ -457,9 +457,13 @@ public abstract class HashingStorageLibrary extends Library {
             this.iterator = iterator;
         }
 
+        public Iterator<T> getIterator() {
+            return this.iterator;
+        }
+
         @Override
         public HashingStorageIterator<T> iterator() {
-            return new HashingStorageIterator<T>(iterator);
+            return new HashingStorageIterator<T>(this.iterator);
         }
     }
 
@@ -473,16 +477,20 @@ public abstract class HashingStorageLibrary extends Library {
             this.iterator = iterator;
         }
 
+        public Iterator<T> getIterator() {
+            return this.iterator;
+        }
+
         @Override
         @TruffleBoundary
         public boolean hasNext() {
-            return iterator.hasNext();
+            return this.iterator.hasNext();
         }
 
         @Override
         @TruffleBoundary
         public T next() {
-            return iterator.next();
+            return this.iterator.next();
         }
     }
 

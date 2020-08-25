@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -77,20 +77,20 @@ def make_named_tuple_class(name, fields):
 
 class SimpleNamespace(object):
     def __init__(self, **kwargs):
-        object.__setattr__(self, "__ns__", kwargs)
-
-    def __delattr__(self, name):
-        object.__getattribute__(self, "__ns__").__delitem__(name)
-
-    def __getattr__(self, name):
-        return object.__getattribute__(self, "__ns__")[name]
-
-    def __setattr__(self, name, value):
-        object.__getattribute__(self, "__ns__")[name] = value
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def __repr__(self):
         sb = []
-        ns = object.__getattribute__(self, "__ns__")
-        for k,v in ns.items():
-            sb.append("%s='%s'" % (k,v))
-        return "namespace(%s)" % ", ".join(sb)
+        for k, v in sorted(self.__dict__.items()):
+            sb.append("%s=%r" % (k, v))
+        name = 'namespace' if type(self) is SimpleNamespace else type(self).__name__
+        return "%s(%s)" % (name, ", ".join(sb))
+
+    def __reduce__(self):
+        return type(self), (), self.__dict__
+
+    def __eq__(self, other):
+        if __graalpython__.type_check(self, SimpleNamespace) and __graalpython__.type_check(other, SimpleNamespace):
+            return self.__dict__ == other.__dict__
+        return NotImplemented

@@ -59,7 +59,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.SeekableByteChannel;
 import java.util.List;
 
@@ -71,8 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -131,7 +129,7 @@ public class MMapBuiltins extends PythonBuiltins {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
-                public int execute(Channel channel) {
+                public int execute(Object channel) {
                     throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.READ_BYTE_OUT_OF_RANGE);
                 }
             });
@@ -141,7 +139,7 @@ public class MMapBuiltins extends PythonBuiltins {
             return ReadByteFromChannelNode.create(() -> new ChannelNodes.ReadByteErrorHandler() {
 
                 @Override
-                public int execute(Channel channel) {
+                public int execute(Object channel) {
                     throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
@@ -155,7 +153,7 @@ public class MMapBuiltins extends PythonBuiltins {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
-                public void execute(Channel channel, byte b) {
+                public void execute(Object channel, byte b) {
                     throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.WRITE_BYTE_OUT_OF_RANGE);
                 }
             });
@@ -165,7 +163,7 @@ public class MMapBuiltins extends PythonBuiltins {
             return WriteByteToChannelNode.create(() -> new ChannelNodes.WriteByteErrorHandler() {
 
                 @Override
-                public void execute(Channel channel, byte b) {
+                public void execute(Object channel, byte b) {
                     throw raise.raise(PythonBuiltinClassType.IndexError, ErrorMessages.MMAP_INDEX_OUT_OF_RANGE);
                 }
             });
@@ -340,9 +338,8 @@ public class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PNone doSlice(PMMap self, PSlice idx, PIBytesLike val,
+        PNone doSlice(PMMap self, PSlice idx, PBytesLike val,
                         @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
@@ -361,7 +358,7 @@ public class MMapBuiltins extends PythonBuiltins {
                 long oldPos = PMMap.position(channel);
 
                 PMMap.position(channel, info.start);
-                writeNode.execute(channel, getStorageNode.execute(val), sliceLen.len(info));
+                writeNode.execute(channel, val.getSequenceStorage(), sliceLen.len(info));
 
                 // restore position
                 PMMap.position(channel, oldPos);
@@ -393,7 +390,7 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object size(PMMap self) {
+        static Object size(PMMap self) {
             return self;
         }
     }
@@ -404,7 +401,7 @@ public class MMapBuiltins extends PythonBuiltins {
         protected static final String CLOSE = "close";
 
         @Specialization
-        Object size(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
+        static Object size(VirtualFrame frame, PMMap self, @SuppressWarnings("unused") Object typ, @SuppressWarnings("unused") Object val, @SuppressWarnings("unused") Object tb,
                         @Cached("create(CLOSE)") LookupAndCallUnaryNode callCloseNode) {
             return callCloseNode.executeObject(frame, self);
         }
@@ -415,7 +412,7 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PNone doClose(PMMap self,
+        static PNone doClose(PMMap self,
                         @Cached PRaiseNode raiseNode) {
             try {
                 close(self);
@@ -437,7 +434,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        boolean close(PMMap self) {
+        static boolean close(PMMap self) {
             return !self.getChannel().isOpen();
         }
     }
@@ -472,7 +469,7 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadByteNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
 
         @Specialization
-        int readByte(PMMap self,
+        static int readByte(PMMap self,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {
             return readByteNode.execute(self.getChannel());
@@ -553,15 +550,14 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        int writeBytesLike(PMMap self, PIBytesLike bytesLike,
-                        @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") SequenceNodes.GetSequenceStorageNode getStorageNode) {
+        static int writeBytesLike(PMMap self, PBytesLike bytesLike,
+                        @Cached("create()") WriteToChannelNode writeNode) {
             SeekableByteChannel channel = self.getChannel();
-            return writeNode.execute(channel, getStorageNode.execute(bytesLike), Integer.MAX_VALUE);
+            return writeNode.execute(channel, bytesLike.getSequenceStorage(), Integer.MAX_VALUE);
         }
 
         @Specialization
-        int writeMemoryview(VirtualFrame frame, PMMap self, PMemoryView memoryView,
+        static int writeMemoryview(VirtualFrame frame, PMMap self, PMemoryView memoryView,
                         @Cached("create()") WriteToChannelNode writeNode,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             byte[] data = toBytesNode.execute(frame, memoryView);
@@ -631,7 +627,7 @@ public class MMapBuiltins extends PythonBuiltins {
         public abstract long execute(VirtualFrame frame, PMMap bytes, Object sub, Object starting, Object ending);
 
         @Specialization
-        long find(VirtualFrame frame, PMMap primary, PIBytesLike sub, Object starting, Object ending,
+        long find(VirtualFrame frame, PMMap primary, PBytesLike sub, Object starting, Object ending,
                         @Shared("castLong") @Cached CastToJavaLongLossyNode castLong,
                         @SuppressWarnings("unused") @Cached PRaiseNode raise,
                         @Cached("createValueError(raise)") ReadByteFromChannelNode readByteNode) {

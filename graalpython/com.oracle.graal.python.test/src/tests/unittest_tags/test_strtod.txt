@@ -1,0 +1,8 @@
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_bigcomp
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_boundaries
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_halfway_cases
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_oversized_digit_strings
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_parsing
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_particular
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_short_halfway_cases
+*graalpython.lib-python.3.test.test_strtod.StrtodTests.test_underflow_boundary

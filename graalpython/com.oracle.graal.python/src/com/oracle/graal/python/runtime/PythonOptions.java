@@ -385,6 +385,7 @@ public final class PythonOptions {
             }
         }
 
+        @Override
         public OptionDescriptors getDescriptors() {
             throw new UnsupportedOperationException();
         }
@@ -403,6 +404,7 @@ public final class PythonOptions {
             return engineOptions.hashCode();
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public <T> T get(OptionKey<T> optionKey) {
             if (engineOptions.containsKey(optionKey)) {
@@ -412,10 +414,12 @@ public final class PythonOptions {
             }
         }
 
+        @Override
         public boolean hasBeenSet(OptionKey<?> optionKey) {
             return engineOptions.containsKey(optionKey);
         }
 
+        @Override
         @SuppressWarnings("deprecation")
         public <T> void set(OptionKey<T> optionKey, T value) {
             throw new UnsupportedOperationException();

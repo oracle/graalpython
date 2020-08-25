@@ -40,23 +40,25 @@
  */
 package com.oracle.graal.python.test.objects;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
-import com.oracle.graal.python.test.PythonTests;
 import java.util.concurrent.Callable;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 import org.junit.After;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 public class PythonObjectLibraryTests extends PythonTests {
 
@@ -82,8 +84,8 @@ public class PythonObjectLibraryTests extends PythonTests {
         lookupAttr(() -> 1, "__str__", false);
         lookupAttr(() -> (long) 1, "__str__", false);
         lookupAttr(() -> "abc", "__str__", false);
-
-        lookupAttr(() -> new Object(), "__str__", true);
+        lookupAttr(() -> new TruffleObject() {
+        }, "__str__", false);
 
         lookupAttr(() -> PythonObjectFactory.getUncached().createInt(1), "__str__", false);
 
@@ -99,10 +101,10 @@ public class PythonObjectLibraryTests extends PythonTests {
         PythonObjectLibrary lib = PythonObjectLibrary.getFactory().getUncached();
         execInContext(() -> {
             Object value = createValue.call();
-            Object attr = lib.lookupAttribute(value, attrName, false);
+            Object attr = lib.lookupAttribute(value, null, attrName);
             assertAttr(attr, expectNoValue);
 
-            attr = lib.lookupAttribute(value, attrName, true);
+            attr = lib.lookupAttributeOnType(value, attrName);
             assertAttr(attr, expectNoValue);
             return null;
         });

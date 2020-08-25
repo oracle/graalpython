@@ -42,7 +42,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -140,9 +141,10 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         public Object args(VirtualFrame frame, PBaseException self, Object value,
-                        @Cached("create()") CastToListNode castToList) {
+                        @Cached CastToListNode castToList,
+                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
             PList list = castToList.execute(frame, value);
-            self.setArgs(factory().createTuple(list.getSequenceStorage().getCopyOfInternalArray()));
+            self.setArgs(factory().createTuple(copy.execute(list.getSequenceStorage())));
             return PNone.NONE;
         }
 
@@ -285,7 +287,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        PNone dict(PBaseException self, PHashingCollection mapping,
+        PNone dict(PBaseException self, PDict mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, mapping);
@@ -299,7 +301,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(mapping)", limit = "1")
         Object dict(PBaseException self, @SuppressWarnings("unused") PNone mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 try {
@@ -311,6 +313,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
             }
             return dict;
         }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        PNone dict(@SuppressWarnings("unused") PBaseException self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
+        }
     }
 
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
@@ -319,10 +326,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object reduce(VirtualFrame frame, PBaseException self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
-                        @Cached ArgsNode argsNode) {
+                        @Cached ArgsNode argsNode,
+                        @Cached DictNode dictNode) {
             Object clazz = lib.getLazyPythonClass(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
-            Object dict = lib.lookupAttribute(self, __DICT__);
+            Object dict = dictNode.execute(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});
         }
     }

@@ -52,7 +52,7 @@ import org.tukaani.xz.XZInputStream;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PLZMADecompressor extends PythonObject {
 
@@ -61,8 +61,8 @@ public class PLZMADecompressor extends PythonObject {
     private boolean eof;
     private boolean needsInput;
 
-    public PLZMADecompressor(Object clazz, DynamicObject storage, int format, int memlimit) {
-        super(clazz, storage);
+    public PLZMADecompressor(Object clazz, Shape instanceShape, int format, int memlimit) {
+        super(clazz, instanceShape);
         this.format = format;
         this.memlimit = memlimit;
     }

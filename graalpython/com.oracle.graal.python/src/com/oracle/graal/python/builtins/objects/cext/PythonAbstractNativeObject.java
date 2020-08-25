@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
-import java.lang.ref.WeakReference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -57,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -65,8 +64,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileClassNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -168,7 +165,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public void setDict(PHashingCollection value) throws UnsupportedMessageException {
+    public void setDict(PDict value) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
     }
 
@@ -177,18 +174,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                     // arguments for super-implementation call
-                    @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
                     @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached CallUnaryMethodNode callNode,
-                    @Exclusive @Cached IsSubtypeNode isSubtype,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupIndex,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile noIndex,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile resultProfile,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile noIndex,
+                    @Exclusive @Cached ConditionProfile resultProfile) {
         if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
             return this; // subclasses of 'int' should do early return
         } else {
-            return asIndexWithState(threadState, lib, raise, callNode, isSubtype, lookupIndex, noIndex, resultProfile, gotState);
+            return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile);
         }
     }
 
@@ -196,7 +190,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @GenerateUncached
     public abstract static class GetDict {
         @Specialization
-        public static PHashingCollection getNativeDictionary(PythonAbstractNativeObject self,
+        public static PDict getNativeDictionary(PythonAbstractNativeObject self,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached ToSulongNode toSulong,
                         @Exclusive @Cached ToJavaNode toJava,
@@ -205,8 +199,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             try {
                 Object func = importCAPISymbolNode.execute(FUN_PY_OBJECT_GENERIC_GET_DICT);
                 Object javaDict = toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
-                if (javaDict instanceof PHashingCollection) {
-                    return (PHashingCollection) javaDict;
+                if (javaDict instanceof PDict) {
+                    return (PDict) javaDict;
                 } else if (javaDict == PNone.NO_VALUE) {
                     return null;
                 } else {
@@ -227,9 +221,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return PythonLanguage.getCurrent().singleContextAssumption;
         }
 
-        @Specialization(guards = "object == cachedObject.get()", limit = "1", assumptions = "getSingleContextAssumption()")
+        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
-                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass) {
             // TODO: (tfel) is this really something we can do? It's so rare for this class to
             // change that it shouldn't be worth the effort, but in native code, anything can
@@ -240,7 +234,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
         @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "getSingleContextAssumption()")
         static Object getNativeClassCached(PythonAbstractNativeObject object,
-                        @Exclusive @Cached("weak(object)") WeakReference<PythonAbstractNativeObject> cachedObject,
+                        @Exclusive @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
                         @Exclusive @Cached("getNativeClassUncached(object)") Object cachedClass,
                         @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
             // TODO same as for 'getNativeClassCachedIdentity'
@@ -267,16 +261,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
         }
 
-        static WeakReference<PythonAbstractNativeObject> weak(PythonAbstractNativeObject object) {
-            return new WeakReference<>(object);
-        }
-
-        static boolean isSame(InteropLibrary lib, WeakReference<PythonAbstractNativeObject> cachedObjectRef, PythonAbstractNativeObject object) {
-            PythonAbstractNativeObject cachedObject = cachedObjectRef.get();
-            if (cachedObject != null) {
-                return lib.isIdentical(cachedObject.object, object.object, lib);
-            }
-            return false;
+        static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
+            return lib.isIdentical(cachedObject.object, object.object, lib);
         }
 
         public static Object getNativeClassUncached(PythonAbstractNativeObject object) {

@@ -89,7 +89,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             getBody().executeVoid(frame);
         } catch (PException exception) {
             gen.setActive(frame, exceptFlag, true);
-            catchExceptionInGeneratorFirstTime(frame, exception);
+            if (!catchExceptionInGeneratorFirstTime(frame, exception)) {
+                throw exception;
+            }
             reset(frame);
             return;
         } catch (ControlFlowException e) {
@@ -98,7 +100,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             PException pe = wrapJavaExceptionIfApplicable(e);
             if (pe != null) {
                 gen.setActive(frame, exceptFlag, true);
-                catchExceptionInGeneratorFirstTime(frame, pe);
+                if (!catchExceptionInGeneratorFirstTime(frame, pe)) {
+                    throw pe.getExceptionForReraise();
+                }
                 reset(frame);
                 return;
             } else {
@@ -112,7 +116,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @ExplodeLoop
-    private void catchExceptionInGeneratorFirstTime(VirtualFrame frame, PException exception) {
+    private boolean catchExceptionInGeneratorFirstTime(VirtualFrame frame, PException exception) {
         boolean wasHandled = false;
         ExceptNode[] exceptNodes = getExceptNodes();
         // we haven't found the matching node, yet, start searching
@@ -132,17 +136,15 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 }
             }
         }
-        if (!wasHandled) {
-            // we tried and haven't found a matching except node
-            throw exception;
-        }
+        return wasHandled;
     }
 
     @ExplodeLoop
     private void catchExceptionInGeneratorCached(VirtualFrame frame) {
         ExceptNode[] exceptNodes = getExceptNodes();
         CompilerAsserts.compilationConstant(exceptNodes);
-        PException exception = gen.getActiveException(frame, activeExceptionIndex);
+        // try-except only stores PExceptions
+        PException exception = (PException) gen.getActiveException(frame, activeExceptionIndex);
         final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         assert matchingExceptNodeIndex <= exceptNodes.length;
         boolean wasHandled = false;
@@ -173,7 +175,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 throw e;
             }
             tryChainExceptionFromHandler(handlerException, exception);
-            throw handlerException;
+            throw handlerException.getExceptionForReraise();
         } finally {
             restoreExceptionState(frame, savedExceptionState);
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,22 +37,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class CustomType:
-    payload = 0
-
-def iterate_list(ll, num):
-    types = []
-    for t in range(num):
-        obj = CustomType()
-        types.append(type(obj))
-    return types
-
-
-def measure(num):
-    types = iterate_list(list(range(num)), num)
-    print("last type: " + types[-1].__name__)
-
-
-def __benchmark__(num=1000000):
-    measure(num)
-
+sub_property = 20

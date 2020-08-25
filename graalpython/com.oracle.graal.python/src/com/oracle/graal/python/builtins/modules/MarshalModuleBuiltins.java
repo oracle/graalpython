@@ -44,9 +44,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -74,7 +74,6 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
@@ -163,21 +162,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Child private UnmarshallerNode marshaller = UnmarshallerNode.create();
 
-        @SuppressWarnings("unused")
         @Specialization
-        Object doit(VirtualFrame frame, PBytes bytes,
+        Object doit(VirtualFrame frame, PBytesLike bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        Object doit(VirtualFrame frame, PByteArray bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
-        }
-
-        @SuppressWarnings("unused")
         @Specialization
         Object doit(VirtualFrame frame, PMemoryView bytes,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
@@ -227,7 +217,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         public abstract void execute(VirtualFrame frame, Object x, int version, DataOutputStream buffer);
 
-        @Child private CastToJavaStringNode castStrNode;
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
         @Child private IsBuiltinClassProfile isBuiltinProfile;
@@ -372,7 +361,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handleBytesLike(VirtualFrame frame, PIBytesLike v, int version, DataOutputStream buffer,
+        void handleBytesLike(VirtualFrame frame, PBytesLike v, int version, DataOutputStream buffer,
                         @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
             writeByte(TYPE_BYTESLIKE, version, buffer);
             writeBytes(toBytesNode.execute(frame, v), version, buffer);
@@ -402,9 +391,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer) {
+        void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
             writeByte(TYPE_LIST, version, buffer);
-            Object[] items = l.getSequenceStorage().getInternalArray();
+            Object[] items = getArray.execute(l.getSequenceStorage());
             writeInt(items.length, version, buffer);
             for (int i = 0; i < items.length; i++) {
                 getRecursiveNode().execute(frame, items[i], version, buffer);

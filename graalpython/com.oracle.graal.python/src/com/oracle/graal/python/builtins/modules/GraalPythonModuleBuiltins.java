@@ -65,12 +65,14 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -101,6 +103,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -147,6 +150,23 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("stdlib_home", stdlibHome);
         mod.setAttribute("capi_home", capiHome);
         mod.setAttribute("platform_id", toolchain.getIdentifier());
+        mod.setAttribute("flags", core.factory().createTuple(new Object[]{
+                        false, // bytes_warning
+                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
+                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
+                        false, // hash_randomization
+                        context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
+                        context.getOption(PythonOptions.InspectFlag), // inspect
+                        context.getOption(PythonOptions.TerminalIsInteractive), // interactive
+                        context.getOption(PythonOptions.IsolateFlag), // isolated
+                        context.getOption(PythonOptions.NoSiteFlag), // no_site
+                        context.getOption(PythonOptions.NoUserSiteFlag), // no_user_site
+                        context.getOption(PythonOptions.PythonOptimizeFlag), // optimize
+                        context.getOption(PythonOptions.QuietFlag), // quiet
+                        context.getOption(PythonOptions.VerboseFlag), // verbose
+                        false, // dev_mode
+                        0, // utf8_mode
+        }));
     }
 
     @Builtin(name = "cache_module_code", minNumOfPositionalArgs = 3)
@@ -389,12 +409,14 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
              */
             Signature signature = func.getSignature();
             PFunction builtinFunc;
+            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
             if (signature.getParameterIds().length > 0 && signature.getParameterIds()[0].equals("self")) {
                 /*
                  * If the first parameter is called self, we assume the function does explicitly
                  * declare the module argument
                  */
                 builtinFunc = func;
+                functionRootNode.setPythonInternal(true);
             } else {
                 /*
                  * Otherwise, we create a new function with a signature that requires one extra
@@ -402,9 +424,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                  * PFunction cannot be used anymore (its signature won't agree with it's indexed
                  * parameter reads).
                  */
-                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-                assert !functionRootNode.isRewritten() : "a function cannot be annotated as builtin twice";
-
+                assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
                 functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
                     public boolean visit(Node node) {
@@ -428,6 +448,17 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "builtin_method", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object doIt(PFunction func) {
+            FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+            functionRootNode.setPythonInternal(true);
+            return func;
+        }
+    }
+
     @Builtin(name = "get_toolchain_path", minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -443,6 +474,17 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return toolPath.toString();
+        }
+    }
+
+    // Equivalent of PyObject_TypeCheck
+    @Builtin(name = "type_check", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class TypeCheckNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        boolean typeCheck(Object instance, Object cls,
+                        @CachedLibrary("instance") PythonObjectLibrary lib) {
+            return lib.typeCheck(instance, cls);
         }
     }
 }

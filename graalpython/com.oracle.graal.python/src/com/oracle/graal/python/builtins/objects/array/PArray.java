@@ -25,26 +25,33 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.sequence.PMutableSequence;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public class PArray extends PMutableSequence {
+public class PArray extends PSequence {
 
     private SequenceStorage store;
 
-    public PArray(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PArray(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
     }
 
-    public PArray(Object clazz, DynamicObject storage, SequenceStorage store) {
-        super(clazz, storage);
+    public PArray(Object clazz, Shape instanceShape, SequenceStorage store) {
+        super(clazz, instanceShape);
         this.store = store;
     }
 
@@ -63,7 +70,7 @@ public class PArray extends PMutableSequence {
     }
 
     @ExportMessage
-    boolean isBuffer() {
+    static boolean isBuffer(@SuppressWarnings("unused") PArray self) {
         return true;
     }
 
@@ -80,5 +87,60 @@ public class PArray extends PMutableSequence {
                     @Cached SequenceStorageNodes.LenNode lenNode) {
         // TODO This only works for ByteSequenceStorage since its itemsize is 1.
         return lenNode.execute(store);
+    }
+
+    @ExportMessage
+    public boolean isArrayElementModifiable(long index,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
+        final int len = lenNode.execute(store);
+        try {
+            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+        } catch (PException e) {
+            return false;
+        }
+        return true;
+    }
+
+    @ExportMessage
+    public boolean isArrayElementInsertable(long index,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
+        final int len = lenNode.execute(store);
+        return index == len;
+    }
+
+    @ExportMessage
+    public boolean isArrayElementRemovable(long index,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
+                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
+        final int len = lenNode.execute(store);
+        try {
+            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
+        } catch (PException e) {
+            return false;
+        }
+        return true;
+    }
+
+    @ExportMessage
+    public void writeArrayElement(long index, Object value,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
+        try {
+            setItem.execute(store, PInt.intValueExact(index), value);
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
+    }
+
+    @ExportMessage
+    public void removeArrayElement(long index,
+                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
+        try {
+            delItem.execute(store, PInt.intValueExact(index));
+        } catch (OverflowException e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
     }
 }

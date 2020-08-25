@@ -8,8 +8,10 @@
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_init_subclass_skipped
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_init_subclass_wrong
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name
+*graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_error
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_init_subclass
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_lookup
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_metaclass
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_modifying_dict
+*graalpython.lib-python.3.test.test_subclassinit.Test.test_set_name_wrong
 *graalpython.lib-python.3.test.test_subclassinit.Test.test_type

@@ -8,6 +8,7 @@ ModuleRootNode Name: <module 'getAttr02'> SourceSection: [0,5]`a().b`
     GetAttributeNodeGen SourceSection: [0,5]`a().b`
       GetFixedAttributeNodeGen SourceSection: None
         Key: b
+        CachedDispatchFirst SourceSection: None
         LookupAndCallBinaryNodeGen SourceSection: None
           Op: __getattribute__
         IsBuiltinClassProfile SourceSection: None

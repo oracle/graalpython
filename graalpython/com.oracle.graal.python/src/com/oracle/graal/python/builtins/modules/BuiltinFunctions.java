@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
@@ -84,11 +85,10 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -101,13 +101,14 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -119,7 +120,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
@@ -194,6 +194,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.utilities.TriState;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -240,14 +241,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Math.abs(arg);
         }
 
-        @Specialization
+        @Specialization(limit = "2")
         public Object absObject(VirtualFrame frame, Object object,
-                        @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbsNode) {
-            Object result = callAbsNode.executeObject(frame, object);
-            if (result == NO_VALUE) {
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+            Object method = lib.lookupAttributeOnType(object, __ABS__);
+            if (method == NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.BAD_OPERAND_FOR, "", "abs()", object);
             }
-            return result;
+            return methodLib.callUnboundMethod(method, frame, object);
         }
     }
 
@@ -310,14 +312,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"doL", "doD", "doPI"})
         String doO(VirtualFrame frame, Object x,
-                        @Cached ConditionProfile hasFrame,
                         @Cached ConditionProfile isMinLong,
                         @Cached IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached BranchProfile isInt,
                         @Cached BranchProfile isLong,
                         @Cached BranchProfile isPInt) {
-            Object index = lib.asIndexWithFrame(x, hasFrame, frame);
+            Object index = lib.asIndexWithFrame(x, frame);
             if (isSubtype.execute(lib.getLazyPythonClass(index), PythonBuiltinClassType.PInt)) {
                 if (index instanceof Boolean || index instanceof Integer) {
                     isInt.enter();
@@ -466,9 +467,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         long hash(VirtualFrame frame, Object object,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.hashWithFrame(object, profile, frame);
+            return lib.hashWithFrame(object, frame);
         }
     }
 
@@ -485,17 +485,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached("createBinaryProfile()") ConditionProfile inGenerator,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
+                        @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
 
             Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
-            return constructListNode.execute(keysObj);
+            PList list = constructListNode.execute(keysObj);
+            sortNode.sort(frame, list);
+            return list;
         }
 
         @Specialization(guards = "!isNoValue(object)")
         Object dir(VirtualFrame frame, Object object,
+                        @Cached ListBuiltins.ListSortNode sortNode,
+                        @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
-            return dirNode.executeObject(frame, object);
+            PList list = constructListNode.execute(dirNode.executeObject(frame, object));
+            sortNode.sort(frame, list);
+            return list;
         }
     }
 
@@ -604,7 +611,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private void setBuiltinsInGlobals(VirtualFrame frame, PDict globals, HashingCollectionNodes.SetItemNode setBuiltins, PythonModule builtins, PythonObjectLibrary lib) {
             if (builtins != null) {
-                PHashingCollection builtinsDict = lib.getDict(builtins);
+                PDict builtinsDict = lib.getDict(builtins);
                 if (builtinsDict == null) {
                     builtinsDict = factory().createDictFixedStorage(builtins);
                     try {
@@ -1135,19 +1142,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
         }
 
-        private boolean isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls) {
+        private TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls) {
             Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-            return instanceCheckResult != NOT_IMPLEMENTED && castToBooleanNode.executeBoolean(frame, instanceCheckResult);
+            if (instanceCheckResult == NOT_IMPLEMENTED) {
+                return TriState.UNDEFINED;
+            }
+            return TriState.valueOf(castToBooleanNode.executeBoolean(frame, instanceCheckResult));
         }
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
 
-        @Specialization
-        boolean isInstance(VirtualFrame frame, Object instance, PythonAbstractClass cls,
+        @Specialization(guards = "isPythonClass(cls)")
+        boolean isInstance(VirtualFrame frame, Object instance, Object cls,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls);
+            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls) || isInstanceCheckInternal(frame, instance, cls) == TriState.TRUE;
         }
 
         @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
@@ -1186,7 +1196,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return hostCls instanceof Class && ((Class<?>) hostCls).isAssignableFrom(hostInstance.getClass());
                 }
             }
-            return isInstanceCheckInternal(frame, instance, cls) || typeInstanceCheckNode.executeWith(frame, cls, instance);
+            TriState check = isInstanceCheckInternal(frame, instance, cls);
+            if (check == TriState.UNDEFINED) {
+                return typeInstanceCheckNode.executeWith(frame, cls, instance);
+            }
+            return check == TriState.TRUE;
         }
 
         protected int getLength(PTuple t) {
@@ -1304,11 +1318,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(limit = "6")
         public int len(VirtualFrame frame, Object obj,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(obj, hasFrame, frame);
+            return lib.lengthWithFrame(obj, frame);
         }
     }
 
@@ -1537,7 +1550,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public long ord(VirtualFrame frame, PIBytesLike chr,
+        public long ord(VirtualFrame frame, PBytesLike chr,
                         @Cached CastToJavaLongExactNode castNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -1564,39 +1577,35 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final String DEFAULT_END = "\n";
         private static final String DEFAULT_SEPARATOR = " ";
         @Child private ReadAttributeFromObjectNode readStdout;
-        @Child private GetAttributeNode getWrite = GetAttributeNode.create("write", null);
-        @Child private CallNode callWrite = CallNode.create();
-        @Child private LookupAndCallUnaryNode callFlushNode;
         @CompilationFinal private Assumption singleContextAssumption;
         @CompilationFinal private PythonModule cachedSys;
 
         @Specialization
         PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
                         @SuppressWarnings("unused") PNone flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, valueLib);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             int lastValue = values.length - 1;
-            Object write = getWrite.executeObject(frame, file);
+            Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                callWrite.execute(frame, write, lib.asPString(values[i]));
-                callWrite.execute(frame, write, sep);
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
+                lib.callObject(writeMethod, frame, sep);
             }
             if (lastValue >= 0) {
-                callWrite.execute(frame, write, lib.asPString(values[lastValue]));
+                lib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
             }
-            callWrite.execute(frame, write, end);
+            lib.callObject(writeMethod, frame, end);
             if (flush) {
-                if (callFlushNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    callFlushNode = insert(LookupAndCallUnaryNode.create("flush"));
-                }
-                callFlushNode.executeObject(frame, file);
+                Object flushMethod = lib.lookupAttributeStrict(file, frame, "flush");
+                lib.callObject(flushMethod, frame);
             }
             return PNone.NONE;
         }
@@ -1607,7 +1616,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castEnd,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
             String sep;
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
@@ -1634,7 +1644,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lib);
+            return printAllGiven(frame, values, sep, end, file, flush, lib, valueLib);
         }
 
         private Object getStdout() {
@@ -1943,7 +1953,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             PythonObject globals = callerFrame.getGlobals();
             if (condProfile.profile(globals instanceof PythonModule)) {
-                PHashingCollection dict = lib.getDict(globals);
+                PDict dict = lib.getDict(globals);
                 if (dict == null) {
                     CompilerDirectives.transferToInterpreter();
                     dict = factory().createDictFixedStorage(globals);

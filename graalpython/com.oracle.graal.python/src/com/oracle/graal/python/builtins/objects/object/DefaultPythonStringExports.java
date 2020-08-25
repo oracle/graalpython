@@ -40,22 +40,30 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = String.class)
 final class DefaultPythonStringExports {
@@ -192,8 +200,43 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(String x, String name, boolean inheritedOnly,
-                    @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly);
+    static Object lookupAttributeInternal(String receiver, ThreadState state, String name, boolean strict,
+                    @Cached ConditionProfile gotState,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
+    }
+
+    @ExportMessage
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") String receiver, String name, boolean strict,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(PythonBuiltinClassType.PString, name, strict);
+    }
+
+    @ExportMessage
+    static Object lookupAndCallSpecialMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    @ExportMessage
+    static Object lookupAndCallRegularMethodWithState(String receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    static boolean typeCheck(@SuppressWarnings("unused") String receiver, Object type,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PString;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -72,6 +73,8 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
     private final Map<String, List<Assumption>> attributesInMROFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] values;
+
+    @CompilationFinal private boolean initialized = false;
 
     @TruffleBoundary
     public MroSequenceStorage(String className, PythonAbstractClass[] elements) {
@@ -100,7 +103,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public void setItemNormalized(int idx, Object value) {
-        if (value instanceof PythonAbstractClass) {
+        if (PGuards.isPythonClass(value)) {
             setClassItemNormalized(idx, (PythonAbstractClass) value);
         } else {
             throw new SequenceStoreException(value);
@@ -258,6 +261,14 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         this.capacity = classArray.length;
     }
 
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public boolean setInitialized() {
+        return initialized = true;
+    }
+
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Generic;
@@ -320,6 +331,11 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
             }
         }
         lookupStableAssumption.invalidate(msg);
+    }
+
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
     }
 
 }

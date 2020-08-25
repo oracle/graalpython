@@ -31,7 +31,6 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -44,18 +43,19 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
-public enum PythonBuiltinClassType implements LazyPythonClass {
+public enum PythonBuiltinClassType implements TruffleObject {
 
     ForeignObject(BuiltinNames.FOREIGN),
     Boolean("bool", BuiltinNames.BUILTINS, false),
@@ -79,7 +79,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PDictValueIterator(BuiltinNames.DICT_VALUEITERATOR),
     PDictReverseValueIterator(BuiltinNames.DICT_REVERSE_VALUEITERATOR),
     PDictValuesView(BuiltinNames.DICT_VALUES),
-    PEllipsis("ellipsis"),
+    PEllipsis("ellipsis", false),
     PEnumerate("enumerate", BuiltinNames.BUILTINS),
     PMap("map", BuiltinNames.BUILTINS),
     PFloat("float", BuiltinNames.BUILTINS),
@@ -93,8 +93,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PMemoryView("memoryview", BuiltinNames.BUILTINS),
     PMethod("method"),
     PMMap("mmap", "mmap"),
-    PNone("NoneType"),
-    PNotImplemented("NotImplementedType"),
+    PNone("NoneType", false),
+    PNotImplemented("NotImplementedType", false),
     PRandom("Random", "_random"),
     PRange("range", BuiltinNames.BUILTINS, false),
     PReferenceType("ReferenceType", "_weakref"),
@@ -110,7 +110,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PythonModule("module"),
     PythonObject("object", BuiltinNames.BUILTINS),
     Super("super", BuiltinNames.BUILTINS),
-    PCode("code"),
+    PCode("code", false),
     PZip("zip", BuiltinNames.BUILTINS),
     PZipImporter("zipimporter", "zipimport"),
     PBuffer("buffer", BuiltinNames.BUILTINS),
@@ -119,6 +119,7 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     PRLock("RLock", "_thread"),
     PSemLock("SemLock", "_multiprocessing"),
     PSocket("socket", "_socket"),
+    PJavaSignalHandler("java_signal_handler"),
     PStaticmethod("staticmethod", BuiltinNames.BUILTINS),
     PClassmethod("classmethod", BuiltinNames.BUILTINS),
     PScandirIterator("ScandirIterator", "posix"),
@@ -240,6 +241,10 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         this(name, publicInModule, true);
     }
 
+    PythonBuiltinClassType(String name, boolean basetype) {
+        this(name, null, basetype);
+    }
+
     PythonBuiltinClassType(String name) {
         this(name, null, true);
     }
@@ -274,13 +279,8 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
         return instanceShape;
     }
 
-    public final DynamicObject newInstance() {
-        CompilerAsserts.partialEvaluationConstant(instanceShape);
-        return instanceShape.newInstance();
-    }
-
-    public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
-    public static final PythonBuiltinClassType[] EXCEPTIONS;
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);
+    @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] EXCEPTIONS;
 
     static {
         // fill the EXCEPTIONS array
@@ -577,5 +577,15 @@ public enum PythonBuiltinClassType implements LazyPythonClass {
     @ExportMessage
     static String getMetaQualifiedName(PythonBuiltinClassType self) {
         return self.getQualifiedName();
+    }
+
+    @ExplodeLoop
+    public static boolean isExceptionType(PythonBuiltinClassType type) {
+        for (int i = 0; i < EXCEPTIONS.length; i++) {
+            if (EXCEPTIONS[i] == type) {
+                return true;
+            }
+        }
+        return false;
     }
 }

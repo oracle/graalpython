@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -57,6 +59,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class ImportStarNode extends AbstractImportNode {
     private final ConditionProfile javaImport = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile havePyFrame = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile haveCustomLocals = ConditionProfile.createBinaryProfile();
 
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
@@ -105,7 +109,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
-        PythonObject globals = PArguments.getGlobals(frame);
+        PythonObject locals = fastGetCustomLocalsOrGlobals(frame, havePyFrame, haveCustomLocals);
 
         if (javaImport.profile(emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
             try {
@@ -116,7 +120,7 @@ public class ImportStarNode extends AbstractImportNode {
                     // interop protocol guarantees these are Strings
                     String attrName = (String) interopLib.readArrayElement(hostAttrs, i);
                     Object attr = interopLib.readMember(importedModule, attrName);
-                    writeAttribute(frame, globals, attrName, attr);
+                    writeAttribute(frame, locals, attrName, attr);
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | InvalidArrayIndexException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -137,7 +141,7 @@ public class ImportStarNode extends AbstractImportNode {
                         throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrNameObj);
                     }
                     Object attr = readAttribute(frame, importedModule, attrName);
-                    writeAttribute(frame, globals, attrName, attr);
+                    writeAttribute(frame, locals, attrName, attr);
                 }
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
@@ -148,7 +152,7 @@ public class ImportStarNode extends AbstractImportNode {
                     // 'ceval.c: import_all_from')
                     if (!name.startsWith("__")) {
                         Object attr = readAttribute(frame, importedModule, name);
-                        writeAttribute(frame, globals, name, attr);
+                        writeAttribute(frame, locals, name, attr);
                     }
                 }
             }

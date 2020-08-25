@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.floats;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -81,13 +80,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -97,7 +96,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -169,27 +170,33 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
+    abstract static class FormatNode extends FormatNodeBase {
+        @Specialization
+        Object formatPF(VirtualFrame frame, PFloat self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormat(self.getValue(), formatString, getCore());
         }
 
-        @Specialization(guards = "!formatString.isEmpty()")
+        @Specialization
+        Object formatD(VirtualFrame frame, double self, Object formatStringObj,
+                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
+            String formatString = castFormatString(formatStringObj, castToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            return doFormat(self, formatString, getCore());
+        }
+
         @TruffleBoundary
-        String format(double self, String formatString) {
-            InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
-            FloatFormatter formatter = new FloatFormatter(getCore(), validateAndPrepareForFloat(spec, getCore(), "float"));
+        private String doFormat(double self, String formatString, PythonCore core) {
+            InternalFormat.Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+            FloatFormatter formatter = new FloatFormatter(core, validateAndPrepareForFloat(spec, getCore(), "float"));
             formatter.format(self);
             return formatter.pad().getResult();
-        }
-
-        @Fallback
-        String other(@SuppressWarnings("unused") Object self, Object formatString) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
         }
     }
 
@@ -215,6 +222,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __INT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __TRUNC__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -296,6 +304,11 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        double doLD(long left, double right) {
+            return left + right;
+        }
+
+        @Specialization
         double doDPi(double left, PInt right) {
             return left + right.doubleValueWithOverflow(getRaiseNode());
         }
@@ -373,6 +386,11 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         double doDL(double left, long right) {
+            return left * right;
+        }
+
+        @Specialization
+        double doLD(long left, double right) {
             return left * right;
         }
 
@@ -645,49 +663,9 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
-        protected boolean noDecimals(float num) {
-            return num % 1 == 0;
-        }
-
-        protected boolean noDecimals(double num) {
-            return num % 1 == 0;
-        }
-
-        protected boolean noDecimals(PFloat num) {
-            return num.getValue() % 1 == 0;
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashFloatNoDecimals(float self) {
-            return (long) self;
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashFloatWithDecimals(float self) {
-            return Float.valueOf(self).hashCode();
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashDoubleNoDecimals(double self) {
-            return (long) self;
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashDoubleWithDecimals(double self) {
-            return Double.valueOf(self).hashCode();
-        }
-
-        @Specialization(guards = {"noDecimals(self)"})
-        long hashPFloatNoDecimals(PFloat self) {
-            return (long) self.getValue();
-        }
-
-        @Specialization(guards = {"!noDecimals(self)"})
-        @TruffleBoundary
-        long hashPFloatWithDecimals(PFloat self) {
-            return Double.valueOf(self.getValue()).hashCode();
+        @Specialization
+        long hashDouble(double self) {
+            return PythonObjectLibrary.hash(self);
         }
     }
 
@@ -877,26 +855,31 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class DivNode extends FloatBinaryBuiltinNode {
         @Specialization
         double doDD(double left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left / right;
         }
 
         @Specialization
         double doDL(double left, long right) {
+            raiseDivisionByZero(right == 0);
             return left / right;
         }
 
         @Specialization
         double doDPi(double left, PInt right) {
+            raiseDivisionByZero(right.isZero());
             return left / right.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Specialization
         double div(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left / right;
         }
 
         @Specialization
         double div(PInt left, double right) {
+            raiseDivisionByZero(right == 0.0);
             return left.doubleValueWithOverflow(getRaiseNode()) / right;
         }
 
@@ -905,6 +888,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                         @Cached FromNativeSubclassNode getFloat) {
             Double rPrimitive = getFloat.execute(frame, right);
             if (rPrimitive != null) {
+                raiseDivisionByZero(rPrimitive == 0.0);
                 return left / rPrimitive;
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -941,8 +925,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                 return Math.copySign(0.0, x);
             } else {
                 // We have to work it out properly.
-                BigDecimal xx = BigDecimal.valueOf(x);
-                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_UP);
+                BigDecimal xx = new BigDecimal(x);
+                BigDecimal rr = xx.setScale((int) n, RoundingMode.HALF_EVEN);
                 return rr.doubleValue();
             }
         }
@@ -999,7 +983,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         boolean eqDbDb(double a, double b) {
@@ -1007,8 +991,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqDbLn(double a, long b) {
-            return a == b;
+        boolean doDI(double x, int y) {
+            return x == y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x == y;
+        }
+
+        @Specialization
+        boolean eqDbLn(double a, long b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(a, b, longFitsToDoubleProfile) == 0;
+        }
+
+        @Specialization
+        boolean eqLnDb(long a, double b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return compareDoubleToLong(b, a, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
@@ -1041,7 +1042,17 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         // adapted from CPython's float_richcompare in floatobject.c
-        static double compareDoubleToLargeInt(double v, PInt w) {
+        public static double compareDoubleToLong(double v, long w, ConditionProfile wFitsInDoubleProfile) {
+            if (wFitsInDoubleProfile.profile(w > -0x1000000000000L && w < 0x1000000000000L)) {
+                // w is at most 48 bits and thus fits into a double without any loss
+                return v - w;
+            } else {
+                return compareUsingBigDecimal(v, PInt.longToBigInteger(w));
+            }
+        }
+
+        // adapted from CPython's float_richcompare in floatobject.c
+        public static double compareDoubleToLargeInt(double v, PInt w) {
             if (!Double.isFinite(v)) {
                 return v;
             }
@@ -1073,8 +1084,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean neDbLn(double a, long b) {
-            return a != b;
+        boolean doDI(double x, int y) {
+            return x != y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x != y;
+        }
+
+        @Specialization
+        boolean neDbLn(double a, long b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(a, b, longFitsToDoubleProfile) != 0;
+        }
+
+        @Specialization
+        boolean neLnDb(long a, double b,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(b, a, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
@@ -1117,8 +1145,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
+        boolean doDI(double x, int y) {
             return x < y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x < y;
+        }
+
+        @Specialization
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) < 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
@@ -1182,8 +1227,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
+        boolean doDI(double x, int y) {
             return x <= y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x <= y;
+        }
+
+        @Specialization
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) <= 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
@@ -1247,8 +1309,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
+        boolean doDI(double x, int y) {
             return x > y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x > y;
+        }
+
+        @Specialization
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) > 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
@@ -1312,8 +1391,25 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doDL(double x, long y) {
+        boolean doDI(double x, int y) {
             return x >= y;
+        }
+
+        @Specialization
+        boolean doID(int x, double y) {
+            return x >= y;
+        }
+
+        @Specialization
+        boolean doDL(double x, long y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) >= 0;
+        }
+
+        @Specialization
+        boolean doLD(long x, double y,
+                        @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
+            return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
@@ -1495,44 +1591,6 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "conjugate", minNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any float.")
     abstract static class ConjugateNode extends RealNode {
-
-    }
-
-    @Builtin(name = __TRUNC__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class TruncNode extends PythonUnaryBuiltinNode {
-
-        @TruffleBoundary
-        protected static int truncate(double value) {
-            return (int) (value < 0 ? Math.ceil(value) : Math.floor(value));
-        }
-
-        @Specialization
-        int trunc(double value,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
-            if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
-            }
-            if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
-            }
-            return truncate(value);
-        }
-
-        @Specialization
-        int trunc(PFloat pValue,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
-            double value = pValue.getValue();
-            if (nanProfile.profile(Double.isNaN(value))) {
-                throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
-            }
-            if (infProfile.profile(Double.isInfinite(value))) {
-                throw raise(PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
-            }
-            return truncate(value);
-        }
 
     }
 

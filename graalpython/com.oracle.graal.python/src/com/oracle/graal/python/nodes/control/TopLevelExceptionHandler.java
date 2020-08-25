@@ -48,7 +48,7 @@ import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -154,14 +154,19 @@ public class TopLevelExceptionHandler extends RootNode {
                 printExc(frame, pythonException);
                 return null;
             } catch (Exception e) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
-                        printStackTrace(e);
-                    }
-                }
+                handleException(e);
                 throw e;
+            }
+        }
+    }
+
+    @TruffleBoundary
+    private void handleException(Exception e) {
+        boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+        if (!exitException) {
+            ExceptionUtils.printPythonLikeStackTrace(e);
+            if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                printStackTrace(e);
             }
         }
     }
@@ -297,7 +302,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
         } else {
             PythonModule mainModule = pythonContext.getMainModule();
-            PHashingCollection mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
+            PDict mainDict = PythonObjectLibrary.getUncached().getDict(mainModule);
             PArguments.setGlobals(arguments, mainModule);
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);

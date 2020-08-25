@@ -33,6 +33,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -107,6 +108,7 @@ public final class BytesUtils {
         // TODO: for the moment we assume ASCII
         StringBuilder charList = new StringBuilder();
         int length = string.length();
+        boolean wasDeprecationWarning = false;
         for (int i = 0; i < length; i++) {
             char chr = string.charAt(i);
             if (chr != '\\') {
@@ -215,6 +217,10 @@ public final class BytesUtils {
                     } else {
                         charList.append('\\');
                         charList.append(chr);
+                        if (!wasDeprecationWarning) {
+                            wasDeprecationWarning = true;
+                            warnInvalidEscapeSequence(errors, chr);
+                        }
                     }
             }
         }

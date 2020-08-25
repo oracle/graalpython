@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaString
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.CastToJavaStringCheckedNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -97,7 +99,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -105,7 +106,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -124,6 +124,8 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -139,6 +141,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.LoopConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
@@ -165,32 +168,47 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends FormatNodeBase {
+        @Child CastToJavaStringCheckedNode castSelfToStringNode;
 
-        @Specialization(guards = "formatString.isEmpty()")
-        Object emptyFormat(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            return strCall.executeObject(frame, self);
-        }
-
-        @Specialization(guards = "!formatString.isEmpty()")
-        Object format(Object self, String formatString,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            String str = castToJavaStringNode.cast(self, INVALID_RECEIVER, __STR__, self);
-            return formatString(getCore(), formatString, str);
-        }
-
-        @Fallback
-        Object other(@SuppressWarnings("unused") Object self, Object formatString) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", formatString);
+        @Specialization
+        Object format(VirtualFrame frame, Object self, Object formatStringObj,
+                        @Cached CastToJavaStringNode castFmtToStringNode) {
+            String formatString = castFormatString(formatStringObj, castFmtToStringNode);
+            if (formatString.isEmpty()) {
+                return ensureStrCallNode().executeObject(frame, self);
+            }
+            String str = ensureCastSelfToStringNode().cast(self, INVALID_RECEIVER, __STR__, self);
+            return formatString(getCore(), getAndValidateSpec(formatString), str);
         }
 
         @TruffleBoundary
-        private static Object formatString(PythonCore core, String formatString, String str) {
-            Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+        private static Object formatString(PythonCore core, Spec spec, String str) {
             TextFormatter formatter = new TextFormatter(core, spec.withDefaults(Spec.STRING));
             formatter.format(str);
             return formatter.pad().getResult();
+        }
+
+        private Spec getAndValidateSpec(String formatString) {
+            Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
+            if (Spec.specified(spec.type) && spec.type != 's') {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
+            }
+            if (spec.alternate) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT);
+            }
+            if (Spec.specified(spec.align) && spec.align == '=') {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
+            }
+            return spec;
+        }
+
+        private CastToJavaStringCheckedNode ensureCastSelfToStringNode() {
+            if (castSelfToStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castSelfToStringNode = insert(CastToJavaStringCheckedNodeGen.create());
+            }
+            return castSelfToStringNode;
         }
     }
 
@@ -1498,70 +1516,72 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"left.length() > 1", "right > 0"})
-        String doStringInt(String left, int right) {
-            return repeatString(left, right);
+        String doStringInt(String left, int right,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile) {
+            return repeatString(left, right, loopProfile);
         }
 
         @Specialization(limit = "1")
         String doStringLong(String left, long right,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
-            return doStringIntGeneric(left, lib.asSize(right));
+            return doStringIntGeneric(left, lib.asSize(right), loopProfile);
         }
 
         @Specialization
         String doStringObject(VirtualFrame frame, String left, Object right,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile typeErrorProfile) {
-            try {
-                int repeat;
-                if (hasFrame.profile(frame != null)) {
-                    repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
-                } else {
-                    repeat = lib.asSize(right);
-                }
-                return doStringIntGeneric(left, repeat);
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.OverflowError, typeErrorProfile);
-                throw raise(MemoryError);
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            int repeat;
+            if (hasFrame.profile(frame != null)) {
+                repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
+            } else {
+                repeat = lib.asSize(right);
             }
+            return doStringIntGeneric(left, repeat, loopProfile);
         }
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object times,
+                        @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile typeErrorProfile) {
+                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             String selfStr = castSelfNode.cast(self, INVALID_RECEIVER, "index", self);
-            return doStringObject(frame, selfStr, times, hasFrame, lib, typeErrorProfile);
+            return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib);
         }
 
-        public String doStringIntGeneric(String left, int right) {
+        public String doStringIntGeneric(String left, int right, LoopConditionProfile loopProfile) {
             if (right <= 0) {
                 return "";
             }
-            return repeatString(left, right);
+            return repeatString(left, right, loopProfile);
         }
 
-        @TruffleBoundary
-        private String repeatString(String left, int times) {
+        private String repeatString(String left, int times, LoopConditionProfile loopProfile) {
             try {
-                int total = Math.multiplyExact(left.length(), times);
+                int total;
+                try {
+                    total = PythonUtils.multiplyExact(left.length(), times);
+                } catch (OverflowException ex) {
+                    throw raise(MemoryError);
+                }
                 char[] result = new char[total];
-                left.getChars(0, left.length(), result, 0);
+                PythonUtils.getChars(left, 0, left.length(), result, 0);
                 int done = left.length();
-                while (done < total) {
+                while (loopProfile.profile(done < total)) {
                     int todo = total - done;
                     int len = Math.min(done, todo);
-                    System.arraycopy(result, 0, result, done, len);
+                    PythonUtils.arraycopy(result, 0, result, done, len);
                     done += len;
                 }
                 return new String(result);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
         }
+
     }
 
     @Builtin(name = __MOD__, minNumOfPositionalArgs = 2)

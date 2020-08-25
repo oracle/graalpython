@@ -37,7 +37,6 @@ import shlex
 import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
-UNITTEST_WITH_CPY = False
 
 PY3 = sys.version_info[0] == 3 # compatibility between Python versions
 import tempfile
@@ -609,11 +608,15 @@ def graalpython_gate_runner(args, tasks):
     # Unittests on JVM
     with Task('GraalPython Python unittests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            if UNITTEST_WITH_CPY and platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
-                # TODO: drop condition when python3 is available on darwin
+            if platform.system() != 'Darwin' and not mx_gate.get_jacoco_agent_args():
                 mx.log("Running tests with CPython")
-                test_args = [_graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+                exe = os.environ.get("PYTHON3_HOME", None)
+                if exe:
+                    exe = os.path.join(exe, "python")
+                else:
+                    exe = "python3"
+                test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
+                mx.run(test_args, nonZeroIsFatal=True)
             mx.run(["env"])
             run_python_unittests(python_gvm())
 
@@ -1201,6 +1204,7 @@ def import_python_sources(args):
         "unicodedata.c": "_cpython_unicodedata.c",
         "_bz2module.c": "_bz2.c",
         "mmapmodule.c": "_mmap.c",
+        "_struct.c": "_cpython_struct.c",
     }
     extra_pypy_files = [
         "graalpython/lib-python/3/_md5.py",
@@ -1687,6 +1691,12 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(os.path.join(self.subject.get_output_root(), "modules"))
 
         cwd = os.path.join(self.subject.get_output_root(), "mxbuild_temp")
+
+        if os.path.exists("/dev/null"):
+            pycache_dir = "/dev/null"
+        else:
+            pycache_dir = os.path.join(self.subject.get_output_root(), "__pycache__")
+
         args = []
         if mx._opts.verbose:
             args.append("-v")
@@ -1694,7 +1704,11 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
             # always add "-q" if not verbose to suppress hello message
             args.append("-q")
 
-        args += ["--python.WithThread", "-S", os.path.join(self.src_dir(), "setup.py"), self.subject.get_output_root()]
+        args += ["--python.WithThread",
+                 "--python.PyCachePrefix=" + pycache_dir,
+                 "-B",
+                 "-S", os.path.join(self.src_dir() , "setup.py"),
+                 self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files

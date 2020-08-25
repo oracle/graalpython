@@ -28,12 +28,13 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -42,30 +43,20 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStor
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public final class PBytes extends PImmutableSequence implements PIBytesLike {
+public final class PBytes extends PBytesLike {
 
-    private SequenceStorage store;
-
-    public PBytes(Object cls, DynamicObject storage, byte[] bytes) {
-        super(cls, storage);
-        store = new ByteSequenceStorage(bytes);
+    public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
+        super(cls, instanceShape, bytes);
     }
 
-    public PBytes(Object cls, DynamicObject storage, SequenceStorage store) {
-        super(cls, storage);
-        setSequenceStorage(store);
-    }
-
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
+    public PBytes(Object cls, Shape instanceShape, SequenceStorage store) {
+        super(cls, instanceShape, store);
     }
 
     @Override
@@ -118,27 +109,9 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(store);
-    }
-
-    @ExportMessage
-    byte[] getBufferBytes(
-                    @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-        return toByteArrayNode.execute(store);
-    }
-
-    @ExportMessage
     public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raise,
-                    @Shared("toByteArrayNode") @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
+                    @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
         return newString(raise, toBytes.execute(getSequenceStorage()));
     }
 
@@ -150,4 +123,29 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
             throw raise.raise(PythonBuiltinClassType.UnicodeDecodeError, e);
         }
     }
+
+    @SuppressWarnings({"static-method", "unused"})
+    public static void setItem(int idx, Object value) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        PythonLanguage.getCore().raise(PythonBuiltinClassType.PBytes, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementModifiable(PBytes self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementInsertable(PBytes self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementRemovable(PBytes self, long index) {
+        return false;
+    }
+
 }

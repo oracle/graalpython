@@ -26,13 +26,13 @@
 package com.oracle.graal.python.builtins.objects.reversed;
 
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PStringReverseIterator extends PBuiltinIterator {
     public final String value;
 
-    public PStringReverseIterator(Object clazz, DynamicObject storage, String value) {
-        super(clazz, storage);
+    public PStringReverseIterator(Object clazz, Shape instanceShape, String value) {
+        super(clazz, instanceShape);
         this.value = value;
         this.index = value.length() - 1;
     }

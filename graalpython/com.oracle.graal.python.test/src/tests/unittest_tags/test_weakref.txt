@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_weakref.FinalizeTestCase.test_arg_errors
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_from_dict
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_from_weak_keyed_dict
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_make_weak_keyed_dict_repr
@@ -19,6 +20,7 @@
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_constructor_kwargs
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_equality
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_hashing
+*graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_init
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_multiple_selfref_callbacks
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_ordering
 *graalpython.lib-python.3.test.test_weakref.ReferencesTestCase.test_proxy_index

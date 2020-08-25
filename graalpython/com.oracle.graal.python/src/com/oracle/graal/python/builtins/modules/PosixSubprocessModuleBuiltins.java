@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -101,18 +102,18 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
 
         @Specialization
-        @SuppressWarnings("try")
         int forkExec(VirtualFrame frame, PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn,
+                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
 
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
-                                preexec_fn);
+                                preexec_fn, copy);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -123,7 +124,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn,
+                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
             PythonContext context = getContext();
             PosixResources resources = context.getResources();
             if (!context.isExecutableAccessAllowed()) {
@@ -131,7 +133,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             ArrayList<String> argStrings = new ArrayList<>();
-            Object[] copyOfInternalArray = args.getSequenceStorage().getCopyOfInternalArray();
+            Object[] copyOfInternalArray = copy.execute(args.getSequenceStorage());
             for (Object o : copyOfInternalArray) {
                 if (o instanceof String) {
                     argStrings.add((String) o);
@@ -142,9 +144,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            // TODO: fix this better? sys.executable is often used in subprocess tests, but on Java
-            // that actually gives you a whole cmdline, which we need to split up for process
-            // builder
             if (!argStrings.isEmpty()) {
                 if (argStrings.get(0).equals(context.getOption(PythonOptions.Executable))) {
                     String[] executableList = PythonOptions.getExecutableList(context);
@@ -219,22 +218,26 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
                 return resources.registerChild(process);
             } catch (IOException e) {
-                Channel err = null;
                 if (errpipe_write != -1) {
                     // write exec error information here. Data format: "exception name:hex
                     // errno:description"
-                    err = resources.getFileChannel(errpipe_write);
-                    if (!(err instanceof WritableByteChannel)) {
-                        throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
-                    } else {
-                        ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
-                        try {
-                            ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
-                        } catch (IOException e1) {
-                        }
-                    }
+                    handleIOError(errpipe_write, resources, e);
                 }
                 return -1;
+            }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private void handleIOError(int errpipe_write, PosixResources resources, IOException e) {
+            Channel err = resources.getFileChannel(errpipe_write);
+            if (!(err instanceof WritableByteChannel)) {
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
+            } else {
+                ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
+                try {
+                    ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
+                } catch (IOException e1) {
+                }
             }
         }
 
@@ -249,6 +252,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castFdsToKeep,
                         @Cached CastToJavaStringNode castCwd,
                         @Cached CastToListNode castEnv,
+                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
 
             String actualCwd;
@@ -281,7 +285,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                             lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
                             lib.isTrueWithState(restore_signals, PArguments.getThreadState(frame)),
-                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), preexec_fn);
+                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), preexec_fn, copy);
         }
     }
 }

@@ -50,9 +50,12 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -64,10 +67,18 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 // Order operations are tried until either a valid result or error: w.op(v,w)[*], v.op(v,w), w.op(v,w)
 //
 //       [*] only when v->ob_type != w->ob_type && w->ob_type is a subclass of v->ob_type
+//
+// The (long, double) and (double, long) specializations are needed since long->double conversion
+// is not always correct (it can lose information). See FloatBuiltins.EqNode.compareDoubleToLong().
+// The (int, double) and (double, int) specializations are needed to avoid int->long conversion.
+// Although it would produce correct results, the special handling of long to double comparison
+// is slower than converting int->double, which is always correct.
+@ReportPolymorphism
+@ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
-        public abstract Object execute(Object arg, Object arg2);
+        public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
     }
 
     protected final String name;
@@ -92,11 +103,27 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     public abstract long executeLong(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
 
+    public abstract double executeDouble(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
+
+    public abstract double executeDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
+
     public abstract double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
 
+    public abstract boolean executeBool(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
+
     public abstract boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
+
+    public abstract boolean executeBool(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
 
     public abstract boolean executeBool(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
 
@@ -255,6 +282,58 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
     }
 
+    // int, double
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static boolean callBoolean(VirtualFrame frame, int left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static boolean callBoolean(VirtualFrame frame, double left, int right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static double callDouble(VirtualFrame frame, int left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static double callDouble(VirtualFrame frame, double left, int right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
+    // long, double
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static boolean callBoolean(VirtualFrame frame, long left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static boolean callBoolean(VirtualFrame frame, double left, long right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeBool(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static double callDouble(VirtualFrame frame, long left, double right,
+                    @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
+    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
+    static double callDouble(VirtualFrame frame, double left, long right,
+                    @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
+        return function.executeDouble(frame, left, right);
+    }
+
     // double, double
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
@@ -277,30 +356,34 @@ public abstract class LookupAndCallBinaryNode extends Node {
         }
     }
 
-    protected static boolean isReflectedObject(Object left, Object right, PythonObjectLibrary libLeft, PythonObjectLibrary libRight) {
-        return libLeft.isReflectedObject(left, left) || libRight.isReflectedObject(right, right);
-    }
-
     // Object, Object
 
-    @Specialization(guards = {"!isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
+    @Specialization(guards = {"!isReversible()"}, limit = "5")
     Object callObject(VirtualFrame frame, Object left, Object right,
-                    @SuppressWarnings("unused") @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @SuppressWarnings("unused") @CachedLibrary("right") PythonObjectLibrary libRight,
+                    @CachedLibrary("left") PythonObjectLibrary libLeft,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
-        Object leftCallable = getattr.execute(frame, libLeft.getLazyPythonClass(left), left);
+        Object leftClass = libLeft.getLazyPythonClass(left);
+        Object leftValue = libLeft.getDelegatedValue(left);
+        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
-                return runErrorHandler(left, right);
+                return runErrorHandler(frame, leftValue, right);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
-        return ensureDispatch().executeObject(frame, leftCallable, left, right);
+        return ensureDispatch().executeObject(frame, leftCallable, leftValue, right);
     }
 
-    @Specialization(guards = {"isReversible()", "!isReflectedObject(left, right, libLeft, libRight)"}, limit = "2")
-    Object callObject(VirtualFrame frame, Object left, Object right,
+    @Specialization(guards = {"!isReversible()"}, replaces = "callObject")
+    Object callObjectUncached(VirtualFrame frame, Object left, Object right,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        return callObject(frame, left, right, libLeft, getattr);
+    }
+
+    @Specialization(guards = {"isReversible()"}, limit = "5")
+    Object callObjectR(VirtualFrame frame, Object left, Object right,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @CachedLibrary("left") PythonObjectLibrary libLeft,
@@ -320,48 +403,54 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftCallable = getattr.execute(frame, leftClass, left);
+        Object leftValue = libLeft.getDelegatedValue(left);
+        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
         Object rightClass = libRight.getLazyPythonClass(right);
-        Object rightCallable = getattrR.execute(frame, rightClass, right);
+        Object rightValue = libRight.getDelegatedValue(right);
+        Object rightCallable = getattrR.execute(frame, rightClass, rightValue);
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
             if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass)) {
-                result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
+                result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 rightCallable = PNone.NO_VALUE;
             }
-            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
+            result = ensureDispatch().executeObject(frame, leftCallable, leftValue, rightValue);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
         if (notImplementedBranch.profile(rightCallable != PNone.NO_VALUE)) {
-            result = ensureReverseDispatch().executeObject(frame, rightCallable, right, left);
+            result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            return runErrorHandler(left, right);
+            return runErrorHandler(frame, leftValue, rightValue);
         }
         return result;
     }
 
-    @Specialization(guards = "isReflectedObject(left, right, libLeft, libRight)", limit = "1")
-    Object callReflected(VirtualFrame frame, Object left, Object right,
-                    @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @CachedLibrary("right") PythonObjectLibrary libRight,
-                    @Cached("create(name, rname, handlerFactory)") LookupAndCallBinaryNode recursiveCall) {
-        return recursiveCall.executeObject(frame, libLeft.getReflectedObject(left), libRight.getReflectedObject(right));
+    @Specialization(guards = {"isReversible()"}, replaces = "callObjectR")
+    Object callObjectRUncached(VirtualFrame frame, Object left, Object right,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary libRight,
+                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached("create()") IsSubtypeNode isSubtype,
+                    @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
+        return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype, notImplementedBranch);
     }
 
-    private Object runErrorHandler(Object left, Object right) {
+    private Object runErrorHandler(VirtualFrame frame, Object left, Object right) {
         if (handler == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             handler = insert(handlerFactory.get());
         }
-        return handler.execute(left, right);
+        return handler.execute(frame, left, right);
     }
 
     public String getName() {

@@ -57,7 +57,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PBaseException extends PythonObject {
     private static final Object[] EMPTY_ARGS = new Object[0];
@@ -102,24 +102,24 @@ public final class PBaseException extends PythonObject {
         this.suppressContext = suppressContext;
     }
 
-    public PBaseException(Object cls, DynamicObject storage, PTuple args) {
-        super(cls, storage);
+    public PBaseException(Object cls, Shape instanceShape, PTuple args) {
+        super(cls, instanceShape);
         this.args = args;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PBaseException(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
         this.args = null;
         this.hasMessageFormat = false;
         this.messageFormat = null;
         this.messageArgs = null;
     }
 
-    public PBaseException(Object cls, DynamicObject storage, String format, Object[] args) {
-        super(cls, storage);
+    public PBaseException(Object cls, Shape instanceShape, String format, Object[] args) {
+        super(cls, instanceShape);
         this.args = null;
         this.hasMessageFormat = true;
         this.messageFormat = format;

@@ -40,12 +40,7 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
@@ -64,64 +59,11 @@ public final class FormattingUtils {
             case 'F':
             case 'G':
             case '%':
-                // Check for disallowed parts of the specification
-                if (spec.alternate) {
-                    throw alternateFormNotAllowed(core, forType);
-                }
                 // spec may be incomplete. The defaults are those commonly used for numeric
                 // formats.
                 return spec.withDefaults(InternalFormat.Spec.NUMERIC);
             default:
                 throw Formatter.unknownFormat(core, spec.type, forType);
         }
-    }
-
-    /**
-     * Convenience method returning a {ValueError} reporting that alternate form is not allowed in a
-     * format specifier for the named type.
-     *
-     * @param forType the type it was found applied to
-     * @return exception to throw
-     */
-    public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType) {
-        return alternateFormNotAllowed(errors, forType, '\0');
-    }
-
-    /**
-     * Convenience method returning a {ValueError} reporting that alternate form is not allowed in a
-     * format specifier for the named type and specified typoe code.
-     *
-     * @param forType the type it was found applied to
-     * @param code the formatting code (or '\0' not to mention one)
-     * @return exception to throw
-     */
-    public static PException alternateFormNotAllowed(ParserErrorCallback errors, String forType, char code) {
-        return notAllowed(errors, "Alternate form (#)", forType, code);
-    }
-
-    /**
-     * Convenience method returning a {ValueError} reporting that some format specifier feature is
-     * not allowed for the named format code and data type. Produces a message like:
-     * <p>
-     * <code>outrage+" not allowed with "+forType+" format specifier '"+code+"'"</code>
-     * <p>
-     * <code>outrage+" not allowed in "+forType+" format specifier"</code>
-     *
-     * @param outrage committed in the present case
-     * @param forType the data type (e.g. "integer") it where it is an outrage
-     * @param code the formatting code for which it is an outrage (or '\0' not to mention one)
-     * @return exception to throw
-     */
-    public static PException notAllowed(ParserErrorCallback errors, String outrage, String forType, char code) {
-        // Try really hard to be like CPython
-        String codeAsString, withOrIn;
-        if (code == 0) {
-            withOrIn = "in ";
-            codeAsString = "";
-        } else {
-            withOrIn = "with ";
-            codeAsString = " '" + code + "'";
-        }
-        throw errors.raise(ValueError, ErrorMessages.NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S, outrage, withOrIn, forType, codeAsString);
     }
 }

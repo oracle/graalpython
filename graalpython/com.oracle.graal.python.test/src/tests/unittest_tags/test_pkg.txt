@@ -1,4 +1,8 @@
 *graalpython.lib-python.3.test.test_pkg.TestPkg.test_1
+*graalpython.lib-python.3.test.test_pkg.TestPkg.test_2
 *graalpython.lib-python.3.test.test_pkg.TestPkg.test_3
 *graalpython.lib-python.3.test.test_pkg.TestPkg.test_4
+*graalpython.lib-python.3.test.test_pkg.TestPkg.test_5
+*graalpython.lib-python.3.test.test_pkg.TestPkg.test_6
+*graalpython.lib-python.3.test.test_pkg.TestPkg.test_7
 *graalpython.lib-python.3.test.test_pkg.TestPkg.test_8

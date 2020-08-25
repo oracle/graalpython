@@ -36,8 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
 import _frozen_importlib
+import sys
 
 
 class PipLoader:
@@ -59,6 +59,7 @@ class PipLoader:
 
             import os
             import re
+            import subprocess
             # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
             # some packages may have only major.minor or just major version
             archive_name = os.path.basename(filename)
@@ -106,9 +107,8 @@ class PipLoader:
                 filename = first_existing(package_name, name_ver_match, dir, suffix)
                 if filename:
                     print("Patching package " + package_name + " using " + filename)
-                    cwd = "" if wd is None else "cd " + wd + ";"
-                    patch_res = os.system(cwd + "patch -f -d %s -p1 < %s" % (location, filename))
-                    if patch_res != 0:
+                    patch_res = subprocess.run(["patch", "-f", "-d", location, "-p1", "-i", filename], cwd=wd)
+                    if patch_res.returncode != 0:
                         print("Applying Graal Python patch failed for %s. The package may still work." % package_name)
 
             print("Looking for Graal Python patches for " + package_name)

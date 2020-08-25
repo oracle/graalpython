@@ -15,6 +15,7 @@ ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵a
               GetAttributeNodeGen SourceSection: None
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: __annotations__
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

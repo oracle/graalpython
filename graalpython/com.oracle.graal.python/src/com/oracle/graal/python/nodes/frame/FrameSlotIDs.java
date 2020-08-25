@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,12 +28,18 @@ package com.oracle.graal.python.nodes.frame;
 public abstract class FrameSlotIDs {
     public static final String RETURN_SLOT_ID = "<return_val>";
     public static final String TEMP_LOCAL_PREFIX = "<>temp";
+    /**
+     * Used when body of class has two variables with the same name __class__. The first one is
+     * __class__ freevar coming from outer scope and the second one is __class__ (implicit) closure
+     * for inner methods, where __class__ or super is used. Both of them can have different values.
+     */
+    public static final String FREEVAR__CLASS__ = "<>freevar__class__";
 
     public static boolean isTempLocal(Object key) {
         return key instanceof String && ((String) key).startsWith(TEMP_LOCAL_PREFIX);
     }
 
     public static boolean isUserFrameSlot(Object key) {
-        return key instanceof String && !RETURN_SLOT_ID.equals(key) && !isTempLocal(key);
+        return key instanceof String && !RETURN_SLOT_ID.equals(key) && !isTempLocal(key) && !FREEVAR__CLASS__.equals(key);
     }
 }

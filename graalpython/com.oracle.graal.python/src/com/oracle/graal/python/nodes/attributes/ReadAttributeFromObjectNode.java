@@ -59,8 +59,10 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.R
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -68,7 +70,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -94,12 +95,14 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     public abstract Object execute(Object object, Object key);
 
+    protected static final int MAX_DICT_TYPES = 2;
+
     // read from the DynamicObject store
     @Specialization(guards = {
                     "!lib.hasDict(object) || isHiddenKey(key)"
-    }, limit = "1")
-    protected Object readFromDynamicStorage(PythonObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+    })
+    protected static Object readFromDynamicStorage(PythonObject object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                     @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
@@ -111,74 +114,29 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     /**
      * @param module Non-cached parameter to help the DSL produce a guard, not an assertion
      */
-    protected static HashingStorage getStorage(Object module, Object cachedGlobals) {
-        return ((PDict) cachedGlobals).getDictStorage();
+    protected static HashingStorage getStorage(Object module, PHashingCollection cachedGlobals) {
+        return cachedGlobals.getDictStorage();
     }
 
-    // special case for the very common module attribute read from an unchanging PDict
+    protected static PDict getDict(Object object) {
+        return PythonObjectLibrary.getUncached().getDict(object);
+    }
+
+    // special case for the very common module read
     @Specialization(guards = {
                     "cachedObject == object",
-                    "lib.getDict(cachedObject) == cachedDict",
-                    "getStorage(object, cachedDict) == cachedStorage",
-                    "isBuiltinDict(cachedDict, isBuiltinDict)",
-    }, assumptions = "singleContextAssumption", limit = "1")
+                    // no need to check the cachedDict for equality, module.__dict__ is read-only
+                    "getStorage(object, cachedDict) == cachedStorage"
+    }, assumptions = "singleContextAssumption()", limit = "1")
     @SuppressWarnings("unused")
-    protected Object readFromBuiltinModuleDictUnchanged(PythonModule object, String key,
+    protected static Object readFromBuiltinModuleDict(PythonModule object, String key,
                     @CachedLibrary("object") PythonObjectLibrary lib,
-                    @Cached("object") PythonModule cachedObject,
-                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached("getStorage(object, cachedDict)") HashingStorage cachedStorage,
-                    @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @Cached(value = "object", weak = true) PythonModule cachedObject,
+                    @Cached(value = "getDict(object)", weak = true) PHashingCollection cachedDict,
+                    @Cached(value = "getStorage(object, getDict(object))", weak = true) HashingStorage cachedStorage,
+                    @CachedLibrary("cachedStorage") HashingStorageLibrary hlib) {
         // note that we don't need to pass the state here - string keys are hashable by definition
         Object value = hlib.getItem(cachedStorage, key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
-    // special case for the very common module attribute read
-    @Specialization(guards = {
-                    "cachedObject == object",
-                    "lib.getDict(cachedObject) == cachedDict",
-                    "hasBuiltinDict(cachedObject, lib, isBuiltinDict, isBuiltinMappingproxy)",
-    }, assumptions = "singleContextAssumption", replaces = "readFromBuiltinModuleDictUnchanged")
-    @SuppressWarnings("unused")
-    protected Object readFromBuiltinModuleDict(PythonModule object, String key,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached("object") PythonModule cachedObject,
-                    @Cached("lib.getDict(cachedObject)") PHashingCollection cachedDict,
-                    @Cached("singleContextAssumption()") Assumption singleContextAssumption,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        Object value = hlib.getItem(getDictStorage.execute(cachedDict), key);
-        if (value == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return value;
-        }
-    }
-
-    protected HashingStorage getDictStorage(PythonObject object, PythonObjectLibrary lib, HashingCollectionNodes.GetDictStorageNode getDictStorageNode) {
-        PHashingCollection dict = lib.getDict(object);
-        return dict != null ? getDictStorageNode.execute(dict) : null;
-    }
-
-    // read from a builtin dict
-    @Specialization(guards = {"!isHiddenKey(key)", "hasBuiltinDict(object, lib, isBuiltinDict, isBuiltinMappingproxy)"}, limit = "1")
-    protected Object readFromBuiltinDict(PythonObject object, String key,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
-                    @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinDict,
-                    @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinMappingproxy,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary hlib) { // limit 2: string
-                                                                              // only or mixed dict
-        Object value = hlib.getItem(getDictStorageNode.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -190,11 +148,11 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
-    }, replaces = {"readFromBuiltinDict", "readFromBuiltinModuleDict"}, limit = "1")
-    protected Object readFromDict(PythonObject object, Object key,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+    }, replaces = "readFromBuiltinModuleDict")
+    protected static Object readFromDict(PythonObject object, Object key,
+                    @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                     @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                    @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
         Object value = hlib.getItem(getDictStorage.execute(lib.getDict(object)), key);
         if (value == null) {
             return PNone.NO_VALUE;
@@ -204,26 +162,27 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // foreign Object
-    @Specialization(guards = "plib.isForeignObject(object)", limit = "3")
-    protected Object readForeign(TruffleObject object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
+    @Specialization(guards = "plib.isForeignObject(object)")
+    protected static Object readForeign(Object object, Object key,
+                    @Cached CastToJavaStringNode castNode,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary plib,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
         try {
-            String member = (String) attrKey(key);
+            String member = castNode.execute(key);
             if (read.isMemberReadable(object, member)) {
                 return fromForeign.executeConvert(read.readMember(object, member));
             }
-        } catch (UnknownIdentifierException | UnsupportedMessageException ignored) {
+        } catch (CannotCastException | UnknownIdentifierException | UnsupportedMessageException ignored) {
         }
         return PNone.NO_VALUE;
     }
 
     // not a Python or Foreign Object
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!plib.isForeignObject(object)"}, limit = "3")
-    protected PNone readUnboxed(Object object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib) {
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!plib.isForeignObject(object)"})
+    protected static PNone readUnboxed(Object object, Object key,
+                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary plib) {
         return PNone.NO_VALUE;
     }
 
@@ -233,16 +192,16 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     @GenerateUncached
     protected abstract static class ReadAttributeFromObjectNotTypeNode extends ReadAttributeFromObjectNode {
-        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign", limit = "1")
-        protected Object readNativeObject(PythonAbstractNativeObject object, Object key,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
+        @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign")
+        protected static Object readNativeObject(PythonAbstractNativeObject object, Object key,
+                        @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
             return readNative(key, lib.getDict(object), hlib, getDictStorage);
         }
 
         @Fallback
-        protected Object fallback(Object object, Object key) {
+        protected static Object fallback(Object object, Object key) {
             return readAttributeUncached(object, key, false);
         }
     }
@@ -250,15 +209,15 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     @GenerateUncached
     protected abstract static class ReadAttributeFromObjectTpDictNode extends ReadAttributeFromObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"}, insertBefore = "readForeign")
-        protected Object readNativeClass(PythonNativeClass object, Object key,
+        protected static Object readNativeClass(PythonNativeClass object, Object key,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+                        @CachedLibrary(limit = "MAX_DICT_TYPES") HashingStorageLibrary hlib) {
             return readNative(key, getNativeDict.execute(object, NativeMember.TP_DICT), hlib, getDictStorage);
         }
 
         @Fallback
-        protected Object fallback(Object object, Object key) {
+        protected static Object fallback(Object object, Object key) {
             return readAttributeUncached(object, key, true);
         }
     }
@@ -273,6 +232,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
         return PNone.NO_VALUE;
     }
 
+    @CompilerDirectives.TruffleBoundary
     private static Object readAttributeUncached(Object object, Object key, boolean forceType) {
         if (object instanceof PythonObject) {
             PythonObject po = (PythonObject) object;

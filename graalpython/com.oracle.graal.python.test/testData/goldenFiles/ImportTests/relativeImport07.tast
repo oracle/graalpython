@@ -17,6 +17,7 @@ ModuleRootNode Name: <module 'relativeImport07'> SourceSection: [0,23]`from ...p
             Identifier: name
             EmptyNode SourceSection: None
           GetAnyAttributeNodeGen SourceSection: None
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None

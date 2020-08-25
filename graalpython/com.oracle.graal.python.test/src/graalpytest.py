@@ -579,8 +579,7 @@ class TestRunner(object):
             return join(test_module_dir, "conftest.py")
         return None
 
-    @staticmethod
-    def load_module(path):
+    def load_module(self, path):
         name = path.rpartition("/")[2].partition(".")[0].replace('.py', '')
         directory = path.rpartition("/")[0]
         pkg = []
@@ -621,10 +620,10 @@ class TestRunner(object):
 
     def test_modules(self):
         for testfile in self.testfiles:
-            yield TestRunner.load_module(testfile)
+            yield self.load_module(testfile)
 
     def load_conftest(self, testfile):
-        TestRunner.load_module(testfile)
+        self.load_module(testfile)
 
     def run(self):
         # eval session scope
@@ -706,7 +705,8 @@ if __name__ == "__main__":
                 patterns.append(argv.pop(idx))
             except IndexError:
                 print("-k needs an argument")
-        idx += 1
+        else:
+            idx += 1
 
     if argv[1] == "-v":
         verbose = True

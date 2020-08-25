@@ -1,6 +1,8 @@
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testFunctionCall
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testKwDefaults
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testRaiseErrorFuncallWithUnexpectedKeywordArgument
+*graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionCall
+*graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxErrorForFunctionDefinition
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testSyntaxForManyArguments
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.testTooManyPositionalErrorMessage
 *graalpython.lib-python.3.test.test_keywordonlyarg.KeywordOnlyArgTestCase.test_default_evaluation_order

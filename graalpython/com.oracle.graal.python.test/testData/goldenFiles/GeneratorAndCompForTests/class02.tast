@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,208]`class Counter(dict):...`
                 Name: Counter
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [_keep_positive, __class__]
+                FrameDescriptor: 1 slots [_keep_positive]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,208]`class Counter(dict):...`
                   ReturnTargetNode SourceSection: [0,208]`class Counter(dict):...`
                     Body: BlockNode SourceSection: None
@@ -56,20 +56,20 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [25,208]`def _keep_positive(s...`
                               Name: _keep_positive
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: self
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, nonpositive, elem, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [25,208]`def _keep_positive(s...`
                                 ReturnTargetNode SourceSection: [25,208]`def _keep_positive(s...`
@@ -95,7 +95,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                             Name: <genexpr>
                                             FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                             Enclosing
-                                              FrameDescriptor: 5 slots [self, nonpositive, elem, __class__, <return_val>]
+                                              FrameDescriptor: 4 slots [self, nonpositive, elem, <return_val>]
                                             Active Flags: 4
                                             For Nodes: 1
                                             Block Nodes: 0
@@ -210,21 +210,13 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           WriteLocalFrameSlotNodeGen SourceSection: None
-                                            Frame: [4,<return_val>,Illegal]
+                                            Frame: [3,<return_val>,Illegal]
                                           ReadLocalVariableNode SourceSection: [204,208]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`

@@ -175,6 +175,7 @@ class TracebackCases(unittest.TestCase):
         do_test("x=0\n# coding: GBK\n", "h\xe9 ho", 'utf-8', 5)
 
     @support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_print_traceback_at_exit(self):
         # Issue #22599: Ensure that it is possible to use the traceback module
         # to display an exception at Python exit
@@ -349,7 +350,10 @@ class TracebackFormatTests(unittest.TestCase):
 
         # Check the recursion count is roughly as expected
         rec_limit = sys.getrecursionlimit()
-        self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-60, rec_limit))
+
+        # XXX Truffle change - our maximum recursion depth varies *very* wildly
+        # self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-60, rec_limit))
+        self.assertIn(int(re.search(r"\d+", actual[-2]).group()), range(rec_limit-800, rec_limit+500))
 
         # Check a known (limited) number of recursive invocations
         def g(count=10):

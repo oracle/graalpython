@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
@@ -248,7 +249,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
+    @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1, doc = "Implement next(self).")
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -267,6 +268,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
         Object send(VirtualFrame frame, PGenerator self, Object value,
                         @Cached ResumeGeneratorNode resumeGeneratorNode) {
             checkResumable(this, self);
+            if (!self.isStarted() && value != PNone.NONE) {
+                throw raise(TypeError, ErrorMessages.SEND_NON_NONE_TO_UNSTARTED_GENERATOR);
+            }
             return resumeGeneratorNode.execute(frame, self, value);
         }
     }
@@ -385,7 +389,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached PrepareExceptionNode prepareExceptionNode,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Shared("language") @CachedLanguage PythonLanguage language) {
-            checkResumable(this, self);
+            if (self.isRunning()) {
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             return doThrow(frame, resumeGeneratorNode, self, instance, language);
         }
@@ -395,7 +401,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached PrepareExceptionNode prepareExceptionNode,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Shared("language") @CachedLanguage PythonLanguage language) {
-            checkResumable(this, self);
+            if (self.isRunning()) {
+                throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
+            }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
             return doThrow(frame, resumeGeneratorNode, self, instance, language);
@@ -403,7 +411,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         private Object doThrow(VirtualFrame frame, ResumeGeneratorNode resumeGeneratorNode, PGenerator self, PBaseException instance, PythonLanguage language) {
             instance.setContext(null); // Will be filled when caught
-            if (self.isStarted()) {
+            if (self.isStarted() && !self.isFinished()) {
                 instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
@@ -464,7 +472,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
-            if (isStartedPorfile.profile(self.isStarted())) {
+            if (isStartedPorfile.profile(self.isStarted() && !self.isFinished())) {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
@@ -504,12 +512,18 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "gi_running", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetRunningNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object getRunning(PGenerator self) {
+    public abstract static class GetRunningNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        static Object getRunning(PGenerator self, @SuppressWarnings("unused") PNone none) {
             return self.isRunning();
+        }
+
+        @Specialization(guards = "!isNoValue(obj)")
+        static Object setRunning(@SuppressWarnings("unused") PGenerator self, @SuppressWarnings("unused") Object obj,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
     }
 

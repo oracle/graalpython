@@ -15,11 +15,11 @@ Scope: []
             FreeVars: [a_local_var]
             Scope: C
                 Kind: Class
-                FrameDescriptor: [a_local_var, method01, __class__]
-                CellVars: [__class__]
+                FrameDescriptor: [a_local_var, method01]
+                CellVars: Empty
                 FreeVars: [a_local_var]
                 Scope: method01
                     Kind: Function
-                    FrameDescriptor: [a_local_var, <return_val>, __class__]
+                    FrameDescriptor: [a_local_var, <return_val>]
                     CellVars: Empty
-                    FreeVars: [__class__, a_local_var]
+                    FreeVars: [a_local_var]

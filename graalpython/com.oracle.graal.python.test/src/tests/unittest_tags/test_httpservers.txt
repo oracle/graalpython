@@ -1,0 +1,17 @@
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_close_connection
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_date_time_string
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_extra_space
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_error
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_header
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_buffering_of_send_response_only
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_length
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_header_unbuffered_when_continue
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_html_escape_on_error
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_0_9
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_0
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_http_1_1
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_request_length
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_too_many_headers
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_0
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_1_1
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPRequestHandlerTestCase.test_with_continue_rejected

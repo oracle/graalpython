@@ -72,7 +72,7 @@ def make_flags_class():
 
     def make_func(i):
         def func(self):
-            return __flags__[i]
+            return __graalpython__.flags[i]
         return func
 
     for i, f in enumerate(names):
@@ -104,6 +104,8 @@ def make_float_info_class():
 float_info = make_float_info_class()(float_info)
 del make_float_info_class
 
+float_repr_style = 'short'
+
 def make_int_info_class():
     from _descriptor import make_named_tuple_class
     return make_named_tuple_class(
@@ -129,9 +131,7 @@ def make_hash_info_class():
          "seed_bits",
          "width"]
     )
-hash_info = make_hash_info_class()(
-    ("java", 0, 64, 0, float('inf').__hash__(), 7, float('nan').__hash__(), 0, 64)
-)
+hash_info = make_hash_info_class()(hash_info)
 del make_hash_info_class
 
 

@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -98,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -165,9 +163,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.Layout;
-import com.oracle.truffle.api.object.ObjectType;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -178,9 +173,6 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 @ExportLibrary(NativeTypeLibrary.class)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     static final String GP_OBJECT = "gp_object";
-    private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
-    private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
-
     private DynamicObjectStorage nativeMemberStore;
 
     public DynamicObjectNativeWrapper() {
@@ -192,7 +184,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     public DynamicObjectStorage createNativeMemberStore() {
         if (nativeMemberStore == null) {
-            nativeMemberStore = new DynamicObjectStorage(SHAPE.newInstance());
+            nativeMemberStore = new DynamicObjectStorage();
         }
         return nativeMemberStore;
     }
@@ -353,11 +345,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
-        private static PythonAbstractClass ensureClassObject(PythonContext context, Object klass) {
+        private static Object ensureClassObject(PythonContext context, Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
                 return context.getCore().lookupType((PythonBuiltinClassType) klass);
             }
-            return (PythonAbstractClass) klass;
+            return klass;
         }
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
@@ -594,7 +586,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
             // TODO(fa): we could cache the dict instance on the class' native wrapper
-            PHashingCollection dict = lib.getDict(object);
+            PDict dict = lib.getDict(object);
             HashingStorage dictStorage = dict != null ? dict.getDictStorage() : null;
             if (dictStorage instanceof DynamicObjectStorage) {
                 // reuse the existing and modifiable storage
@@ -605,8 +597,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // copy all mappings to the new storage
                 storage = storageLib.addAllToOther(dictStorage, storage);
             }
-            lib.setDict(object, factory.createMappingproxy(storage));
-            return toSulongNode.execute(factory.createDict(storage));
+            PDict newDict = factory.createDict(storage);
+            lib.setDict(object, newDict);
+            return toSulongNode.execute(newDict);
         }
 
         @Specialization(guards = "eq(TP_TRAVERSE, key) || eq(TP_CLEAR, key)")
@@ -780,15 +773,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) throws UnsupportedMessageException {
-            PHashingCollection dict = lib.getDict(object);
-            if (!(dict instanceof PDict)) {
-                assert dict instanceof PMappingproxy || dict == null;
-                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
-                // on this type and created a mappingproxy object. We need to replace it by a dict.
+            PDict dict = lib.getDict(object);
+            if (dict == null) {
                 dict = factory.createDictFixedStorage(object);
                 lib.setDict(object, dict);
             }
-            assert dict != null;
             return toSulongNode.execute(dict);
         }
 
@@ -1013,13 +1002,28 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
-        static long doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags) {
-            object.setFlags(flags);
+        static long doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags,
+                        @Cached GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+            if (object instanceof PythonBuiltinClass) {
+                // just assert that we try to set the same flags; if there is a difference, this
+                // means we did not properly maintain our flag definition in
+                // TypeNodes.GetTypeFlagsNode.
+                assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object);
+            } else {
+                writeAttributeToObjectNode.execute(object, SpecialAttributeNames.__FLAGS__, flags);
+            }
             return flags;
         }
 
-        @Specialization(guards = "eq(TP_BASICSIZE, key)")
-        static long doTpBasicsize(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
+        @TruffleBoundary
+        private static String flagsErrorMessage(PythonManagedClass object) {
+            return "type flags of " + object.getName() + " definitions are out of sync";
+        }
+
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
+
+        static long doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached IsBuiltinClassProfile profile) {
             if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
@@ -1030,8 +1034,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return basicsize;
         }
 
-        @Specialization(guards = "eq(TP_ALLOC, key)")
-        static Object doTpAlloc(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
+        static Object doTpAlloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
@@ -1051,16 +1055,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "eq(TP_DEALLOC, key)")
-        static Object doTpDelloc(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEALLOC, key)"})
+        static Object doTpDelloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
             return deallocFunc;
         }
 
-        @Specialization(guards = "eq(TP_FREE, key)")
-        static Object doTpFree(PythonAbstractClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_FREE, key)"})
+        static Object doTpFree(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
@@ -1126,7 +1130,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 for (HashingStorage.DictEntry entry : d.entries()) {
                     writeAttrNode.execute(object, entry.getKey(), entry.getValue());
                 }
-                PHashingCollection existing = lib.getDict(object);
+                PDict existing = lib.getDict(object);
                 if (existing != null) {
                     d.setDictStorage(existing.getDictStorage());
                 } else {
@@ -1559,7 +1563,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Override
         public int hashCode() {
-            return (int) (value ^ Double.doubleToRawLongBits(dvalue) ^ state);
+            return (Long.hashCode(value) ^ Long.hashCode(Double.doubleToRawLongBits(dvalue)) ^ state);
         }
 
         @Override

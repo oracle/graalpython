@@ -55,6 +55,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
@@ -155,7 +156,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public PFrame(Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
@@ -163,7 +164,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     private PFrame(Object locals) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
         this.virtualFrameInfo = null;
         this.location = null;
         this.inClassScope = false;
@@ -171,7 +172,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public PFrame(@SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.newInstance());
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);
@@ -181,6 +182,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.location = code.getRootNode();
         this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
         this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+        this.arguments = frameArgs;
 
         localsDict = locals;
     }
@@ -226,9 +228,10 @@ public final class PFrame extends PythonBuiltinObject {
             } else {
                 SourceSection sourceSection = location.getEncapsulatingSourceSection();
                 if (sourceSection == null) {
-                    line = -1;
+                    return -1;
                 } else {
-                    line = sourceSection.getStartLine();
+                    // The location can change, so we shouldn't cache the value
+                    return sourceSection.getStartLine();
                 }
             }
         }
@@ -296,7 +299,12 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static RootCallTarget createCallTarget(Node location) {
-        return Truffle.getRuntime().createCallTarget(location.getRootNode());
+        RootNode rootNode = location.getRootNode();
+        RootCallTarget ct = rootNode.getCallTarget();
+        if (ct == null) {
+            ct = Truffle.getRuntime().createCallTarget(rootNode);
+        }
+        return ct;
     }
 
     public Object[] getArguments() {

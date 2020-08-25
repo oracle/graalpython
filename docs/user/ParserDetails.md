@@ -1,7 +1,7 @@
 # Python Code Parsing and pyc Files
 
-This document elaborates on various things to consider about how Python files in
-the GraalPython implementation are parsed.
+This guide elaborates on various things to consider about how Python files in
+the GraalVM Python implementation are parsed.
 
 ## Parser Performance
 
@@ -43,28 +43,28 @@ or hashcode of the original source file is changed.  The hashcode is generated
 only based on the Python source by calling `source.hashCode()`, which is the JDK
 hash code over the array of source file bytes, calculated with
 `java.util.Arrays.hashCode(byte[])`. The `.pyc` files are also regenerated if a
-magic number in the GraalPython parser is changed. The magic number is
-hard-coded in the GraalPython source and can not be changed by the user (unless
-that user has access to the bytecode of GraalPython, in which case they can do
-anything they want already). The developers of GraalPython change the magic
+magic number in the Python parser is changed. The magic number is
+hard-coded in the Python source and can not be changed by the user (unless
+that user has access to the bytecode of Python, in which case they can do
+anything they want already). The developers of GraalVM Python change the magic
 number when the format of SST or scope tree binary data is altered. This is an
 implementation detail, so the magic number does not have to correspond to the
-version of GraalPython (just like in CPython). The magic number of pyc is a
-function of the concrete GraalPython Java code that is running.
+version of GraalVM Python (just like in CPython). The magic number of pyc is a
+function of the concrete GraalVM's Python Java code that is running.
 
-> *Summary*: `.pyc` files are created automatically by the GraalPython runtime
+> *Summary*: `.pyc` files are created automatically by the GraalVM Python runtime
 > when no or an invalid `.pyc` file is found matching the desired `.py` file.
 
 > **Important**: If you use `.pyc` files, you will need to allow write-access to
-> the GraalPython runtime at least when switching versions or changing the
+> the GraalVM Python runtime at least when switching versions or changing the
 > original source code - otherwise, the regeneration of source files will fail
 > and every import will have the overhead of accessing the old `.pyc` file,
 > parsing the code, serializing it, and trying (and failing) to write out a new
 > `.pyc` file.
 
-A `*.pyc` file is never deleted by GraalPython, only regenerated. It is
+A `*.pyc` file is never deleted by GraalVM's Python, only regenerated. It is
 regenerated when the appropriate source file is changed (timestamp of last
-modification or hashcode of the content) or the magic number of the GraalPython
+modification or hashcode of the content) or the magic number of the GraalVM's Python
 parser changes. Magic number changes will be communicated in the release notes
 so that embedders or system administrators can delete old `.pyc` files when
 upgrading.
@@ -124,7 +124,7 @@ b'\x01\x00\x00\x02[]K\xbf\xd1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 ..
 The creation of `*.pyc` files can be controlled in the same ways as on CPython
 (c.f. https://docs.python.org/3/using/cmdline.html):
 
-  * The GraalPython launcher (`graalpython`) reads the `PYTHONDONTWRITEBYTECODE`
+  * The GraalVM's Python launcher (`graalpython`) reads the `PYTHONDONTWRITEBYTECODE`
     environment variable - if this is set to a non-empty string, Python will not
     try to write `.pyc` files when importing modules.
   * The launcher command line option `-B`, if given, has the same effect as the
@@ -140,7 +140,7 @@ The creation of `*.pyc` files can be controlled in the same ways as on CPython
     module at runtime to change the location for subsequent imports.
 
 Since the embedder cannot use environment variables or CPython options to
-communicate these options to GraalPython, we make these options available as
+communicate these options to GraalVM's Python, we make these options available as
 these language options:
 
   * `python.DontWriteBytecodeFlag` - equivalent to `-B` or `PYTHONDONTWRITEBYTECODE`
@@ -151,14 +151,14 @@ these language options:
 > their location and if they should be written at all and both of these options
 > can be changed by guest code.
 
-> **Important**: By default a GraalPython context will not enable writing `.pyc`
+> **Important**: By default a GraalVM's Python context will not enable writing `.pyc`
 > files. The `graalpython` launcher enables it by default, but if this is
 > desired in the embedding use case, care should be taken to ensure that the
 > `__pycache__` location is properly managed and the files in that location are
 > secured against manipulation just like the source `.py` files they were
 > derived from.
 
-> **Important**: When upgrading application sources or GraalPython, old `.pyc`
+> **Important**: When upgrading application sources or GraalVM's Python, old `.pyc`
 > files must be removed by the embedder as required.
 
 ## Security Considerations
@@ -173,7 +173,7 @@ All file operations (obtaining the data, timestamps, and writing `pyc` files)
 are done through the Truffle FileSystem API. Embedders can modify all of these
 operations by means of custom (e.g. read-only) FileSystem implementations. The
 embedder can also effectively disable the creation of `.pyc` files by disabling
-I/O permissions for GraalPython.
+I/O permissions for GraalVM's Python.
 
 If the `.pyc` files are not readable, their location is not writable, or the
 `.pyc` files' serialization data or magic numbers are corrupted in any way, the

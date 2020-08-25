@@ -44,7 +44,6 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -77,7 +76,6 @@ public class PyTruffleObjectAlloc implements TruffleObject {
                     @Cached CastToJavaLongLossyNode castToJavaLongNode,
                     @Cached GetCurrentFrameRef getCurrentFrameRef,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                    @Cached GenericInvokeNode invokeNode,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
                     @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter) throws ArityException {
         if (arguments.length != 2) {
@@ -98,7 +96,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         // memory management
         PythonContext context = contextRef.get();
         CApiContext cApiContext = context.getCApiContext();
-        cApiContext.increaseMemoryPressure(invokeNode, objectSize);
+        cApiContext.increaseMemoryPressure(objectSize);
 
         boolean isLoggable = LOGGER.isLoggable(Level.FINER);
         boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);

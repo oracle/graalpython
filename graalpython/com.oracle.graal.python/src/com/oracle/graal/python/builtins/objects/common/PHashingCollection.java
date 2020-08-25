@@ -43,19 +43,17 @@ package com.oracle.graal.python.builtins.objects.common;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PHashingCollection extends PythonBuiltinObject {
 
-    public PHashingCollection(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public PHashingCollection(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     public abstract HashingStorage getDictStorage();
 
     public abstract void setDictStorage(HashingStorage newStorage);
-
-    public abstract int size();
 
     public HashingStorageIterable<Object> items() {
         return HashingStorageLibrary.getUncached().values(getDictStorage());

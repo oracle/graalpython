@@ -84,6 +84,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                           GetAttributeNodeGen SourceSection: [202,209]`os.path`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: path
+                                              CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
@@ -230,6 +231,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   GetAttributeNodeGen SourceSection: [544,551]`os.path`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: path
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None

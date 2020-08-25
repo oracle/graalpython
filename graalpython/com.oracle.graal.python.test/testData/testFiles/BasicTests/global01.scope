@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [c]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: add

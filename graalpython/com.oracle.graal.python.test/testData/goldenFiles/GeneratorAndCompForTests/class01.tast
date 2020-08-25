@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,192]`class OrderedDict(di...`
                 Name: OrderedDict
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [__reversed__, __class__]
+                FrameDescriptor: 1 slots [__reversed__]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,192]`class OrderedDict(di...`
                   ReturnTargetNode SourceSection: [0,192]`class OrderedDict(di...`
                     Body: BlockNode SourceSection: None
@@ -53,27 +53,27 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                               Index: 0
                           StringLiteralNode SourceSection: None
                           GeneratorFunctionDefinitionNode Name: __reversed__ SourceSection: None
-                            FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                            FrameDescriptor: 4 slots [self, root, curr, <return_val>]
                             Active Flags: 3
                             For Nodes: 0
                             Block Nodes: 2
                             Arguments: None
                             KwArguments: None
                             Documentation: None
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [29,192]`def __reversed__(sel...`
                               Name: __reversed__
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: self
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [self, root, curr, __class__, <return_val>]
+                              FrameDescriptor: 4 slots [self, root, curr, <return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [29,192]`def __reversed__(sel...`
                                 GeneratorReturnTargetNode SourceSection: [29,192]`def __reversed__(sel...`
@@ -87,6 +87,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNodeGen SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __root
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -101,6 +102,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         GetAttributeNodeGen SourceSection: [95,104]`root.prev`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: prev
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
@@ -117,6 +119,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                 GetAttributeNodeGen SourceSection: [155,163]`curr.key`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: key
+                                                    CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
@@ -132,6 +135,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                               GetAttributeNodeGen SourceSection: [183,192]`curr.prev`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: prev
+                                                  CachedDispatchFirst SourceSection: None
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
@@ -154,7 +158,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: self
@@ -165,14 +169,6 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         Index: 0
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [18,22]`dict`

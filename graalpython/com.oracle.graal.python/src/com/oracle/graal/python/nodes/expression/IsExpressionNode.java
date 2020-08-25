@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public abstract class IsExpressionNode extends BinaryOpNode {
     public static IsExpressionNode create(ExpressionNode left, ExpressionNode right) {
@@ -266,7 +268,15 @@ public abstract class IsExpressionNode extends BinaryOpNode {
                 RootCallTarget rightCt = right.getRootCallTarget();
                 if (leftCt != null && rightCt != null) {
                     // TODO: handle splitting, i.e., cloned root nodes
-                    return leftCt.getRootNode() == rightCt.getRootNode();
+                    RootNode leftRootNode = leftCt.getRootNode();
+                    RootNode rightRootNode = rightCt.getRootNode();
+                    if (leftRootNode instanceof GeneratorFunctionRootNode) {
+                        leftRootNode = ((GeneratorFunctionRootNode) leftRootNode).getFunctionRootNode();
+                    }
+                    if (rightRootNode instanceof GeneratorFunctionRootNode) {
+                        rightRootNode = ((GeneratorFunctionRootNode) rightRootNode).getFunctionRootNode();
+                    }
+                    return leftRootNode == rightRootNode;
                 } else {
                     return false;
                 }
@@ -300,13 +310,13 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             if (left == right) {
                 return true;
             }
-            if (lib.isForeignObject(left) || lib.isReflectedObject(left, left)) {
+            if (lib.isForeignObject(left)) {
                 // If left is foreign, this will check its identity via the interop message. If left
                 // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
                 // will not appear foreign, but the isSame call will unpack it from its wrapper and
                 // may lead straight back to this node, but this time with the unwrapped Python
                 // object that will no longer satisfy the isReflectedObject condition.
-                return lib.isSame(left, right);
+                return lib.isSame(lib.getDelegatedValue(left), right);
             }
             return false;
         }

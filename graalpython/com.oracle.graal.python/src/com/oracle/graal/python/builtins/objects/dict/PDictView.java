@@ -42,18 +42,20 @@ package com.oracle.graal.python.builtins.objects.dict;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
     private final PHashingCollection dict;
     private final String name;
 
-    public PDictView(Object clazz, DynamicObject storage, String name, PHashingCollection dict) {
-        super(clazz, storage);
+    public PDictView(Object clazz, Shape instanceShape, String name, PHashingCollection dict) {
+        super(clazz, instanceShape);
         this.name = name;
         assert dict != null;
         this.dict = dict;
@@ -63,8 +65,26 @@ public abstract class PDictView extends PythonBuiltinObject {
         return dict;
     }
 
-    public int size() {
-        return dict.size();
+    public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
+
+        protected final HashingStorage hashingStorage;
+
+        public PBaseDictIterator(Object clazz, Shape instanceShape, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, initialSize);
+            this.hashingStorage = hashingStorage;
+        }
+
+        public HashingStorage getHashingStorage() {
+            return hashingStorage;
+        }
+
+        public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
+            return this.next();
+        }
+
+        public final boolean checkSizeChanged(HashingStorageLibrary lib) {
+            return lib.length(hashingStorage) != size;
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -72,27 +92,16 @@ public abstract class PDictView extends PythonBuiltinObject {
     // the keys
     //
     // -----------------------------------------------------------------------------------------------------------------
-    public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
-
-        public PBaseDictIterator(Object clazz, DynamicObject storage, HashingStorageIterator<T> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, storage, iterator, hashingStorage, initialSize);
-        }
-
-        public Object next(@SuppressWarnings("unused") PythonObjectFactory factory) {
-            return this.next();
-        }
-    }
-
     public static final class PDictKeyIterator extends PBaseDictIterator<Object> {
-        public PDictKeyIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, storage, iterator, hashingStorage, initialSize);
+        public PDictKeyIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
 
     public static final class PDictKeysView extends PDictView {
 
-        public PDictKeysView(Object clazz, DynamicObject storage, PHashingCollection dict) {
-            super(clazz, storage, "dict_keys", dict);
+        public PDictKeysView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_keys", dict);
         }
     }
 
@@ -102,15 +111,15 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictValueIterator extends PBaseDictIterator<Object> {
-        public PDictValueIterator(Object clazz, DynamicObject storage, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, storage, iterator, hashingStorage, initialSize);
+        public PDictValueIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
     }
 
     public static final class PDictValuesView extends PDictView {
 
-        public PDictValuesView(Object clazz, DynamicObject storage, PHashingCollection dict) {
-            super(clazz, storage, "dict_values", dict);
+        public PDictValuesView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_values", dict);
         }
     }
 
@@ -120,21 +129,26 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictItemIterator extends PBaseDictIterator<DictEntry> {
-        public PDictItemIterator(Object clazz, DynamicObject storage, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
-            super(clazz, storage, iterator, hashingStorage, initialSize);
+        public PDictItemIterator(Object clazz, Shape instanceShape, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
+            super(clazz, instanceShape, iterator, hashingStorage, initialSize);
+        }
+
+        @CompilerDirectives.TruffleBoundary
+        private DictEntry nextVal() {
+            return (DictEntry) super.next();
         }
 
         @Override
         public Object next(PythonObjectFactory factory) {
-            DictEntry value = this.getIterator().next();
+            DictEntry value = nextVal();
             return factory.createTuple(new Object[]{value.getKey(), value.getValue()});
         }
     }
 
     public static final class PDictItemsView extends PDictView {
 
-        public PDictItemsView(Object clazz, DynamicObject storage, PHashingCollection dict) {
-            super(clazz, storage, "dict_items", dict);
+        public PDictItemsView(Object clazz, Shape instanceShape, PHashingCollection dict) {
+            super(clazz, instanceShape, "dict_items", dict);
         }
     }
 

@@ -422,6 +422,7 @@ class StructTest(unittest.TestCase):
         self.assertEqual(s.unpack_from(buffer=test_string, offset=2),
                          (b'cd01',))
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_pack_into(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -450,6 +451,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
                           None)
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_pack_into_fn(self):
         test_string = b'Reykjavik rocks, eow!'
         writable_buf = array.array('b', b' '*100)
@@ -473,6 +475,7 @@ class StructTest(unittest.TestCase):
         self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
                           test_string)
 
+    @support.impl_detail(msg="not yet supported: GR-21120 array buffer protocol", graalvm=False)
     def test_unpack_with_buffer(self):
         # SF bug 1563759: struct.unpack doesn't support buffer protocol objects
         data1 = array.array('B', b'\x12\x34\x56\x78')
@@ -525,6 +528,8 @@ class StructTest(unittest.TestCase):
         for c in [b'\x01', b'\x7f', b'\xff', b'\x0f', b'\xf0']:
             self.assertTrue(struct.unpack('>?', c)[0])
 
+    @support.impl_detail(msg="not yet supported: sys.maxsize difference Java -> C, does not overflow defined as "
+                             "Integer.MAX_VALUE < size_t size", graalvm=False)
     def test_count_overflow(self):
         hugecount = '{}b'.format(sys.maxsize+1)
         self.assertRaises(struct.error, struct.calcsize, hugecount)
@@ -658,6 +663,13 @@ class StructTest(unittest.TestCase):
         # use a bytes string
         s2 = struct.Struct(s.format.encode())
         self.assertEqual(s2.format, s.format)
+
+    def test_issue35714(self):
+        # Embedded null characters should not be allowed in format strings.
+        for s in '\0', '2\0i', b'\0':
+            with self.assertRaisesRegex(struct.error,
+                                        'embedded null character'):
+                struct.calcsize(s)
 
 
 class UnpackIteratorTest(unittest.TestCase):

@@ -90,7 +90,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         @Specialization(guards = "compareStrings(key, cachedKey)", limit = "2")
-        protected Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") String key,
+        protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("create(key)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
@@ -106,7 +106,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected Object lookup(Object klass, Object key,
+        protected static Object lookup(Object klass, Object key,
                         @Cached("create()") GetMroStorageNode getMroNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return lookupSlow(klass, key, getMroNode, readAttrNode, false);
@@ -117,6 +117,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncachedForceType();
         private final GetMroStorageNode getMroNode = GetMroStorageNode.getUncached();
 
+        @TruffleBoundary
         @Override
         public Object execute(Object klass, Object key) {
             if (klass instanceof PythonBuiltinClassType) {
@@ -183,7 +184,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getCore(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
@@ -228,13 +229,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = {"cachedClassInMROInfo.assumption", "singleContextAssumption()"})
-    protected Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
+    protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
         return cachedClassInMROInfo.value;
     }
 
-    protected ReadAttributeFromObjectNode[] create(int size) {
+    protected static ReadAttributeFromObjectNode[] create(int size) {
         ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
         for (int i = 0; i < size; i++) {
             nodes[i] = ReadAttributeFromObjectNode.createForceType();
@@ -283,7 +284,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return ensureGetMroNode().execute(clazz);
     }
 
-    private static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
+    public static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);

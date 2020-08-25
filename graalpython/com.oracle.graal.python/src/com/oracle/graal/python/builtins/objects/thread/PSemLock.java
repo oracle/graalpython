@@ -44,7 +44,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PSemLock extends AbstractPythonLock {
     public static final int RECURSIVE_MUTEX = 0;
@@ -57,8 +57,8 @@ public final class PSemLock extends AbstractPythonLock {
     private int lastThreadID = -1;
     private int count;
 
-    public PSemLock(Object cls, DynamicObject storage, String name, int kind, Semaphore sharedSemaphore) {
-        super(cls, storage);
+    public PSemLock(Object cls, Shape instanceShape, String name, int kind, Semaphore sharedSemaphore) {
+        super(cls, instanceShape);
         this.name = name;
         this.semaphore = sharedSemaphore;
         this.kind = kind;

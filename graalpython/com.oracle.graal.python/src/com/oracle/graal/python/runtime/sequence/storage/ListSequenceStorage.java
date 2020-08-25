@@ -88,6 +88,11 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
     public PList[] getInternalListArray() {
         return values;
     }

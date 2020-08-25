@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -93,12 +92,12 @@ public class ClassmethodBuiltins extends PythonBuiltins {
          * {@code null}. So if it ever was not null and we cached that, it is being held alive by
          * the {@code self} argument now and there cannot be a race.
          */
-        @Specialization(guards = {"isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"isNoValue(type)", "cachedSelf == self"}, assumptions = "singleContextAssumption()")
         Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
-                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable,
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Cached GetClassNode getClass) {
-            return makeMethod.execute(getClass.execute(obj), cachedCallable.get());
+            return makeMethod.execute(getClass.execute(obj), cachedCallable);
         }
 
         @Specialization(guards = "isNoValue(type)", replaces = "getCached")
@@ -111,11 +110,11 @@ public class ClassmethodBuiltins extends PythonBuiltins {
         /**
          * @see #getCached
          */
-        @Specialization(guards = {"!isNoValue(type)", "cachedSelf.is(self)", "cachedCallable.notNull()"}, assumptions = "singleContextAssumption()")
+        @Specialization(guards = {"!isNoValue(type)", "cachedSelf == self"}, assumptions = "singleContextAssumption()")
         Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @SuppressWarnings("unused") @Cached("weak(self)") WeakASTReference cachedSelf,
-                        @SuppressWarnings("unused") @Cached("weak(self.getCallable())") WeakASTReference cachedCallable) {
-            return makeMethod.execute(type, cachedCallable.get());
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable) {
+            return makeMethod.execute(type, cachedCallable);
         }
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")

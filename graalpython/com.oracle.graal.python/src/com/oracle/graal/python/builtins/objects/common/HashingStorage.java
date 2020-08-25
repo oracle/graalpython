@@ -205,7 +205,7 @@ public abstract class HashingStorage {
         }
 
         protected boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
-            Object attr = lib.lookupAttribute(col, SpecialMethodNames.__ITER__);
+            Object attr = lib.lookupAttributeOnType(col, SpecialMethodNames.__ITER__);
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
@@ -580,11 +580,15 @@ public abstract class HashingStorage {
         return new HashingStorageIterable<>(new ValuesIterator(this, lib.reverseKeys(this).iterator(), lib));
     }
 
-    private static final class ValuesIterator implements Iterator<Object> {
+    protected static final class ValuesIterator implements Iterator<Object> {
         private final Iterator<DictEntry> entriesIterator;
 
         ValuesIterator(HashingStorage self, HashingStorageIterator<Object> keysIterator, HashingStorageLibrary lib) {
             this.entriesIterator = new EntriesIterator(self, keysIterator, lib);
+        }
+
+        protected Iterator<DictEntry> getIterator() {
+            return entriesIterator;
         }
 
         @Override
@@ -608,7 +612,7 @@ public abstract class HashingStorage {
         return new HashingStorageIterable<>(new EntriesIterator(this, lib.reverseKeys(this).iterator(), lib));
     }
 
-    private static final class EntriesIterator implements Iterator<DictEntry> {
+    protected static final class EntriesIterator implements Iterator<DictEntry> {
         private final HashingStorageIterator<Object> keysIterator;
         private final HashingStorage self;
         private final HashingStorageLibrary lib;
@@ -617,6 +621,10 @@ public abstract class HashingStorage {
             this.self = self;
             this.lib = lib;
             this.keysIterator = keysIterator;
+        }
+
+        protected HashingStorageIterator<Object> getKeysIterator() {
+            return keysIterator;
         }
 
         @Override
@@ -686,13 +694,11 @@ public abstract class HashingStorage {
         try {
             while (true) {
                 Object next = nextNode.execute(frame, it);
-                PSequence element = null;
-                int len = 1;
-                element = createListNode.execute(next);
+                PSequence element = createListNode.execute(next);
                 assert element != null;
                 // This constructs a new list using the builtin type. So, the object cannot
                 // be subclassed and we can directly call 'len()'.
-                len = seqLenNode.execute(element);
+                int len = seqLenNode.execute(element);
 
                 if (lengthTwoProfile.profile(len != 2)) {
                     throw raise.raise(ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, arrayListSize(elements), len);

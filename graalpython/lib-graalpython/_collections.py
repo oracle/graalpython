@@ -33,6 +33,7 @@ CENTER = ((BLOCKLEN - 1) // 2)
 class Block(object):
     __slots__ = ('leftlink', 'rightlink', 'data')
 
+    @__graalpython__.builtin_method
     def __init__(self, leftlink, rightlink):
         self.leftlink = leftlink
         self.rightlink = rightlink
@@ -68,6 +69,7 @@ def _next_or_none(_iter):
 
 
 class deque(object):
+    @__graalpython__.builtin_method
     def __init__(self, iterable=None, maxlen=None):
         if maxlen is None:
             self._maxlen = sys.maxsize
@@ -90,6 +92,7 @@ class deque(object):
             self.extend(iterable)
 
     def synchronized(fun):
+        @__graalpython__.builtin_method
         def fun_synchronized(self, *args):
             with self._mutex:
                 return fun(self, *args)
@@ -121,14 +124,17 @@ class deque(object):
         self._modified()
         return obj
 
+    @__graalpython__.builtin_method
     def _modified(self):
         self._lock = None
 
+    @__graalpython__.builtin_method
     def _getlock(self):
         if self._lock is None:
             self._lock = Lock()
         return self._lock
 
+    @__graalpython__.builtin_method
     def _checklock(self, lock):
         if lock is not self._lock:
             raise RuntimeError("deque mutated during iteration")
@@ -225,25 +231,31 @@ class deque(object):
                 break
             self.append(obj)
 
+    @__graalpython__.builtin_method
     def __iadd__(self, other):
         return _add(self, other)
 
+    @__graalpython__.builtin_method
     def __add__(self, other):
         if not isinstance(other, deque):
             raise TypeError("can only concatenate deque (not '%s') to deque" % (type(other)))
         return _add(deque(self, maxlen=self.maxlen), other)
 
+    @__graalpython__.builtin_method
     def __imul__(self, times):
         return _mul(self, times)
 
+    @__graalpython__.builtin_method
     def __mul__(self, times):
         return _mul(deque(self, maxlen=self.maxlen), times)
 
+    @__graalpython__.builtin_method
     def __rmul__(self, times):
         return _mul(deque(self, maxlen=self.maxlen), times)
 
+    @__graalpython__.builtin_method
     def __hash__(self):
-        raise TypeError("unhashable type: '%s'" % self.__name__)
+        raise TypeError("unhashable type: '{}'".format(type(self).__name__))
 
     @synchronized
     def extendleft(self, iterable):
@@ -343,16 +355,20 @@ class deque(object):
             self.append(self.popleft())
             i -= 1
 
+    @__graalpython__.builtin_method
     def __iter__(self):
         return _DequeIter(self)
 
+    @__graalpython__.builtin_method
     def __reversed__(self):
         """Return a reverse iterator over the deque."""
         return _DequeRevIter(self)
 
+    @__graalpython__.builtin_method
     def __len__(self):
         return self.len
 
+    @__graalpython__.builtin_method
     def __repr__(self):
         # TODO: this does not handle infinite repr recursive calls ... (GR-10763)
         try:
@@ -405,6 +421,7 @@ class deque(object):
                     return x1 >= x2
                 assert False, "bad value for op"
 
+    @__graalpython__.builtin_method
     def __contains__(self, v):
         lock = self._getlock()
         n = self.len
@@ -427,6 +444,7 @@ class deque(object):
 
         return False
 
+    @__graalpython__.builtin_method
     def _norm_index(self, idx, force_index_to_zero=True):
         if idx < 0:
             idx += self.len
@@ -434,6 +452,7 @@ class deque(object):
                 idx = 0
         return idx
 
+    @__graalpython__.builtin_method
     def _check_index(self, idx):
         if idx < 0 or idx >= self.len:
             raise IndexError("deque index out of range")
@@ -482,24 +501,31 @@ class deque(object):
 
         raise ValueError("%s is not in deque" % v)
 
+    @__graalpython__.builtin_method
     def __lt__(self, other):
         return self.__compare__(other, 'lt')
 
+    @__graalpython__.builtin_method
     def __le__(self, other):
         return self.__compare__(other, 'le')
 
+    @__graalpython__.builtin_method
     def __eq__(self, other):
         return self.__compare__(other, 'eq')
 
+    @__graalpython__.builtin_method
     def __ne__(self, other):
         return self.__compare__(other, 'ne')
 
+    @__graalpython__.builtin_method
     def __gt__(self, other):
         return self.__compare__(other, 'gt')
 
+    @__graalpython__.builtin_method
     def __ge__(self, other):
         return self.__compare__(other, 'ge')
 
+    @__graalpython__.builtin_method
     def _locate(self, i):
         if i < (self.len >> 1):
             i += self.leftindex
@@ -517,6 +543,7 @@ class deque(object):
         assert i >= 0
         return b, i
 
+    @__graalpython__.builtin_method
     def delitem(self, i):
         # delitem() implemented in terms of rotate for simplicity and
         # reasonable performance near the end points.
@@ -524,18 +551,21 @@ class deque(object):
         self.popleft()
         self.rotate(i)
 
+    @__graalpython__.builtin_method
     def __getitem__(self, idx):
         idx = self._norm_index(idx)
         self._check_index(idx)
         b, i = self._locate(idx)
         return b.data[i]
 
+    @__graalpython__.builtin_method
     def __setitem__(self, idx, value):
         idx = self._norm_index(idx, force_index_to_zero=False)
         self._check_index(idx)
         b, i = self._locate(idx)
         b.data[i] = value
 
+    @__graalpython__.builtin_method
     def __delitem__(self, idx):
         idx = self._norm_index(idx, force_index_to_zero=False)
         self._check_index(idx)
@@ -549,9 +579,11 @@ class deque(object):
         else:
             return deque(self, self.maxlen)
 
+    @__graalpython__.builtin_method
     def __copy__(self):
         return self.copy()
 
+    @__graalpython__.builtin_method
     def __reduce__(self):
         """Return state information for pickling."""
         _type = type(self)
@@ -581,6 +613,7 @@ class deque(object):
 
 
 class _DequeIter(object):
+    @__graalpython__.builtin_method
     def __init__(self, dq):
         self._deque = dq
         self.block = dq.leftblock
@@ -589,12 +622,15 @@ class _DequeIter(object):
         self.lock = dq._getlock()
         assert self.index >= 0
 
+    @__graalpython__.builtin_method
     def __iter__(self):
         return self
 
+    @__graalpython__.builtin_method
     def __len__(self):
         return self.counter
 
+    @__graalpython__.builtin_method
     def __next__(self):
         if self.lock is not self._deque._lock:
             self.counter = 0
@@ -613,6 +649,7 @@ class _DequeIter(object):
 
 
 class _DequeRevIter(object):
+    @__graalpython__.builtin_method
     def __init__(self, dq):
         self._deque = dq
         self.block = dq.rightblock
@@ -621,12 +658,15 @@ class _DequeRevIter(object):
         self.lock = dq._getlock()
         assert self.index >= 0
 
+    @__graalpython__.builtin_method
     def __iter__(self):
         return self
 
+    @__graalpython__.builtin_method
     def __len__(self):
         return self.counter
 
+    @__graalpython__.builtin_method
     def __next__(self):
         if self.lock is not self._deque._lock:
             self.counter = 0
@@ -645,6 +685,7 @@ class _DequeRevIter(object):
 
 
 class defaultdict(dict):
+    @__graalpython__.builtin_method
     def __init__(self, default_factory=None, *args, **kwds):
         dict.__init__(self, *args, **kwds)
         if (default_factory is None or callable(default_factory)):
@@ -652,15 +693,18 @@ class defaultdict(dict):
         else:
             raise TypeError("first argument must be callable or None")
 
+    @__graalpython__.builtin_method
     def __missing__(self, key):
         if self.default_factory is None:
             raise KeyError(key)
         self[key] = value = self.default_factory()
         return value
 
+    @__graalpython__.builtin_method
     def __repr__(self):
         return "%s(%r, %s)" % (type(self).__name__, self.default_factory, dict.__repr__(self))
 
+    @__graalpython__.builtin_method
     def copy(self):
         cp = defaultdict(default_factory=self.default_factory)
         for k,v in self.items():

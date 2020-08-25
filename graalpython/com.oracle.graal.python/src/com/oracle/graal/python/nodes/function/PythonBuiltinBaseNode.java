@@ -46,8 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -56,7 +54,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.util.ExceptionStateNodes.PassCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -76,7 +73,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
     @Child private PRaiseOSErrorNode raiseOSNode;
-    @Child private PassCaughtExceptionNode passExceptionNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
     private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -127,16 +123,12 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getContext().getCore();
     }
 
-    public final PythonAbstractClass getPythonClass(Object lazyClass, ConditionProfile profile) {
+    public final Object getPythonClass(Object lazyClass, ConditionProfile profile) {
         if (profile.profile(lazyClass instanceof PythonBuiltinClassType)) {
             return getCore().lookupType((PythonBuiltinClassType) lazyClass);
         } else {
-            return (PythonAbstractClass) lazyClass;
+            return lazyClass;
         }
-    }
-
-    public final PythonBuiltinClass getBuiltinPythonClass(PythonBuiltinClassType type) {
-        return getCore().lookupType(type);
     }
 
     protected final ContextReference<PythonContext> getContextRef() {
@@ -149,14 +141,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
 
     public final PythonContext getContext() {
         return getContextRef().get();
-    }
-
-    protected final PException passException(VirtualFrame frame) {
-        if (passExceptionNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            passExceptionNode = insert(PassCaughtExceptionNode.create());
-        }
-        return passExceptionNode.execute(frame);
     }
 
     public PException raise(PythonBuiltinClassType type, String string) {

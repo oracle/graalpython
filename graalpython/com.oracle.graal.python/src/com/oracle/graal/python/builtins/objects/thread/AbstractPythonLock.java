@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
@@ -49,8 +49,8 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
     public static final boolean DEFAULT_BLOCKING = true;
     public static final double UNSET_TIMEOUT = -1.0;
 
-    AbstractPythonLock(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    AbstractPythonLock(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
     private static long getTimeoutInMillis(double timeout) {

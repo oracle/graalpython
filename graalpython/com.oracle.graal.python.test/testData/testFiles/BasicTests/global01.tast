@@ -2,12 +2,14 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
-  FrameDescriptor: 1 slots [c]
+  FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,137]`c = 0 # global varia...`
     ExpressionWithSideEffects SourceSection: [0,137]`c = 0 # global varia...`
-      WriteNameNodeGen SourceSection: [0,5]`c = 0`
+      WriteGlobalNodeGen SourceSection: [0,5]`c = 0`
         Identifier: c
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
         IntegerLiteralNode SourceSection: [4,5]`0`
           Value: 0
       WriteNameNodeGen SourceSection: [25,111]`def add():↵    globa...`
@@ -76,7 +78,6 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
           IsBuiltinClassProfile SourceSection: None
             CachedDispatchFirst SourceSection: None
         StringLiteralNode SourceSection: [123,133]`"In main:"`
-        ReadNameNodeGen SourceSection: [135,136]`c`
+        ReadGlobalOrBuiltinNodeGen SourceSection: [135,136]`c`
           Identifier: c
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

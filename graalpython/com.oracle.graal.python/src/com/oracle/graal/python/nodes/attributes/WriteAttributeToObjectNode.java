@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -132,7 +133,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
         handlePythonClass(isClassProfile, object, key);
-        PHashingCollection dict = lib.getDict(object);
+        PDict dict = lib.getDict(object);
         HashingStorage dictStorage = getDictStorage.execute(dict);
         HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
         if (dictStorage != hashingStorage) {
@@ -198,7 +199,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile) {
             handlePythonClass(isClassProfile, object, key);
-            PHashingCollection dict = lib.getDict(object);
+            PDict dict = lib.getDict(object);
             return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
         }
 
@@ -208,7 +209,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                         @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
                         @Cached CallNode callSetItem,
                         @Cached PRaiseNode raiseNode) {
-            PHashingCollection nativeDict = lib.getDict(object);
+            PDict nativeDict = lib.getDict(object);
             return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, nativeDict);
         }
 

@@ -29,38 +29,44 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PBaseSet extends PHashingCollection {
 
-    private HashingStorage set;
+    protected HashingStorage set;
 
-    public PBaseSet(Object clazz, DynamicObject storage) {
-        super(clazz, storage);
+    public PBaseSet(Object clazz, Shape instanceShape) {
+        super(clazz, instanceShape);
         this.set = EconomicMapStorage.create();
     }
 
-    public PBaseSet(Object clazz, DynamicObject storage, HashingStorage set) {
-        super(clazz, storage);
+    public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
+        super(clazz, instanceShape);
         this.set = set;
     }
 
-    public final boolean contains(Object key) {
-        return HashingStorageLibrary.getUncached().hasKey(set, key);
-    }
-
     @Override
-    public int size() {
-        return HashingStorageLibrary.getUncached().length(set);
-    }
-
-    @Override
-    public HashingStorage getDictStorage() {
+    public final HashingStorage getDictStorage() {
         return set;
     }
 
     @Override
     public void setDictStorage(HashingStorage storage) {
         set = storage;
+    }
+
+    @ExportMessage(limit = "1")
+    public int lengthWithState(PArguments.ThreadState state,
+                    @CachedLibrary("this.set") HashingStorageLibrary lib) {
+        return lib.lengthWithState(set, state);
+    }
+
+    @ExportMessage(limit = "1")
+    public int length(
+                    @CachedLibrary("this.set") HashingStorageLibrary lib) {
+        return lib.length(set);
     }
 }

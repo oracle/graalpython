@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -98,7 +99,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray add(PByteArray self, PIBytesLike other,
+        public PByteArray add(PByteArray self, PBytesLike other,
                         @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             updateSequenceStorage(self, res);
@@ -151,8 +152,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone doGeneric(VirtualFrame frame, PByteArray byteArray, Object source,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
-            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source);
+            int len = lenNode.execute(frame, source);
+            SequenceStorage execute = extendNode.execute(frame, byteArray.getSequenceStorage(), source, len);
             assert byteArray.getSequenceStorage() == execute;
             return PNone.NONE;
         }
@@ -206,7 +209,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SplitLinesNode extends BytesBuiltins.SplitLinesNode {
         @Override
-        protected PIBytesLike createElement(byte[] bytes) {
+        protected PBytesLike createElement(byte[] bytes) {
             return factory().createByteArray(bytes);
         }
     }

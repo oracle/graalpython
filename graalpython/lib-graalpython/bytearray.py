@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -46,5 +46,5 @@ def strip(self, what=None):
     return self.lstrip(what).rstrip(what)
 
 
-bytearray.strip = strip
+bytearray.strip = __graalpython__.builtin_method(strip)
 bytearray.rfind = bytes.rfind

@@ -41,10 +41,13 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject.LookupAttributeNode;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -54,10 +57,12 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
 final class DefaultPythonIntegerExports {
@@ -88,12 +93,12 @@ final class DefaultPythonIntegerExports {
 
     @ExportMessage
     static long hash(Integer value) {
-        return value;
+        return hash(value.intValue());
     }
 
     @Ignore
     static long hash(int value) {
-        return value;
+        return value == -1 ? -2 : value;
     }
 
     @ExportMessage
@@ -200,7 +205,7 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static boolean iI(Integer receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return other.compareTo((int) receiver) == 0;
+            return oLib.equals(other, receiver, oLib);
         }
 
         @Specialization
@@ -280,8 +285,43 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    public static Object lookupAttribute(Integer x, String name, boolean inheritedOnly,
-                    @Exclusive @Cached LookupAttributeNode lookup) {
-        return lookup.execute(x, name, inheritedOnly);
+    static Object lookupAttributeInternal(Integer receiver, ThreadState state, String name, boolean strict,
+                    @Cached ConditionProfile gotState,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeNode lookup) {
+        VirtualFrame frame = null;
+        if (gotState.profile(state != null)) {
+            frame = PArguments.frameForCall(state);
+        }
+        return lookup.execute(frame, receiver, name, strict);
+    }
+
+    @ExportMessage
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Integer receiver, String name, boolean strict,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup) {
+        return lookup.execute(PythonBuiltinClassType.PInt, name, strict);
+    }
+
+    @ExportMessage
+    static Object lookupAndCallSpecialMethodWithState(Integer receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(receiver, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, receiver, arguments);
+    }
+
+    @ExportMessage
+    static Object lookupAndCallRegularMethodWithState(Integer receiver, ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    static boolean typeCheck(@SuppressWarnings("unused") Integer receiver, Object type,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtypeNode) {
+        Object instanceClass = PythonBuiltinClassType.PInt;
+        return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
     }
 }

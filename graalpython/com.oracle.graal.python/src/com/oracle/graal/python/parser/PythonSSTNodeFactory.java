@@ -85,16 +85,25 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonSSTNodeFactory {
 
+    /**
+     * Service that allows parsing expressions found inside f-strings to SST nodes.
+     */
+    public interface FStringExprParser {
+        SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory);
+    }
+
     private final NodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
+    private FStringExprParser fStringExprParser;
 
-    public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source) {
+    public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
         this.nodeFactory = NodeFactory.create(errors.getLanguage());
         this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
         this.source = source;
+        this.fStringExprParser = fStringExprParser;
     }
 
     public ScopeEnvironment getScopeEnvironment() {
@@ -102,7 +111,20 @@ public final class PythonSSTNodeFactory {
     }
 
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
-        scopeEnvironment.createLocal(asName == null ? name : asName);
+        String varName;
+        if (asName != null) {
+            varName = asName;
+        } else {
+            // checking if the name is not something like module.submodule
+            int dotIndex = name.indexOf('.');
+            if (dotIndex == -1) {
+                varName = name;
+            } else {
+                // create local variable just for the top module
+                varName = name.substring(0, dotIndex);
+            }
+        }
+        scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
     }
 
@@ -139,7 +161,8 @@ public final class PythonSSTNodeFactory {
                 throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_GLOBAL, name);
             }
             scopeInfo.addExplicitGlobalVariable(name);
-            globalScope.createSlotIfNotPresent(name);
+            // place the global variable into global space, see test_global_statemnt.py
+            globalScope.addExplicitGlobalVariable(name);
         }
         return new SimpleSSTNode(SimpleSSTNode.Type.EMPTY, startOffset, endOffset);
     }
@@ -188,9 +211,6 @@ public final class PythonSSTNodeFactory {
     }
 
     public SSTNode createAnnAssignment(SSTNode lhs, SSTNode type, SSTNode rhs, int start, int end) {
-        if (lhs instanceof CollectionSSTNode) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), "only single target (not tuple) can be annotated");
-        }
         declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
@@ -266,7 +286,7 @@ public final class PythonSSTNodeFactory {
     }
 
     public StringLiteralSSTNode createStringLiteral(String[] values, int startOffset, int endOffset) {
-        return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors);
+        return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors, this, fStringExprParser);
     }
 
     public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {

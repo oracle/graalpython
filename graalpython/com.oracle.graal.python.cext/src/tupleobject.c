@@ -77,26 +77,19 @@ PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
 
 NO_INLINE
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
+    va_list vargs;
+    va_start(vargs, n);
     PyObject *result = PyTuple_New(n);
     if (result == NULL) {
-        return NULL;
+        goto end;
     }
     for (int i = 0; i < n; i++) {
-        PyObject *o = polyglot_get_arg(i+1);
+        PyObject *o = va_arg(vargs, PyObject *);
         Py_XINCREF(o);
         PyTuple_SetItem(result, i, o);
     }
-    return result;
-}
-
-MUST_INLINE
-PyObject* PyTruffle_Tuple_Pack(int dummy, va_list vlist, void **argv, int argc) {
-    PyObject *result = PyTuple_New(argc);
-    for (int i = 0; i < argc; i++) {
-        PyObject *o = (PyObject*) argv[i];
-        Py_XINCREF(o);
-        PyTuple_SetItem(result, i, o);
-    }
+ end:
+    va_end(vargs);
     return result;
 }
 

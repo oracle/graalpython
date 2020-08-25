@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -33,6 +35,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -47,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -62,6 +66,25 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FrameBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        String repr(VirtualFrame frame, PFrame self,
+                        @Cached GetCodeNode getCodeNode,
+                        @Cached GetLinenoNode getLinenoNode) {
+            PCode code = getCodeNode.executeObject(frame, self);
+            int lineno = getLinenoNode.executeInt(frame, self);
+            return getFormat(self, code, lineno);
+        }
+
+        @TruffleBoundary
+        private static String getFormat(PFrame self, PCode code, int lineno) {
+            return String.format("<frame at 0x%x, file '%s', line %d, code %s>",
+                            self.hashCode(), code.getFilename(), lineno, code.getName());
+        }
     }
 
     @Builtin(name = "f_globals", minNumOfPositionalArgs = 1, isGetter = true)
@@ -102,9 +125,25 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_lineno", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
+        public abstract int executeInt(VirtualFrame frame, PFrame self);
+
         @Specialization
-        int get(PFrame self) {
+        int get(VirtualFrame frame, PFrame self,
+                        @Cached ConditionProfile isCurrentFrameProfile,
+                        @Cached MaterializeFrameNode materializeNode) {
+            // Special case because this builtin can be called without going through an invoke node:
+            // we need to sync the location of the frame if and only if 'self' represents the
+            // current frame. If 'self' represents another frame on the stack, the location is
+            // already set
+            if (isCurrentFrameProfile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+                PFrame pyFrame = materializeNode.execute(frame, this, false, false);
+                assert pyFrame == self;
+            }
             return self.getLine();
+        }
+
+        public static GetLinenoNode create() {
+            return FrameBuiltinsFactory.GetLinenoNodeFactory.create(null);
         }
     }
 
@@ -131,8 +170,10 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_code", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
+        public abstract PCode executeObject(VirtualFrame frame, PFrame self);
+
         @Specialization
-        Object get(VirtualFrame frame, PFrame self,
+        PCode get(VirtualFrame frame, PFrame self,
                         @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
             RootCallTarget ct = self.getTarget();
             if (ct != null) {
@@ -143,6 +184,10 @@ public final class FrameBuiltins extends PythonBuiltins {
             return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0],
                             "<internal>",
                             "<internal>", -1, new byte[0]);
+        }
+
+        public static GetCodeNode create() {
+            return FrameBuiltinsFactory.GetCodeNodeFactory.create(null);
         }
     }
 
@@ -159,7 +204,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             // we need to sync the values of the frame if and only if 'self' represents the current
             // frame. If 'self' represents another frame on the stack, the values are already
             // refreshed.
-            if (profile.profile(PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
+            if (profile.profile(frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
                 PFrame pyFrame = materializeNode.execute(frame, false, true, frame);
                 assert pyFrame == self;
             }

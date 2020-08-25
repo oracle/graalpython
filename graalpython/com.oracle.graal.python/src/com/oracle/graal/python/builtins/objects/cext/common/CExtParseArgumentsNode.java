@@ -54,10 +54,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
@@ -83,7 +85,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
@@ -97,7 +98,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -379,18 +379,18 @@ public abstract class CExtParseArgumentsNode {
                 /* format_idx++; */
                 // 'y*'; output to 'Py_buffer*'
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
+                    Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), pybufferPtr, true);
                 }
             } else {
                 // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
                 // 'get_buffer_r' and output the buffer's data pointer
-                getVaArgNode.execute(varargs, state.outIndex);
+                getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                 if (isLookahead(format, format_idx, '#')) {
                     /* format_idx++; */
                     // 'y#'
                     // TODO(fa) additionally store size
-                    getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     state = state.incrementOutIndex();
                 }
             }
@@ -415,7 +415,7 @@ public abstract class CExtParseArgumentsNode {
                 /* format_idx++; */
                 // 's*' or 'z*'
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    getVaArgNode.execute(varargs, state.outIndex);
+                    getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     // TODO(fa) create Py_buffer
                 }
             } else if (isLookahead(format, format_idx, '#')) {
@@ -423,12 +423,12 @@ public abstract class CExtParseArgumentsNode {
                 // 's#' or 'z#'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
                         state = state.incrementOutIndex();
                         writeOutVarNode.writeInt32(varargs, state.outIndex, 0);
                     } else if (PGuards.isString(arg)) {
                         // TODO(fa) we could use CStringWrapper to do the copying lazily
-                        writeOutVarNode.writePointer(varargs, state.outIndex, asCharPointerNode.execute(arg));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
                         state = state.incrementOutIndex();
                         writeOutVarNode.writeInt64(varargs, state.outIndex, (long) stringLenNode.execute(arg));
                     } else {
@@ -439,10 +439,10 @@ public abstract class CExtParseArgumentsNode {
                 // 's' or 'z'
                 if (!skipOptionalArg(arg, state.restOptional)) {
                     if (z && PGuards.isPNone(arg)) {
-                        writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(getNativeNullNode.execute()));
                     } else if (PGuards.isString(arg)) {
                         // TODO(fa) we could use CStringWrapper to do the copying lazily
-                        writeOutVarNode.writePointer(varargs, state.outIndex, asCharPointerNode.execute(arg));
+                        writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
                     } else {
                         throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_GOT_P, z ? "str or None" : "str", arg);
                     }
@@ -464,7 +464,7 @@ public abstract class CExtParseArgumentsNode {
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PBytes)) {
-                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, arg);
                 }
@@ -485,7 +485,7 @@ public abstract class CExtParseArgumentsNode {
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PByteArray)) {
-                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "bytearray", arg);
                 }
@@ -506,7 +506,7 @@ public abstract class CExtParseArgumentsNode {
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
                 if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PString)) {
-                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "str", arg);
                 }
@@ -880,26 +880,26 @@ public abstract class CExtParseArgumentsNode {
             if (isLookahead(format, format_idx, '!')) {
                 /* format_idx++; */
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object typeObject = typeToJavaNode.execute(getVaArgNode.execute(varargs, state.outIndex));
+                    Object typeObject = typeToJavaNode.execute(getVaArgNode.getPyObjectPtr(varargs, state.outIndex));
                     state = state.incrementOutIndex();
                     assert PGuards.isClass(typeObject, lib);
                     if (!isSubtypeNode.execute(plib.getLazyPythonClass(arg), typeObject)) {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, typeObject, arg);
                         throw ParseArgumentsException.raise();
                     }
-                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 }
             } else if (isLookahead(format, format_idx, '&')) {
                 /* format_idx++; */
-                Object converter = getVaArgNode.execute(varargs, state.outIndex);
+                Object converter = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                 state = state.incrementOutIndex();
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    Object output = getVaArgNode.execute(varargs, state.outIndex);
+                    Object output = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     executeConverterNode.execute(state.nativeContext.getSupplier(), state.outIndex, converter, arg, output);
                 }
             } else {
                 if (!skipOptionalArg(arg, state.restOptional)) {
-                    writeOutVarNode.writePointer(varargs, state.outIndex, toNativeNode.execute(arg));
+                    writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 }
             }
             return state.incrementOutIndex();
@@ -919,7 +919,7 @@ public abstract class CExtParseArgumentsNode {
 
             }
             if (!skipOptionalArg(arg, state.restOptional)) {
-                Object pybufferPtr = getVaArgNode.execute(varargs, state.outIndex);
+                Object pybufferPtr = getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                 getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, toNativeNode.execute(arg), pybufferPtr, false);
             }
             return state.incrementOutIndex();
@@ -1170,125 +1170,104 @@ public abstract class CExtParseArgumentsNode {
      * It is important to use the appropriate {@code write*} functions!
      */
     @GenerateUncached
+    @ImportStatic(LLVMType.class)
     abstract static class WriteOutVarNode extends Node {
-        static final int TYPE_I8 = 0;
-        static final int TYPE_I16 = 1;
-        static final int TYPE_I32 = 2;
-        static final int TYPE_I64 = 3;
-        static final int TYPE_U8 = 4;
-        static final int TYPE_U16 = 5;
-        static final int TYPE_U32 = 6;
-        static final int TYPE_U64 = 7;
-        static final int TYPE_DOUBLE = 8;
-        static final int TYPE_FLOAT = 9;
-        static final int TYPE_VOIDPTR = 10;
-        static final int TYPE_COMPLEX = 11;
 
-        @CompilationFinal(dimensions = 1) private static final String[] MAP = new String[]{"i8", "i16", "i32", "i64", "u8", "i16", "u32", "u64", "d", "f", "ptr", "ptr", "c"};
-
-        public final void writeUInt8(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_U8, value);
+        public final void writeUInt8(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.uint8_ptr_t, value);
         }
 
-        public final void writeInt8(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_I8, value);
+        public final void writeInt8(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.int8_ptr_t, value);
         }
 
-        public final void writeUInt16(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_U16, value);
+        public final void writeUInt16(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.uint16_ptr_t, value);
         }
 
-        public final void writeInt16(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_I16, value);
+        public final void writeInt16(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.int16_ptr_t, value);
         }
 
-        public final void writeInt32(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_I32, value);
+        public final void writeInt32(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.int32_ptr_t, value);
         }
 
-        public final void writeUInt32(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_U32, value);
+        public final void writeUInt32(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.uint32_ptr_t, value);
         }
 
-        public final void writeInt64(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_I64, value);
+        public final void writeInt64(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.int64_ptr_t, value);
         }
 
-        public final void writeUInt64(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_U64, value);
+        public final void writeUInt64(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.uint64_ptr_t, value);
         }
 
-        public final void writeFloat(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_FLOAT, value);
+        public final void writeFloat(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.float_ptr_t, value);
         }
 
-        public final void writeDouble(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_DOUBLE, value);
+        public final void writeDouble(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.double_ptr_t, value);
         }
 
         /**
          * Use this method if the object (pointer) to write is already a Sulong object (e.g. an LLVM
          * pointer or a native wrapper) and does not need to be wrapped.
          */
-        public final void writePointer(Object varargs, int outIndex, Object value) throws InteropException {
-            execute(varargs, outIndex, TYPE_VOIDPTR, value);
+        public final void writePyObject(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.PyObject_ptr_ptr_t, value);
         }
 
-        public final void writeComplex(Object varargs, int outIndex, PComplex value) throws InteropException {
-            execute(varargs, outIndex, TYPE_COMPLEX, value);
+        public final void writeComplex(Object valist, int index, PComplex value) throws InteropException {
+            execute(valist, index, LLVMType.Py_complex_ptr_t, value);
         }
 
-        public abstract void execute(Object varargs, int outIndex, int accessType, Object value) throws InteropException;
+        public abstract void execute(Object valist, int index, LLVMType accessType, Object value) throws InteropException;
 
-        @Specialization(guards = "isPrimitive(accessType)", limit = "1")
-        static void doPrimitive(Object varargs, int outIndex, int accessType, Number value,
-                        @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
-                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib) throws InteropException {
+        @Specialization(guards = "isPointerToPrimitive(accessType)", limit = "1")
+        static void doPrimitive(Object valist, int index, LLVMType accessType, Number value,
+                        @CachedLibrary("valist") InteropLibrary vaListLib,
+                        @Shared("outVarPtrLib") @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
             // The access type should be PE constant if the appropriate 'write*' method is used
-            CompilerAsserts.partialEvaluationConstant(accessType);
-            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, MAP[accessType], value);
+            doAccess(vaListLib, outVarPtrLib, valist, index, getLLVMTypeNode.execute(accessType), value);
         }
 
-        @Specialization(guards = "accessType == TYPE_VOIDPTR", limit = "1")
-        static void doPointer(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, Object value,
-                        @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
-                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib) throws InteropException {
-            doAccess(varargsLib, outVarPtrLib, outVarLib, varargs, outIndex, MAP[accessType], value);
+        @Specialization(guards = "accessType == PyObject_ptr_ptr_t", limit = "1")
+        static void doPointer(Object valist, int index, @SuppressWarnings("unused") LLVMType accessType, Object value,
+                        @CachedLibrary("valist") InteropLibrary vaListLib,
+                        @Shared("outVarPtrLib") @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
+            doAccess(vaListLib, outVarPtrLib, valist, index, getLLVMTypeNode.execute(accessType), value);
         }
 
-        @Specialization(guards = "accessType == TYPE_COMPLEX", limit = "1")
-        static void doComplex(Object varargs, int outIndex, @SuppressWarnings("unused") int accessType, PComplex value,
-                        @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @Shared("outVarPtrLib") @CachedLibrary(limit = "2") InteropLibrary outVarPtrLib,
-                        @Exclusive @CachedLibrary(limit = "2") InteropLibrary outVarLib) throws InteropException {
+        @Specialization(guards = "accessType == Py_complex_ptr_t", limit = "1")
+        static void doComplex(Object valist, int index, @SuppressWarnings("unused") LLVMType accessType, PComplex value,
+                        @CachedLibrary("valist") InteropLibrary vaListLib,
+                        @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib,
+                        @Shared("getLLVMType") @Cached GetLLVMType getLLVMTypeNode) {
             try {
-                Object outVarPtr = varargsLib.readArrayElement(varargs, outIndex);
-                Object outVar = outVarPtrLib.readMember(outVarPtr, "content");
-                Object outVarComplex = outVarPtrLib.readMember(outVar, "c");
-                outVarLib.writeMember(outVarComplex, "real", value.getReal());
-                outVarLib.writeMember(outVarComplex, "img", value.getImag());
+                // like 'some_type* out_var = va_arg(vl, some_type*)'
+                Object outVarPtr = vaListLib.invokeMember(valist, "get", index, getLLVMTypeNode.execute(accessType));
+                outVarPtrLib.writeMember(outVarPtr, "real", value.getReal());
+                outVarPtrLib.writeMember(outVarPtr, "img", value.getImag());
             } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e;
+                CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
-        private static void doAccess(InteropLibrary varargsLib, InteropLibrary outVarPtrLib, InteropLibrary outVarLib, Object varargs, int outIndex, String accessor, Object value)
-                        throws InteropException {
+        private static void doAccess(InteropLibrary valistLib, InteropLibrary outVarPtrLib, Object valist, int index, Object llvmTypeID, Object value) {
             try {
-                Object outVarPtr = varargsLib.readArrayElement(varargs, outIndex);
-                Object outVar = outVarPtrLib.readMember(outVarPtr, "content");
-                outVarLib.writeMember(outVar, accessor, value);
+                // like 'some_type* out_var = va_arg(vl, some_type*)'
+                Object outVarPtr = valistLib.invokeMember(valist, "get", index, llvmTypeID);
+                // like 'out_var[0] = value'
+                outVarPtrLib.writeArrayElement(outVarPtr, 0, value);
             } catch (InteropException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e;
+                CompilerDirectives.shouldNotReachHere(e);
             }
-        }
-
-        static boolean isPrimitive(int accessType) {
-            return accessType < TYPE_VOIDPTR;
         }
     }
 
@@ -1297,20 +1276,47 @@ public abstract class CExtParseArgumentsNode {
      * like {@code va_arg(*valist, void *)}
      */
     @GenerateUncached
+    @ImportStatic(LLVMType.class)
     abstract static class GetVaArgsNode extends Node {
 
-        public abstract Object execute(Object varargs, int index) throws InteropException;
+        public final Object getInt8Ptr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.int8_ptr_t);
+        }
+
+        public final Object getInt16Ptr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.int16_ptr_t);
+        }
+
+        public final Object getInt32Ptr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.int32_ptr_t);
+        }
+
+        public final Object getInt63Ptr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.int64_ptr_t);
+        }
+
+        public final Object getPyObjectPtr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.PyObject_ptr_t);
+        }
+
+        public final Object getCharPtr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.char_ptr_t);
+        }
+
+        public final Object getPyComplexPtr(Object valist, int index) throws InteropException {
+            return execute(valist, index, LLVMType.Py_complex_ptr_t);
+        }
+
+        public abstract Object execute(Object valist, int index, LLVMType llvmType) throws InteropException;
 
         @Specialization(limit = "1")
-        static Object doGetVaArg(Object varargs, int out_index,
-                        @CachedLibrary("varargs") InteropLibrary varargsLib,
-                        @CachedLibrary(limit = "1") InteropLibrary outVarPtrLib) throws InteropException {
+        static Object doGeneric(Object valist, int index, LLVMType llvmType,
+                        @CachedLibrary("valist") InteropLibrary valistLib,
+                        @Cached GetLLVMType getLLVMType) throws InteropException {
             try {
-                Object outVarPtr = varargsLib.readArrayElement(varargs, out_index);
-                return outVarPtrLib.readMember(outVarPtr, "content");
-            } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreter();
-                throw e;
+                return valistLib.invokeMember(valist, "get", index, getLLVMType.execute(llvmType));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }

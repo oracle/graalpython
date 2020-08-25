@@ -125,7 +125,6 @@ public abstract class SpecialMethodNames {
     public static final String __ITRUEDIV__ = "__itruediv__";
     public static final String __IFLOORDIV__ = "__ifloordiv__";
     public static final String __IMOD__ = "__imod__";
-    public static final String __IDIVMOD__ = "__idivmod__";
     public static final String __IPOW__ = "__ipow__";
     public static final String __ILSHIFT__ = "__ilshift__";
     public static final String __IRSHIFT__ = "__irshift__";
@@ -167,6 +166,8 @@ public abstract class SpecialMethodNames {
     public static final String __CLASS_GETITEM__ = "__class_getitem__";
     public static final String FILENO = "fileno";
     public static final String ISDISJOINT = "isdisjoint";
+    public static final String MRO = "mro";
+    public static final String SORT = "sort";
 
     public static final String RICHCMP = "__truffle_richcompare__";
     public static final String TRUFFLE_SOURCE = "__truffle_source__";

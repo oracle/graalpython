@@ -47,9 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -211,12 +209,12 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
          */
         @Specialization
         @ExplodeLoop
-        static long doBytesI64(PIBytesLike bytesLike, long byteIdx,
+        static long doBytesI64(PBytesLike bytesLike, long byteIdx,
                         @Cached("createClassProfile()") ValueProfile profile,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary libItem) {
-            PIBytesLike profiled = profile.profile(bytesLike);
+            PBytesLike profiled = profile.profile(bytesLike);
             int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
             if (byteIdx >= len) {
@@ -316,39 +314,35 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         public abstract void execute(Object arrayObject, Object idx, Object value) throws UnsupportedMessageException;
 
         @Specialization
-        void doBytes(PIBytesLike s, long idx, byte value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+        void doBytes(PBytesLike s, long idx, byte value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
-            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx, value);
+            setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx, value);
         }
 
         @Specialization
         @ExplodeLoop
-        void doBytes(PIBytesLike s, long idx, short value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+        void doBytes(PBytesLike s, long idx, short value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Short.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
         @Specialization
         @ExplodeLoop
-        void doBytes(PIBytesLike s, long idx, int value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+        void doBytes(PBytesLike s, long idx, int value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Integer.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
         @Specialization
         @ExplodeLoop
-        void doBytes(PIBytesLike s, long idx, long value,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+        void doBytes(PBytesLike s, long idx, long value,
                         @Shared("setByteItemNode") @Cached SequenceStorageNodes.SetItemDynamicNode setByteItemNode) {
             for (int offset = 0; offset < Long.BYTES; offset++) {
-                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, getSequenceStorageNode.execute(s), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
+                setByteItemNode.execute(NoGeneralizationNode.DEFAULT, s.getSequenceStorage(), idx + offset, (byte) (value >> (8 * offset)) & 0xFF);
             }
         }
 
@@ -402,10 +396,11 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     abstract static class ToNativeArrayNode extends Node {
         public abstract Object execute(PySequenceArrayWrapper object);
 
-        @Specialization(guards = "isPSequence(lib.getDelegate(object))", limit = "1")
+        @Specialization(guards = "isPSequence(lib.getDelegate(object))")
         Object doPSequence(PySequenceArrayWrapper object,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @Cached SequenceNodes.SetSequenceStorageNode setStorage,
+                        @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached ToNativeStorageNode toNativeStorageNode) {
             PSequence sequence = (PSequence) lib.getDelegate(object);
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(sequence));
@@ -414,13 +409,13 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
                 throw new IllegalStateException("could not allocate native storage");
             }
             // switch to native storage
-            sequence.setSequenceStorage(nativeStorage);
+            setStorage.execute(sequence, nativeStorage);
             return nativeStorage.getPtr();
         }
 
-        @Specialization(guards = "!isPSequence(lib.getDelegate(object))", limit = "1")
+        @Specialization(guards = "!isPSequence(lib.getDelegate(object))")
         Object doGeneric(PySequenceArrayWrapper object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached PCallCapiFunction callNativeHandleForArrayNode) {
             // TODO correct element size
             return callNativeHandleForArrayNode.call(FUN_NATIVE_HANDLE_FOR_ARRAY, object, 8L);
@@ -438,8 +433,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "!isNative(s)")
         NativeSequenceStorage doManaged(SequenceStorage s,
-                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
-            return storageToNativeNode.execute(s.getInternalArrayObject());
+                        @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode getInternalArrayNode) {
+            return storageToNativeNode.execute(getInternalArrayNode.execute(s));
         }
 
         @Specialization
@@ -541,7 +537,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     }
 
     protected static boolean hasByteArrayContent(Object object) {
-        return object instanceof PBytes || object instanceof PByteArray || object instanceof PMMap;
+        return object instanceof PBytesLike || object instanceof PMMap;
     }
 
 }

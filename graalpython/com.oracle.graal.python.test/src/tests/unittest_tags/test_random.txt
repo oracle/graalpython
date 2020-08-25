@@ -16,6 +16,7 @@
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_randbelow_logic
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_randrange_errors
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_randrange_nonunit_step
+*graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_rangelimits
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_sample
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_sample_distribution
 *graalpython.lib-python.3.test.test_random.SystemRandom_TestBasicOps.test_sample_inputs

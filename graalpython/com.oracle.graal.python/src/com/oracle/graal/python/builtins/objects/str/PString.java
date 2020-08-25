@@ -27,20 +27,21 @@ package com.oracle.graal.python.builtins.objects.str;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -53,16 +54,16 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PString extends PImmutableSequence {
+public final class PString extends PSequence {
 
     private CharSequence value;
 
-    public PString(Object clazz, DynamicObject storage, CharSequence value) {
-        super(clazz, storage);
+    public PString(Object clazz, Shape instanceShape, CharSequence value) {
+        super(clazz, instanceShape);
         this.value = value;
     }
 
@@ -166,15 +167,15 @@ public final class PString extends PImmutableSequence {
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
         static int subclassedString(PString self, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile hasLen,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile ltZero,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getLenNode,
-                        @Exclusive @Cached CallUnaryMethodNode callNode,
-                        @Exclusive @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("self") PythonObjectLibrary plib,
+                        @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile hasLen,
+                        @Exclusive @Cached ConditionProfile ltZero,
+                        @Shared("raise") @Cached PRaiseNode raiseNode,
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // call the generic implementation in the superclass
-            return self.lengthWithState(state, gotState, hasLen, ltZero, getLenNode, callNode, raiseNode, lib);
+            return self.lengthWithState(state, plib, methodLib, gotState, hasLen, ltZero, raiseNode, lib);
         }
     }
 
@@ -232,8 +233,24 @@ public final class PString extends PImmutableSequence {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isHashable() {
+    public static boolean isHashable(@SuppressWarnings("unused") PString self) {
         return true;
+    }
+
+    @ExportMessage
+    public Object readArrayElement(long index,
+                    @Cached CastToJavaStringNode cast) {
+        try {
+            return cast.execute(this).codePointAt((int) index);
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("A PString should always have an underlying CharSequence");
+        }
+    }
+
+    @Override
+    @ExportMessage
+    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) {
+        return lib.length(this);
     }
 
     @ExportMessage.Ignore
@@ -296,4 +313,35 @@ public final class PString extends PImmutableSequence {
         }
         return sb.toString();
     }
+
+    @Override
+    public void setSequenceStorage(SequenceStorage store) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings({"static-method", "unused"})
+    public static void setItem(int idx, Object value) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        PythonLanguage.getCore().raise(PythonBuiltinClassType.PString, ErrorMessages.OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementModifiable(PString self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementInsertable(PString self, long index) {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    public static boolean isArrayElementRemovable(PString self, long index) {
+        return false;
+    }
+
 }

@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltin
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -203,12 +202,12 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getFunction().getEnclosingType() == null")
         Object objclassMissing(@SuppressWarnings("unused") PBuiltinMethod self) {
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "builtin_function_or_method", "__objclass__");
         }
 
         @Specialization(guards = "self.getFunction().getEnclosingType() != null")
         @TruffleBoundary
-        PythonAbstractClass objclass(PBuiltinMethod self,
+        Object objclass(PBuiltinMethod self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             return getPythonClass(self.getFunction().getEnclosingType(), profile);
         }

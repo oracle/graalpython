@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.type;
+package com.oracle.graal.python.builtins.objects.common;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.truffle.api.interop.TruffleObject;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
-public interface LazyPythonClass extends TruffleObject {
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.truffle.api.CompilerDirectives;
 
-    static LazyPythonClass cast(Object object) {
-        if (object instanceof PythonBuiltinClassType) {
-            return (PythonBuiltinClassType) object;
-        } else {
-            return PythonAbstractClass.cast(object);
+public abstract class FormatNodeBase extends PythonBinaryBuiltinNode {
+    @Child private LookupAndCallUnaryNode strCall;
+
+    protected LookupAndCallUnaryNode ensureStrCallNode() {
+        if (strCall == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            strCall = insert(LookupAndCallUnaryNode.create(__STR__));
         }
+        return strCall;
     }
 
+    protected String castFormatString(Object obj, CastToJavaStringNode castNode) {
+        try {
+            return castNode.execute(obj);
+        } catch (CannotCastException ex) {
+            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", obj);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -55,12 +56,13 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class DeleteClassAttributeNode extends StatementNode {
     private final String identifier;
 
-    @Child private StatementNode deleteNsItem;
-
     DeleteClassAttributeNode(String identifier) {
         this.identifier = identifier;
+    }
+
+    protected StatementNode createDeleteNsItem() {
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-        this.deleteNsItem = PythonLanguage.getCurrent().getNodeFactory().createDeleteItem(namespace.asExpression(), this.identifier);
+        return PythonLanguage.getCurrent().getNodeFactory().createDeleteItem(namespace.asExpression(), identifier);
     }
 
     public static DeleteClassAttributeNode create(String name) {
@@ -76,16 +78,27 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
         return null;
     }
 
-    @Specialization(guards = "localsDict != null")
-    void deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getLocalsDict(frame)") Object localsDict,
+    @Specialization(guards = {"localsDict != null", "getLocalsDict(frame) == localsDict"}, //
+                    assumptions = "singleContextAssumption()", limit = "2")
+    void deleteFromLocalsSingleCtx(VirtualFrame frame,
+                    @Cached(value = "getLocalsDict(frame)", weak = true) Object localsDict,
                     @Cached("create()") DeleteItemNode delItemNode) {
         // class namespace overrides closure
         delItemNode.executeWith(frame, localsDict, identifier);
     }
 
-    @Specialization
-    void delete(VirtualFrame frame) {
+    @Specialization(guards = "localsDict != null", replaces = "deleteFromLocalsSingleCtx")
+    void deleteFromLocals(VirtualFrame frame,
+                    @Bind("getLocalsDict(frame)") Object localsDict,
+                    @Cached("create()") DeleteItemNode delItemNode) {
+        // class namespace overrides closure
+        delItemNode.executeWith(frame, localsDict, identifier);
+    }
+
+    @Specialization(guards = "localsDict == null")
+    void deleteSingleCtx(VirtualFrame frame,
+                    @SuppressWarnings("unused") @Bind("getLocalsDict(frame)") Object localsDict,
+                    @Cached("createDeleteNsItem()") StatementNode deleteNsItem) {
         // delete attribute actual attribute
         deleteNsItem.executeVoid(frame);
     }

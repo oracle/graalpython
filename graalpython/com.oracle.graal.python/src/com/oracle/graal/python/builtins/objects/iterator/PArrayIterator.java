@@ -26,13 +26,13 @@
 package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public final class PArrayIterator extends PBuiltinIterator {
     final PArray array;
 
-    public PArrayIterator(Object clazz, DynamicObject storage, PArray array) {
-        super(clazz, storage);
+    public PArrayIterator(Object clazz, Shape instanceShape, PArray array) {
+        super(clazz, instanceShape);
         this.array = array;
     }
 }

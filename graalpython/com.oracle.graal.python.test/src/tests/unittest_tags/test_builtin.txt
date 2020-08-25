@@ -11,6 +11,8 @@
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_compile_top_level_await
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_construct_singletons
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_delattr
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_dir
+*graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_divmod
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_eval
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec
 *graalpython.lib-python.3.test.test_builtin.BuiltinTest.test_exec_redirected
@@ -52,5 +54,7 @@
 *graalpython.lib-python.3.test.test_builtin.TestBreakpoint.test_envar_unimportable
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_basic
 *graalpython.lib-python.3.test.test_builtin.TestSorted.test_inputtypes
+*graalpython.lib-python.3.test.test_builtin.TestType.test_new_type
 *graalpython.lib-python.3.test.test_builtin.TestType.test_type_doc
 *graalpython.lib-python.3.test.test_builtin.TestType.test_type_nokwargs
+*graalpython.lib-python.3.test.test_builtin.TestType.test_type_qualname

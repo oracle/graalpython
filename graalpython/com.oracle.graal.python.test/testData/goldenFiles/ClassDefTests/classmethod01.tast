@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,73]`class A:↵    @classm...`
                 Name: A
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 2 slots [method, __class__]
+                FrameDescriptor: 1 slots [method]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,73]`class A:↵    @classm...`
                   ReturnTargetNode SourceSection: [0,73]`class A:↵    @classm...`
                     Body: BlockNode SourceSection: None
@@ -67,20 +67,20 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [30,73]`def method(self, str...`
                                 Name: method
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self, string
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, string, __class__, <return_val>]
+                                FrameDescriptor: 3 slots [self, string, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [30,73]`def method(self, str...`
                                   ReturnTargetNode SourceSection: [30,73]`def method(self, str...`
@@ -104,15 +104,7 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                         ExpressionStatementNode SourceSection: [68,72]`pass`
                                           EmptyNode SourceSection: [68,72]`pass`
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

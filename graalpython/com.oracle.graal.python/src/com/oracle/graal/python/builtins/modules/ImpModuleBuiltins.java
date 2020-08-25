@@ -56,10 +56,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
@@ -419,7 +420,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private CheckFunctionResultNode getCheckResultNode() {
             if (checkResultNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                checkResultNode = insert(CheckFunctionResultNode.create());
+                checkResultNode = insert(DefaultCheckFunctionResultNodeGen.create());
             }
             return checkResultNode;
         }
@@ -527,7 +528,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class SourceHashNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PBytes run(long magicNumber, PIBytesLike source) {
+        PBytes run(long magicNumber, PBytesLike source) {
             byte[] hash = new byte[Long.BYTES];
             long hashCode = magicNumber ^ source.hashCode();
             for (int i = 0; i < hash.length; i++) {
@@ -537,7 +538,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes run(PInt magicNumber, PIBytesLike source) {
+        PBytes run(PInt magicNumber, PBytesLike source) {
             return run(magicNumber.longValue(), source);
         }
     }

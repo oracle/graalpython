@@ -3,13 +3,16 @@
 *graalpython.lib-python.3.test.test_super.TestSuper.test___class___instancemethod
 *graalpython.lib-python.3.test.test_super.TestSuper.test___class___new
 *graalpython.lib-python.3.test.test_super.TestSuper.test___class___staticmethod
+*graalpython.lib-python.3.test.test_super.TestSuper.test___classcell___expected_behaviour
 *graalpython.lib-python.3.test.test_super.TestSuper.test___classcell___overwrite
 *graalpython.lib-python.3.test.test_super.TestSuper.test_basics_working
 *graalpython.lib-python.3.test.test_super.TestSuper.test_cell_as_self
 *graalpython.lib-python.3.test.test_super.TestSuper.test_class_getattr_working
 *graalpython.lib-python.3.test.test_super.TestSuper.test_class_methods_still_working
+*graalpython.lib-python.3.test.test_super.TestSuper.test_obscure_super_errors
 *graalpython.lib-python.3.test.test_super.TestSuper.test_subclass_no_override_working
 *graalpython.lib-python.3.test.test_super.TestSuper.test_super_in_class_methods_working
 *graalpython.lib-python.3.test.test_super.TestSuper.test_super_init_leaks
 *graalpython.lib-python.3.test.test_super.TestSuper.test_super_with_closure
 *graalpython.lib-python.3.test.test_super.TestSuper.test_unbound_method_transfer_working
+*graalpython.lib-python.3.test.test_super.TestSuper.test_various___class___pathologies

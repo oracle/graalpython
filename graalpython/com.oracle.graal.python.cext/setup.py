@@ -53,7 +53,7 @@ libhpy_name = "libhpy"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
-relative_rpath = "@loader_path" if darwin_native else "\$ORIGIN"
+relative_rpath = "@loader_path" if darwin_native else r"\$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 

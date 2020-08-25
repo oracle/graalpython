@@ -15,6 +15,6 @@ Scope: []
             FreeVars: Empty
             Scope: C
                 Kind: Class
-                FrameDescriptor: [a_local_var, __class__]
-                CellVars: [__class__]
+                FrameDescriptor: [a_local_var]
+                CellVars: Empty
                 FreeVars: Empty

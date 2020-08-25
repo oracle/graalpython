@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import com.oracle.graal.python.parser.GeneratorInfo;
-import com.oracle.graal.python.runtime.exception.PException;
 
 public final class GeneratorControlData {
 
@@ -36,14 +35,15 @@ public final class GeneratorControlData {
     private final boolean[] activeFlags;
     private final int[] blockNodeIndices;       // See {@link GeneratorBlockNode}
     private final Object[] forNodeIterators; // See {@link GeneratorForNode}
-    private final PException[] activeExceptions;
+    private final RuntimeException[] activeExceptions; // See {@link GeneratorTryExceptNode}
+    // {@link GeneratorTryFinallyNode}
     private int lastYieldIndex;
 
     public GeneratorControlData(GeneratorInfo generatorInfo) {
         this.activeFlags = new boolean[generatorInfo.getNumOfActiveFlags()];
         this.blockNodeIndices = new int[generatorInfo.getNumOfBlockNodes()];
         this.forNodeIterators = new Object[generatorInfo.getNumOfIteratorSlots()];
-        this.activeExceptions = new PException[generatorInfo.getNumOfExceptionSlots()];
+        this.activeExceptions = new RuntimeException[generatorInfo.getNumOfExceptionSlots()];
     }
 
     public int getLastYieldIndex() {
@@ -79,11 +79,11 @@ public final class GeneratorControlData {
         forNodeIterators[slot] = value;
     }
 
-    public PException getActiveException(int slot) {
+    public RuntimeException getActiveException(int slot) {
         return activeExceptions[slot];
     }
 
-    public void setActiveException(int slot, PException activeException) {
+    public void setActiveException(int slot, RuntimeException activeException) {
         this.activeExceptions[slot] = activeException;
     }
 }

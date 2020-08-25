@@ -44,6 +44,7 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
                             Frame: [0,dirname,Illegal]
                           EmptyNode SourceSection: None
                         GetAnyAttributeNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None

@@ -19,18 +19,18 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
             FreeVarSlots: None
             ExecutionSlots:
               FreeVarsSlots: None
-              CellVarsSlots: __class__, 
+              CellVarsSlots: None
             ClassBodyRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
               Name: Point
               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                 Param Names: namespace
-              CelVars: __class__
+              CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 3 slots [x, y, __class__]
+              FrameDescriptor: 2 slots [x, y]
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               InnerRootNode SourceSection: [0,29]`class Point:↵  x = 0...`
                 ReturnTargetNode SourceSection: [0,29]`class Point:↵  x = 0...`
                   Body: BlockNode SourceSection: None
@@ -58,14 +58,6 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
                         StringLiteralNode SourceSection: None
                         IntegerLiteralNode SourceSection: [27,28]`0`
                           Value: 0
-                    SetItemNodeGen SourceSection: None
-                      ArgumentExpressionNode SourceSection: None
-                        ReadIndexedArgumentNodeGen SourceSection: None
-                          Index: 0
-                      StringLiteralNode SourceSection: None
-                      ReadLocalVariableNode SourceSection: None
-                        Frame: [2,__class__,Illegal]
-                        ReadVariableFromFrameNodeGen SourceSection: None
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [29,40]`p = Point()`
@@ -88,6 +80,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               GetAttributeNodeGen SourceSection: [45,48]`p.x`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: x
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
@@ -99,6 +92,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
               GetAttributeNodeGen SourceSection: [51,54]`p.y`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: y
+                  CachedDispatchFirst SourceSection: None
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None

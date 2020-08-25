@@ -261,6 +261,11 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public Object[] getCopyOfInternalArray() {
+        return getInternalArray();
+    }
+
+    @Override
     public void setInternalArrayObject(Object arrayObject) {
         this.values = (double[]) arrayObject;
     }

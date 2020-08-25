@@ -46,6 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
+@SuppressWarnings("unused")
 public abstract class NativeCAPISymbols {
 
     public static final String FUN_NATIVE_LONG_TO_JAVA = "native_long_to_java";
@@ -89,7 +90,6 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_NEWFUNC_TYPE_ID = "get_newfunc_typeid";
     public static final String FUN_GET_BUFFER_R = "get_buffer_r";
     public static final String FUN_GET_BUFFER_RW = "get_buffer_rw";
-    public static final String FUN_ALLOCATE_OUTVAR = "allocate_outvar";
     public static final String FUN_NATIVE_UNICODE_AS_STRING = "native_unicode_as_string";
     public static final String FUN_PY_UNICODE_GET_LENGTH = "PyUnicode_GetLength";
     public static final String FUN_GET_UINT32_ARRAY_TYPE_ID = "get_uint32_array_typeid";
@@ -102,6 +102,33 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_TRUFFLE_CANNOT_BE_HANDLE = "truffle_cannot_be_handle";
     public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
     public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
+    private static final String FUN_GET_INT8_T_TYPEID = "get_int8_t_typeid";
+    private static final String FUN_GET_INT16_T_TYPEID = "get_int16_t_typeid";
+    private static final String FUN_GET_INT32_T_TYPEID = "get_int32_t_typeid";
+    private static final String FUN_GET_INT64_T_TYPEID = "get_int64_t_typeid";
+    private static final String FUN_GET_UINT8_T_TYPEID = "get_uint8_t_typeid";
+    private static final String FUN_GET_UINT16_T_TYPEID = "get_uint16_t_typeid";
+    private static final String FUN_GET_UINT32_T_TYPEID = "get_uint32_t_typeid";
+    private static final String FUN_GET_UINT64_T_TYPEID = "get_uint64_t_typeid";
+    private static final String FUN_GET_PY_COMPLEX_TYPEID = "get_Py_complex_typeid";
+    private static final String FUN_GET_FLOAT_T_TYPEID = "get_float_t_typeid";
+    private static final String FUN_GET_DOUBLE_T_TYPEID = "get_double_t_typeid";
+    private static final String FUN_GET_PY_SSIZE_T_TYPEID = "get_Py_ssize_t_typeid";
+    private static final String FUN_GET_PYOBJECT_PTR_T_TYPEID = "get_PyObject_ptr_t_typeid";
+    private static final String FUN_GET_PYOBJECT_PTR_PTR_T_TYPEID = "get_PyObject_ptr_ptr_t_typeid";
+    private static final String FUN_GET_CHAR_PTR_T_TYPEID = "get_char_ptr_t_typeid";
+    private static final String FUN_GET_INT8_PTR_T_TYPEID = "get_int8_ptr_t_typeid";
+    private static final String FUN_GET_INT16_PTR_T_TYPEID = "get_int16_ptr_t_typeid";
+    private static final String FUN_GET_INT32_PTR_T_TYPEID = "get_int32_ptr_t_typeid";
+    private static final String FUN_GET_INT64_PTR_T_TYPEID = "get_int64_ptr_t_typeid";
+    private static final String FUN_GET_UINT8_PTR_T_TYPEID = "get_uint8_ptr_t_typeid";
+    private static final String FUN_GET_UINT16_PTR_T_TYPEID = "get_uint16_ptr_t_typeid";
+    private static final String FUN_GET_UINT32_PTR_T_TYPEID = "get_uint32_ptr_t_typeid";
+    private static final String FUN_GET_UINT64_PTR_T_TYPEID = "get_uint64_ptr_t_typeid";
+    private static final String FUN_GET_PY_COMPLEX_PTR_T_TYPEID = "get_Py_complex_ptr_t_typeid";
+    private static final String FUN_GET_FLOAT_PTR_T_TYPEID = "get_float_ptr_t_typeid";
+    private static final String FUN_GET_DOUBLE_PTR_T_TYPEID = "get_double_ptr_t_typeid";
+    private static final String FUN_GET_PY_SSIZE_PTR_T_TYPEID = "get_Py_ssize_ptr_t_typeid";
 
     @CompilationFinal(dimensions = 1) private static final String[] values;
     static {

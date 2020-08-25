@@ -40,35 +40,73 @@
  */
 package com.oracle.graal.python.test.parser;
 
-import com.oracle.graal.python.parser.sst.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.runtime.PythonParser.ErrorType;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
+
 public class StringUtilsTests extends ParserTestBase {
+    private static final ParserErrorCallback errorCallback = new ParserErrorCallback() {
+        @Override
+        public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
+            Assert.fail("Unexpected error: " + String.format(message, args));
+            return null;
+        }
+
+        @Override
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Source source, SourceSection section, String message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message, arguments));
+            return null;
+        }
+
+        @Override
+        public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
+            Assert.fail("Unexpected error: " + String.format(message, arguments));
+            return null;
+        }
+
+        @Override
+        public void warn(Object type, String format, Object... args) {
+            Assert.fail("Unexpected warning: " + String.format(format, args));
+        }
+
+        @Override
+        public PythonLanguage getLanguage() {
+            return null;
+        }
+    };
+
     @Test
     public void unicodeCharNameBasic() throws Exception {
-        Assert.assertEquals("Δ", StringUtils.unescapeJavaString("\\N{GREEK CAPITAL LETTER DELTA}"));
-        Assert.assertEquals("A", StringUtils.unescapeJavaString("\\N{LATIN CAPITAL LETTER A}"));
-        Assert.assertEquals("A", StringUtils.unescapeJavaString("\\N{LATIN CAPITAL LETTER a}"));
-        Assert.assertEquals("A", StringUtils.unescapeJavaString("\\N{LATIN CAPITAL LETTEr a}"));
-        Assert.assertEquals("A", StringUtils.unescapeJavaString("\\N{latin capital letter a}"));
-        Assert.assertEquals("AHOJ", StringUtils.unescapeJavaString("A\\N{LATIN CAPITAL LETTER H}OJ"));
-        Assert.assertEquals("AHOJ", StringUtils.unescapeJavaString("\\N{LATIN CAPITAL LETTER A}\\N{LATIN CAPITAL LETTER H}\\N{LATIN CAPITAL LETTER O}\\N{LATIN CAPITAL LETTER J}"));
+        Assert.assertEquals("Δ", StringUtils.unescapeJavaString(errorCallback, "\\N{GREEK CAPITAL LETTER DELTA}"));
+        Assert.assertEquals("A", StringUtils.unescapeJavaString(errorCallback, "\\N{LATIN CAPITAL LETTER A}"));
+        Assert.assertEquals("A", StringUtils.unescapeJavaString(errorCallback, "\\N{LATIN CAPITAL LETTER a}"));
+        Assert.assertEquals("A", StringUtils.unescapeJavaString(errorCallback, "\\N{LATIN CAPITAL LETTEr a}"));
+        Assert.assertEquals("A", StringUtils.unescapeJavaString(errorCallback, "\\N{latin capital letter a}"));
+        Assert.assertEquals("AHOJ", StringUtils.unescapeJavaString(errorCallback, "A\\N{LATIN CAPITAL LETTER H}OJ"));
+        Assert.assertEquals("AHOJ", StringUtils.unescapeJavaString(errorCallback, "\\N{LATIN CAPITAL LETTER A}\\N{LATIN CAPITAL LETTER H}\\N{LATIN CAPITAL LETTER O}\\N{LATIN CAPITAL LETTER J}"));
         checkUnknownChar("ahoj");
     }
 
     @Test
     public void blockHangulSyllables() throws Exception {
-        Assert.assertEquals("가", StringUtils.unescapeJavaString("\\N{HANGUL SYLLABLE GA}"));
-        Assert.assertEquals("돐", StringUtils.unescapeJavaString("\\N{HANGUL SYLLABLE DOLS}"));
-        Assert.assertEquals("똜", StringUtils.unescapeJavaString("\\N{HANGUL SYLLABLE DDOLS}"));
+        Assert.assertEquals("가", StringUtils.unescapeJavaString(errorCallback, "\\N{HANGUL SYLLABLE GA}"));
+        Assert.assertEquals("돐", StringUtils.unescapeJavaString(errorCallback, "\\N{HANGUL SYLLABLE DOLS}"));
+        Assert.assertEquals("똜", StringUtils.unescapeJavaString(errorCallback, "\\N{HANGUL SYLLABLE DDOLS}"));
     }
 
     @Test
     public void blockCjkUnifiedIdeograph() throws Exception {
-        Assert.assertEquals("㐀", StringUtils.unescapeJavaString("\\N{CJK Unified Ideograph-3400}"));
-        Assert.assertEquals("𫝜", StringUtils.unescapeJavaString("\\N{CJK Unified Ideograph-2B75C}"));
-        Assert.assertEquals("丳", StringUtils.unescapeJavaString("\\N{CJK Unified Ideograph-4E33}"));
+        Assert.assertEquals("㐀", StringUtils.unescapeJavaString(errorCallback, "\\N{CJK Unified Ideograph-3400}"));
+        Assert.assertEquals("𫝜", StringUtils.unescapeJavaString(errorCallback, "\\N{CJK Unified Ideograph-2B75C}"));
+        Assert.assertEquals("丳", StringUtils.unescapeJavaString(errorCallback, "\\N{CJK Unified Ideograph-4E33}"));
     }
 
     @Test
@@ -82,6 +120,7 @@ public class StringUtilsTests extends ParserTestBase {
 
     @Test
     public void malformedError() throws Exception {
+        checkSyntaxErrorMessage("'\\N'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N {LATIN CAPITAL LETTER A}'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N LATIN CAPITAL LETTER A}'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-1: malformed \\N character escape");
         checkSyntaxErrorMessage("'\\N{LATIN CAPITAL LETTER A'", "SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 0-24: malformed \\N character escape");

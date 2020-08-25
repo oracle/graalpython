@@ -45,11 +45,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -69,11 +68,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -87,7 +88,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
-import com.oracle.graal.python.util.WeakASTReference;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -96,15 +96,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class PGuards {
-
-    public static WeakASTReference weak(Object object) {
-        if (object == null) {
-            return null;
-        } else {
-            return new WeakASTReference(object);
-        }
-    }
-
     /**
      * Specialization guards.
      */
@@ -264,19 +255,6 @@ public abstract class PGuards {
         return none == PNone.NO_VALUE;
     }
 
-    public static boolean emptyArguments(Object arg) {
-        return arg instanceof PFrozenSet && ((PFrozenSet) arg).size() == 0;
-    }
-
-    @SuppressWarnings("unused")
-    public static boolean isForJSON(Object obj, String id, Object defaultValue) {
-        return id.equals("for_json");
-    }
-
-    public static boolean is2ndNotTuple(@SuppressWarnings("unused") Object first, Object second) {
-        return !(second instanceof PTuple);
-    }
-
     public static boolean isIndexPositive(int idx) {
         return idx >= 0;
     }
@@ -315,6 +293,10 @@ public abstract class PGuards {
 
     public static boolean isNativeClass(Object klass) {
         return PythonNativeClass.isInstance(klass);
+    }
+
+    public static boolean isPythonClass(Object klass) {
+        return PythonAbstractClass.isInstance(klass);
     }
 
     public static boolean isPRange(Object obj) {
@@ -410,11 +392,7 @@ public abstract class PGuards {
     }
 
     public static boolean isBytes(Object obj) {
-        return obj instanceof PBytes || obj instanceof PByteArray;
-    }
-
-    public static boolean isMemoryView(Object obj) {
-        return obj instanceof PMemoryView;
+        return obj instanceof PBytesLike;
     }
 
     public static boolean isAnySet(Object obj) {
@@ -431,6 +409,26 @@ public abstract class PGuards {
 
     public static boolean isDictItemsView(Object obj) {
         return obj instanceof PDictView.PDictItemsView;
+    }
+
+    public static boolean isPHashingCollection(Object o) {
+        return o instanceof PHashingCollection;
+    }
+
+    public static boolean isPSet(Object o) {
+        return o instanceof PSet;
+    }
+
+    public static boolean isPBaseSet(Object o) {
+        return o instanceof PBaseSet;
+    }
+
+    public static boolean isPFrozenSet(Object o) {
+        return o instanceof PFrozenSet;
+    }
+
+    public static boolean canDoSetBinOp(Object o) {
+        return isPBaseSet(o) || isDictView(o);
     }
 
     public static boolean isPSlice(Object obj) {

@@ -104,12 +104,10 @@ public abstract class ErrorMessages {
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
     public static final String CANNOT_ASSIGN_TO = "cannot assign to %s";
-    public static final String CANNOT_BE_INTEPRETED_AS_INT = "%s cannot be interpreted as int (type %p)";
     public static final String CANNOT_BE_INTEPRETED_AS_LONG = "%s cannot be interpreted as long (type %p)";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
     public static final String CANNOT_CALL_CTOR_OF = "cannot call constructor of %s";
     public static final String CANNOT_CLOSE_EXPORTED_PTRS_EXIST = "cannot close exported pointers exist";
-    public static final String CANNOT_CONERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
@@ -122,6 +120,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
+    public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
@@ -161,6 +160,7 @@ public abstract class ErrorMessages {
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
     public static final String CODE_OBJ_NO_FREE_VARIABLES = "code object passed to %s may not contain free variables";
     public static final String COMPILE_MUST_BE = "compile() mode must be 'exec', 'eval' or 'single'";
+    public static final String COMPLEX_ARG_IS_MALFORMED_STR = "complex() arg is a malformed string";
     public static final String COMPLEX_CANT_TAKE_ARG = "complex() can't take second arg if first is a string";
     public static final String COMPLEX_EXPONENTIATION = "complex exponentiation";
     public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
@@ -170,6 +170,7 @@ public abstract class ErrorMessages {
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
     public static final String CONVERTER_FUNC_FAILED_TO_SET_ERROR = "converter function failed to set an error on failure";
     public static final String CORRUPTED_CAPI_LIB_OBJ = "corrupted C API library object: %s";
+    public static final String COULD_NOT_CONVERT_STRING_TO_COMPLEX = "could not convert string to complex: %s";
     public static final String COULD_NOT_CONVERT_STRING_TO_FLOAT = "could not convert string to float: %s";
     public static final String COULD_NOT_GET_BYTES_OF_MEMORYVIEW = "could not get bytes of memoryview";
     public static final String COUNT_FUNC_MATH = "count function in Math";
@@ -179,20 +180,22 @@ public abstract class ErrorMessages {
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
-    public static final String DICT_KEYS_CHANGED_DURING_ITERATION = "dictionary keys changed during iteration";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
-    public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must have been set to a dictionary, not a '%p'";
+    public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must be set to a dictionary, not a '%p'";
     public static final String DICT_OF_P_OBJECTS_HAS_NO_ATTR = "'%p' dict of '%p' object has no attribute '__setitem__'";
     public static final String DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED = "dictionary update sequence element #%d has length %d; 2 is required";
     public static final String DIVISION_BY_ZERO = "division by zero";
     public static final String S_DIVISION_BY_ZERO = "%s division by zero";
+    public static final String S_DIVISION_OR_MODULO_BY_ZERO = "%s division or modulo by zero";
     public static final String SUPER_NO_CLASS = "super(): no arguments";
+    public static final String SUPER_EMPTY_CLASS = "super(): empty __class__ cell";
     public static final String EMPTY_SEPARATOR = "empty separator";
     public static final String EMPTY_STR_FOR_COMPLEX = "empty string for complex()";
     public static final String END_MUST_BE_NONE_OR_STRING = "end must be None or a string, not %p";
     public static final String ERROR57_SOCKET_CANNOT_BE_CONNECTED = "[Errno 57] Socket is not connected";
     public static final String ERROR_5_WHILE_DECOMPRESSING = "Error -5 while decompressing data: incomplete or truncated stream";
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
+    public static final String ERROR_CALLING_SET_NAME = "Error calling __set_name__ on '%p' instance '%s' in '%N'";
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
@@ -233,7 +236,6 @@ public abstract class ErrorMessages {
     public static final String GENERATOR_ALREADY_EXECUTING = "generator already executing";
     public static final String GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = "getting the source is not supported for '%p'";
     public static final String GLOBALS_MUST_BE_DICT = "%s() globals must be a dict, not %p";
-    public static final String GOT_INVALID_CODESTRING = "got an invalid codestring trying to create a function code object";
     public static final String GOT_MULTIPLE_VALUES_FOR_ARG = "%s() got multiple values for argument '%s'";
     public static final String GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = "%s() got some positional-only arguments passed as keyword arguments: '%s'";
     public static final String GOT_UNEXPECTED_KEYWORD_ARG = "%s() got an unexpected keyword argument '%s'";
@@ -297,7 +299,9 @@ public abstract class ErrorMessages {
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
     public static final String IS_EMPTY = "%s is empty";
+    public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
+    public static final String IS_NOT_A = "%s is not a %s";
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
@@ -314,6 +318,7 @@ public abstract class ErrorMessages {
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
     public static final String LEN_SHOULD_RETURN_MT_ZERO = "__len__() should return >= 0";
+    public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
     public static final String LIST_LENGTH_OUT_OF_RANGE = "list length out of range";
@@ -321,7 +326,6 @@ public abstract class ErrorMessages {
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
     public static final String LENGTH_SHOULD_NOT_BE_NEG = "length should not be negative";
-    public static final String MALFORMED_STR_FOR_COMPLEX = "malformed string for complex() %s";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
@@ -338,6 +342,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
+    public static final String MUST_BE_INTEGER = "%s must be an integer, not %p";
     public static final String MUST_BE_NON_NEGATIVE = "%s must be non-negative";
     public static final String MUST_BE_NON_NEGATIVE_INTEGER = "%s must be non-negative integer";
     public static final String MUST_BE_NUMERIC = "must be numeric, not %p";
@@ -353,6 +358,7 @@ public abstract class ErrorMessages {
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
+    public static final String NAMELESS_MODULE = "nameless module";
     public static final String NEED_BYTELIKE_OBJ = "decoding to str: need a bytes-like object, %p found";
     public static final String NEG_INF_PLUS_INF_IN = "-inf + inf in fsum";
     public static final String NEGATIVE_COUNT = "negative count";
@@ -371,16 +377,13 @@ public abstract class ErrorMessages {
     public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
     public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
-    public static final String NON_STRING_IN_CODE_SLOT = "non-string found in code slot";
     public static final String NOT_A_ZIP_FILE = "not a Zip file: '%s'";
     public static final String NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING = "not all arguments converted during %s formatting";
-    public static final String NOT_ALLOWED_S_S_FORMAT_SPECIFIERS_S = "%s not allowed %s%s format specifier%s";
     public static final String NOT_ENOUGH_ARGS_FOR_FORMAT_STRING = "not enough arguments for format string";
     public static final String NOT_ENOUGH_VALUES_TO_UNPACK = "not enough values to unpack (expected %d, got %d)";
     public static final String NOT_SUPPORTED_BETWEEN_INSTANCES = "'%s' not supported between instances of '%p' and '%p'";
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
     public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
-    public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INT = "%s cannot be interpreted as int (type %p)";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
     public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%s' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
@@ -411,7 +414,6 @@ public abstract class ErrorMessages {
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO = "Python int too large to convert to %s";
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = "Python int too large to convert to %s-byte C type";
     public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
-    public static final String RANGE_DOES_NOT_SUPPORT = "range does not support %s, %s, %s";
     public static final String RAW_FORMAT_NOT_SUPPORTED = "RAW format unsupported";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
@@ -425,11 +427,11 @@ public abstract class ErrorMessages {
     public static final String C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE = "%%c requires an integer in range(256) or a single byte";
     public static final String REQUIRES_OBJ_THAT_IMPLEMENTS_S = " %%r requires an object that implements %s";
     public static final String REQUIRES_STRING_AS_LEFT_OPERAND = "'in <string>' requires string as left operand, not %P";
-    public static final String RESULT_TOO_MANY_ITEMS = "%s result has too many items";
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
+    public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
     public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
-    public static final String P_S_RETURNED_NON_INT = "%p.%s returned a non int (type %p)";
+    public static final String S_RETURNED_NON_CLASS = "%s returned a non-class ('%p')";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
     public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
     public static final String RETURNED_NON_LONG = "%p.%s returned a non long (type %p)";
@@ -464,6 +466,7 @@ public abstract class ErrorMessages {
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
+    public static final String SUBSECTION_NOT_FOUND = "subsection not found";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
@@ -483,7 +486,6 @@ public abstract class ErrorMessages {
     public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
     public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
-    public static final String TWO_STARRED_EXPRESSION_IN_ASSIGMENT = "two starred expressions in assignment";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";
     public static final String TYPE_DOESNT_DEFINE_METHOD = "type %p doesn't define %s method";
     public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%p' is not an acceptable base type";
@@ -532,12 +534,20 @@ public abstract class ErrorMessages {
     public static final String POW_BASE_NOT_INVERTIBLE = "base is not invertible for the given modulus";
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
+    public static final String EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = "'=' alignment not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT = "Alternate form (#) not allowed with integer format specifier 'c'";
+    public static final String ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = "Alternate form (#) not allowed in string format specifier";
     public static final String CAPI_LOAD_ERROR = "Could not load C API from %s.";
     public static final String NATIVE_ACCESS_NOT_ALLOWED = "Cannot run any C extensions because native access is not allowed.";
     public static final String HPY_LOAD_ERROR = "Could not load HPy C API from %s.";
+    public static final String CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT = "can't convert negative value to unsigned int";
+    public static final String SEND_NON_NONE_TO_UNSTARTED_GENERATOR = "can't send non-None value to a just-started generator";
+    public static final String UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT = "unsupported format string passed to %p.__format__";
+    public static final String ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED = "only single target (not %s) can be annotated";
+    public static final String ILLEGAL_TARGET_FOR_ANNOTATION = "illegal target for annotation";
 }

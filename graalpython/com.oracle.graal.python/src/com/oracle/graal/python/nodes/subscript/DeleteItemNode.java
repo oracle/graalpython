@@ -76,7 +76,7 @@ public abstract class DeleteItemNode extends StatementNode {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             @Override
-            public Object execute(Object arg, Object arg2) {
+            public Object execute(VirtualFrame frame, Object arg, Object arg2) {
                 throw raiseNode.raise(TypeError, ErrorMessages.OBJ_DOESNT_SUPPORT_DELETION, arg);
             }
         };

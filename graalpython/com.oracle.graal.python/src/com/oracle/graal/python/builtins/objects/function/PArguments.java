@@ -253,7 +253,11 @@ public final class PArguments {
     }
 
     public static PException getException(Frame frame) {
-        return (PException) frame.getArguments()[INDEX_CURRENT_EXCEPTION];
+        return (PException) getExceptionUnchecked(frame);
+    }
+
+    public static Object getExceptionUnchecked(Frame frame) {
+        return frame.getArguments()[INDEX_CURRENT_EXCEPTION];
     }
 
     public static void setException(Frame frame, PException exc) {
@@ -261,6 +265,10 @@ public final class PArguments {
     }
 
     public static void setException(Object[] arguments, PException exc) {
+        setExceptionUnchecked(arguments, exc);
+    }
+
+    public static void setExceptionUnchecked(Object[] arguments, Object exc) {
         arguments[INDEX_CURRENT_EXCEPTION] = exc;
     }
 
@@ -376,7 +384,7 @@ public final class PArguments {
 
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
-        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getException(frame));
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getExceptionUnchecked(frame));
     }
 
     public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
@@ -386,7 +394,7 @@ public final class PArguments {
     public static VirtualFrame frameForCall(ThreadState frame) {
         Object[] args = PArguments.create();
         PArguments.setCurrentFrameInfo(args, frame.info);
-        PArguments.setException(args, frame.exc);
+        PArguments.setExceptionUnchecked(args, frame.exc);
         return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
     }
 
@@ -396,9 +404,10 @@ public final class PArguments {
     @ValueType
     public static final class ThreadState {
         private final PFrame.Reference info;
-        private final PException exc;
+        // The type is object because it is Object in the frame and casting it slows things down
+        private final Object exc;
 
-        private ThreadState(PFrame.Reference info, PException exc) {
+        private ThreadState(PFrame.Reference info, Object exc) {
             this.info = info;
             this.exc = exc;
         }

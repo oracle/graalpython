@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: A
         Kind: Class
-        FrameDescriptor: [B, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [B]
+        CellVars: Empty
         FreeVars: Empty
         Scope: B
             Kind: Class
-            FrameDescriptor: [__class__]
-            CellVars: [__class__]
+            FrameDescriptor: Empty
+            CellVars: Empty
             FreeVars: Empty

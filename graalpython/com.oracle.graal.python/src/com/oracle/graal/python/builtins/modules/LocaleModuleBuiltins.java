@@ -55,15 +55,22 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_locale")
 public class LocaleModuleBuiltins extends PythonBuiltins {
@@ -222,9 +229,9 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     public abstract static class SetLocaleNode extends PythonBuiltinNode {
 
         @SuppressWarnings("fallthrough")
-        @Specialization(guards = {"category >= 0", "category <= 6"})
+        @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
-        public Object setLocale(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
+        Object doWithoutLocaleID(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
             Locale defaultLocale;
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
@@ -258,10 +265,10 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             return toPosix(defaultLocale);
         }
 
-        @SuppressWarnings("fallthrough")
-        @Specialization(guards = {"category >= 0", "category <= 6"})
+        @Specialization(guards = "isValidCategory(category)")
         @TruffleBoundary
-        public Object setLocale(int category, String posixLocaleID) {
+        @SuppressWarnings("fallthrough")
+        Object doWithLocaleID(int category, String posixLocaleID) {
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
             if (!TruffleOptions.AOT) {
@@ -303,9 +310,34 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             return toPosix(newLocale);
         }
 
-        @Fallback
-        public Object setLocale(@SuppressWarnings("unused") Object category, @SuppressWarnings("unused") Object locale) {
-            throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
+        @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"}, limit = "3")
+        Object doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
+                        @CachedLibrary("category") PythonObjectLibrary categoryLib,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+
+            long l = categoryLib.asJavaLongWithState(category, PArguments.getThreadState(frame));
+            if (!isValidCategory(l)) {
+                throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
+            }
+
+            String posixLocaleIDStr = null;
+            // may be NONE or NO_VALUE
+            if (!PGuards.isPNone(posixLocaleID)) {
+                try {
+                    posixLocaleIDStr = castToJavaStringNode.execute(posixLocaleID);
+                } catch (CannotCastException e) {
+                    // fall through
+                }
+            }
+
+            if (posixLocaleIDStr != null) {
+                return doWithLocaleID((int) l, posixLocaleIDStr);
+            }
+            return doWithoutLocaleID((int) l, PNone.NONE);
+        }
+
+        static boolean isValidCategory(long l) {
+            return 0 <= l && l <= 6;
         }
     }
 }

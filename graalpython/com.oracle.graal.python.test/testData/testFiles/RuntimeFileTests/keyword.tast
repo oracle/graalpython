@@ -58,6 +58,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
         GetAttributeNodeGen SourceSection: [966,996]`frozenset(kwlist).__...`
           GetFixedAttributeNodeGen SourceSection: None
             Key: __contains__
+            CachedDispatchFirst SourceSection: None
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
@@ -119,6 +120,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         GetAttributeNodeGen SourceSection: None
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: argv
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -303,10 +305,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
+                                    StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
                                     ReadLocalVariableNode SourceSection: [1608,1612]`line`
                                       Frame: [11,line,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    StringLiteralNode SourceSection: [1597,1604]`'{1, "'`
                                 BlockNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [1630,1658]`match = strprog.sear...`
                                     Identifier: match
@@ -465,6 +467,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                   GetAttributeNodeGen SourceSection: [2019,2029]`sys.stderr`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: stderr
+                                      CachedDispatchFirst SourceSection: None
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None

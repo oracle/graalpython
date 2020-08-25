@@ -82,18 +82,18 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                           FreeVarSlots: a_local_var_out, 
                                           ExecutionSlots:
                                             FreeVarsSlots: a_local_var_out, 
-                                            CellVarsSlots: __class__, 
+                                            CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [68,136]`class C(object):â†µ   ...`
                                             Name: C
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: namespace
-                                            CelVars: __class__
+                                            CelVars: None
                                             FreeVars: a_local_var_out
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [a_local_var, a_local_var_out, __class__]
+                                            FrameDescriptor: 2 slots [a_local_var, a_local_var_out]
                                             ExecutionSlots:
                                               FreeVarsSlots: a_local_var_out, 
-                                              CellVarsSlots: __class__, 
+                                              CellVarsSlots: None
                                             InnerRootNode SourceSection: [68,136]`class C(object):â†µ   ...`
                                               ReturnTargetNode SourceSection: [68,136]`class C(object):â†µ   ...`
                                                 Body: BlockNode SourceSection: None
@@ -126,14 +126,6 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                                             Frame: [1,a_local_var_out,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ReadFromCellNodeGen SourceSection: None
-                                                  SetItemNodeGen SourceSection: None
-                                                    ArgumentExpressionNode SourceSection: None
-                                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                                        Index: 0
-                                                    StringLiteralNode SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
-                                                      Frame: [2,__class__,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [76,82]`object`
@@ -147,6 +139,7 @@ ModuleRootNode Name: <module 'localMember02'> SourceSection: [0,156]`def fn():â†
                                         GetAttributeNodeGen SourceSection: [143,156]`C.a_local_var`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: a_local_var
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None

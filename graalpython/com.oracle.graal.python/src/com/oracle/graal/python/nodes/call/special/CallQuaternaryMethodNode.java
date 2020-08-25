@@ -48,16 +48,19 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundD
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
     public static CallQuaternaryMethodNode create() {
         return CallQuaternaryMethodNodeGen.create();
     }
 
-    public abstract Object execute(VirtualFrame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);
+    public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3, Object arg4);
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,

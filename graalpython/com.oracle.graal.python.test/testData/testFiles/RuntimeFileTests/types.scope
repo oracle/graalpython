@@ -20,99 +20,99 @@ Scope: []
             FreeVars: [_collections_abc, func]
     Scope: _GeneratorWrapper
         Kind: Class
-        FrameDescriptor: [cr_await, gi_frame, __iter__, cr_code, __class__, __next__, cr_running, gi_code, cr_frame, throw, gi_yieldfrom, __init__, __await__, send, close, gi_running]
-        CellVars: [__class__]
+        FrameDescriptor: [cr_await, gi_frame, __iter__, cr_code, __next__, cr_running, gi_code, cr_frame, throw, gi_yieldfrom, __init__, __await__, send, close, gi_running]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __next__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: gi_yieldfrom
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: gi_running
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: gi_frame
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: gi_code
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: close
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: throw
             Kind: Function
-            FrameDescriptor: [rest, self, tp, <return_val>, __class__]
+            FrameDescriptor: [rest, self, tp, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: send
             Kind: Function
-            FrameDescriptor: [val, self, <return_val>, __class__]
+            FrameDescriptor: [val, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [gen, self, <return_val>, __class__]
+            FrameDescriptor: [gen, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: DynamicClassAttribute
         Kind: Class
-        FrameDescriptor: [__get__, __set__, getter, __doc__, __delete__, __init__, setter, deleter, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__get__, __set__, getter, __doc__, __delete__, __init__, setter, deleter]
+        CellVars: Empty
         FreeVars: Empty
         Scope: deleter
             Kind: Function
-            FrameDescriptor: [result, self, fdel, <return_val>, __class__]
+            FrameDescriptor: [result, self, fdel, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: setter
             Kind: Function
-            FrameDescriptor: [result, self, fset, <return_val>, __class__]
+            FrameDescriptor: [result, self, fset, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: getter
             Kind: Function
-            FrameDescriptor: [result, self, fdoc, <return_val>, __class__, fget]
+            FrameDescriptor: [result, self, fdoc, <return_val>, fget]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __delete__
             Kind: Function
-            FrameDescriptor: [instance, self, <return_val>, __class__]
+            FrameDescriptor: [instance, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __set__
             Kind: Function
-            FrameDescriptor: [instance, self, value, <return_val>, __class__]
+            FrameDescriptor: [instance, self, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __get__
             Kind: Function
-            FrameDescriptor: [instance, self, ownerclass, <return_val>, __class__]
+            FrameDescriptor: [instance, self, ownerclass, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [self, doc, fdel, fset, <return_val>, __class__, fget]
+            FrameDescriptor: [self, doc, fdel, fset, <return_val>, fget]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: _calculate_meta
         Kind: Function
         FrameDescriptor: [bases, winner, meta, base_meta, <return_val>, base]
@@ -135,14 +135,14 @@ Scope: []
         FreeVars: Empty
     Scope: _C
         Kind: Class
-        FrameDescriptor: [_m, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [_m]
+        CellVars: Empty
         FreeVars: Empty
         Scope: _m
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: _ag
         Kind: Generator
         FrameDescriptor: [<return_val>]

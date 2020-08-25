@@ -48,8 +48,11 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywor
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethKeywordsNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -61,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -193,28 +195,28 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyRaiseNode extends Node {
 
-        public final int raiseInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final int raiseInt(Frame frame, GraalHPyContext nativeContext, int errorValue, Object errType, String format, Object... arguments) {
             return executeInt(frame, nativeContext, errorValue, errType, format, arguments);
         }
 
-        public final Object raise(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final Object raise(Frame frame, GraalHPyContext nativeContext, Object errorValue, Object errType, String format, Object... arguments) {
             return execute(frame, nativeContext, errorValue, errType, format, arguments);
         }
 
-        public final int raiseIntWithoutFrame(GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final int raiseIntWithoutFrame(GraalHPyContext nativeContext, int errorValue, Object errType, String format, Object... arguments) {
             return executeInt(null, nativeContext, errorValue, errType, format, arguments);
         }
 
-        public final Object raiseWithoutFrame(GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object... arguments) {
+        public final Object raiseWithoutFrame(GraalHPyContext nativeContext, Object errorValue, Object errType, String format, Object... arguments) {
             return execute(null, nativeContext, errorValue, errType, format, arguments);
         }
 
-        public abstract Object execute(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object[] arguments);
+        public abstract Object execute(Frame frame, GraalHPyContext nativeContext, Object errorValue, Object errType, String format, Object[] arguments);
 
-        public abstract int executeInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object[] arguments);
+        public abstract int executeInt(Frame frame, GraalHPyContext nativeContext, int errorValue, Object errType, String format, Object[] arguments);
 
         @Specialization
-        static int doInt(Frame frame, GraalHPyContext nativeContext, int errorValue, LazyPythonClass errType, String format, Object[] arguments,
+        static int doInt(Frame frame, GraalHPyContext nativeContext, int errorValue, Object errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -226,7 +228,7 @@ public class GraalHPyNodes {
         }
 
         @Specialization
-        static Object doObject(Frame frame, GraalHPyContext nativeContext, Object errorValue, LazyPythonClass errType, String format, Object[] arguments,
+        static Object doObject(Frame frame, GraalHPyContext nativeContext, Object errorValue, Object errType, String format, Object[] arguments,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -338,13 +340,13 @@ public class GraalHPyNodes {
         @TruffleBoundary
         private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name, Object callable) {
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethNoargsRoot(language, name, callable, MethNoargsNode.METH_NOARGS_CONVERTER);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethORoot(language, name, callable, MethONode.METH_O_CONVERTER);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethKeywordsRoot(language, name, callable, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, callable, AllToSulongNodeGen.create());
+                return new MethVarargsRoot(language, name, callable, MethVarargsNode.METH_VARARGS_CONVERTER);
             }
             throw new IllegalStateException("illegal method flags");
         }

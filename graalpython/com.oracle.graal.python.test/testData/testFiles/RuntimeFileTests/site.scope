@@ -1,6 +1,6 @@
 Scope: []
     Kind: Module
-    FrameDescriptor: [ENABLE_USER_SITE, PREFIXES, USER_BASE, USER_SITE]
+    FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
     Scope: _script

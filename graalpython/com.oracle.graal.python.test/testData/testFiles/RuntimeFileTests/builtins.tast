@@ -137,6 +137,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         GetAttributeNodeGen SourceSection: None
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: modules
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -171,6 +172,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                           GetAttributeNodeGen SourceSection: [2402,2427]`__graalpython__.core...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: core_home
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
@@ -195,6 +197,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         GetAttributeNodeGen SourceSection: [2458,2472]`posix.O_RDONLY`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: O_RDONLY
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -218,6 +221,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         GetAttributeNodeGen SourceSection: [2503,2514]`sys.maxsize`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: maxsize
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
@@ -263,6 +267,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
                         GetAttributeNodeGen SourceSection: [2597,2612]`module.__dict__`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: __dict__
+                            CachedDispatchFirst SourceSection: None
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None

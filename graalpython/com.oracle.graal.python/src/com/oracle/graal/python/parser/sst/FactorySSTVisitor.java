@@ -56,6 +56,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -91,6 +93,7 @@ import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
@@ -118,10 +121,11 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.BigIntegerLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSSTNode;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.util.BiFunction;
+import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -132,7 +136,7 @@ import com.oracle.truffle.api.source.SourceSection;
 public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     protected final ScopeEnvironment scopeEnvironment;
-    protected final Source source;
+    protected Source source;
     protected final NodeFactory nodeFactory;
     protected final PythonParser.ParserErrorCallback errors;
 
@@ -144,6 +148,59 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         this.nodeFactory = nodeFactory;
         this.errors = errors;
         this.comprLevel = 0;
+    }
+
+    /**
+     * Create a binary expression using given function such that it can be resumed when the right
+     * subexpression yields without reexecuting the side-effects of the left subexpression
+     *
+     * @param left left expression
+     * @param right right expression
+     * @param rightCanYield whether the right expression can yield. Should be obtained using
+     *            {@link #hadYieldSince(int)}
+     * @param create function for creating the expression from left and right
+     */
+    protected ExpressionNode createResumableExpression(ExpressionNode left, ExpressionNode right, @SuppressWarnings("unused") boolean rightCanYield,
+                    BiFunction<ExpressionNode, ExpressionNode, ExpressionNode> create) {
+        return create.apply(left, right);
+    }
+
+    /**
+     * Get current number of yields to be used later by {@link #hadYieldSince(int)}.
+     */
+    protected int getCurrentNumberOfYields() {
+        return 0;
+    }
+
+    /**
+     * Create an expression using given function such that it can be resumed when the one
+     * subexpression yields without reexecuting the side-effects of the preceding subexpressions
+     *
+     * @param nodes subexpressions
+     * @param canYield whether one of the expressions can yield. Should be obtained using
+     *            {@link #hadYieldSince(int)}
+     * @param create function for creating the expression from the nodes
+     */
+    protected ExpressionNode createResumableExpression(ExpressionNode[] nodes, @SuppressWarnings("unused") boolean canYield, Function<ExpressionNode[], ExpressionNode> create) {
+        return create.apply(nodes);
+    }
+
+    /**
+     * @see #createResumableExpression(ExpressionNode[], boolean, Function)
+     */
+    protected ExpressionNode createResumableExpression(ExpressionNode[] nodes1, ExpressionNode[] nodes2, @SuppressWarnings("unused") boolean canYield,
+                    BiFunction<ExpressionNode[], ExpressionNode[], ExpressionNode> create) {
+        return create.apply(nodes1, nodes2);
+    }
+
+    /**
+     * Whether the visitor encountered a yield since the given number of yields
+     *
+     * @param oldNmberOfYields should be obtained using {@link #getCurrentNumberOfYields()} before
+     *            visiting the expression which we want to detect yields in
+     */
+    protected boolean hadYieldSince(int oldNmberOfYields) {
+        return getCurrentNumberOfYields() > oldNmberOfYields;
     }
 
     public ExpressionNode asExpression(BlockSSTNode block) {
@@ -194,7 +251,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    protected StatementNode createAssignmentBlock(@SuppressWarnings("unused") AssignmentSSTNode node, StatementNode... statements) {
+    protected StatementNode createResumableBlock(@SuppressWarnings("unused") boolean canYield, StatementNode... statements) {
         return BlockNode.create(statements);
     }
 
@@ -207,7 +264,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AndSSTNode node) {
         ExpressionNode last = (ExpressionNode) node.values[0].accept(this);
         for (int i = 1; i < node.values.length; i++) {
-            last = new AndNode(last, (ExpressionNode) node.values[i].accept(this));
+            int numYields = getCurrentNumberOfYields();
+            ExpressionNode right = (ExpressionNode) node.values[i].accept(this);
+            last = createResumableExpression(last, right, hadYieldSince(numYields), AndNode::new);
         }
         last.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return last;
@@ -215,7 +274,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AnnAssignmentSSTNode node) {
-        PNode assignmentNode = visit((AssignmentSSTNode) node);
+        PNode assignmentNode = createAssignment(node, true);
         if (!scopeEnvironment.isInFunctionScope() && node.type != null && node.lhs.length == 1 && node.lhs[0] instanceof VarLookupSSTNode) {
             // annotations in a function we ignore at all. Even there are not evalueated, whether
             // the type is wrong
@@ -243,16 +302,30 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AssignmentSSTNode node) {
+        return createAssignment(node, false);
+    }
+
+    public StatementNode createAssignment(AssignmentSSTNode node, boolean checkAnnotationPermitted) {
         ExpressionNode[] lhs = new ExpressionNode[node.lhs.length];
+        int numYields = getCurrentNumberOfYields();
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
             checkCannotAssignTo(sstLhs);
             lhs[i] = (ExpressionNode) sstLhs.accept(this);
+            if (checkAnnotationPermitted) {
+                if (lhs[i] instanceof TupleLiteralNode) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "tuple");
+                } else if (lhs[i] instanceof ListLiteralNode) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "list");
+                } else if (!(lhs[i] instanceof ReadNode)) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(sstLhs.getStartOffset(), sstLhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
+                }
+            }
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
 
         StatementNode result;
-        if (lhs.length == 1) {
+        if (lhs.length == 1 && !hadYieldSince(numYields)) {
             result = createAssignment(lhs[0], rhs);
         } else {
             int len = lhs.length;
@@ -263,7 +336,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             for (int i = 0; i < len; i++) {
                 assignments[i + 1] = createAssignment(lhs[i], (ExpressionNode) tmp);
             }
-            result = createAssignmentBlock(node, assignments);
+            result = createResumableBlock(hadYieldSince(numYields), assignments);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -273,6 +346,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AugAssignmentSSTNode node) {
         checkCannotAssignTo(node.lhs);
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
+        checkExpressionAssignable(lhs);
         if (!(lhs instanceof ReadNode)) {
             throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT);
         }
@@ -286,8 +360,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     private void checkCannotAssignTo(SSTNode lhs) throws RuntimeException {
         if (lhs instanceof ForComprehensionSSTNode) {
+            PythonBuiltinClassType resultType = ((ForComprehensionSSTNode) lhs).resultType;
+            if (resultType == PythonBuiltinClassType.PGenerator) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), "cannot assign to generator expression");
+            }
             String calleeName;
-            switch (((ForComprehensionSSTNode) lhs).resultType) {
+            switch (resultType) {
                 case PList:
                     calleeName = BuiltinNames.LIST;
                     break;
@@ -317,8 +395,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(BinaryArithmeticSSTNode node) {
         ExpressionNode left = (ExpressionNode) node.left.accept(this);
+        int numYields = getCurrentNumberOfYields();
         ExpressionNode right = (ExpressionNode) node.right.accept(this);
-        ExpressionNode result = node.operation.create(left, right);
+        ExpressionNode result = createResumableExpression(left, right, hadYieldSince(numYields), node.operation::create);
         // TODO the old parser assing ss only for the first. See parser test assignment03
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -389,17 +468,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         scopeEnvironment.setCurrentScope(classScope);
         String qualifiedName = getQualifiedName(classScope, node.name);
 
-        // 1) create a cellvar in the class body (__class__), the class itself is stored here
-        classScope.addCellVar(__CLASS__, true);
-        // 2) all class methods receive a __class__ freevar
-        ScopeInfo childScope = classScope.getFirstChildScope();
-        while (childScope != null) {
-            if (childScope.getScopeKind() == ScopeKind.Function || childScope.getScopeKind() == ScopeKind.Generator) {
-                childScope.addFreeVar(__CLASS__, true);
-            }
-            childScope = childScope.getNextChildScope();
-        }
-
         int delta = 0;
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
         ExpressionNode doc = null;
@@ -426,7 +494,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         classBody.assignSourceSection(createSourceSection(classBodyStart, node.body.endOffset));
 
         delta = delta + (classScope.hasAnnotations() ? 1 : 0);
-        StatementNode[] classStatements = new StatementNode[3 + delta];
+        boolean hasImplicitClass = classScope.isCellVar(__CLASS__);
+        StatementNode[] classStatements = new StatementNode[2 + delta + (hasImplicitClass ? 1 : 0)];
         // ClassStatemtns look like:
         // [0] ClassDefinitionPrologueNode
         classStatements[0] = new ClassDefinitionPrologueNode(qualifiedName);
@@ -441,9 +510,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
         // [last - 1] class body statements
         classStatements[1 + delta] = classBody;
-        // [last] assign __class__ cell to __classcell__
-        classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
-                        nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+        if (hasImplicitClass) {
+            // [last] assign __class__ cell to __classcell__
+            // Only if __class__ is generated in the class scope. The __class__ is in class scope,
+            // when an inner method uses __class__ or super is used.
+            classStatements[2 + delta] = scopeEnvironment.findVariable(__CLASSCELL__).makeWriteNode(
+                            nodeFactory.createReadLocal(scopeEnvironment.getCurrentScope().getFrameDescriptor().findFrameSlot(__CLASS__)));
+        }
 
         SourceSection nodeSourceSection = createSourceSection(node.startOffset, node.endOffset);
         StatementNode body = nodeFactory.createBlock(classStatements);
@@ -493,15 +566,23 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(CollectionSSTNode node) {
         PNode result = null;
+        int numYields;
+        ExpressionNode[] items;
         switch (node.type) {
             case PTuple:
-                result = nodeFactory.createTupleLiteral(getCollectionItems(node.values));
+                numYields = getCurrentNumberOfYields();
+                items = getCollectionItems(node.values);
+                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createTupleLiteral);
                 break;
             case PList:
-                result = nodeFactory.createListLiteral(getCollectionItems(node.values));
+                numYields = getCurrentNumberOfYields();
+                items = getCollectionItems(node.values);
+                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createListLiteral);
                 break;
             case PSet:
-                result = nodeFactory.createSetLiteral(getCollectionItems(node.values));
+                numYields = getCurrentNumberOfYields();
+                items = getCollectionItems(node.values);
+                result = createResumableExpression(items, hadYieldSince(numYields), nodeFactory::createSetLiteral);
                 break;
             case PDict:
                 if (node.values.length == 0) {
@@ -511,13 +592,15 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                     List<ExpressionNode> keys = new ArrayList<>(initLen);
                     List<ExpressionNode> values = new ArrayList<>(initLen);
                     List<ExpressionNode> dicts = new ArrayList<>();
+                    numYields = getCurrentNumberOfYields();
                     for (int i = 0; i < node.values.length; i++) {
                         if (node.values[i] != null) {
                             keys.add((ExpressionNode) node.values[i].accept(this));
                             values.add((ExpressionNode) node.values[++i].accept(this));
                         } else {
                             if (!keys.isEmpty()) {
-                                dicts.add(nodeFactory.createDictLiteral(keys, values));
+                                dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields),
+                                                nodeFactory::createDictLiteral));
                                 keys.clear();
                                 values.clear();
                             } else {
@@ -531,12 +614,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                         }
                     }
                     if (dicts.isEmpty()) {
-                        result = nodeFactory.createDictLiteral(keys, values);
+                        result = createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictLiteral);
                     } else {
                         if (!keys.isEmpty()) {
-                            dicts.add(nodeFactory.createDictLiteral(keys, values));
+                            dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictLiteral));
                         }
-                        result = nodeFactory.createDictionaryConcat(dicts.toArray(new ExpressionNode[dicts.size()]));
+                        result = createResumableExpression(dicts.toArray(new ExpressionNode[0]), hadYieldSince(numYields), nodeFactory::createDictionaryConcat);
                     }
 
                 }
@@ -558,25 +641,26 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ComparisonSSTNode node) {
-        String operator;
         ExpressionNode left = (ExpressionNode) node.firstValue.accept(this);
         ExpressionNode right;
         ExpressionNode result = null;
         int opLen = node.operations.length;
         for (int i = 0; i < opLen; i++) {
-            operator = node.operations[i];
+            String operator = node.operations[i];
+            int numYields = getCurrentNumberOfYields();
             right = (ExpressionNode) node.otherValues[i].accept(this);
+            boolean rightCanYield = hadYieldSince(numYields);
             ExpressionNode nextComp;
             if (right instanceof LiteralNode || right instanceof ReadNode || i == opLen - 1) {
-                nextComp = nodeFactory.createComparisonOperation(operator, left, right);
+                nextComp = createResumableExpression(left, right, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r));
                 left = right;
             } else {
                 ReadNode tmpVar = makeTempLocalVariable();
                 StatementNode tmpAssignment = tmpVar.makeWriteNode(right);
-                nextComp = nodeFactory.createComparisonOperation(operator, left, (ExpressionNode) tmpVar).withSideEffect(tmpAssignment);
+                nextComp = createResumableExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> nodeFactory.createComparisonOperation(operator, l, r)).withSideEffect(tmpAssignment);
                 left = (ExpressionNode) tmpVar;
             }
-            result = result == null ? nextComp : new AndNode(result, nextComp);
+            result = result == null ? nextComp : createResumableExpression(result, nextComp, rightCanYield, AndNode::new);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -1050,7 +1134,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(OrSSTNode node) {
         ExpressionNode last = (ExpressionNode) node.values[0].accept(this);
         for (int i = 1; i < node.values.length; i++) {
-            last = new OrNode(last, (ExpressionNode) node.values[i].accept(this));
+            int numYields = getCurrentNumberOfYields();
+            ExpressionNode right = (ExpressionNode) node.values[i].accept(this);
+            last = createResumableExpression(last, right, hadYieldSince(numYields), OrNode::new);
         }
         last.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return last;
@@ -1149,7 +1235,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(StringLiteralSSTNode.FormatStringLiteralSSTNode node) {
-        PNode result = nodeFactory.createFormatStringLiteral(node.value);
+        ExpressionNode[] exprs = new ExpressionNode[node.expressions.length];
+        Source prev = this.source;
+        for (int i = 0; i < node.expressions.length; i++) {
+            this.source = Source.newBuilder(PythonLanguage.ID, node.expresionsSources[i], "<fstring-expr>").build();
+            exprs[i] = (ExpressionNode) node.expressions[i].accept(this);
+        }
+        this.source = prev;
+        PNode result = nodeFactory.createFormatStringLiteral(node.value, exprs, node.literals);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1287,7 +1380,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
+    private void checkExpressionAssignable(ExpressionNode lhs) {
         if (lhs instanceof ObjectLiteralNode) {
             if (((ObjectLiteralNode) lhs).getObject() == PEllipsis.INSTANCE) {
                 throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "Ellipsis");
@@ -1308,7 +1401,14 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "set display");
         } else if (lhs instanceof FormatStringLiteralNode) {
             throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "f-string expression");
-        } else if (lhs instanceof TupleLiteralNode) {
+        } else if (lhs instanceof AbstractYieldNode) {
+            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "yield expression");
+        }
+    }
+
+    private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
+        checkExpressionAssignable(lhs);
+        if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {
             return createDestructuringAssignment(((ListLiteralNode) lhs).getValues(), rhs);

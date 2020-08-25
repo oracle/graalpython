@@ -71,9 +71,12 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
+import sun.misc.SignalHandler;
+
 @CoreFunctions(defineModule = "_signal")
 public class SignalModuleBuiltins extends PythonBuiltins {
-    private static ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Object> signalHandlers = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
 
     private static final HiddenKey signalQueueKey = new HiddenKey("signalQueue");
     private final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
@@ -172,22 +175,34 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @TruffleBoundary
+    private static Object handlerToPython(SignalHandler handler, int signum) {
+        if (handler == sun.misc.SignalHandler.SIG_DFL) {
+            return Signals.SIG_DFL;
+        } else if (handler == sun.misc.SignalHandler.SIG_IGN) {
+            return Signals.SIG_IGN;
+        } else if (handler instanceof Signals.PythonSignalHandler) {
+            return signalHandlers.getOrDefault(signum, PNone.NONE);
+        } else {
+            // Save default JVM handlers to be restored later
+            defaultSignalHandlers.put(signum, handler);
+            return Signals.SIG_DFL;
+        }
+    }
+
     @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         Object getsignal(int signum) {
-            int currentSignalHandler = Signals.getCurrentSignalHandler(signum);
-            if (currentSignalHandler == Signals.SIG_UNKNOWN) {
-                if (signalHandlers.containsKey(signum)) {
-                    return signalHandlers.get(signum);
-                } else {
-                    return PNone.NONE;
-                }
-            } else {
-                return currentSignalHandler;
-            }
+            return handlerToPython(Signals.getCurrentSignalHandler(signum), signum);
+        }
+
+        @Specialization(limit = "3")
+        Object getsignal(Object signum,
+                        @CachedLibrary("signum") PythonObjectLibrary lib) {
+            return getsignal(lib.asSize(signum));
         }
     }
 
@@ -218,21 +233,19 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object signal(int signum, int id) {
-            Object retval;
+            SignalHandler oldHandler;
             try {
-                retval = Signals.setSignalHandler(signum, id);
+                if (id == Signals.SIG_DFL && defaultSignalHandlers.containsKey(signum)) {
+                    oldHandler = Signals.setSignalHandler(signum, defaultSignalHandlers.get(signum));
+                } else {
+                    oldHandler = Signals.setSignalHandler(signum, id);
+                }
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.SIGNAL_MUST_BE_SIGIGN_SIGDFL_OR_CALLABLE_OBJ);
             }
-            if ((int) retval == Signals.SIG_UNKNOWN) {
-                if (signalHandlers.containsKey(signum)) {
-                    retval = signalHandlers.get(signum);
-                } else {
-                    retval = PNone.NONE;
-                }
-            }
-            signalHandlers.put(signum, id);
-            return retval;
+            Object result = handlerToPython(oldHandler, signum);
+            signalHandlers.remove(signum);
+            return result;
         }
 
         @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
@@ -248,25 +261,19 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         private Object signal(PythonModule self, int signum, Object handler, ReadAttributeFromObjectNode readQueueNode, ReadAttributeFromObjectNode readSemaNode) {
             ConcurrentLinkedDeque<SignalTriggerAction> queue = getQueue(self, readQueueNode);
             Semaphore semaphore = getSemaphore(self, readSemaNode);
-            Object retval;
+            SignalHandler oldHandler;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
-                retval = Signals.setSignalHandler(signum, () -> {
+                oldHandler = Signals.setSignalHandler(signum, () -> {
                     queue.add(signalTrigger);
                     semaphore.release();
                 });
             } catch (IllegalArgumentException e) {
                 throw raise(PythonErrorType.ValueError, e);
             }
-            if ((int) retval == Signals.SIG_UNKNOWN) {
-                if (signalHandlers.containsKey(signum)) {
-                    retval = signalHandlers.get(signum);
-                } else {
-                    retval = PNone.NONE;
-                }
-            }
+            Object result = handlerToPython(oldHandler, signum);
             signalHandlers.put(signum, handler);
-            return retval;
+            return result;
         }
 
         @SuppressWarnings("unchecked")
@@ -299,7 +306,6 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 final class Signals {
     static final int SIG_DFL = 0;
     static final int SIG_IGN = 1;
-    static final int SIG_UNKNOWN = -1;
     private static final int SIGMAX = 31;
     static final String[] signalNames = new String[SIGMAX + 1];
 
@@ -342,7 +348,7 @@ final class Signals {
         new Thread(new Alarm(seconds)).start();
     }
 
-    private static class PythonSignalHandler implements sun.misc.SignalHandler {
+    static class PythonSignalHandler implements sun.misc.SignalHandler {
         private final Runnable handler;
 
         public PythonSignalHandler(Runnable handler) {
@@ -360,13 +366,17 @@ final class Signals {
     }
 
     @TruffleBoundary
-    synchronized static int setSignalHandler(int signum, Runnable handler) throws IllegalArgumentException {
-        sun.misc.SignalHandler oldH = sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), new PythonSignalHandler(handler));
-        return handlerToInt(oldH);
+    synchronized static SignalHandler setSignalHandler(int signum, Runnable handler) throws IllegalArgumentException {
+        return setSignalHandler(signum, new PythonSignalHandler(handler));
     }
 
     @TruffleBoundary
-    synchronized static int setSignalHandler(int signum, int handler) throws IllegalArgumentException {
+    synchronized static SignalHandler setSignalHandler(int signum, SignalHandler handler) throws IllegalArgumentException {
+        return sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), handler);
+    }
+
+    @TruffleBoundary
+    synchronized static SignalHandler setSignalHandler(int signum, int handler) throws IllegalArgumentException {
         sun.misc.SignalHandler h;
         if (handler == SIG_DFL) {
             h = sun.misc.SignalHandler.SIG_DFL;
@@ -375,34 +385,24 @@ final class Signals {
         } else {
             throw new IllegalArgumentException();
         }
-        return handlerToInt(sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), h));
+        return sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), h);
     }
 
     @TruffleBoundary
-    synchronized static int getCurrentSignalHandler(int signum) {
+    synchronized static SignalHandler getCurrentSignalHandler(int signum) {
         // To check what the current signal handler, we install default to get the current one
         // and immediately replace it again.
         sun.misc.SignalHandler oldH;
         try {
             oldH = sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), sun.misc.SignalHandler.SIG_DFL);
         } catch (IllegalArgumentException e) {
-            return SIG_DFL;
+            return sun.misc.SignalHandler.SIG_DFL;
         }
         try {
             sun.misc.Signal.handle(new sun.misc.Signal(signalNumberToName(signum)), oldH);
         } catch (IllegalArgumentException e) {
-            return SIG_DFL;
+            return sun.misc.SignalHandler.SIG_DFL;
         }
-        return handlerToInt(oldH);
-    }
-
-    private static int handlerToInt(sun.misc.SignalHandler oldH) {
-        if (oldH == sun.misc.SignalHandler.SIG_DFL) {
-            return SIG_DFL;
-        } else if (oldH == sun.misc.SignalHandler.SIG_IGN) {
-            return SIG_IGN;
-        } else {
-            return SIG_UNKNOWN;
-        }
+        return oldH;
     }
 }

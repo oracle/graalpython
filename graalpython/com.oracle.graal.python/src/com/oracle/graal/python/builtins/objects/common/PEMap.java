@@ -625,12 +625,20 @@ final class PEMap implements Iterable<DictKey> {
         return result;
     }
 
-    private abstract class AbstractSparseMapIterator<E> implements Iterator<E> { //
+    abstract class AbstractSparseMapIterator<E> implements Iterator<E> {
 
         protected int current;
 
         AbstractSparseMapIterator(int current) {
             this.current = current;
+        }
+
+        public int getState() {
+            return current;
+        }
+
+        public void setState(int state) {
+            current = state;
         }
 
         @Override
@@ -655,7 +663,7 @@ final class PEMap implements Iterable<DictKey> {
         }
     }
 
-    private abstract class ReverseSparseMapIterator<E> extends AbstractSparseMapIterator<E> { //
+    private abstract class ReverseSparseMapIterator<E> extends AbstractSparseMapIterator<E> {
         public ReverseSparseMapIterator() {
             super(totalEntries);
         }

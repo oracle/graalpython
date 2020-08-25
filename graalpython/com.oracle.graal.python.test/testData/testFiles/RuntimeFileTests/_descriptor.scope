@@ -5,34 +5,34 @@ Scope: []
     FreeVars: Empty
     Scope: SimpleNamespace
         Kind: Class
-        FrameDescriptor: [__setattr__, __getattr__, __repr__, __init__, __delattr__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__setattr__, __getattr__, __repr__, __init__, __delattr__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [<>temp6, ns, <>temp7, v, self, k, <return_val>, __class__, sb]
+            FrameDescriptor: [<>temp6, ns, v, self, k, <>temp5, <return_val>, sb]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __setattr__
             Kind: Function
-            FrameDescriptor: [name, self, value, <return_val>, __class__]
+            FrameDescriptor: [name, self, value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __getattr__
             Kind: Function
-            FrameDescriptor: [name, self, <return_val>, __class__]
+            FrameDescriptor: [name, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __delattr__
             Kind: Function
-            FrameDescriptor: [name, self, <return_val>, __class__]
+            FrameDescriptor: [name, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [kwargs, self, <return_val>, __class__]
+            FrameDescriptor: [kwargs, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: make_named_tuple_class
         Kind: Function
         FrameDescriptor: [named_tuple, name, _define_named_tuple_methods, fields, <return_val>]
@@ -55,19 +55,19 @@ Scope: []
                     FreeVars: [i]
         Scope: named_tuple
             Kind: Class
-            FrameDescriptor: [n_sequence_fields, __name__, __str__, name, __repr__, fields, __class__]
-            CellVars: [__class__]
+            FrameDescriptor: [n_sequence_fields, __name__, __str__, name, __repr__, fields]
+            CellVars: Empty
             FreeVars: [fields, name]
             Scope: __repr__
                 Kind: Function
-                FrameDescriptor: [f, name, self, fields, <return_val>, __class__, sb]
+                FrameDescriptor: [f, name, self, fields, <return_val>, sb]
                 CellVars: Empty
-                FreeVars: [__class__, fields, name]
+                FreeVars: [fields, name]
             Scope: __str__
                 Kind: Function
-                FrameDescriptor: [self, <return_val>, __class__]
+                FrameDescriptor: [self, <return_val>]
                 CellVars: Empty
-                FreeVars: [__class__]
+                FreeVars: Empty
     Scope: _f
         Kind: Function
         FrameDescriptor: [<return_val>]

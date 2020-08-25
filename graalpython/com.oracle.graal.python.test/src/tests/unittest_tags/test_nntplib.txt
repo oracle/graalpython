@@ -1,0 +1,15 @@
+*graalpython.lib-python.3.test.test_nntplib.LocalServerTests.test_starttls
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_parse_datetime
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_parse_overview
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_parse_overview_fmt
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_ssl_support
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_unparse_datetime
+*graalpython.lib-python.3.test.test_nntplib.MiscTests.test_unparse_datetime_legacy
+*graalpython.lib-python.3.test.test_nntplib.MockSocketTests.test_bad_welcome
+*graalpython.lib-python.3.test.test_nntplib.MockSocketTests.test_service_permanently_unavailable
+*graalpython.lib-python.3.test.test_nntplib.MockSocketTests.test_service_temporarily_unavailable
+*graalpython.lib-python.3.test.test_nntplib.MockSslTests.test_bad_capabilities
+*graalpython.lib-python.3.test.test_nntplib.MockSslTests.test_bad_welcome
+*graalpython.lib-python.3.test.test_nntplib.MockSslTests.test_login_aborted
+*graalpython.lib-python.3.test.test_nntplib.MockSslTests.test_service_permanently_unavailable
+*graalpython.lib-python.3.test.test_nntplib.MockSslTests.test_service_temporarily_unavailable

@@ -230,12 +230,16 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached("create(0)") ReadIndexedArgumentNode readArgument,
                         @Cached("createBinaryProfile()") ConditionProfile isCellProfile) {
             Object obj = readArgument.execute(frame);
-            if (obj == PNone.NONE) {
+            if (obj == PNone.NONE || obj == PNone.NO_VALUE) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
             }
             Object cls = readClass.execute(frame);
             if (isCellProfile.profile(cls instanceof PCell)) {
                 cls = getGetRefNode().execute((PCell) cls);
+            }
+            if (cls == null) {
+                // the cell is empty
+                throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
             }
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
@@ -276,7 +280,8 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (cls instanceof PCell) {
                 cls = getGetRefNode().execute((PCell) cls);
                 if (cls == null) {
-                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+                    // the cell is empty
+                    throw raise(PythonErrorType.RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
                 }
             }
             return cls != null ? cls : PNone.NONE;
@@ -491,7 +496,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             return genericGetAttr(frame, self, attr);
         }
 
-        private boolean isSameType(Object execute, PythonAbstractClass abstractPythonClass) {
+        private boolean isSameType(Object execute, Object abstractPythonClass) {
             if (isSameTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isSameTypeNode = insert(IsSameTypeNodeGen.create());

@@ -45,18 +45,55 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
+/**
+ * Represents the value of a native pointer as Python int.<br/>
+ * Such objects are created using C API function {@code PyLong_FromVoidPtr} and semantics are best
+ * explained by looking at how CPython constructs the value:
+ * {@code PyLong_FromUnsignedLong((unsigned long)(uintptr_t)p)}. CPython casts the {@code (void *)}
+ * to an integer and this will be the value for the Python int. In our case, to get a numeric
+ * representation of a pointer, we would need to send a to-native message. However, we try to avoid
+ * this eager transformation using this wrapper.
+ */
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonNativeVoidPtr extends PythonAbstractObject {
-    public final TruffleObject object;
+    private final TruffleObject object;
+    private final long nativePointerValue;
+    private final boolean hasNativePointer;
 
     public PythonNativeVoidPtr(TruffleObject object) {
         this.object = object;
+        this.nativePointerValue = 0;
+        this.hasNativePointer = false;
     }
 
+    public PythonNativeVoidPtr(TruffleObject object, long nativePointerValue) {
+        this.object = object;
+        this.nativePointerValue = nativePointerValue;
+        this.hasNativePointer = true;
+    }
+
+    public Object getPointerObject() {
+        return object;
+    }
+
+    public long getNativePointer() {
+        return nativePointerValue;
+    }
+
+    public boolean isNativePointer() {
+        return hasNativePointer;
+    }
+
+    @Override
     public int compareTo(Object o) {
         return 0;
     }
@@ -79,4 +116,21 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
         return String.format("PythonNativeVoidPtr(%s)", object);
     }
 
+    @ExportMessage(limit = "2")
+    long hash(
+                    @CachedLibrary("this.getPointerObject()") InteropLibrary lib) {
+        if (lib.hasIdentity(object)) {
+            try {
+                return lib.identityHashCode(object);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+        return hashCodeBoundary(object);
+    }
+
+    @TruffleBoundary
+    private static long hashCodeBoundary(Object object) {
+        return object.hashCode();
+    }
 }

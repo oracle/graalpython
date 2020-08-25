@@ -61,3 +61,8 @@
 *graalpython.lib-python.3.test.test_call.FastCallTests.test_fastcall_clearing_dict
 *graalpython.lib-python.3.test.test_call.FastCallTests.test_vectorcall
 *graalpython.lib-python.3.test.test_call.FastCallTests.test_vectorcall_dict
+*graalpython.lib-python.3.test.test_call.FunctionCalls.test_kwargs_order
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_method_descriptor_flag
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall_flag
+*graalpython.lib-python.3.test.test_call.TestPEP590.test_vectorcall_override

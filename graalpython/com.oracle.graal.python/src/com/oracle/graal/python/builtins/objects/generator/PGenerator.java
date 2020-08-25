@@ -123,7 +123,7 @@ public final class PGenerator extends PythonBuiltinObject {
     }
 
     private PGenerator(String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
-        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.newInstance());
+        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape());
         this.name = name;
         this.qualname = qualname;
         this.callTargets = callTargets;
@@ -193,7 +193,7 @@ public final class PGenerator extends PythonBuiltinObject {
 
     @Override
     public String toString() {
-        return "<generator object '" + name + "' at " + hashCode() + ">";
+        return "<generator object " + name + " at " + hashCode() + ">";
     }
 
     public static PGenerator require(Object value) {

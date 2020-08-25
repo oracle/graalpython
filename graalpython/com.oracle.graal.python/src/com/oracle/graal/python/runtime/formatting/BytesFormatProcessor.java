@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -229,8 +229,8 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     private byte[] asBytes(Object arg) {
         // bytes like object -> use directly
-        if (arg instanceof PIBytesLike) {
-            return toBytes((PIBytesLike) arg);
+        if (arg instanceof PBytesLike) {
+            return toBytes((PBytesLike) arg);
         }
         // try calling __bytes__
         Object attribute = lookupAttribute(arg, __BYTES__);
@@ -249,7 +249,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         return result;
     }
 
-    private static byte[] toBytes(PIBytesLike arg) {
+    private static byte[] toBytes(PBytesLike arg) {
         return ToByteArrayNodeGen.getUncached().execute(arg.getSequenceStorage());
     }
 

@@ -59,14 +59,11 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
@@ -92,6 +89,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -138,13 +137,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
-        @Specialization
-        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonNativeClass klass) {
+        @Specialization(guards = "isNativeClass(klass)")
+        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
-        @Specialization
-        PNone setClass(VirtualFrame frame, PythonObject self, PythonAbstractClass value,
+        @Specialization(guards = "isPythonClass(value)")
+        PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
                         @Cached("create()") BranchProfile errorValueBranch,
                         @Cached("create()") BranchProfile errorSelfBranch) {
@@ -164,13 +163,13 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isPythonObject(self)")
-        Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonAbstractClass value) {
+        @Specialization(guards = {"isPythonClass(value)", "!isPythonObject(self)"})
+        Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
             throw raise(TypeError, ERROR_MESSAGE);
         }
 
         @Fallback
-        Object getClass(@SuppressWarnings("unused") Object self, Object value) {
+        Object getClassError(@SuppressWarnings("unused") Object self, Object value) {
             throw raise(TypeError, ErrorMessages.CLASS_MUST_BE_SET_TO_CLASS, value);
         }
 
@@ -444,7 +443,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization(limit = "4")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
                         @Cached StringNodes.CastToJavaStringCheckedNode castToString,
@@ -526,11 +525,11 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"})
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
-            PHashingCollection dict = lib.getDict(self);
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 try {
@@ -543,10 +542,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"}, limit = "1")
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self, PDict dict,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary("self") InteropLibrary iLib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
@@ -559,11 +558,16 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)", limit = "1")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            PHashingCollection dict = lib.getDict(self);
+            PDict dict = lib.getDict(self);
             if (dict == null) {
                 raise(self, none);
             }
             return dict;
+        }
+
+        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
+        Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
+            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Fallback
@@ -576,15 +580,20 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isString(formatString)")
-        Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") Object formatString,
+        @Specialization
+        Object format(VirtualFrame frame, Object self, Object formatStringObj,
+                        @Cached CastToJavaStringNode castToStringNode,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
+            String formatString;
+            try {
+                formatString = castToStringNode.execute(formatStringObj);
+            } catch (CannotCastException ex) {
+                throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
+            }
+            if (formatString.length() > 0) {
+                raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
+            }
             return strCall.executeObject(frame, self);
-        }
-
-        @Fallback
-        Object formatFail(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object formatSpec) {
-            throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
         }
     }
 

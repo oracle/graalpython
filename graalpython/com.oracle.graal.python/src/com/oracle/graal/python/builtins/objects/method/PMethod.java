@@ -35,7 +35,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
@@ -45,8 +45,8 @@ public final class PMethod extends PythonBuiltinObject {
     final Object function;
     private final Object self;
 
-    public PMethod(Object cls, DynamicObject storage, Object self, Object function) {
-        super(cls, storage);
+    public PMethod(Object cls, Shape instanceShape, Object self, Object function) {
+        super(cls, instanceShape);
         this.self = self;
         this.function = function;
     }
@@ -79,6 +79,12 @@ public final class PMethod extends PythonBuiltinObject {
     @ExportMessage
     protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasSourceLocation(function);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isHashable() {
+        return true;
     }
 
     @ExportMessage

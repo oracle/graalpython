@@ -44,15 +44,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PForeignArrayIterator extends PythonBuiltinObject {
 
     private final Object foreignArray;
     private int cursor;
 
-    public PForeignArrayIterator(Object cls, DynamicObject storage, Object foreignArray) {
-        super(cls, storage);
+    public PForeignArrayIterator(Object cls, Shape instanceShape, Object foreignArray) {
+        super(cls, instanceShape);
         this.foreignArray = foreignArray;
     }
 

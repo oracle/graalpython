@@ -42,8 +42,9 @@ package com.oracle.graal.python.builtins.objects.superobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class SuperObject extends PythonBuiltinObject {
     private final Assumption neverReinitialized = Truffle.getRuntime().createAssumption("super object was never reinitialized");
@@ -51,13 +52,18 @@ public class SuperObject extends PythonBuiltinObject {
     private Object objecttype;
     private Object object;
 
-    public SuperObject(Object cls, DynamicObject storage) {
-        super(cls, storage);
+    public SuperObject(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    private void invalidateAssumption() {
+        neverReinitialized.invalidate();
     }
 
     public void init(Object newType, Object newObjecttype, Object newObject) {
         if (this.type != null) {
-            neverReinitialized.invalidate();
+            invalidateAssumption();
         }
         this.type = newType;
         this.objecttype = newObjecttype;

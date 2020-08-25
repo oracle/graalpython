@@ -129,7 +129,7 @@ public final class ArgDefListBuilder {
     }
 
     public AddParamResult addParam(String name, SSTNode type, SSTNode defValue) {
-        if (paramNames.contains(name)) {
+        if (paramNames.contains(name) || (splatIndex != -1 && name.equals(args.get(splatIndex).name))) {
             return AddParamResult.DUPLICATED_ARGUMENT;
         }
         if (defValue == null && hasDefaultParameter() && !hasSplat()) {
@@ -175,13 +175,17 @@ public final class ArgDefListBuilder {
         splatIndex = args.size() - 1;
     }
 
-    public void addKwargs(String name, SSTNode type) {
+    public AddParamResult addKwargs(String name, SSTNode type) {
         // System.out.println("KwArg: " + name);
+        if (paramNames.contains(name) || (splatIndex != -1 && name.equals(args.get(splatIndex).name))) {
+            return AddParamResult.DUPLICATED_ARGUMENT;
+        }
         if (kwargs == null) {
             kwargs = new ArrayList<>();
         }
         kwargs.add(new Parameter(name, type));
         kwargIndex = kwargs.size() - 1;
+        return AddParamResult.OK;
     }
 
     public boolean hasDefaultParameter() {

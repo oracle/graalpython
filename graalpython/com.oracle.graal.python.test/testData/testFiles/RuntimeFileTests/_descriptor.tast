@@ -59,6 +59,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           GetAttributeNodeGen SourceSection: [2050,2071]`FunctionType.__code_...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __code__
+              CachedDispatchFirst SourceSection: None
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
@@ -125,18 +126,18 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                           FreeVarSlots: fields, , name, 
                           ExecutionSlots:
                             FreeVarsSlots: fields, , name, 
-                            CellVarsSlots: __class__, 
+                            CellVarsSlots: None
                           ClassBodyRootNode SourceSection: [2121,2611]`class named_tuple(tu...`
                             Name: named_tuple
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                               Param Names: namespace
-                            CelVars: __class__
+                            CelVars: None
                             FreeVars: fields, name
                             NeedsCellFrame: False
-                            FrameDescriptor: 7 slots [__name__, n_sequence_fields, fields, __str__, __repr__, name, __class__]
+                            FrameDescriptor: 6 slots [__name__, n_sequence_fields, fields, __str__, __repr__, name]
                             ExecutionSlots:
                               FreeVarsSlots: fields, , name, 
-                              CellVarsSlots: __class__, 
+                              CellVarsSlots: None
                             InnerRootNode SourceSection: [2121,2611]`class named_tuple(tu...`
                               ReturnTargetNode SourceSection: [2121,2611]`class named_tuple(tu...`
                                 Body: BlockNode SourceSection: None
@@ -227,20 +228,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, 
+                                        FreeVarSlots: None
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, 
+                                          FreeVarsSlots: None
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
                                           Name: __str__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self
                                           CelVars: None
-                                          FreeVars: __class__
+                                          FreeVars: None
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 3 slots [self, __class__, <return_val>]
+                                          FrameDescriptor: 2 slots [self, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, 
+                                            FreeVarsSlots: None
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
                                             ReturnTargetNode SourceSection: [2244,2307]`def __str__(self):↵ ...`
@@ -257,7 +258,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [2,<return_val>,Illegal]
+                                                        Frame: [1,<return_val>,Illegal]
                                                       PythonCallNodeGen SourceSection: [2282,2297]`self.__repr__()`
                                                         CallNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
@@ -265,7 +266,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                             Frame: [0,self,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [2,<return_val>,Illegal]
+                                                Frame: [1,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     SetItemNodeGen SourceSection: [2307,2611]`def __repr__(self):↵...`
                                       ArgumentExpressionNode SourceSection: None
@@ -276,20 +277,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                         Arguments: None
                                         KwArguments: None
                                         Documentation: None
-                                        FreeVarSlots: __class__, , fields, , name, 
+                                        FreeVarSlots: fields, , name, 
                                         ExecutionSlots:
-                                          FreeVarsSlots: __class__, , fields, , name, 
+                                          FreeVarsSlots: fields, , name, 
                                           CellVarsSlots: None
                                         FunctionRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
                                           Name: __repr__
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                             Param Names: self
                                           CelVars: None
-                                          FreeVars: __class__, fields, name
+                                          FreeVars: fields, name
                                           NeedsCellFrame: False
-                                          FrameDescriptor: 7 slots [self, sb, f, name, fields, __class__, <return_val>]
+                                          FrameDescriptor: 6 slots [self, sb, f, name, fields, <return_val>]
                                           ExecutionSlots:
-                                            FreeVarsSlots: __class__, , fields, , name, 
+                                            FreeVarsSlots: fields, , name, 
                                             CellVarsSlots: None
                                           InnerRootNode SourceSection: [2307,2611]`def __repr__(self):↵...`
                                             ReturnTargetNode SourceSection: [2307,2611]`def __repr__(self):↵...`
@@ -399,7 +400,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                     WriteLocalVariableNodeGen SourceSection: None
                                                       Identifier: <return_val>
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                        Frame: [6,<return_val>,Illegal]
+                                                        Frame: [5,<return_val>,Illegal]
                                                       PythonCallUnary SourceSection: [2594,2605]`"".join(sb)`
                                                         CallUnaryMethodNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
@@ -408,16 +409,8 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                           Frame: [1,sb,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                Frame: [6,<return_val>,Illegal]
+                                                Frame: [5,<return_val>,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                  SetItemNodeGen SourceSection: None
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    StringLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [6,__class__,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                         StringLiteralNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2139,2144]`tuple`
@@ -669,18 +662,18 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                 FreeVarSlots: None
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 ClassBodyRootNode SourceSection: [2974,3601]`class SimpleNamespac...`
                   Name: SimpleNamespace
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                     Param Names: namespace
-                  CelVars: __class__
+                  CelVars: None
                   FreeVars: None
                   NeedsCellFrame: False
-                  FrameDescriptor: 6 slots [__init__, __delattr__, __getattr__, __setattr__, __repr__, __class__]
+                  FrameDescriptor: 5 slots [__init__, __delattr__, __getattr__, __setattr__, __repr__]
                   ExecutionSlots:
                     FreeVarsSlots: None
-                    CellVarsSlots: __class__, 
+                    CellVarsSlots: None
                   InnerRootNode SourceSection: [2974,3601]`class SimpleNamespac...`
                     ReturnTargetNode SourceSection: [2974,3601]`class SimpleNamespac...`
                       Body: BlockNode SourceSection: None
@@ -703,9 +696,9 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [3009,3095]`def __init__(self, *...`
                                 Name: __init__
@@ -713,11 +706,11 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                   Param Names: self
                                   Keyword Names: None
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, kwargs, __class__, <return_val>]
+                                FrameDescriptor: 3 slots [self, kwargs, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [3009,3095]`def __init__(self, *...`
                                   ReturnTargetNode SourceSection: [3009,3095]`def __init__(self, *...`
@@ -753,7 +746,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               Frame: [1,kwargs,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [3095,3195]`def __delattr__(self...`
                             ArgumentExpressionNode SourceSection: None
@@ -764,20 +757,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [3095,3195]`def __delattr__(self...`
                                 Name: __delattr__
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self, name
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                FrameDescriptor: 3 slots [self, name, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [3095,3195]`def __delattr__(self...`
                                   ReturnTargetNode SourceSection: [3095,3195]`def __delattr__(self...`
@@ -816,7 +809,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               Frame: [1,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [3195,3290]`def __getattr__(self...`
                             ArgumentExpressionNode SourceSection: None
@@ -827,20 +820,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [3195,3290]`def __getattr__(self...`
                                 Name: __getattr__
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self, name
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 4 slots [self, name, __class__, <return_val>]
+                                FrameDescriptor: 3 slots [self, name, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [3195,3290]`def __getattr__(self...`
                                   ReturnTargetNode SourceSection: [3195,3290]`def __getattr__(self...`
@@ -865,7 +858,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [3,<return_val>,Illegal]
+                                              Frame: [2,<return_val>,Illegal]
                                             GetItemNodeGen SourceSection: [3239,3284]`object.__getattribut...`
                                               PythonCallBinary SourceSection: [3239,3278]`object.__getattribut...`
                                                 CallBinaryMethodNodeGen SourceSection: None
@@ -881,7 +874,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                 Frame: [1,name,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [3,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [3290,3393]`def __setattr__(self...`
                             ArgumentExpressionNode SourceSection: None
@@ -892,20 +885,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [3290,3393]`def __setattr__(self...`
                                 Name: __setattr__
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self, name, value
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 5 slots [self, name, value, __class__, <return_val>]
+                                FrameDescriptor: 4 slots [self, name, value, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [3290,3393]`def __setattr__(self...`
                                   ReturnTargetNode SourceSection: [3290,3393]`def __setattr__(self...`
@@ -951,7 +944,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                             Frame: [2,value,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [4,<return_val>,Illegal]
+                                      Frame: [3,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           SetItemNodeGen SourceSection: [3393,3601]`def __repr__(self):↵...`
                             ArgumentExpressionNode SourceSection: None
@@ -962,20 +955,20 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                               Arguments: None
                               KwArguments: None
                               Documentation: None
-                              FreeVarSlots: __class__, 
+                              FreeVarSlots: None
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               FunctionRootNode SourceSection: [3393,3601]`def __repr__(self):↵...`
                                 Name: __repr__
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                   Param Names: self
                                 CelVars: None
-                                FreeVars: __class__
+                                FreeVars: None
                                 NeedsCellFrame: False
-                                FrameDescriptor: 9 slots [self, sb, ns, k, v, __class__, <>temp6, <>temp7, <return_val>]
+                                FrameDescriptor: 8 slots [self, sb, ns, k, v, <>temp5, <>temp6, <return_val>]
                                 ExecutionSlots:
-                                  FreeVarsSlots: __class__, 
+                                  FreeVarsSlots: None
                                   CellVarsSlots: None
                                 InnerRootNode SourceSection: [3393,3601]`def __repr__(self):↵...`
                                   ReturnTargetNode SourceSection: [3393,3601]`def __repr__(self):↵...`
@@ -1014,26 +1007,26 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               ForNextElementNodeGen SourceSection: None
                                                 DestructuringAssignmentNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: None
+                                                    Identifier: <>temp5
+                                                    WriteLocalFrameSlotNodeGen SourceSection: None
+                                                      Frame: [5,<>temp5,Illegal]
+                                                  WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: <>temp6
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [6,<>temp6,Illegal]
-                                                  WriteLocalVariableNodeGen SourceSection: None
-                                                    Identifier: <>temp7
-                                                    WriteLocalFrameSlotNodeGen SourceSection: None
-                                                      Frame: [7,<>temp7,Illegal]
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: k
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [3,k,Illegal]
                                                     ReadLocalVariableNode SourceSection: None
-                                                      Frame: [6,<>temp6,Illegal]
+                                                      Frame: [5,<>temp5,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: None
                                                     Identifier: v
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                       Frame: [4,v,Illegal]
                                                     ReadLocalVariableNode SourceSection: None
-                                                      Frame: [7,<>temp7,Illegal]
+                                                      Frame: [6,<>temp6,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               ExpressionStatementNode SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
                                                 PythonCallUnary SourceSection: [3525,3553]`sb.append("%s='%s'" ...`
@@ -1067,7 +1060,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [8,<return_val>,Illegal]
+                                              Frame: [7,<return_val>,Illegal]
                                             BinaryArithmeticExpression SourceSection: [3569,3600]`"namespace(%s)" % ",...`
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __mod__
@@ -1080,16 +1073,8 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   Frame: [1,sb,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                     Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [8,<return_val>,Illegal]
+                                      Frame: [7,<return_val>,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                        SetItemNodeGen SourceSection: None
-                          ArgumentExpressionNode SourceSection: None
-                            ReadIndexedArgumentNodeGen SourceSection: None
-                              Index: 0
-                          StringLiteralNode SourceSection: None
-                          ReadLocalVariableNode SourceSection: None
-                            Frame: [5,__class__,Illegal]
-                            ReadVariableFromFrameNodeGen SourceSection: None
                       Return Expresssion: ObjectLiteralNode SourceSection: None
               StringLiteralNode SourceSection: None
               ReadNameNodeGen SourceSection: [2996,3002]`object`

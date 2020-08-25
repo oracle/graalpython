@@ -60,6 +60,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
@@ -74,6 +75,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -93,7 +95,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -106,7 +107,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -120,7 +121,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -154,7 +155,6 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -207,7 +207,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -266,7 +265,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, Object cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "5") PythonObjectLibrary lib) {
             int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
             return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
@@ -300,13 +299,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
         }
 
-        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"}, limit = "1")
+        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
                         @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
 
             Object it = getIteratorNode.executeWith(frame, iterable);
             byte[] arr = new byte[16];
@@ -365,6 +364,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isComplexTypeProfile;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         private PComplex createComplex(Object cls, double real, double imaginary) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
@@ -375,7 +375,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private PComplex createComplex(Object cls, PComplex value) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
-                return value;
+                if (isPrimitiveProfile.profileObject(value, PythonBuiltinClassType.PComplex)) {
+                    return value;
+                }
+                return factory().createComplex(value.getReal(), value.getImag());
             }
             return factory().createComplex(cls, value.getReal(), value.getImag());
         }
@@ -531,11 +534,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex complexFromString(Object cls, String real, Object imaginary) {
+        PComplex complexFromString(VirtualFrame frame, Object cls, String real, Object imaginary) {
             if (imaginary != PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.COMPLEX_CANT_TAKE_ARG);
             }
-            return convertStringToComplex(real, cls);
+            return convertStringToComplex(frame, real, cls, real);
         }
 
         private IsBuiltinClassProfile getIsComplexTypeProfile() {
@@ -593,197 +596,123 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "complex.__new__(X): X", cls);
         }
 
-        // Taken from Jython PyString's __complex__() method
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private PComplex convertStringToComplex(String str, Object cls) {
-            boolean gotRe = false;
-            boolean gotIm = false;
-            boolean done = false;
-            boolean swError = false;
-            boolean openBracket = false;
-            boolean closeBracket = false;
-            int s = 0;
-            int n = str.length();
-            while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                s++;
+        // Adapted from CPython's complex_subtype_from_string
+        private PComplex convertStringToComplex(VirtualFrame frame, String src, Object cls, Object origObj) {
+            String str = FloatUtils.removeUnicodeAndUnderscores(src);
+            if (str == null) {
+                if (callReprNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+                }
+                Object strStr = callReprNode.executeObject(frame, origObj);
+                if (PGuards.isString(strStr)) {
+                    throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_COMPLEX, strStr);
+                } else {
+                    // During the formatting of "ValueError: invalid literal ..." exception,
+                    // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                    // which gets later overwitten with the original "ValueError",
+                    // but without any message (since the message formatting failed)
+                    throw raise(ValueError);
+                }
             }
-
-            if (s == n) {
-                throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
+            PComplex c = convertStringToComplexOrNull(str, cls);
+            if (c == null) {
+                throw raise(ValueError, ErrorMessages.COMPLEX_ARG_IS_MALFORMED_STR);
             }
-
-            double z = -1.0;
-            double x = 0.0;
-            double y = 0.0;
-
-            int sign = 1;
-            do {
-                char c = str.charAt(s);
-
-                switch (c) {
-                    case '-':
-                    case '+':
-                        if (c == '-') {
-                            sign = -1;
-                        }
-                        if (done || s + 1 == n) {
-                            swError = true;
-                            break;
-                        }
-                        // a character is guaranteed, but it better be a digit
-                        // or J or j
-                        c = str.charAt(++s);  // eat the sign character
-                        // and check the next
-                        if (!Character.isDigit(c) && c != 'J' && c != 'j') {
-                            swError = true;
-                        }
-                        break;
-
-                    case 'J':
-                    case 'j':
-                        if (gotIm || done) {
-                            swError = true;
-                            break;
-                        }
-                        if (z < 0.0) {
-                            y = sign;
-                        } else {
-                            y = sign * z;
-                        }
-                        gotIm = true;
-                        done = gotRe;
-                        sign = 1;
-                        s++; // eat the J or j
-                        break;
-
-                    case ' ':
-                        while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                            s++;
-                        }
-                        if (s != n && !(openBracket && !closeBracket)) {
-                            swError = true;
-                        }
-                        break;
-                    case '(':
-                        if (!openBracket) {
-                            openBracket = true;
-                            s++;
-                            while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                                s++;
-                            }
-                        } else {
-                            swError = true;
-                        }
-                        break;
-                    case ')':
-                        if (!openBracket) {
-                            swError = true;
-                        } else {
-                            if (!closeBracket) {
-                                closeBracket = true;
-                                s++;
-                                while (s < n && Character.isSpaceChar(str.charAt(s))) {
-                                    s++;
-                                }
-                            } else {
-                                swError = true;
-                            }
-                        }
-                        break;
-                    case '\\':
-                        // Handling letters defined through the unicode name database
-                        // This is a hack and should be solved in the parser itself? See issue
-                        // #GR-18284.
-                        // the current state is that we just try to skip such defined characters
-                        s++;
-                        if (s < n && 'N' == str.charAt(s)) {
-                            s++;
-                            if (s < n && '{' == str.charAt(s)) {
-                                s++;
-                                while (s < n && '}' != str.charAt(s)) {
-                                    s++;
-                                }
-                                if (s < n) {
-                                    s++; // eat '}'
-                                    break;
-                                }
-                            }
-                        }
-                        swError = true;
-                        break;
-                    default:
-                        boolean digitOrDot = (c == '.' || Character.isDigit(c));
-                        if (!digitOrDot) {
-                            swError = true;
-                            break;
-                        }
-                        int end = endDouble(str, s);
-                        try {
-                            z = Double.valueOf(str.substring(s, end)).doubleValue();
-                        } catch (NumberFormatException e) {
-                            swError = true;
-                            break;
-                        }
-
-                        s = end;
-                        if (s < n) {
-                            c = str.charAt(s);
-                            if (c == 'J' || c == 'j') {
-                                break;
-                            }
-                        }
-                        if (gotRe || gotIm /* "2j+1" is invalid string */) {
-                            swError = true;
-                            break;
-                        }
-
-                        /* accept a real part */
-                        x = sign * z;
-                        gotRe = true;
-                        done = gotIm;
-                        z = -1.0;
-                        sign = 1;
-                        break;
-
-                } /* end of switch */
-
-            } while (s < n && !swError);
-
-            if (openBracket != closeBracket) {
-                swError = true;
-            }
-
-            if (swError) {
-                throw raise(ValueError, ErrorMessages.MALFORMED_STR_FOR_COMPLEX, str.substring(s));
-            }
-
-            return createComplex(cls, x, y);
+            return c;
         }
 
-        // Taken from Jython PyString directly
-        public static int endDouble(String string, int s) {
-            int end = s;
-            int n = string.length();
-            while (end < n) {
-                char c = string.charAt(end++);
-                if (Character.isDigit(c)) {
-                    continue;
-                }
-                if (c == '.') {
-                    continue;
-                }
-                if (c == 'e' || c == 'E') {
-                    if (end < n) {
-                        c = string.charAt(end);
-                        if (c == '+' || c == '-') {
-                            end++;
-                        }
-                        continue;
-                    }
-                }
-                return end - 1;
+        // Adapted from CPython's complex_from_string_inner
+        @TruffleBoundary
+        private PComplex convertStringToComplexOrNull(String str, Object cls) {
+            int len = str.length();
+
+            // position on first nonblank
+            int i = FloatUtils.skipAsciiWhitespace(str, 0, len);
+
+            boolean gotBracket;
+            if (i < len && str.charAt(i) == '(') {
+                // Skip over possible bracket from repr().
+                gotBracket = true;
+                i = FloatUtils.skipAsciiWhitespace(str, i + 1, len);
+            } else {
+                gotBracket = false;
             }
-            return end;
+
+            double x, y;
+            boolean expectJ;
+
+            // first look for forms starting with <float>
+            FloatUtils.StringToDoubleResult res1 = FloatUtils.stringToDouble(str, i, len);
+            if (res1 != null) {
+                // all 4 forms starting with <float> land here
+                i = res1.position;
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (ch == '+' || ch == '-') {
+                    // <float><signed-float>j | <float><sign>j
+                    x = res1.value;
+                    FloatUtils.StringToDoubleResult res2 = FloatUtils.stringToDouble(str, i, len);
+                    if (res2 != null) {
+                        // <float><signed-float>j
+                        y = res2.value;
+                        i = res2.position;
+                    } else {
+                        // <float><sign>j
+                        y = ch == '+' ? 1.0 : -1.0;
+                        i++;
+                    }
+                    expectJ = true;
+                } else if (ch == 'j' || ch == 'J') {
+                    // <float>j
+                    i++;
+                    y = res1.value;
+                    x = 0;
+                    expectJ = false;
+                } else {
+                    // <float>
+                    x = res1.value;
+                    y = 0;
+                    expectJ = false;
+                }
+            } else {
+                // not starting with <float>; must be <sign>j or j
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (ch == '+' || ch == '-') {
+                    // <sign>j
+                    y = ch == '+' ? 1.0 : -1.0;
+                    i++;
+                } else {
+                    // j
+                    y = 1.0;
+                }
+                x = 0;
+                expectJ = true;
+            }
+
+            if (expectJ) {
+                char ch = i < len ? str.charAt(i) : '\0';
+                if (!(ch == 'j' || ch == 'J')) {
+                    return null;
+                }
+                i++;
+            }
+
+            // trailing whitespace and closing bracket
+            i = FloatUtils.skipAsciiWhitespace(str, i, len);
+            if (gotBracket) {
+                // if there was an opening parenthesis, then the corresponding
+                // closing parenthesis should be right here
+                if (i >= len || str.charAt(i) != ')') {
+                    return null;
+                }
+                i = FloatUtils.skipAsciiWhitespace(str, i + 1, len);
+            }
+
+            // we should now be at the end of the string
+            if (i != len) {
+                return null;
+            }
+            return createComplex(cls, x, y);
         }
     }
 
@@ -882,7 +811,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createStringReverseIterator(cls, value);
         }
 
-        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "3")
+        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "4")
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @CachedLibrary("sequence") PythonObjectLibrary lib,
                         @Cached("create(__REVERSED__)") LookupSpecialMethodNode reversedNode,
@@ -914,8 +843,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     @ReportPolymorphism
-    public abstract static class FloatNode extends PythonBuiltinNode {
+    public abstract static class FloatNode extends PythonBinaryBuiltinNode {
         @Child private BytesNodes.ToBytesNode toByteArrayNode;
+        @Child private LookupAndCallUnaryNode callFloatNode;
+        @Child private LookupAndCallUnaryNode callReprNode;
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         private ConditionProfile isNanProfile;
@@ -950,8 +881,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromPInt(Object cls, PInt arg) {
+        @Specialization(guards = {"!isNativeClass(cls)", "cannotBeOverridden(plib.getLazyPythonClass(arg))"})
+        Object floatFromPInt(Object cls, PInt arg,
+                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary plib) {
             double value = arg.doubleValue();
             if (Double.isInfinite(value)) {
                 throw raise(OverflowError, ErrorMessages.TOO_LARGE_TO_CONVERT_TO, "int", "float");
@@ -971,25 +903,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromString(Object cls, String arg) {
-            double value = convertStringToDouble(arg);
+        Object floatFromString(VirtualFrame frame, Object cls, String arg) {
+            double value = convertStringToDouble(frame, arg, arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
             return factoryCreateFloat(cls, value);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object floatFromBytes(VirtualFrame frame, Object cls, PIBytesLike arg) {
-            double value = convertBytesToDouble(frame, arg);
-            if (isPrimitiveFloat(cls)) {
-                return value;
-            }
-            return factoryCreateFloat(cls, value);
-        }
-
-        private double convertBytesToDouble(VirtualFrame frame, PIBytesLike arg) {
-            return convertStringToDouble(createString(getByteArray(frame, arg)));
+        private double convertBytesToDouble(VirtualFrame frame, PBytesLike arg) {
+            return convertStringToDouble(frame, createString(getByteArray(frame, arg)), arg);
         }
 
         @TruffleBoundary
@@ -997,44 +920,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return new String(bytes);
         }
 
-        // Taken from Jython PyString's atof() method
-        // The last statement throw Py.ValueError is modified
-        @TruffleBoundary
-        private double convertStringToDouble(String str) {
-            StringBuilder s = null;
-            int n = str.length();
-
-            for (int i = 0; i < n; i++) {
-                char ch = str.charAt(i);
-                if (ch == '\u0000') {
-                    throw raise(ValueError, ErrorMessages.EMPTY_STR_FOR_COMPLEX);
-                }
-                if (Character.isDigit(ch)) {
-                    if (s == null) {
-                        s = new StringBuilder(str);
+        private double convertStringToDouble(VirtualFrame frame, String src, Object origObj) {
+            String str = FloatUtils.removeUnicodeAndUnderscores(src);
+            // Adapted from CPython's float_from_string_inner
+            if (str != null) {
+                int len = str.length();
+                int offset = FloatUtils.skipAsciiWhitespace(str, 0, len);
+                FloatUtils.StringToDoubleResult res = FloatUtils.stringToDouble(str, offset, len);
+                if (res != null) {
+                    int end = FloatUtils.skipAsciiWhitespace(str, res.position, len);
+                    if (end == len) {
+                        return res.value;
                     }
-                    int val = Character.digit(ch, 10);
-                    s.setCharAt(i, Character.forDigit(val, 10));
                 }
             }
-            String sval = str.trim();
-            if (s != null) {
-                sval = s.toString();
+            if (callReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
             }
-            try {
-                // Double.valueOf allows format specifier ("d" or "f") at the end
-                String lowSval = sval.toLowerCase(Locale.ENGLISH);
-                if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
-                    return Double.NaN;
-                } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
-                    return Double.POSITIVE_INFINITY;
-                } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
-                    return Double.NEGATIVE_INFINITY;
-                }
-                return Double.valueOf(sval).doubleValue();
-            } catch (NumberFormatException exc) {
-                // throw Py.ValueError("invalid literal for __float__: " + str);
-                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, str);
+            Object strStr = callReprNode.executeObject(frame, origObj);
+            if (PGuards.isString(strStr)) {
+                throw raise(ValueError, ErrorMessages.COULD_NOT_CONVERT_STRING_TO_FLOAT, strStr);
+            } else {
+                // During the formatting of "ValueError: invalid literal ..." exception,
+                // CPython attempts to raise "TypeError: __repr__ returned non-string",
+                // which gets later overwitten with the original "ValueError",
+                // but without any message (since the message formatting failed)
+                throw raise(ValueError);
             }
         }
 
@@ -1046,41 +958,80 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        @Specialization(guards = "isPrimitiveFloat(cls)")
-        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            if (obj instanceof String) {
-                return convertStringToDouble((String) obj);
-            } else if (obj instanceof PString) {
-                return convertStringToDouble(((PString) obj).getValue());
-            } else if (obj instanceof PNone) {
-                return 0.0;
-            } else if (obj instanceof PIBytesLike) {
-                return convertBytesToDouble(frame, (PIBytesLike) obj);
+        static boolean isHandledType(PythonObjectLibrary lib, Object o) {
+            if (o instanceof PInt) {
+                return PGuards.cannotBeOverridden(lib.getLazyPythonClass(o));
             }
-            if (lib.canBeJavaDouble(obj)) {
-                return lib.asJavaDouble(obj);
-            } else {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
-            }
+            return PGuards.canBeInteger(o) || PGuards.isDouble(o) || o instanceof String || PGuards.isPNone(o);
         }
 
-        @Specialization(guards = "!isNativeClass(cls)")
-        Object doPythonObject(VirtualFrame frame, Object cls, Object obj,
+        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(lib, obj)"})
+        double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return floatFromDouble(cls, doubleFromObject(frame, cls, obj, lib));
+            // Follows logic from PyNumber_Float:
+            // lib.asJavaDouble cannot be used here because it models PyFloat_AsDouble,
+            // which ignores __float__ defined by float subclasses, whereas PyNumber_Float
+            // uses the __float__ even for subclasses
+            if (callFloatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFloatNode = insert(LookupAndCallUnaryNode.create(__FLOAT__));
+            }
+            Object result = callFloatNode.executeObject(frame, obj);
+            if (result != PNone.NO_VALUE) {
+                if (PGuards.isDouble(result)) {
+                    return (double) result;
+                }
+                if (PGuards.isPFloat(result)) {
+                    if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PFloat)) {
+                        // TODO deprecation warning
+                    }
+                    return ((PFloat) result).getValue();
+                }
+                throw raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, "__float__", result);
+            }
+            if (lib.canBeIndex(obj)) {
+                return lib.asJavaDouble(lib.asIndex(obj));
+            }
+            // Follows logic from PyFloat_FromString:
+            // These types are handled only if the object doesn't implement __float__/__index__
+            if (obj instanceof PString) {
+                return convertStringToDouble(frame, ((PString) obj).getValue(), obj);
+            } else if (obj instanceof PBytesLike) {
+                return convertBytesToDouble(frame, (PBytesLike) obj);
+            } else if (lib.isBuffer(obj)) {
+                try {
+                    return convertStringToDouble(frame, createString(lib.getBufferBytes(obj)), obj);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
+                }
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", obj);
+        }
+
+        @Specialization(guards = {"!isNativeClass(cls)", "!isPrimitiveFloat(cls)"})
+        Object doPythonObject(VirtualFrame frame, Object cls, Object obj,
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return floatFromDouble(cls, (double) doubleValue);
         }
 
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
         @Specialization(guards = "isSubtypeOfFloat(frame, isSubtype, cls)", limit = "1")
-        Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
+        static Object doPythonObject(VirtualFrame frame, PythonNativeClass cls, Object obj,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.FloatSubtypeNew subtypeNew,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            double realFloat = doubleFromObject(frame, PythonBuiltinClassType.PFloat, obj, lib);
-            return subtypeNew.call(cls, realFloat);
+                        @Cached FloatNode recursiveCallNode) {
+            Object doubleValue = recursiveCallNode.executeWith(frame, PythonBuiltinClassType.PFloat, obj);
+            if (!(doubleValue instanceof Double)) {
+                throw CompilerDirectives.shouldNotReachHere("float() returned non-primitive value");
+            }
+            return subtypeNew.call(cls, (double) doubleValue);
         }
 
         @Fallback
@@ -1093,7 +1044,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
         }
 
-        private byte[] getByteArray(VirtualFrame frame, PIBytesLike pByteArray) {
+        private byte[] getByteArray(VirtualFrame frame, PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
@@ -1122,46 +1073,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBuiltinNode {
 
-        @Child private HashingCollectionNodes.SetItemNode setItemNode;
-
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg) {
             return factory().createFrozenSet(cls);
         }
 
-        @Specialization
-        public PFrozenSet frozenset(VirtualFrame frame, Object cls, String arg) {
-            PFrozenSet frozenSet = factory().createFrozenSet(cls);
-            for (int i = 0; i < PString.length(arg); i++) {
-                getSetItemNode().execute(frame, frozenSet, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
-            }
-            return frozenSet;
+        @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        public static PFrozenSet frozensetIdentity(@SuppressWarnings("unused") Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+            return arg;
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = "!isBuiltinClass.profileIsAnyBuiltinClass(cls)")
+        public PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinClass) {
+            return factory().createFrozenSet(cls, arg.getDictStorage());
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
         public PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
-
-            Object iterator = getIterator.executeWith(frame, iterable);
-            PFrozenSet frozenSet = factory().createFrozenSet(cls);
-            while (true) {
-                try {
-                    getSetItemNode().execute(frame, frozenSet, next.execute(frame, iterator), PNone.NONE);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    return frozenSet;
-                }
-            }
-        }
-
-        private HashingCollectionNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingCollectionNodes.SetItemNode.create());
-            }
-            return setItemNode;
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
+            HashingStorage storage = getHashingStorageNode.doNoValue(frame, iterable);
+            return factory().createFrozenSet(cls, storage);
         }
     }
 
@@ -1463,13 +1396,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // PIBytesLike
 
         @Specialization
-        Object parseBytesError(VirtualFrame frame, Object cls, PIBytesLike arg, int base) {
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base) {
             checkBase(base);
             return stringToInt(frame, cls, toString(frame, arg), base, arg);
         }
 
         @Specialization(guards = "isNoValue(base)")
-        Object parseBytesError(VirtualFrame frame, Object cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base) {
+        Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, @SuppressWarnings("unused") PNone base) {
             return parseBytesError(frame, cls, arg, 10);
         }
 
@@ -1512,7 +1445,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.INT_CANT_CONVERT_STRING_WITH_EXPL_BASE);
         }
 
-        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "2")
+        @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
@@ -1617,7 +1550,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callTruncNode.executeObject(frame, obj);
         }
 
-        private String toString(VirtualFrame frame, PIBytesLike pByteArray) {
+        private String toString(VirtualFrame frame, PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
@@ -1639,7 +1572,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public boolean bool(VirtualFrame frame, Object cls, Object obj,
+        public static boolean bool(VirtualFrame frame, Object cls, Object obj,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (hasFrame.profile(frame != null)) {
@@ -1705,7 +1638,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doNativeObjectIndirect(PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("create()") GetMroNode getMroNode) {
             checkExcessArgs(self, varargs, kwargs);
-            PythonNativeClass nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
+            Object nativeBaseClass = findFirstNativeBaseClass(getMroNode.execute(self));
             return callNativeGenericNewNode(nativeBaseClass, varargs, kwargs);
         }
 
@@ -1721,10 +1654,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "object.__new__(X): X", o);
         }
 
-        private static PythonNativeClass findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
-            for (PythonAbstractClass cls : methodResolutionOrder) {
+        private static Object findFirstNativeBaseClass(PythonAbstractClass[] methodResolutionOrder) {
+            for (Object cls : methodResolutionOrder) {
                 if (PGuards.isNativeClass(cls)) {
-                    return PythonNativeClass.cast(cls);
+                    return cls;
                 }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1900,35 +1833,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        protected boolean isStop(Object start, Object stop, Object step) {
+        protected static boolean isStop(Object start, Object stop, Object step) {
             return isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        protected boolean isStartStop(Object start, Object stop, Object step) {
+        protected static boolean isStartStop(Object start, Object stop, Object step) {
             return !isNoValue(start) && !isNoValue(stop) && isNoValue(step);
         }
 
-        protected boolean isStartStopStep(Object start, Object stop, Object step) {
+        protected static boolean isStartStopStep(Object start, Object stop, Object step) {
             return !isNoValue(start) && !isNoValue(stop) && !isNoValue(step);
         }
     }
 
     // set([iterable])
-    @Builtin(name = SET, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PSet)
+    @Builtin(name = SET, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSet)
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "lib.isLazyPythonClass(cls)")
-        protected PSet constructSet(VirtualFrame frame, Object cls, Object value,
-                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return constructSetNode.execute(frame, cls, value);
+        @Specialization
+        public PSet setEmpty(Object cls, @SuppressWarnings("unused") Object arg) {
+            return factory().createSet(cls);
         }
 
-        @Fallback
-        public PSet listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            throw raise(TypeError, ErrorMessages.SET_DOES_NOT_SUPPORT_ITERABLE_OBJ, arg);
-        }
     }
 
     // str(object='')
@@ -1942,6 +1869,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
+
+        public final Object executeWith(VirtualFrame frame, Object arg) {
+            return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
+        }
 
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
@@ -1998,7 +1929,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * into a natively allocated subtype structure
          */
         @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfString(frame, isSubtype, cls)", "isNoValue(encoding)", "isNoValue(errors)"})
-        Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
+        static Object doNativeSubclass(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding,
                         @SuppressWarnings("unused") Object errors,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
@@ -2041,6 +1972,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             return isPStringProfile;
         }
+
+        public static StrNode create() {
+            return BuiltinConstructorsFactory.StrNodeFactory.create(null);
+        }
     }
 
     // tuple([iterable])
@@ -2049,14 +1984,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isNativeClass(cls)")
-        protected PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
+        protected static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
                         @Cached("create()") TupleNodes.ConstructTupleNode constructTupleNode) {
             return constructTupleNode.execute(frame, cls, iterable);
         }
 
         // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
         @Specialization(guards = {"isNativeClass(cls)", "isSubtypeOfTuple(frame, isSubtype, cls)"}, limit = "1")
-        Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
+        static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
                         @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
             return subtypeNew.call(cls, iterable);
@@ -2200,7 +2135,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
         @SuppressWarnings("unused")
-        Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
+        static Object type(Object cls, Object obj, PNone bases, PNone dict, PKeyword[] kwds,
                         @Cached GetClassNode getClass) {
             return getClass.execute(obj);
         }
@@ -2236,7 +2171,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
-                        callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                        try {
+                            callSetNameNode.execute(frame, setName, entry.value, newType, entry.key);
+                        } catch (PException e) {
+                            throw raise(RuntimeError, e.getEscapedException(), ERROR_CALLING_SET_NAME, entry.value, entry.key, newType);
+                        }
                     }
                 }
 
@@ -2312,7 +2251,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @SuppressWarnings("try")
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib) {
 
             Object[] array = ensureGetObjectArrayNode().execute(bases);
@@ -2325,7 +2263,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 basesArray = new PythonAbstractClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
-                    if (!(array[i] instanceof PythonAbstractClass)) {
+                    if (!PGuards.isPythonClass(array[i])) {
                         throw raise(NotImplementedError, "creating a class with non-class bases");
                     } else {
                         basesArray[i] = (PythonAbstractClass) array[i];
@@ -2342,6 +2280,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
             Object slots = null;
+            boolean qualnameSet = false;
             for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
@@ -2380,9 +2319,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         }
                     }
                     pythonClass.setAttribute(key, value);
+                } else if (SpecialAttributeNames.__QUALNAME__.equals(key)) {
+                    try {
+                        pythonClass.setQualName(ensureCastToStringNode().execute(value));
+                        qualnameSet = true;
+                    } catch (CannotCastException e) {
+                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
+                    }
+                } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
+                    // don't populate this attribute
                 } else {
                     pythonClass.setAttribute(key, value);
                 }
+            }
+
+            if (!qualnameSet) {
+                pythonClass.setQualName(name);
             }
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
@@ -2582,6 +2534,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (callAddNativeSlotsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callAddNativeSlotsNode = insert(CExtNodes.PCallCapiFunction.create());
+                toSulongNode = insert(CExtNodes.ToSulongNode.create());
             }
             callAddNativeSlotsNode.call(FUN_ADD_NATIVE_SLOTS, toSulongNode.execute(pythonClass), toSulongNode.execute(slots));
         }
@@ -2772,7 +2725,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PNotImplemented module(Object cls) {
+        public static PNotImplemented module(Object cls) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -2782,7 +2735,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PEllipsis call(Object cls) {
+        public static PEllipsis call(Object cls) {
             return PEllipsis.INSTANCE;
         }
     }
@@ -2792,7 +2745,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public PNone module(Object cls) {
+        public static PNone module(Object cls) {
             return PNone.NONE;
         }
     }
@@ -2924,18 +2877,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object methodGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object func, Object self,
+        Object methodGeneric(@SuppressWarnings("unused") Object cls, Object func, Object self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary dataModelLibrary) {
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                if (dataModelLibrary.isCallable(func)) {
-                    return factory().createMethod(self, func);
-                } else {
-                    throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
-                }
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+            if (dataModelLibrary.isCallable(func)) {
+                return factory().createMethod(self, func);
+            } else {
+                throw raise(TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
             }
         }
     }
@@ -2963,7 +2910,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, PTraceback next, PFrame frame, Object lasti, Object lineno,
                         @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
                         @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
                         @Cached PythonObjectFactory factory) {
@@ -2971,7 +2918,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
+        static Object createTraceback(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") PNone next, PFrame frame, Object lasti, Object lineno,
                         @CachedLibrary("lasti") PythonObjectLibrary lastiLib,
                         @CachedLibrary("lineno") PythonObjectLibrary linenoLib,
                         @Cached PythonObjectFactory factory) {
@@ -3000,7 +2947,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
 
         // limit is 2 because we expect PBytes or String
-        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
+        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
         Object call(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -3008,12 +2955,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         int firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
-                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
+            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             Object[] namesArr = getObjectArrayNode.execute(names);
@@ -3029,7 +2975,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             lnotabBytes);
         }
 
-        @Specialization(guards = {"codestringBufferLib.isBuffer(codestring)", "lnotabBufferLib.isBuffer(lnotab)"}, limit = "2", rewriteOn = UnsupportedMessageException.class)
+        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
         Object call(VirtualFrame frame, Object cls, Object argcount,
                         int posonlyargcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
@@ -3037,13 +2983,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PTuple varnames, Object filename, Object name,
                         Object firstlineno, Object lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary("codestring") PythonObjectLibrary codestringBufferLib,
-                        @CachedLibrary("lnotab") PythonObjectLibrary lnotabBufferLib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary objectLibrary,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = codestringBufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = lnotabBufferLib.getBufferBytes(lnotab);
+            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
+            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             Object[] namesArr = getObjectArrayNode.execute(names);
@@ -3080,11 +3025,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
         }
-
-        @TruffleBoundary
-        private static byte[] toBytes(String data) {
-            return data.getBytes();
-        }
     }
 
     @Builtin(name = "cell", constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
@@ -3113,17 +3053,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = PythonBuiltinClassType.PMappingproxy, isPublic = false, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Specialization
-        Object doMapping(Object klass, PHashingCollection obj,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage) {
-            return factory().createMappingproxy(klass, getStorage.execute(obj));
-        }
-
-        @Specialization(guards = {"isSequence(frame, obj, lib)", "!isBuiltinMapping(obj)"}, limit = "1")
-        Object doMapping(VirtualFrame frame, Object klass, PythonObject obj,
-                        @Cached("create()") HashingStorage.InitNode initNode,
+        @Specialization(guards = "isMapping(obj, lib)", limit = "1")
+        Object doMapping(Object klass, PythonObject obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return factory().createMappingproxy(klass, initNode.execute(frame, obj, PKeyword.EMPTY_KEYWORDS));
+            return factory().createMappingproxy(klass, obj);
         }
 
         @Specialization(guards = "isNoValue(none)")
@@ -3132,24 +3065,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MISSING_D_REQUIRED_S_ARGUMENT_S_POS, "mappingproxy()", "mapping", 1);
         }
 
-        @Specialization(guards = {"!isSequence(frame, obj, lib)", "!isNoValue(obj)"}, limit = "1")
-        Object doInvalid(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object klass, Object obj,
+        @Specialization(guards = {"!isMapping(obj, lib)", "!isNoValue(obj)"}, limit = "1")
+        Object doInvalid(@SuppressWarnings("unused") Object klass, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
-        protected boolean isBuiltinMapping(Object o) {
-            return o instanceof PHashingCollection;
-        }
-
-        protected boolean isSequence(VirtualFrame frame, Object o, PythonObjectLibrary library) {
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                return library.isSequence(o);
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+        protected boolean isMapping(Object o, PythonObjectLibrary library) {
+            if (o instanceof PList || o instanceof PTuple) {
+                return false;
             }
+            return library.isMapping(o);
         }
     }
 
@@ -3163,24 +3089,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isNoValue(get)", "!isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "!isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, Object set, String name, PythonAbstractClass owner) {
+        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, Object set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
-        @Specialization(guards = {"!isNoValue(get)", "isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, PythonAbstractClass owner) {
+        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
-        @Specialization(guards = {"isNoValue(get)", "isNoValue(set)"})
+        @Specialization(guards = {"isPythonClass(owner)", "isNoValue(get)", "isNoValue(set)"})
         @TruffleBoundary
         @SuppressWarnings("unused")
-        Object call(Object getSetClass, PNone get, PNone set, String name, PythonAbstractClass owner) {
+        Object call(Object getSetClass, PNone get, PNone set, String name, Object owner) {
             denyInstantiationAfterInitialization();
             return factory().createGetSetDescriptor(null, null, name, owner);
         }
@@ -3194,20 +3120,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
+        static Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
-        Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
+        static Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
-        Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
+        static Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
                         @Cached("create()") SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, third);
         }

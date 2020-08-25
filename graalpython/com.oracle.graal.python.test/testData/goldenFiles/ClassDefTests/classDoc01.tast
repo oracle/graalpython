@@ -22,18 +22,18 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
               FreeVarSlots: None
               ExecutionSlots:
                 FreeVarsSlots: None
-                CellVarsSlots: __class__, 
+                CellVarsSlots: None
               ClassBodyRootNode SourceSection: [0,76]`class Test():↵    ""...`
                 Name: Test
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                   Param Names: namespace
-                CelVars: __class__
+                CelVars: None
                 FreeVars: None
                 NeedsCellFrame: False
-                FrameDescriptor: 3 slots [method, __class__, __doc__]
+                FrameDescriptor: 2 slots [method, __doc__]
                 ExecutionSlots:
                   FreeVarsSlots: None
-                  CellVarsSlots: __class__, 
+                  CellVarsSlots: None
                 InnerRootNode SourceSection: [0,76]`class Test():↵    ""...`
                   ReturnTargetNode SourceSection: [0,76]`class Test():↵    ""...`
                     Body: BlockNode SourceSection: None
@@ -62,19 +62,19 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
                             Arguments: None
                             KwArguments: None
                             Documentation: StringLiteralNode: `Method doc`
-                            FreeVarSlots: __class__, 
+                            FreeVarSlots: None
                             ExecutionSlots:
-                              FreeVarsSlots: __class__, 
+                              FreeVarsSlots: None
                               CellVarsSlots: None
                             FunctionRootNode SourceSection: [38,76]`def method():↵      ...`
                               Name: method
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
-                              FreeVars: __class__
+                              FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 2 slots [__class__, <return_val>]
+                              FrameDescriptor: 1 slots [<return_val>]
                               ExecutionSlots:
-                                FreeVarsSlots: __class__, 
+                                FreeVarsSlots: None
                                 CellVarsSlots: None
                               InnerRootNode SourceSection: [38,76]`def method():↵      ...`
                                 ReturnTargetNode SourceSection: [38,76]`def method():↵      ...`
@@ -82,15 +82,7 @@ ModuleRootNode Name: <module 'classDoc01'> SourceSection: [0,76]`class Test():�
                                     BlockNode SourceSection: None
                                     FunctionBodyNode SourceSection: [75,76]`"`
                                   Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [0,<return_val>,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
-                      SetItemNodeGen SourceSection: None
-                        ArgumentExpressionNode SourceSection: None
-                          ReadIndexedArgumentNodeGen SourceSection: None
-                            Index: 0
-                        StringLiteralNode SourceSection: None
-                        ReadLocalVariableNode SourceSection: None
-                          Frame: [1,__class__,Illegal]
-                          ReadVariableFromFrameNodeGen SourceSection: None
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

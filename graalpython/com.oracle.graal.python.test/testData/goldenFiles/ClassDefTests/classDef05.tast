@@ -49,18 +49,18 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                             FreeVarSlots: None
                             ExecutionSlots:
                               FreeVarsSlots: None
-                              CellVarsSlots: __class__, 
+                              CellVarsSlots: None
                             ClassBodyRootNode SourceSection: [12,63]`class DerivedClassNa...`
                               Name: DerivedClassName
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                 Param Names: namespace
-                              CelVars: __class__
+                              CelVars: None
                               FreeVars: None
                               NeedsCellFrame: False
-                              FrameDescriptor: 1 slots [__class__]
+                              FrameDescriptor:  Empty
                               ExecutionSlots:
                                 FreeVarsSlots: None
-                                CellVarsSlots: __class__, 
+                                CellVarsSlots: None
                               InnerRootNode SourceSection: [12,63]`class DerivedClassNa...`
                                 ReturnTargetNode SourceSection: [12,63]`class DerivedClassNa...`
                                   Body: BlockNode SourceSection: None
@@ -76,19 +76,12 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                                     FunctionBodyNode SourceSection: [59,63]`pass`
                                       ExpressionStatementNode SourceSection: [59,63]`pass`
                                         EmptyNode SourceSection: [59,63]`pass`
-                                    SetItemNodeGen SourceSection: None
-                                      ArgumentExpressionNode SourceSection: None
-                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                          Index: 0
-                                      StringLiteralNode SourceSection: None
-                                      ReadLocalVariableNode SourceSection: None
-                                        Frame: [0,__class__,Illegal]
-                                        ReadVariableFromFrameNodeGen SourceSection: None
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                           GetAttributeNodeGen SourceSection: [35,56]`modname.BaseClassNam...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: BaseClassName
+                              CachedDispatchFirst SourceSection: None
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None

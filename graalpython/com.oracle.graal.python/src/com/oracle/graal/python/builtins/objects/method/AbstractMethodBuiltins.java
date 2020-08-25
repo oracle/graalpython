@@ -63,6 +63,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMethod, PythonBuiltinClassType.PBuiltinMethod})
 public class AbstractMethodBuiltins extends PythonBuiltins {
@@ -213,11 +215,10 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @SuppressWarnings("deprecation")
-        @Specialization(guards = "!isNoValue(value)")
-        Object getModule(PBuiltinMethod self, Object value) {
-            CompilerDirectives.transferToInterpreter();
-            self.getStorage().define(__MODULE__, value);
+        @Specialization(guards = "!isNoValue(value)", limit = "2")
+        Object getModule(PBuiltinMethod self, Object value,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            dylib.put(self.getStorage(), __MODULE__, value);
             return PNone.NONE;
         }
     }
@@ -225,49 +226,33 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class DocNode extends PythonBinaryBuiltinNode {
-        @Child ReadAttributeFromObjectNode readFunc;
-
-        private Object readFromFunc(Object func) {
-            if (readFunc == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readFunc = insert(ReadAttributeFromObjectNode.create());
-            }
-            Object doc = readFunc.execute(func, __DOC__);
+        @Specialization(guards = "isNoValue(none)")
+        Object getDoc(PMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
-                doc = PNone.NONE;
+                return PNone.NONE;
             }
             return doc;
         }
 
         @Specialization(guards = "isNoValue(none)")
-        Object getModule(PMethod self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
-            Object doc = readSelf.execute(self, __DOC__);
+        Object getDoc(PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
-                return readFromFunc(self.getFunction());
-            }
-            return doc;
-        }
-
-        @Specialization(guards = "isNoValue(none)")
-        Object getModule(PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") ReadAttributeFromObjectNode readSelf) {
-            Object doc = readSelf.execute(self, __DOC__);
-            if (doc == PNone.NO_VALUE) {
-                return readFromFunc(self.getFunction());
+                return PNone.NONE;
             }
             return doc;
         }
 
         @Specialization(guards = {"!isNoValue(value)"})
-        Object getModule(PMethod self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
-            writeObject.execute(self, __DOC__, value);
-            return PNone.NONE;
+        Object setDoc(@SuppressWarnings("unused") PMethod self, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, "__doc__", "method");
         }
 
         @Specialization(guards = {"!isNoValue(value)"})
-        Object getModule(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
+        Object setDoc(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
             throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, "__doc__", "builtin_function_or_method");
         }
     }

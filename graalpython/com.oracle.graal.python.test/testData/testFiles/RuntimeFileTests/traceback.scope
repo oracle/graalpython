@@ -5,19 +5,19 @@ Scope: []
     FreeVars: Empty
     Scope: TracebackException
         Kind: Class
-        FrameDescriptor: [_load_lines, from_exception, __str__, format_exception_only, format, __doc__, __eq__, __init__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [_load_lines, from_exception, __str__, format_exception_only, format, __doc__, __eq__, __init__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: format
             Kind: Generator
-            FrameDescriptor: [chain, self, *, <return_val>, __class__]
+            FrameDescriptor: [chain, self, *, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: format_exception_only
             Kind: Generator
-            FrameDescriptor: [msg, filename, lineno, offset, badline, stype, caretspace, self, smod, <return_val>, __class__]
+            FrameDescriptor: [msg, filename, lineno, offset, badline, stype, caretspace, self, smod, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: GenExp
                 FrameDescriptor: [c, <return_val>]
@@ -25,49 +25,49 @@ Scope: []
                 FreeVars: Empty
         Scope: __str__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: _load_lines
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__, frame]
+            FrameDescriptor: [self, <return_val>, frame]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: from_exception
             Kind: Function
-            FrameDescriptor: [args, exc, kwargs, cls, <return_val>, __class__]
+            FrameDescriptor: [args, exc, kwargs, cls, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [exc_traceback, cause, exc_type, *, lookup_lines, _seen, capture_locals, __class__, limit, context, self, exc_value, <return_val>]
+            FrameDescriptor: [exc_traceback, limit, context, self, cause, exc_type, *, lookup_lines, _seen, capture_locals, exc_value, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: StackSummary
         Kind: Class
-        FrameDescriptor: [extract, from_list, format, __doc__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [extract, from_list, format, __doc__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: format
             Kind: Function
-            FrameDescriptor: [last_line, count, last_name, <>temp12, <>temp11, __class__, result, name, self, row, value, <return_val>, last_file, frame]
+            FrameDescriptor: [last_line, count, <>temp10, last_name, <>temp11, result, name, self, row, value, <return_val>, last_file, frame]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: from_list
             Kind: Function
-            FrameDescriptor: [line, <>temp10, <>temp12, <>temp11, __class__, a_list, result, filename, lineno, klass, <>temp9, name, <return_val>, frame]
+            FrameDescriptor: [line, <>temp10, <>temp11, a_list, result, filename, lineno, klass, <>temp8, <>temp9, name, <return_val>, frame]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: extract
             Kind: Function
-            FrameDescriptor: [f, <>temp16, <>temp15, fnames, *, lookup_lines, capture_locals, co, __class__, result, filename, lineno, klass, limit, name, frame_gen, f_locals, <return_val>]
+            FrameDescriptor: [<>temp14, f, <>temp15, fnames, *, lookup_lines, capture_locals, co, result, filename, lineno, klass, limit, name, frame_gen, f_locals, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
     Scope: walk_tb
         Kind: Generator
         FrameDescriptor: [<return_val>, tb]
@@ -80,39 +80,39 @@ Scope: []
         FreeVars: Empty
     Scope: FrameSummary
         Kind: Class
-        FrameDescriptor: [__iter__, line, __getitem__, __repr__, __doc__, __slots__, __eq__, __init__, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [__iter__, line, __getitem__, __repr__, __doc__, __slots__, __eq__, __init__]
+        CellVars: Empty
         FreeVars: Empty
         Scope: line
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __repr__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __iter__
             Kind: Function
-            FrameDescriptor: [self, <return_val>, __class__]
+            FrameDescriptor: [self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __getitem__
             Kind: Function
-            FrameDescriptor: [pos, self, <return_val>, __class__]
+            FrameDescriptor: [pos, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __eq__
             Kind: Function
-            FrameDescriptor: [other, self, <return_val>, __class__]
+            FrameDescriptor: [other, self, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
         Scope: __init__
             Kind: Function
-            FrameDescriptor: [filename, lineno, line, name, self, *, lookup_line, <return_val>, locals, __class__]
+            FrameDescriptor: [filename, lineno, line, name, self, *, lookup_line, <return_val>, locals]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty
             Scope: generator
                 Kind: DictComp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]

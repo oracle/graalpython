@@ -40,13 +40,31 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.GetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetDictStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,17 +79,11 @@ public abstract class HashingCollectionNodes {
     public abstract static class LenNode extends PNodeWithContext {
         public abstract int execute(PHashingCollection c);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        static int getLenCached(PHashingCollection c,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            return lib.length(cachedClass.cast(c).getDictStorage());
-        }
-
-        @Specialization(replaces = "getLenCached", limit = "1")
-        static int getLenGeneric(PHashingCollection c,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.length(c.getDictStorage());
+        @Specialization(limit = "4")
+        static int getLen(PHashingCollection c,
+                        @Cached GetDictStorageNode getStorage,
+                        @CachedLibrary("getStorage.execute(c)") HashingStorageLibrary lib) {
+            return lib.length(getStorage.execute(c));
         }
 
         public static LenNode create() {
@@ -83,23 +95,15 @@ public abstract class HashingCollectionNodes {
     public abstract static class SetItemNode extends PNodeWithContext {
         public abstract void execute(VirtualFrame frame, PHashingCollection c, Object key, Object value);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void doSetItemCached(VirtualFrame frame, PHashingCollection c, Object key, Object value,
+        @Specialization(limit = "4")
+        static void doSetItem(VirtualFrame frame, PHashingCollection c, Object key, Object value,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            HashingStorage storage = cachedClass.cast(c).getDictStorage();
-            storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
-            cachedClass.cast(c).setDictStorage(storage);
-        }
-
-        @Specialization(replaces = "doSetItemCached", limit = "1")
-        void doSetItemGeneric(VirtualFrame frame, PHashingCollection c, Object key, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached GetDictStorageNode getStorage,
+                        @Cached SetDictStorageNode setStorage,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
-            HashingStorage storage = c.getDictStorage();
+            HashingStorage storage = getStorage.execute(c);
             storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
-            c.setDictStorage(storage);
+            setStorage.execute(c, storage);
         }
 
         public static SetItemNode create() {
@@ -113,14 +117,13 @@ public abstract class HashingCollectionNodes {
 
         public abstract HashingStorage execute(PHashingCollection c);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        HashingStorage getStorageCached(PHashingCollection c,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            return cachedClass.cast(c).getDictStorage();
+        @Specialization
+        static HashingStorage get(PBaseSet c) {
+            return c.getDictStorage();
         }
 
-        @Specialization(replaces = "getStorageCached")
-        static HashingStorage getStorageGeneric(PHashingCollection c) {
+        @Specialization
+        static HashingStorage get(PDict c) {
             return c.getDictStorage();
         }
 
@@ -139,14 +142,13 @@ public abstract class HashingCollectionNodes {
 
         public abstract void execute(PHashingCollection c, HashingStorage storage);
 
-        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
-        void setStorageCached(PHashingCollection c, HashingStorage storage,
-                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass) {
-            cachedClass.cast(c).setDictStorage(storage);
+        @Specialization
+        static void set(PBaseSet c, HashingStorage storage) {
+            c.setDictStorage(storage);
         }
 
-        @Specialization(replaces = "setStorageCached")
-        static void getStorageGeneric(PHashingCollection c, HashingStorage storage) {
+        @Specialization
+        static void set(PDict c, HashingStorage storage) {
             c.setDictStorage(storage);
         }
 
@@ -156,6 +158,156 @@ public abstract class HashingCollectionNodes {
 
         public static SetDictStorageNode getUncached() {
             return SetDictStorageNodeGen.getUncached();
+        }
+    }
+
+    @ImportStatic({PGuards.class})
+    public abstract static class SetValueHashingStorageNode extends PNodeWithContext {
+        public abstract void execute(VirtualFrame frame, HashingStorage iterator, Object value);
+
+        @Specialization
+        static void doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached.Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
+                        @Cached.Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            PArguments.ThreadState state = frame == null ? null : PArguments.getThreadState(frame);
+            // We want to avoid calling __hash__() during map.put
+            HashingStorageLibrary.HashingStorageIterable<EconomicMapStorage.DictKey> iter = map.dictKeys();
+            for (EconomicMapStorage.DictKey key : iter) {
+                map.setValue(key, value, lib, findProfile, gotState, state);
+            }
+        }
+
+        @Specialization(guards = "!isEconomicMapStorage(map)", limit = "2")
+        static void doGeneric(VirtualFrame frame, HashingStorage map, Object value,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary("map") HashingStorageLibrary lib) {
+            HashingStorageLibrary.HashingStorageIterable<Object> iter = lib.keys(map);
+            for (Object key : iter) {
+                lib.setItemWithFrame(map, key, value, hasFrame, frame);
+            }
+        }
+
+        protected static boolean isEconomicMapStorage(Object o) {
+            return o instanceof EconomicMapStorage;
+        }
+    }
+
+    @ImportStatic({PGuards.class})
+    public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
+        @Child private PRaiseNode raise;
+
+        public abstract HashingStorage execute(VirtualFrame frame, Object iterator, Object value);
+
+        public final HashingStorage doNoValue(VirtualFrame frame, Object iterator) {
+            return execute(frame, iterator, PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "isNoValue(value)", limit = "1")
+        static HashingStorage doHashingCollectionNoValue(@SuppressWarnings("unused") VirtualFrame frame, PHashingCollection other, @SuppressWarnings("unused") Object value,
+                        @Cached.Shared("getStorage") @Cached GetDictStorageNode getStorage,
+                        @CachedLibrary("getStorage.execute(other)") HashingStorageLibrary lib) {
+            return lib.copy(getStorage.execute(other));
+        }
+
+        @Specialization(guards = "isNoValue(value)", limit = "1")
+        static HashingStorage doPDictKeyViewNoValue(@SuppressWarnings("unused") VirtualFrame frame, PDictView.PDictKeysView other, Object value,
+                        @Cached.Shared("getStorage") @Cached GetDictStorageNode getStorage,
+                        @CachedLibrary("getStorage.execute(other.getWrappedDict())") HashingStorageLibrary lib) {
+            return doHashingCollectionNoValue(frame, other.getWrappedDict(), value, getStorage, lib);
+        }
+
+        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        static HashingStorage doHashingCollection(@SuppressWarnings("unused") VirtualFrame frame, PHashingCollection other, Object value,
+                        @Cached.Shared("getStorage") @Cached GetDictStorageNode getStorage,
+                        @Cached SetValueHashingStorageNode setValue,
+                        @CachedLibrary("getStorage.execute(other)") HashingStorageLibrary lib) {
+            HashingStorage storage = lib.copy(getStorage.execute(other));
+            setValue.execute(frame, storage, value);
+            return storage;
+        }
+
+        @Specialization(guards = "!isNoValue(value)", limit = "1")
+        static HashingStorage doPDictView(@SuppressWarnings("unused") VirtualFrame frame, PDictView.PDictKeysView other, Object value,
+                        @Cached.Shared("getStorage") @Cached GetDictStorageNode getStorage,
+                        @Cached SetValueHashingStorageNode setValue,
+                        @CachedLibrary("getStorage.execute(other.getWrappedDict())") HashingStorageLibrary lib) {
+            return doHashingCollection(frame, other.getWrappedDict(), value, getStorage, setValue, lib);
+        }
+
+        @Specialization
+        static HashingStorage doString(VirtualFrame frame, String str, Object value,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            HashingStorage storage = EconomicMapStorage.create(PString.length(str));
+            Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
+            for (int i = 0; i < PString.length(str); i++) {
+                String key = PString.valueOf(PString.charAt(str, i));
+                lib.setItemWithFrame(storage, key, val, hasFrame, frame);
+            }
+            return storage;
+        }
+
+        @Specialization
+        static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+            return doString(frame, pstr.getValue(), value, hasFrame, lib);
+        }
+
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})
+        static HashingStorage doIterable(VirtualFrame frame, Object other, Object value,
+                        @Cached("create()") GetIteratorExpressionNode.GetIteratorNode getIteratorNode,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            HashingStorage curStorage = EconomicMapStorage.create();
+            Object iterator = getIteratorNode.executeWith(frame, other);
+            Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
+            while (true) {
+                Object key;
+                try {
+                    key = next.execute(frame, iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    return curStorage;
+                }
+                curStorage = lib.setItemWithFrame(curStorage, key, val, hasFrame, frame);
+            }
+        }
+
+        @Fallback
+        HashingStorage fail(@SuppressWarnings("unused") VirtualFrame frame, Object other, @SuppressWarnings("unused") Object value) {
+            if (raise == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raise = insert(PRaiseNode.create());
+            }
+            throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, other);
+        }
+    }
+
+    @ImportStatic({SpecialMethodNames.class, PGuards.class})
+    public abstract static class GetHashingStorageNode extends PNodeWithContext {
+
+        public abstract HashingStorage execute(VirtualFrame frame, Object iterator);
+
+        @Specialization
+        static HashingStorage doHashingCollection(@SuppressWarnings("unused") VirtualFrame frame, PHashingCollection other,
+                        @Cached GetDictStorageNode getStorage) {
+            return getStorage.execute(other);
+        }
+
+        @Specialization
+        static HashingStorage doPDictView(@SuppressWarnings("unused") VirtualFrame frame, PDictView.PDictKeysView other,
+                        @Cached GetDictStorageNode getStorage) {
+            return getStorage.execute(other.getWrappedDict());
+        }
+
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)"})
+        static HashingStorage doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object other,
+                        @Cached GetClonedHashingStorageNode getHashingStorageNode) {
+            return getHashingStorageNode.doNoValue(frame, other);
         }
     }
 }

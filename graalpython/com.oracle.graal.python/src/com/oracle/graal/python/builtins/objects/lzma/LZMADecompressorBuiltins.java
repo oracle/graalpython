@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -65,8 +65,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -91,7 +89,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(maxLength)")
-        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
+        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] decompress;
             try {
@@ -103,16 +101,14 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, int maxLength,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+        PBytes doBytesLikeWithMaxLengthI(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, int maxLength,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToByteNode castToByteNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(bytesLike);
-            int len = lenNode.execute((PSequence) bytesLike);
+            int len = lenNode.execute(bytesLike);
             byte[] compressed = new byte[Math.min(len, maxLength)];
             for (int i = 0; i < compressed.length; i++) {
-                castToByteNode.execute(frame, getItemNode.execute(frame, storage, i));
+                castToByteNode.execute(frame, getItemNode.execute(frame, bytesLike.getSequenceStorage(), i));
             }
 
             try {
@@ -123,13 +119,12 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doBytesLikeWithMaxLengthI", limit = "getCallSiteInlineCacheMaxDepth()")
-        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PIBytesLike bytesLike, Object maxLength,
+        PBytes doBytesLikeWithMaxLength(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, Object maxLength,
                         @CachedLibrary("maxLength") PythonObjectLibrary lib,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToByteNode castToByteNode) {
-            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asSizeWithState(maxLength, PArguments.getThreadState(frame)), getSequenceStorageNode, lenNode, getItemNode, castToByteNode);
+            return doBytesLikeWithMaxLengthI(frame, self, bytesLike, lib.asSizeWithState(maxLength, PArguments.getThreadState(frame)), lenNode, getItemNode, castToByteNode);
         }
 
         @Fallback

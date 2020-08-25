@@ -42,13 +42,13 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PBaseSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
 
-    public PBaseSequenceIterator(Object clazz, DynamicObject storage, Object sequence) {
-        super(clazz, storage);
+    public PBaseSequenceIterator(Object clazz, Shape instanceShape, Object sequence) {
+        super(clazz, instanceShape);
         this.sequence = sequence;
     }
 

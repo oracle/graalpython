@@ -47,7 +47,7 @@ import java.util.Iterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public class PScandirIterator extends PythonBuiltinObject {
     private boolean closed = false;
@@ -56,8 +56,8 @@ public class PScandirIterator extends PythonBuiltinObject {
     private final String path;
 
     @TruffleBoundary
-    public PScandirIterator(Object cls, DynamicObject storage, String path, DirectoryStream<TruffleFile> stream) {
-        super(cls, storage);
+    public PScandirIterator(Object cls, Shape instanceShape, String path, DirectoryStream<TruffleFile> stream) {
+        super(cls, instanceShape);
         this.path = path;
         this.stream = stream;
         this.iterator = stream.iterator();

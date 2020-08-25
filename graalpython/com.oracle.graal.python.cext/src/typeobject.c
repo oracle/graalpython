@@ -534,7 +534,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT_CONV("__ge__", NULL, cls->tp_richcompare, -2, JWRAPPER_GE);
     }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
-    ADD_SLOT("__next__", cls->tp_iternext, -1);
+    ADD_SLOT_CONV("__next__", NULL, cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT_PRIMITIVE("__set__", cls->tp_descr_set, -3);
     ADD_SLOT_PRIMITIVE("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);

@@ -69,6 +69,11 @@ public interface PythonParser {
          */
         Eval,
         /**
+         * Used for parsing expressions inside f-strings. Such expression should have the same scope
+         * as the f-string itself.
+         */
+        FStringExpression,
+        /**
          * Used for building Truffle tree from deserialized ANTLR parser result. The result
          * expression or statement is not wrapped in any expression.
          */
@@ -104,6 +109,8 @@ public interface PythonParser {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, new Object[0]);
         }
 
+        void warn(Object type, String format, Object... args);
+
         PythonLanguage getLanguage();
     }
 
@@ -124,7 +131,7 @@ public interface PythonParser {
     /**
      * Unescape Python escapes from a Java string
      */
-    public abstract String unescapeJavaString(String str);
+    public abstract String unescapeJavaString(PythonCore core, String str);
 
     /**
      * Runtime exception used to indicate incomplete source code during parsing.

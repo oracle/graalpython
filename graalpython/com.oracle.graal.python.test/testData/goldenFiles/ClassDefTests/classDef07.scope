@@ -5,11 +5,11 @@ Scope: []
     FreeVars: Empty
     Scope: OrderedDict
         Kind: Class
-        FrameDescriptor: [setup, __class__]
-        CellVars: [__class__]
+        FrameDescriptor: [setup]
+        CellVars: Empty
         FreeVars: Empty
         Scope: setup
             Kind: Function
-            FrameDescriptor: [dict_setitem, <return_val>, __class__]
+            FrameDescriptor: [dict_setitem, <return_val>]
             CellVars: Empty
-            FreeVars: [__class__]
+            FreeVars: Empty

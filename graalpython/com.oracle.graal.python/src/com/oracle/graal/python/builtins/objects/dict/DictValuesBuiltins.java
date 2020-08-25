@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 
 import java.util.List;
 
@@ -41,7 +42,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -65,9 +65,12 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
-        @Specialization
-        Object run(PDictView self) {
-            return self.getWrappedDict().size();
+        @Specialization(limit = "1")
+        static Object run(VirtualFrame frame, PDictView self,
+                        @Cached ConditionProfile hasFrameProfile,
+                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
+                        @CachedLibrary("getStorage.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
+            return lib.lengthWithFrame(getStorage.execute(self.getWrappedDict()), hasFrameProfile, frame);
         }
     }
 
@@ -101,7 +104,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
-        boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
+        static boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached HashingCollectionNodes.GetDictStorageNode getStore,
                         @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary libSelf,
@@ -119,7 +122,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object self, Object other) {
+        static PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

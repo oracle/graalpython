@@ -82,18 +82,18 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                           FreeVarSlots: a_local_var, 
                                           ExecutionSlots:
                                             FreeVarsSlots: a_local_var, 
-                                            CellVarsSlots: __class__, 
+                                            CellVarsSlots: None
                                           ClassBodyRootNode SourceSection: [64,190]`class C(object):â†µ   ...`
                                             Name: C
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                               Param Names: namespace
-                                            CelVars: __class__
+                                            CelVars: None
                                             FreeVars: a_local_var
                                             NeedsCellFrame: False
-                                            FrameDescriptor: 3 slots [a_local_var, method01, __class__]
+                                            FrameDescriptor: 2 slots [a_local_var, method01]
                                             ExecutionSlots:
                                               FreeVarsSlots: a_local_var, 
-                                              CellVarsSlots: __class__, 
+                                              CellVarsSlots: None
                                             InnerRootNode SourceSection: [64,190]`class C(object):â†µ   ...`
                                               ReturnTargetNode SourceSection: [64,190]`class C(object):â†µ   ...`
                                                 Body: BlockNode SourceSection: None
@@ -135,19 +135,19 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                         Arguments: None
                                                         KwArguments: None
                                                         Documentation: None
-                                                        FreeVarSlots: __class__, , a_local_var, 
+                                                        FreeVarSlots: a_local_var, 
                                                         ExecutionSlots:
-                                                          FreeVarsSlots: __class__, , a_local_var, 
+                                                          FreeVarsSlots: a_local_var, 
                                                           CellVarsSlots: None
                                                         FunctionRootNode SourceSection: [131,190]`def method01():â†µ    ...`
                                                           Name: method01
                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                           CelVars: None
-                                                          FreeVars: __class__, a_local_var
+                                                          FreeVars: a_local_var
                                                           NeedsCellFrame: False
-                                                          FrameDescriptor: 3 slots [a_local_var, __class__, <return_val>]
+                                                          FrameDescriptor: 2 slots [a_local_var, <return_val>]
                                                           ExecutionSlots:
-                                                            FreeVarsSlots: __class__, , a_local_var, 
+                                                            FreeVarsSlots: a_local_var, 
                                                             CellVarsSlots: None
                                                           InnerRootNode SourceSection: [131,190]`def method01():â†µ    ...`
                                                             ReturnTargetNode SourceSection: [131,190]`def method01():â†µ    ...`
@@ -158,23 +158,15 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                                     WriteLocalVariableNodeGen SourceSection: None
                                                                       Identifier: <return_val>
                                                                       WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                        Frame: [2,<return_val>,Illegal]
+                                                                        Frame: [1,<return_val>,Illegal]
                                                                       ReadLocalCellNodeGen SourceSection: [170,181]`a_local_var`
                                                                         ReadLocalVariableNode SourceSection: None
                                                                           Frame: [0,a_local_var,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         ReadFromCellNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                                Frame: [2,<return_val>,Illegal]
+                                                                Frame: [1,<return_val>,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
-                                                  SetItemNodeGen SourceSection: None
-                                                    ArgumentExpressionNode SourceSection: None
-                                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                                        Index: 0
-                                                    StringLiteralNode SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: None
-                                                      Frame: [2,__class__,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [72,78]`object`
@@ -188,6 +180,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                         GetAttributeNodeGen SourceSection: [197,210]`C.a_local_var`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: a_local_var
+                                            CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
