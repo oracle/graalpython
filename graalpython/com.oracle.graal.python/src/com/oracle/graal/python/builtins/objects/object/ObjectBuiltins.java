@@ -301,7 +301,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RichcompareNode extends PythonBinaryBuiltinNode {
+    public abstract static class LtLeGtGeNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object notImplemented(Object self, Object other) {
