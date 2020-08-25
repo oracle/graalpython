@@ -65,6 +65,7 @@
 *graalpython.lib-python.3.test.test_types.TypesTests.test_int__format__
 *graalpython.lib-python.3.test.test_types.TypesTests.test_int__format__locale
 *graalpython.lib-python.3.test.test_types.TypesTests.test_internal_sizes
+*graalpython.lib-python.3.test.test_types.TypesTests.test_method_descriptor_types
 *graalpython.lib-python.3.test.test_types.TypesTests.test_method_wrapper_types
 *graalpython.lib-python.3.test.test_types.TypesTests.test_normal_integers
 *graalpython.lib-python.3.test.test_types.TypesTests.test_numeric_types
