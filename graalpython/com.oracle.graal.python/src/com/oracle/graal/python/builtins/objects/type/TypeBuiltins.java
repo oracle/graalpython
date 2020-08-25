@@ -431,6 +431,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(PGuards.class)
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
@@ -455,9 +456,17 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private TypeNodes.GetNameNode getNameNode;
 
         @Specialization(limit = "3")
-        protected Object doIt(VirtualFrame frame, Object object, Object key,
+        protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary libDesc) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary libDesc,
+                        @Cached CastToJavaStringNode castToString) {
+            String key;
+            try {
+                key = castToString.execute(keyObj);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            }
+
             Object type = libObj.getLazyPythonClass(object);
             Object descr = lookup.execute(type, key);
             Object get = null;
