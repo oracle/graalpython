@@ -1,6 +1,6 @@
 # Python Implementation for GraalVM
 
-GraalVM provides an implementation of Python 3.7. A primary goal of the Python
+GraalVM provides an implementation of Python 3.8. A primary goal of the Python
 implementation is to support SciPy and its constituent libraries as well as to work
 with other data science and machine learning libraries from the rich Python
 ecosystem. At this point, the Python implementation is made available for
@@ -18,7 +18,7 @@ For GraalVM Enterprise users, the [manual component installation](https://www.gr
 
 ## Running Python
 
-GraalVM implementation of Python targets Python 3.7 compatibility. While support
+GraalVM implementation of Python targets Python 3.8 compatibility. While support
 for the Python language is still limited, you can run simple Python scripts or
 commands with the `graalpython` binary.
 ```shell
@@ -27,7 +27,7 @@ graalpython [options] [-c cmd | filename]
 
 If no program file or command is given, you are dropped into a simple REPL.
 
-GraalVM supports some of the same options as Python 3.7 and some additional
+GraalVM supports some of the same options as Python 3.8 and some additional
 options to control the underlying Python implementation, the GraalVM tools
 and the execution engine. These can be viewed using the following command:
 
