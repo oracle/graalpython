@@ -1050,11 +1050,14 @@ public class TypeBuiltins extends PythonBuiltins {
         static Object getItemsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
+            Object itemsize;
             // recursion anchor; since the metaclass of 'type' is 'type'
             if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                return getName.execute(cls, TYPE_ITEMSIZE);
+                itemsize = getName.execute(cls, TYPE_ITEMSIZE);
+            } else {
+                itemsize = getName.execute(cls, __ITEMSIZE__);
             }
-            return getName.execute(cls, __ITEMSIZE__);
+            return itemsize != PNone.NO_VALUE ? itemsize : 0;
         }
 
         @Specialization(guards = "!isNoValue(value)")
@@ -1098,11 +1101,14 @@ public class TypeBuiltins extends PythonBuiltins {
         static Object getBasicsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") IsBuiltinClassProfile profile,
                         @Cached("create()") ReadAttributeFromObjectNode getName) {
+            Object basicsize;
             // recursion anchor; since the metaclass of 'type' is 'type'
             if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                return getName.execute(cls, TYPE_BASICSIZE);
+                basicsize = getName.execute(cls, TYPE_BASICSIZE);
+            } else {
+                basicsize = getName.execute(cls, __BASICSIZE__);
             }
-            return getName.execute(cls, __BASICSIZE__);
+            return basicsize != PNone.NO_VALUE ? basicsize : 0;
         }
 
         @Specialization(guards = "!isNoValue(value)")

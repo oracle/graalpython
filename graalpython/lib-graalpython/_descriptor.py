@@ -75,11 +75,39 @@ def make_named_tuple_class(name, fields):
     return named_tuple
 
 
+def recursive_repr(fillfn):
+    def inner(fn):
+        data = None
+
+        def wrapper(self):
+            nonlocal data
+            if data is None:
+                # lazy initialization to avoid bootstrap issues
+                import threading
+                data = threading.local()
+                data.running = set()
+            key = id(self)
+            if key in data.running:
+                return fillfn(self)
+            data.running.add(key)
+            try:
+                result = fn(self)
+            finally:
+                data.running.discard(key)
+            return result
+
+        wrapper.__name__ = fn.__name__
+        wrapper.__qualname__ = fn.__qualname__
+        return wrapper
+    return inner
+
+
 class SimpleNamespace(object):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
+    @recursive_repr(lambda self: "%s(...)" % 'namespace' if type(self) is SimpleNamespace else type(self).__name__)
     def __repr__(self):
         sb = []
         for k, v in sorted(self.__dict__.items()):
