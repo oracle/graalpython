@@ -74,7 +74,7 @@ public class ClassDefinitionPrologueNode extends StatementNode {
         Object moduleName = readGlobalNameNode.execute(frame);
         Object primary = readPrimaryArgNode.execute(frame);
 
-        setItemIfNotPresentNode.execute(frame, primary, __QUALNAME__, qualName);
         setItemIfNotPresentNode.execute(frame, primary, __MODULE__, moduleName);
+        setItemIfNotPresentNode.execute(frame, primary, __QUALNAME__, qualName);
     }
 }
