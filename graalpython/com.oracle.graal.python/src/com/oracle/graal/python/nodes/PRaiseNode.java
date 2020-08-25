@@ -100,6 +100,10 @@ public abstract class PRaiseNode extends Node {
         throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
     }
 
+    public final PException raise(Object exceptionType, Object message) {
+        throw execute(exceptionType, PNone.NO_VALUE, message, new Object[0]);
+    }
+
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
         throw execute(type, cause, format, arguments);
     }
