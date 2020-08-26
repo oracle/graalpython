@@ -410,7 +410,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
         if (warnOptions == null || warnOptions.isEmpty()) {
-            warnOptions = "default";
+            warnOptions = "";
         }
         String executable = getContextOptionIfSetViaCommandLine("python.Executable");
         if (executable != null) {

@@ -220,9 +220,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
         String pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         sys.setAttribute("pycache_prefix", pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
 
-        String[] strWarnoptions = context.getOption(PythonOptions.WarnOptions).split(",");
-        Object[] warnoptions = new Object[strWarnoptions.length];
-        System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
+        String strWarnoption = context.getOption(PythonOptions.WarnOptions);
+        Object[] warnoptions;
+        if (strWarnoption.length() > 0) {
+            String[] strWarnoptions = context.getOption(PythonOptions.WarnOptions).split(",");
+            warnoptions = new Object[strWarnoptions.length];
+            System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
+        } else {
+            warnoptions = new Object[0];
+        }
         sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
 
         Env env = context.getEnv();
