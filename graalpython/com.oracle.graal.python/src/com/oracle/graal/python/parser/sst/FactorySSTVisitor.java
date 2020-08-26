@@ -433,40 +433,11 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return callNode;
     }
 
-    protected static String getQualifiedName(ScopeInfo scope, String name) {
-        StringBuilder qualifiedName = new StringBuilder(name);
-        ScopeInfo tmpScope = scope.getParent();
-        while (tmpScope != null) {
-            switch (tmpScope.getScopeKind()) {
-                case GenExp:
-                case ListComp:
-                case DictComp:
-                case SetComp:
-                case Function:
-                case Generator:
-                    qualifiedName.insert(0, ".<locals>.");
-                    qualifiedName.insert(0, tmpScope.getScopeId());
-                    tmpScope = tmpScope.getParent();
-                    break;
-                case Class:
-                    qualifiedName.insert(0, '.');
-                    qualifiedName.insert(0, tmpScope.getScopeId());
-                    tmpScope = tmpScope.getParent();
-                    break;
-                case Module:
-                    tmpScope = null;
-                    break;
-            }
-
-        }
-        return qualifiedName.toString();
-    }
-
     @Override
     public PNode visit(ClassSSTNode node) {
         ScopeInfo classScope = node.scope;
         scopeEnvironment.setCurrentScope(classScope);
-        String qualifiedName = getQualifiedName(classScope, node.name);
+        String qualifiedName = classScope.getQualname();
 
         int delta = 0;
         SSTNode[] bodyNodes = ((BlockSSTNode) node.body).statements;
@@ -924,7 +895,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          */
         FrameDescriptor fd = scopeEnvironment.getCurrentFrame();
         String name = node.name;
-        String qualname = getQualifiedName(node.scope, name);
+        String qualname = node.scope.getQualname();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
                         signature);
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
@@ -1026,7 +997,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     @Override
     public PNode visit(LambdaSSTNode node) {
         String funcname = LAMBDA_NAME;
-        String qualname = getQualifiedName(node.scope, funcname);
+        String qualname = node.scope.getQualname();
         ScopeInfo oldScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope);
         /**

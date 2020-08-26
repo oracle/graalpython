@@ -91,8 +91,6 @@ import com.oracle.truffle.api.source.Source;
 
 public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
-    public static final String GENEXPR_NAME = "<genexpr>";
-
     private GeneratorInfo.Mutable generatorInfo = new GeneratorInfo.Mutable();
     protected FactorySSTVisitor parentVisitor;
 
@@ -185,8 +183,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
         // creating generator expression
         FrameDescriptor fd = node.scope.getFrameDescriptor();
-        String name = GENEXPR_NAME;
-        String qualname = getQualifiedName(node.scope, name);
+        String name = node.scope.getScopeId();
+        String qualname = node.scope.getQualname();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
         RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(funcRoot);
         ExpressionNode loopIterator = getIterator;
