@@ -492,6 +492,7 @@ public abstract class ErrorMessages {
     public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%p' is not an acceptable base type";
     public static final String TYPE_NAME_NO_NULL_CHARS = "type name must not contain null characters";
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
+    public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
     public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";

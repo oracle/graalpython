@@ -59,6 +59,7 @@ public abstract class SpecialAttributeNames {
     public static final String __NAME__ = "__name__";
     public static final String __QUALNAME__ = "__qualname__";
     public static final String __MRO__ = "__mro__";
+    public static final String __MRO_ENTRIES__ = "__mro_entries__";
     public static final String __LOADER__ = "__loader__";
     public static final String __PACKAGE__ = "__package__";
     public static final String __SPEC__ = "__spec__";
