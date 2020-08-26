@@ -501,7 +501,6 @@ public abstract class ErrorMessages {
     public static final String UNKNOWN_ERROR_HANDLER = "unknown error handler name '%s'";
     public static final String UNKNOWN_FORMAT_CODE = "Unknown format code '%c' for object of type '%s'";
     public static final String UNKNOWN_S_TYPE = "unknown %s type";
-    public static final String UNOPERABLE_TYPES_P_P = "unorderable types: %p < %p";
     public static final String UNRECOGNIZED_FORMAT_CHAR = "unrecognized format char in arguments parsing: %c";
     public static final String UNRECOGNIZED_KIND = "unrecognized kind";
     public static final String UNSIGNED_BYTE_INT_GREATER_THAN_MAX = "unsigned byte integer is greater than maximum";

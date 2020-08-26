@@ -70,10 +70,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -82,7 +80,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -388,16 +385,11 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return BaseLessEqualNode.doLE(frame, self, other, hasFrameProfile, hlib);
         }
 
-        @Specialization
-        Object isLessThan(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create(__GT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
-            if (result != PNone.NO_VALUE) {
-                return result;
-            }
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNOPERABLE_TYPES_P_P, self, other);
+        @Fallback
+        @SuppressWarnings("unused")
+        static PNotImplemented doNotImplemented(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
-
     }
 
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
@@ -417,14 +409,10 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return BaseGreaterEqualNode.doGE(frame, self, other, hasFrameProfile, hlib);
         }
 
-        @Specialization
-        Object isLessThan(VirtualFrame frame, PBaseSet self, Object other,
-                        @Cached("create(__LT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
-            Object result = lookupAndCallBinaryNode.executeObject(frame, other, self);
-            if (result != PNone.NO_VALUE) {
-                return result;
-            }
-            throw raise(PythonErrorType.TypeError, ErrorMessages.UNOPERABLE_TYPES_P_P, self, other);
+        @Fallback
+        @SuppressWarnings("unused")
+        static PNotImplemented doNotImplemented(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
