@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_TYPE
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_BASICSIZE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DICT;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_DICTOFFSET;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.TP_FLAGS;
@@ -368,6 +369,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                                   @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
             Object result = lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC);
             return toSulongNode.execute(result);
+        }
+
+        @Specialization(guards = "eq(TP_DEL, key)")
+        @SuppressWarnings("unused")
+        static Object doTpDel(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                              @Cached CExtNodes.LookupNativeMemberInMRONode lookupNativeMemberNode,
+                              @Shared("nullToSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(lookupNativeMemberNode.execute(object, TP_DEALLOC, TypeBuiltins.TYPE_DEALLOC));
         }
 
         @Specialization(guards = "eq(TP_FREE, key)")
@@ -1057,7 +1066,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
         static Object doTpAlloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
                                 @Cached WriteAttributeToObjectNode writeAttrNode,
-                                @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                                @Cached CExtNodes.WrapVoidPtrNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
             return allocFunc;
         }
@@ -1085,15 +1094,23 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEALLOC, key)"})
         static Object doTpDelloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
                                  @Cached WriteAttributeToObjectNode writeAttrNode,
-                                 @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                                 @Cached CExtNodes.WrapVoidPtrNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
             return deallocFunc;
+        }
+
+        @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEL, key)"})
+        static Object doTpDel(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object delFunc,
+                              @Cached WriteAttributeToObjectNode writeAttrNode,
+                              @Cached CExtNodes.WrapVoidPtrNode asPythonObjectNode) {
+            writeAttrNode.execute(object, TypeBuiltins.TYPE_DEL, asPythonObjectNode.execute(delFunc));
+            return delFunc;
         }
 
         @Specialization(guards = {"isPythonClass(object)", "eq(TP_FREE, key)"})
         static Object doTpFree(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
                                @Cached WriteAttributeToObjectNode writeAttrNode,
-                               @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode) {
+                               @Cached CExtNodes.WrapVoidPtrNode asPythonObjectNode) {
             writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
             return freeFunc;
         }
@@ -1241,12 +1258,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     TP_ITEMSIZE.getMemberName().equals(key) ||
                     TP_ALLOC.getMemberName().equals(key) ||
                     TP_DEALLOC.getMemberName().equals(key) ||
+                    TP_DEL.getMemberName().equals(key) ||
                     TP_FREE.getMemberName().equals(key) ||
                     TP_SUBCLASSES.getMemberName().equals(key) ||
                     MD_DEF.getMemberName().equals(key) ||
                     TP_DICT.getMemberName().equals(key));
         }
-
     }
 
     @ExportMessage
@@ -1258,6 +1275,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 TP_ITEMSIZE.getMemberName().equals(member) ||
                 TP_ALLOC.getMemberName().equals(member) ||
                 TP_DEALLOC.getMemberName().equals(member) ||
+                TP_DEL.getMemberName().equals(member) ||
                 TP_FREE.getMemberName().equals(member) ||
                 TP_SUBCLASSES.getMemberName().equals(member) ||
                 MD_DEF.getMemberName().equals(member) ||

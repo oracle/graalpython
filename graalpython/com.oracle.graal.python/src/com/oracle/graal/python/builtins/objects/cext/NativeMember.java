@@ -79,6 +79,7 @@ public enum NativeMember {
     TP_DOC("tp_doc"),
     TP_ALLOC("tp_alloc"),
     TP_DEALLOC("tp_dealloc"),
+    TP_DEL("tp_del"),
     TP_FREE("tp_free"),
     TP_AS_NUMBER("tp_as_number"),
     TP_HASH("tp_hash"),
