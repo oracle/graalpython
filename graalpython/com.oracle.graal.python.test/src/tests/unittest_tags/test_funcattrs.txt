@@ -13,6 +13,7 @@
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test___globals__
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test___name__
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_blank_func_defaults
+*graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_cell_new
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_copying___code__
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_dir_includes_correct_attrs
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_duplicate_function_equality

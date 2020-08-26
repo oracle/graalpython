@@ -215,10 +215,12 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -3033,12 +3035,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell", constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
+    @Builtin(name = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
     @GenerateNodeFactory
-    public abstract static class CellTypeNode extends PythonBuiltinNode {
-        @Specialization
-        Object call() {
-            throw raise(RuntimeError, ErrorMessages.CANNOT_CALL_CTOR_OF, "cell type");
+    public abstract static class CellTypeNode extends PythonBinaryBuiltinNode {
+        private Assumption sharedAssumption = Truffle.getRuntime().createAssumption("cell is effectively final");
+
+        @Specialization(guards = "isNoValue(contents)")
+        Object newCellEmpty(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object contents) {
+            return factory().createCell(sharedAssumption);
+        }
+
+        @Specialization(guards = "!isNoValue(contents)")
+        Object newCell(@SuppressWarnings("unused") Object cls, Object contents) {
+            PCell cell = factory().createCell(sharedAssumption);
+            cell.setRef(contents, sharedAssumption);
+            return cell;
         }
     }
 
