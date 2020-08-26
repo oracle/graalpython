@@ -187,13 +187,13 @@ import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -707,7 +707,7 @@ public final class Python3Core implements PythonCore {
     private void loadFile(String s, String prefix) {
         Supplier<CallTarget> getCode = () -> {
             Source source = getInternalSource(s, prefix);
-            return Truffle.getRuntime().createCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null, null));
+            return PythonUtils.getOrCreateCallTarget((RootNode) getParser().parse(ParserMode.File, this, source, null, null));
         };
         RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
         PythonModule mod = lookupBuiltinModule(s);

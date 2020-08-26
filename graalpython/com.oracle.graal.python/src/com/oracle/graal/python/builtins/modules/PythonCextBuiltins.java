@@ -250,12 +250,12 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -504,7 +504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
 
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, false);
+            RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, managedCallable, false);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
@@ -534,7 +534,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, managedCallable, false);
+            RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, managedCallable, false);
             if (wrappedCallTarget != null) {
                 return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
             }
@@ -549,7 +549,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, PExternalFunctionWrapper wrapper, Object type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            RootCallTarget wrappedCallTarget = wrapper.createCallTarget(lang, name, callable, true);
+            RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, callable, true);
             return factory().createBuiltinFunction(name, type, 0, wrappedCallTarget);
         }
 
@@ -563,7 +563,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            RootCallTarget callTarget = PExternalFunctionWrapper.createCallTarget(MethDirectRoot.create(lang, name, callable));
+            RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, name, callable));
             return factory().createBuiltinFunction(name, type, 0, callTarget);
         }
 
@@ -1594,12 +1594,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
         }
 
-        protected abstract RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion);
-
-        @TruffleBoundary
-        public static RootCallTarget createCallTarget(RootNode n) {
-            return Truffle.getRuntime().createCallTarget(n);
-        }
+        protected abstract RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion);
 
         @TruffleBoundary
         protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
@@ -1624,13 +1619,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
                     // this should directly (== without argument conversion) call a managed
                     // function; so directly use the function. null indicates this
                     return null;
                 } else {
-                    return createCallTarget(MethDirectRoot.create(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(language, name, callable));
                 }
             }
         };
@@ -1648,11 +1643,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethKeywordsRoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethKeywordsRoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethKeywordsRoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethKeywordsRoot(language, name, callable, this));
                 }
             }
         };
@@ -1670,11 +1665,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethVarargsRoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethVarargsRoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethVarargsRoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethVarargsRoot(language, name, callable, this));
                 }
             }
         };
@@ -1692,11 +1687,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethNoargsRoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethNoargsRoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethNoargsRoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethNoargsRoot(language, name, callable, this));
                 }
             }
         };
@@ -1714,11 +1709,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethORoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethORoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethORoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethORoot(language, name, callable, this));
                 }
             }
         };
@@ -1736,11 +1731,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethFastcallRoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethFastcallRoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethFastcallRoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethFastcallRoot(language, name, callable, this));
                 }
             }
         };
@@ -1758,11 +1753,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable));
                 } else {
-                    return createCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethFastcallWithKeywordsRoot(language, name, callable, this));
                 }
             }
         };
@@ -1780,11 +1775,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new AllocFuncRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new AllocFuncRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new AllocFuncRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new AllocFuncRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1802,11 +1797,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new GetAttrFuncRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new GetAttrFuncRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new GetAttrFuncRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new GetAttrFuncRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1824,11 +1819,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new SetAttrFuncRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new SetAttrFuncRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new SetAttrFuncRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new SetAttrFuncRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1846,11 +1841,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new RichCmpFuncRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new RichCmpFuncRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new RichCmpFuncRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new RichCmpFuncRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1868,11 +1863,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new SSizeObjArgProcRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new SSizeObjArgProcRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new SSizeObjArgProcRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1890,11 +1885,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethReverseRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethReverseRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new MethReverseRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethReverseRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1912,11 +1907,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethPowRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethPowRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new MethPowRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethPowRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1934,11 +1929,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new MethRPowRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new MethRPowRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new MethRPowRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new MethRPowRootNode(language, name, callable, this));
                 }
             }
         };
@@ -1964,11 +1959,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PExternalFunctionWrapper(TernaryFirstSecondToSulongNode::create) {
                 @Override
                 @TruffleBoundary
-                protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+                protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                     if (!doArgAndResultConversion) {
-                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));
+                        return PythonUtils.getOrCreateCallTarget(new MethRichcmpOpRootNode(language, name, callable, op));
                     } else {
-                        return createCallTarget(new MethRichcmpOpRootNode(language, name, callable, this, op));
+                        return PythonUtils.getOrCreateCallTarget(new MethRichcmpOpRootNode(language, name, callable, this, op));
                     }
                 }
             };
@@ -2056,11 +2051,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
             @Override
             @TruffleBoundary
-            protected RootCallTarget createCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
+            protected RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, Object callable, boolean doArgAndResultConversion) {
                 if (!doArgAndResultConversion) {
-                    return createCallTarget(new IterNextFuncRootNode(language, name, callable));
+                    return PythonUtils.getOrCreateCallTarget(new IterNextFuncRootNode(language, name, callable));
                 } else {
-                    return createCallTarget(new IterNextFuncRootNode(language, name, callable, this));
+                    return PythonUtils.getOrCreateCallTarget(new IterNextFuncRootNode(language, name, callable, this));
                 }
             }
         };
@@ -2355,7 +2350,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                                 true);
             }
 
-            return factory().createBuiltinFunction(func.getName(), null, 0, Truffle.getRuntime().createCallTarget(rootNode));
+            return factory().createBuiltinFunction(func.getName(), null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
         }
     }
 

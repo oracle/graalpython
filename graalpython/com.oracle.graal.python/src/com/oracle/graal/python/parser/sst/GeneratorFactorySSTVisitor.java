@@ -83,8 +83,8 @@ import com.oracle.graal.python.parser.ScopeInfo;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
@@ -188,7 +188,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         String name = GENEXPR_NAME;
         String qualname = getQualifiedName(node.scope, name);
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY);
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(funcRoot);
+        RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(funcRoot);
         ExpressionNode loopIterator = getIterator;
         GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(),
                         scopeEnvironment.getExecutionCellSlots(), generatorInfo.getImmutable());

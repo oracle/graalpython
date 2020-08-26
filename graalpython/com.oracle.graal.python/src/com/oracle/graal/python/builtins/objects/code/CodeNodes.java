@@ -50,11 +50,13 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -81,7 +83,6 @@ public abstract class CodeNodes {
         @CompilationFinal private ContextReference<PythonContext> contextRef;
         @CompilationFinal private static Source emptySource;
 
-        @SuppressWarnings("try")
         public PCode execute(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -102,7 +103,7 @@ public abstract class CodeNodes {
             }
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private PCode createCode(PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -113,7 +114,7 @@ public abstract class CodeNodes {
 
             Supplier<CallTarget> createCode = () -> {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
-                return Truffle.getRuntime().createCallTarget(rootNode);
+                return PythonUtils.getOrCreateCallTarget(rootNode);
             };
 
             RootCallTarget ct = (RootCallTarget) createCode.get();
@@ -133,13 +134,13 @@ public abstract class CodeNodes {
             }
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static PCode createCode(PythonContext context, String sourceCode, int flags, byte[] codedata, String filenamePath,
                         int firstlineno, byte[] lnotab) {
             Source source = (flags & PCode.FLAG_MODULE) == 0 ? PythonLanguage.newSource(context, sourceCode, filenamePath, false) : PythonLanguage.newSource(context, sourceCode, filenamePath, true);
             Supplier<CallTarget> createCode = () -> {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
-                return Truffle.getRuntime().createCallTarget(rootNode);
+                return PythonUtils.getOrCreateCallTarget(rootNode);
             };
 
             RootCallTarget ct;
@@ -167,12 +168,12 @@ public abstract class CodeNodes {
             return emptySource;
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private Source createEmptySource() {
             return PythonLanguage.newSource(getContextRef().get(), "", "unavailable", false);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static String[] toStringArray(Object[] array) {
             List<String> list = new ArrayList<>(array.length);
             for (Object item : array) {

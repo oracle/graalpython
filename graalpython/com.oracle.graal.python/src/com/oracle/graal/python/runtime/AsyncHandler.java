@@ -64,7 +64,6 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -217,7 +216,7 @@ public class AsyncHandler {
 
     AsyncHandler(PythonContext context) {
         this.context = context;
-        this.callTarget = Truffle.getRuntime().createCallTarget(new CallRootNode(context.getLanguage()));
+        this.callTarget = PythonUtils.getOrCreateCallTarget(new CallRootNode(context.getLanguage()));
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {

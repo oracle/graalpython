@@ -160,6 +160,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
@@ -167,7 +168,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
@@ -786,7 +786,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             final String codeToCompile = code;
             Supplier<CallTarget> createCode = () -> {
                 Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
-                return Truffle.getRuntime().createCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null, null));
+                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, getCore(), source, null, null));
             };
             RootCallTarget ct;
             if (getCore().isInitialized()) {

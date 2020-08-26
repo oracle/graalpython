@@ -49,11 +49,11 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -103,7 +103,7 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
         RootCallTarget[] callTargets = new RootCallTarget[numYields + 1];
         callTargets[0] = callTarget;
         for (int i = 1; i < callTargets.length; i++) {
-            callTargets[i] = Truffle.getRuntime().createCallTarget(NodeUtil.cloneNode(callTarget.getRootNode()));
+            callTargets[i] = PythonUtils.getOrCreateCallTarget(NodeUtil.cloneNode(callTarget.getRootNode()));
         }
         return callTargets;
     }

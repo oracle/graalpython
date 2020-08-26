@@ -252,13 +252,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             context.initializeMainModule(source.getPath());
         }
         if (!request.getArgumentNames().isEmpty()) {
-            return Truffle.getRuntime().createCallTarget(parseWithArguments(request));
+            return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
         }
         RootNode root = doParse(context, source);
         if (core.isInitialized()) {
-            return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
+            return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
-            return Truffle.getRuntime().createCallTarget(root);
+            return PythonUtils.getOrCreateCallTarget(root);
         }
     }
 
@@ -283,7 +283,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return (RootNode) pythonCore.getParser().parse(mode, pythonCore, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
-            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
             throw e;
         }
     }

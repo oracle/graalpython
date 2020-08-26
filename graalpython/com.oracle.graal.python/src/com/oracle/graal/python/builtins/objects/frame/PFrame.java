@@ -49,13 +49,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PFrame extends PythonBuiltinObject {
@@ -289,22 +288,12 @@ public final class PFrame extends PythonBuiltinObject {
     public RootCallTarget getTarget() {
         if (callTarget == null) {
             if (location != null) {
-                callTarget = createCallTarget(location);
+                callTarget = PythonUtils.getOrCreateCallTarget(location.getRootNode());
             } else if (getRef() != null && getRef().getCallNode() != null) {
-                callTarget = createCallTarget(getRef().getCallNode());
+                callTarget = PythonUtils.getOrCreateCallTarget(getRef().getCallNode().getRootNode());
             }
         }
         return callTarget;
-    }
-
-    @TruffleBoundary
-    private static RootCallTarget createCallTarget(Node location) {
-        RootNode rootNode = location.getRootNode();
-        RootCallTarget ct = rootNode.getCallTarget();
-        if (ct == null) {
-            ct = Truffle.getRuntime().createCallTarget(rootNode);
-        }
-        return ct;
     }
 
     public Object[] getArguments() {

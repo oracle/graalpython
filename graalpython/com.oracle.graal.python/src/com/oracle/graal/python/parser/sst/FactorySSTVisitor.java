@@ -126,8 +126,8 @@ import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode.IntegerLiteralSST
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
@@ -523,7 +523,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode bodyAsExpr = new ReturnTargetNode(body, nodeFactory.createNullLiteral());
         bodyAsExpr.assignSourceSection(nodeSourceSection);
         ClassBodyRootNode classBodyRoot = nodeFactory.createClassBodyRoot(nodeSourceSection, node.name, scopeEnvironment.getCurrentFrame(), bodyAsExpr, scopeEnvironment.getExecutionCellSlots());
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
+        RootCallTarget ct = PythonUtils.getOrCreateCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(node.name, qualifiedName, null, null, null, null, ct, scopeEnvironment.getDefinitionCellSlots(),
                         scopeEnvironment.getExecutionCellSlots(), null);
         scopeEnvironment.setCurrentScope(node.scope.getParent());
@@ -927,7 +927,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         String qualname = getQualifiedName(node.scope, name);
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(sourceSection, name, scopeEnvironment.isInGeneratorScope(), fd, returnTarget, scopeEnvironment.getExecutionCellSlots(),
                         signature);
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(name, qualname, node.enclosingClassName, doc, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),
@@ -1086,7 +1086,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Definition
          */
         PNode funcDef;
-        RootCallTarget ct = Truffle.getRuntime().createCallTarget(funcRoot);
+        RootCallTarget ct = PythonUtils.getOrCreateCallTarget(funcRoot);
         if (scopeEnvironment.isInGeneratorScope()) {
             funcDef = GeneratorFunctionDefinitionNode.create(funcname, qualname, null, null, defaults, kwDefaults, ct, fd,
                             scopeEnvironment.getDefinitionCellSlots(), scopeEnvironment.getExecutionCellSlots(),

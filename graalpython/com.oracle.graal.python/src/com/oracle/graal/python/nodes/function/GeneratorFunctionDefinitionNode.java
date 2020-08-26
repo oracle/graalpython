@@ -40,11 +40,11 @@ import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -104,7 +104,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
     protected PCode getGeneratorCode() {
         if (generatorCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            generatorCallTarget = Truffle.getRuntime().createCallTarget(getGeneratorFunctionRootNode(getContext()));
+            generatorCallTarget = PythonUtils.getOrCreateCallTarget(getGeneratorFunctionRootNode(getContext()));
         }
         PythonLanguage lang = lookupLanguageReference(PythonLanguage.class).get();
         CompilerAsserts.partialEvaluationConstant(lang);
