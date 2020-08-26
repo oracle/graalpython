@@ -497,6 +497,14 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
     else:
         xit("Package not found: '%s'" % package)
 
+def get_site_packages_path():
+    if site.ENABLE_USER_SITE:
+        return site.getusersitepackages()
+    else:
+        for s in site.getsitepackages():
+            if s.endswith("site-packages"):
+                return s
+    return None
 
 def main(argv):
     parser = argparse.ArgumentParser(description="The simple Python package installer for GraalVM")
@@ -542,26 +550,14 @@ def main(argv):
     args = parser.parse_args(argv)
 
     if args.command == "list":
-        if site.ENABLE_USER_SITE:
-            user_site = site.getusersitepackages()
-        else:
-            for s in site.getsitepackages():
-                if s.endswith("site-packages"):
-                    user_site = s
-                    break
+        user_site = get_site_packages_path()
         info("Installed packages:")
         for p in sys.path:
             if p.startswith(user_site):
                 info(p[len(user_site) + 1:])
     elif args.command == "uninstall":
         warn("WARNING: I will only delete the package folder, proper uninstallation is not supported at this time.")
-        if site.ENABLE_USER_SITE:
-            user_site = site.getusersitepackages()
-        else:
-            for s in site.getsitepackages():
-                if s.endswith("site-packages"):
-                    user_site = s
-                    break
+        user_site = get_site_packages_path()
         for pkg in args.package.split(","):
             deleted = False
             for p in sys.path:
