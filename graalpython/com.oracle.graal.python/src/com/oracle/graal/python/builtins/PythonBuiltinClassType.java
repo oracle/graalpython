@@ -32,6 +32,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -599,5 +600,18 @@ public enum PythonBuiltinClassType implements TruffleObject {
             }
         }
         return false;
+    }
+
+    /**
+     * Must be kept in sync with {@link TypeBuiltins.ReprNode}
+     */
+    @ExportMessage
+    String asPString() {
+        return getQualifiedName();
+    }
+
+    @ExportMessage
+    String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
+        return asPString();
     }
 }
