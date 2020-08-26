@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -49,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -132,38 +130,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PBuiltinMethod self) {
             return self.getFunction();
-        }
-    }
-
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class NameNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
-            return getName.executeObject(frame, self.getFunction(), __NAME__);
-        }
-
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PBuiltinMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
-            return getName.executeObject(frame, self.getFunction(), __NAME__);
-        }
-    }
-
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class QualnameNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualname) {
-            return getQualname.executeObject(frame, self.getFunction(), __QUALNAME__);
-        }
-
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PBuiltinMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getQualname) {
-            return getQualname.executeObject(frame, self.getFunction(), __QUALNAME__);
         }
     }
 
