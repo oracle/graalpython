@@ -580,7 +580,7 @@ public final class DictBuiltins extends PythonBuiltins {
         public Object updateDict(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached GetDictStorageNode getStorage,
                         @Cached SetDictStorageNode setStorage,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary libSelf,
                         @CachedLibrary(limit = "1") HashingStorageLibrary libOther) {
             HashingStorage newStorage = addAll(self, (PDict) args[0], getStorage, libSelf, libOther);
             setStorage.execute(self, newStorage);
@@ -591,7 +591,7 @@ public final class DictBuiltins extends PythonBuiltins {
         public Object updateDict(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @Cached GetDictStorageNode getStorage,
                         @Cached SetDictStorageNode setStorage,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary libSelf,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary libSelf,
                         @CachedLibrary(limit = "1") HashingStorageLibrary libOther,
                         @Cached HashingStorage.InitNode initNode) {
             HashingStorage newStorage = addAll(self, (PDict) args[0], getStorage, libSelf, libOther);
