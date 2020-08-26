@@ -17,5 +17,6 @@
 *graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_metaclass
 *graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_none
 *graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_signature
+*graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_type_call
 *graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins
 *graalpython.lib-python.3.test.test_genericclass.TestMROEntry.test_mro_entry_with_builtins_2

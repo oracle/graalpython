@@ -70,6 +70,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
@@ -2593,6 +2594,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object calculate_metaclass(VirtualFrame frame, Object cls, PTuple bases, PythonObjectLibrary lib) {
             Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
+                if (lib.lookupAttributeOnType(base, __MRO_ENTRIES__) != PNone.NO_VALUE) {
+                    throw raise(TypeError, ErrorMessages.TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION);
+                }
                 if (!ensureIsAcceptableBaseNode().execute(base)) {
                     throw raise(TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
                 }
