@@ -3,7 +3,7 @@
 import dis
 import pickle
 import unittest
-
+from test import support
 from test.support import check_syntax_error
 
 
@@ -365,6 +365,7 @@ class PositionalOnlyTestCase(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, expected):
             unpickled_defaults(a=1,b=2)
 
+    @support.impl_detail("async support", graalvm=False)
     def test_async(self):
 
         async def f(a=1, /, b=2):
@@ -420,6 +421,7 @@ class PositionalOnlyTestCase(unittest.TestCase):
     def test_annotations(self):
         assert global_inner_has_pos_only().__annotations__ == {'x': int}
 
+    @support.impl_detail("bytecode, compiler instructions", graalvm=False)
     def test_annotations_constant_fold(self):
         def g():
             def f(x: not (int is int), /): ...
