@@ -7596,7 +7596,7 @@ public class Python3Parser extends Parser {
 				 
 				                SSTNode value; 
 				                SSTNode name;
-				                ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.DictComp);
+				                ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, ScopeInfo.ScopeKind.DictComp);
 				                generator.setHasAnnotations(true);
 				                
 				            
@@ -7856,7 +7856,7 @@ public class Python3Parser extends Parser {
 				                    case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
 				                    default: scopeKind = ScopeInfo.ScopeKind.GenExp;
 				                }
-				                ScopeInfo generator = scopeEnvironment.pushScope("generator", scopeKind); 
+				                ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, scopeKind);
 				                generator.setHasAnnotations(true);
 				            
 				setState(1514);
@@ -8237,7 +8237,7 @@ public class Python3Parser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 
-				                    ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.GenExp); 
+				                    ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, ScopeInfo.ScopeKind.GenExp);
 				                    generator.setHasAnnotations(true);
 				                
 				setState(1587);
