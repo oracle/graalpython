@@ -105,6 +105,9 @@ import com.oracle.truffle.api.object.HiddenKey;
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
     private static HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
+    private static HiddenKey FILTERS = new HiddenKey("filters");
+    private static HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
+    private static HiddenKey ONCEREGISTRY = new HiddenKey("_onceregistry");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -118,6 +121,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         "It is a helper module to speed up interpreter start-up.");
         builtinConstants.put("_defaultaction", "default");
         builtinConstants.put("_onceregistry", core.factory().createDict());
+        builtinConstants.put("filters", initFilters(core));
         super.initialize(core);
     }
 
@@ -125,7 +129,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule warningsModule = core.lookupBuiltinModule("_warnings");
-        warningsModule.setAttribute("filters", initFilters(core));
+        // we need to copy these, since they must still be available even if the user `del`s the attrs
+        warningsModule.setAttribute(FILTERS, warningsModule.getAttribute("filters"));
+        warningsModule.setAttribute(DEFAULTACTION, warningsModule.getAttribute("defaultaction"));
+        warningsModule.setAttribute(ONCEREGISTRY, warningsModule.getAttribute("onceregistry"));
         DynamicObjectLibrary.getUncached().putLong(warningsModule, FILTERS_VERSION, 0);
     }
 
@@ -277,21 +284,21 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * On fast path.
          */
         private Object getStateFilters(PythonModule warningsModule) {
-            return getWarnLib().getOrDefault(warningsModule, "filters", null);
+            return getWarnLib().getOrDefault(warningsModule, FILTERS, null);
         }
 
         /**
          * On slow path.
          */
         private static Object getStateOnceRegistry(PythonModule warningsModule) {
-            return DynamicObjectLibrary.getUncached().getOrDefault(warningsModule, "_onceregistry", null);
+            return DynamicObjectLibrary.getUncached().getOrDefault(warningsModule, ONCEREGISTRY, null);
         }
 
         /**
          * On fast path.
          */
         private Object getStateDefaultAction(PythonModule warningsModule) {
-            return getWarnLib().getOrDefault(warningsModule, "_defaultaction", null);
+            return getWarnLib().getOrDefault(warningsModule, DEFAULTACTION, null);
         }
 
         /**
@@ -731,7 +738,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
-            } else if (!getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
+            } else if (!getPyLib().isLazyPythonClass(category) || !getIsSubtype().execute(frame, category, PythonBuiltinClassType.Warning)) {
                 throw getRaise().raise(PythonBuiltinClassType.TypeError, "category must be a Warning subclass, not '%P'", category);
             } else {
                 return category;
