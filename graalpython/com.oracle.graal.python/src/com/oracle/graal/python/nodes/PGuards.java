@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -125,6 +126,10 @@ public abstract class PGuards {
 
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
+    }
+
+    public static boolean isDeleteMarker(Object object) {
+        return object == DescriptorDeleteMarker.INSTANCE;
     }
 
     public static boolean isDict(Object object) {

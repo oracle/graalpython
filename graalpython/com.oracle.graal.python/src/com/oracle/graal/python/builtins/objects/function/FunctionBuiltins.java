@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -148,8 +147,8 @@ public class FunctionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
-        Object setDefaults(PFunction self, @SuppressWarnings("unused") DescriptorDeleteMarker defaults) {
+        @Specialization(guards = "isDeleteMarker(defaults)")
+        Object setDefaults(PFunction self, @SuppressWarnings("unused") Object defaults) {
             self.setDefaults(new Object[0]);
             return PNone.NONE;
         }

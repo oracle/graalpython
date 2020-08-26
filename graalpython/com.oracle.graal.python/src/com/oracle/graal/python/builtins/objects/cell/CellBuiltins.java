@@ -288,11 +288,11 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell_contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "cell_contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        public Object get(PCell self, @SuppressWarnings("unused") PNone none,
+        Object get(PCell self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") GetRefNode getRef) {
             Object ref = getRef.execute(self);
             if (ref == null) {
@@ -301,8 +301,14 @@ public class CellBuiltins extends PythonBuiltins {
             return ref;
         }
 
-        @Specialization(guards = "!isNoValue(ref)")
-        public Object set(PCell self, Object ref) {
+        @Specialization(guards = "isDeleteMarker(marker)")
+        Object delete(PCell self, @SuppressWarnings("unused") Object marker) {
+            self.clearRef();
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(ref)", "!isDeleteMarker(ref)"})
+        Object set(PCell self, Object ref) {
             self.setRef(ref);
             return PNone.NONE;
         }
