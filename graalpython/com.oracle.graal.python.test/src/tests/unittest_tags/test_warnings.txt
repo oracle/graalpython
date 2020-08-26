@@ -41,6 +41,7 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_explicit_non_ascii_filename
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_explicit_type_errors
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_nonstandard_types
+*graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warning_classes
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning_override
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_showwarning
