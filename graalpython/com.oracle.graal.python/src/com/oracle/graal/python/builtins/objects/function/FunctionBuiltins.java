@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -104,7 +105,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         Object setName(PFunction self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__"));
+            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __NAME__, "string"));
         }
     }
 
@@ -125,11 +126,11 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         Object setQualname(PFunction self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__qualname__"));
+            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __QUALNAME__, "string"));
         }
     }
 
-    @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaults)")
@@ -147,10 +148,22 @@ public class FunctionBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @Specialization
+        Object setDefaults(PFunction self, @SuppressWarnings("unused") DescriptorDeleteMarker defaults) {
+            self.setDefaults(new Object[0]);
+            return PNone.NONE;
+        }
+
         @Specialization(guards = "!isNoValue(defaults)")
         Object setDefaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
             self.setDefaults(new Object[0]);
             return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object setDefaults(Object self, Object defaults) {
+            throw raise(TypeError, ErrorMessages.MUST_BE_SET_TO_S_NOT_P, __DEFAULTS__, "tuple");
         }
     }
 

@@ -349,7 +349,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_REAL_NUMBER = "must be real number, not %p";
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
     public static final String MUST_BE_S_OR_S = "%s must be %s or %s";
-    public static final String MUST_BE_SET_TO_STR_OBJ = "%s must be set to a string object";
+    public static final String MUST_BE_SET_TO_S_OBJ = "%s must be set to a %s object";
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";

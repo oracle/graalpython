@@ -214,7 +214,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setName(PGenerator self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__name__"));
+            return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __NAME__, "string"));
         }
     }
 
@@ -235,7 +235,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setQualname(PGenerator self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
-            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_STR_OBJ, "__qualname__"));
+            return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __QUALNAME__, "string"));
         }
     }
 
