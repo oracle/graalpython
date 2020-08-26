@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_funcattrs.ArbitraryFunctionAttrTest.test_delete_unknown_attr
+*graalpython.lib-python.3.test.test_funcattrs.ArbitraryFunctionAttrTest.test_set_attr
 *graalpython.lib-python.3.test.test_funcattrs.ArbitraryFunctionAttrTest.test_unset_attr
 *graalpython.lib-python.3.test.test_funcattrs.CellTest.test_comparison
 *graalpython.lib-python.3.test.test_funcattrs.FunctionDictsTest.test_delete___dict__
@@ -23,5 +24,6 @@
 *graalpython.lib-python.3.test.test_funcattrs.FunctionPropertiesTest.test_set_cell
 *graalpython.lib-python.3.test.test_funcattrs.InstancemethodAttrTest.test___class__
 *graalpython.lib-python.3.test.test_funcattrs.InstancemethodAttrTest.test___func__
+*graalpython.lib-python.3.test.test_funcattrs.InstancemethodAttrTest.test___func___non_method
 *graalpython.lib-python.3.test.test_funcattrs.InstancemethodAttrTest.test___self__
 *graalpython.lib-python.3.test.test_funcattrs.StaticMethodAttrsTest.test_func_attribute
