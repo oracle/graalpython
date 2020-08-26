@@ -868,10 +868,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // CPython calls get_source_line here. But since that's potentially slow, maybe we can
             // get away with doing that lazily
             moduleFunctionsNode.warnExplicit(frame, mod, category, message, filename, lineno,
-                            module == PNone.NO_VALUE ? PNone.NONE : module,
-                            registry == PNone.NO_VALUE ? PNone.NONE : registry,
+                            module == PNone.NO_VALUE ? null : module,
+                            registry == PNone.NO_VALUE ? null : registry,
                             globalsDict,
-                            source == PNone.NO_VALUE ? PNone.NONE : source);
+                            source == PNone.NO_VALUE ? null : source);
             return PNone.NONE;
         }
     }
