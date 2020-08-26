@@ -106,7 +106,7 @@ public final class ReadCallerFrameNode extends Node {
                         return ensureMaterializeNode().execute(frame, false, true, callerFrame);
                     }
                     return null;
-                } else if (!(skipInternal && PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode()))) {
+                } else if (!(skipInternal && (callerInfo.getCallNode() == null || PRootNode.isPythonInternal(callerInfo.getCallNode().getRootNode())))) {
                     i++;
                 }
                 curFrameInfo = callerInfo;
@@ -146,7 +146,7 @@ public final class ReadCallerFrameNode extends Node {
      * {@link IndirectCallNode} that effectively executes the requesting node such that the
      * necessary assumptions can be invalidated to avoid deopt loops.<br/>
      * Consider following situation:<br/>
-     * 
+     *
      * <pre>
      *     public class SomeCaller extends PRootNode implements IndirectCallNode {
      *         &#64;Child private InteropLibrary lib = ...;
@@ -187,7 +187,7 @@ public final class ReadCallerFrameNode extends Node {
      *         }
      *     }
      * </pre>
-     * 
+     *
      * Assume that we run
      * {@code SomeCaller.create().execute(frame, new ExecObject(), new Object[0])}. It will in the
      * end run {@code SomeNode.execute} and if that tries to get the current frame, we need to do a

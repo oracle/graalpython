@@ -190,7 +190,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static String extractFileName(RootNode rootNode) {
+    public static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {

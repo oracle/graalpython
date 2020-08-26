@@ -50,7 +50,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -234,6 +237,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 getDictNode = insert(GetDictNode.create());
             }
             return (PDict) getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
+        }
+
+        private PDict getGlobalsDict(Object globals) {
+            if (globals instanceof PDict) {
+                return (PDict) globals;
+            }
+            if (getDictNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reportPolymorphicSpecialize();
+                getDictNode = insert(GetDictNode.create());
+            }
+            return (PDict) getDictNode.execute(globals);
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel) {
@@ -405,7 +420,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
-                boolean isSubclass = getPyLib().isTrue(getPyLib().lookupAndCallSpecialMethod(category, frame, SpecialMethodNames.__SUBCLASSCHECK__, cat));
+                boolean isSubclass = getIsSubtype().execute(category, cat);
                 int ln = getPyLib().asSize(lnObj);
                 if (goodMsg && isSubclass && goodMod && (ln == 0 || lineno == ln)) {
                     // if we're ignoring warnings, the first action will match all and the loop
@@ -600,28 +615,35 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             Object[] item = new Object[1];
             String action = getFilter(frame, warnings, category, text, lineno, module, item);
 
-            if (PString.equals("error", action)) {
-                throw getRaise().raise(category, message);
-            }
-
+            // CPython first checks for the "error" case, but since we want to optimize for ignored
+            // warnings, we swap those checks
             if (PString.equals("ignore", action)) {
                 return;
             }
 
-            // part 2 of this function is behind a TruffleBoundary, since we don't care about that
-            // performance when warnings are enabled.
+            // the rest of this function is behind a TruffleBoundary, since we don't care so much
+            // about performance when warnings are enabled.
             Object state = IndirectCallContext.enter(frame, getContext(), this);
             try {
-                warnExplicitPart2(warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
+                warnExplicitPart2(this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
             } finally {
                 IndirectCallContext.exit(frame, getContext(), state);
             }
         }
 
         @TruffleBoundary
-        private static void warnExplicitPart2(PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category, Object message, Object text,
+        private static void warnExplicitPart2(Node node, PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category, Object message, Object text,
                         Object key, Object[] item, String action) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
+
+            if (PString.equals("error", action)) {
+                if (!(message instanceof PBaseException)) {
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass", polib.lookupAndCallRegularMethod(message, null, SpecialMethodNames.__REPR__));
+                } else {
+                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.getCurrent()));
+                }
+            }
+
             if (!PString.equals("always", action)) {
                 if (registry != null && registry != PNone.NONE) {
                     polib.lookupAndCallSpecialMethod(registry, null, SpecialMethodNames.__SETITEM__, key, true);
@@ -662,33 +684,33 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * Used from doWarn. On the fast path.
          */
         private void setupContext(VirtualFrame frame, int stackLevel, String[] filename, int[] lineno, String[] module, Object[] registry) {
-            PFrame f = getCallerFrame(frame, stackLevel);
+            PFrame f = getCallerFrame(frame, stackLevel - 1); // the stack level for the intrinsified version is off-by-one compared to the Python version
             Object globals;
             if (f == null) {
                 globals = getSysDict();
                 filename[0] = "sys";
                 lineno[0] = 1;
             } else {
-                globals = f.getGlobals();
+                globals = getGlobalsDict(f.getGlobals());
                 if (globals == null) {
                     globals = getSysDict();
                 }
                 lineno[0] = f.getLine();
                 RootCallTarget ct = f.getTarget();
                 if (ct != null) {
-                    filename[0] = getFactory().createCode(ct).getFilename();
+                    filename[0] = PCode.extractFileName(ct.getRootNode());
                 } else {
                     filename[0] = "<unknown source>";
                 }
             }
 
             PythonObjectLibrary polib = getPyLib();
-            registry[0] = polib.lookupAndCallSpecialMethod(globals, null, "get", "__warningregistry__", PNone.NONE);
+            registry[0] = polib.lookupAndCallSpecialMethod(globals, frame, "get", "__warningregistry__", PNone.NONE);
             if (registry[0] == PNone.NONE) {
                 registry[0] = getFactory().createDict();
-                polib.lookupAndCallSpecialMethod(registry, null, SpecialMethodNames.__SETITEM__, "__warningregistry__", registry[0]);
+                polib.lookupAndCallSpecialMethod(globals, frame, SpecialMethodNames.__SETITEM__, "__warningregistry__", registry[0]);
             }
-            Object moduleObj = polib.lookupAndCallSpecialMethod(globals, null, "get", "__name__", PNone.NONE);
+            Object moduleObj = polib.lookupAndCallSpecialMethod(globals, frame, "get", "__name__", PNone.NONE);
             if (moduleObj == PNone.NONE) {
                 module[0] = null;
             } else {

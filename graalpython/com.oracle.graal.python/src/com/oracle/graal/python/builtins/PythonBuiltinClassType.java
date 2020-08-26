@@ -552,6 +552,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public boolean isCallable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object callObjectWithState(ThreadState state, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.callObjectWithState(ctx.getCore().lookupType(this), state, arguments);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isLazyPythonClass() {
         return true;
     }
