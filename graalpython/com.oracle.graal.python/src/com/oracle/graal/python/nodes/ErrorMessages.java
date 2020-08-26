@@ -489,7 +489,7 @@ public abstract class ErrorMessages {
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";
     public static final String TYPE_DOESNT_DEFINE_METHOD = "type %p doesn't define %s method";
-    public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%p' is not an acceptable base type";
+    public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%N' is not an acceptable base type";
     public static final String TYPE_NAME_NO_NULL_CHARS = "type name must not contain null characters";
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";

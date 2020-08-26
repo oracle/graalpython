@@ -896,11 +896,6 @@ class _C:
 methodtype = type(_C()._m)
 
 
-class modulemethod(methodtype):
-    def __new__(cls, mod, func):
-        return super().__new__(cls, mod, func)
-
-
 class cstaticmethod():
     def __init__(self, func):
         self.__func__ = func
