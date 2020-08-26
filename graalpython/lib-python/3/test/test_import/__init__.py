@@ -22,7 +22,7 @@ import glob
 
 import test.support
 from test.support import (
-    TESTFN, forget, is_jython,
+    TESTFN, forget, is_jython, impl_detail,
     make_legacy_pyc, rmtree, swap_attr, swap_item, temp_umask,
     unlink, unload, cpython_only, TESTFN_UNENCODABLE,
     temp_dir, DirsOnSysPath)
@@ -664,6 +664,7 @@ func_filename = func.__code__.co_filename
         self.assertEqual(mod.code_filename, target)
         self.assertEqual(mod.func_filename, target)
 
+    @impl_detail("parser error, not yet supported", graalvm=False)
     def test_foreign_code(self):
         py_compile.compile(self.file_name)
         with open(self.compiled_name, "rb") as f:
