@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -223,11 +223,11 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    abstract static class DocNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
-        Object getDoc(PMethod self, @SuppressWarnings("unused") PNone none,
+    abstract static class DocNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getDoc(PMethod self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
@@ -236,24 +236,14 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return doc;
         }
 
-        @Specialization(guards = "isNoValue(none)")
-        Object getDoc(PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+        @Specialization
+        Object getDoc(PBuiltinMethod self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
                 return PNone.NONE;
             }
             return doc;
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"})
-        Object setDoc(@SuppressWarnings("unused") PMethod self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, "__doc__", "method");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"})
-        Object setDoc(@SuppressWarnings("unused") PBuiltinMethod self, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, "__doc__", "builtin_function_or_method");
         }
     }
 }
