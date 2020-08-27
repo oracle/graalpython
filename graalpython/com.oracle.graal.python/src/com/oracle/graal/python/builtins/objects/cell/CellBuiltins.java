@@ -78,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
 public class CellBuiltins extends PythonBuiltins {
@@ -92,11 +93,12 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization
         public boolean eq(VirtualFrame frame, PCell self, PCell other,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
             }
             return left == null && right == null;
@@ -118,11 +120,12 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization
         public boolean ne(VirtualFrame frame, PCell self, PCell other,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return !lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
             }
             return left != null || right != null;
@@ -145,11 +148,12 @@ public class CellBuiltins extends PythonBuiltins {
         public boolean lt(VirtualFrame frame, PCell self, PCell other,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return right != null;
@@ -176,11 +180,12 @@ public class CellBuiltins extends PythonBuiltins {
         public boolean le(VirtualFrame frame, PCell self, PCell other,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return left == null;
@@ -207,11 +212,12 @@ public class CellBuiltins extends PythonBuiltins {
         public boolean gt(VirtualFrame frame, PCell self, PCell other,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return left != null;
@@ -238,11 +244,12 @@ public class CellBuiltins extends PythonBuiltins {
         public boolean ge(VirtualFrame frame, PCell self, PCell other,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
                         @Cached GetRefNode getRefL,
                         @Cached GetRefNode getRefR) {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
-            if (left != null && right != null) {
+            if (nonEmptyProfile.profile(left != null && right != null)) {
                 return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
             }
             return right == null;

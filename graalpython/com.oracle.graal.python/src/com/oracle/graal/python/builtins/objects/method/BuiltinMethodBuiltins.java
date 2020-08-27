@@ -241,8 +241,9 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached ConditionProfile isGlobalProfile,
                         @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode);
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
         }
 
         @Specialization(limit = "3")
@@ -251,19 +252,20 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached ConditionProfile isGlobalProfile,
                         @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
-            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode);
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
         }
 
         private Object makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode, CastToJavaStringNode castToJavaStringNode,
-                        PythonObjectLibrary pol, TypeNodes.IsTypeNode isTypeNode) {
+                        PythonObjectLibrary pol, TypeNodes.IsTypeNode isTypeNode, ConditionProfile isGlobalProfile) {
             String methodName;
             try {
                 methodName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, method));
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __NAME__, "unicode object");
             }
-            if (self == null || self instanceof PythonModule) {
+            if (isGlobalProfile.profile(self == null || self instanceof PythonModule)) {
                 return methodName;
             }
 
