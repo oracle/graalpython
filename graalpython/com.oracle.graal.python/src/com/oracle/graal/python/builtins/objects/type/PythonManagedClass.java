@@ -74,6 +74,11 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     @TruffleBoundary
     protected PythonManagedClass(Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
+        this(typeClass, classShape, instanceShape, name, true, baseClasses);
+    }
+
+    @TruffleBoundary
+    protected PythonManagedClass(Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);
         this.name = getBaseName(name);
         this.qualName = name;
@@ -86,9 +91,11 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        // Compute MRO
-        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
-        this.methodResolutionOrder.setInitialized();
+        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this, invokeMro));
+        if (invokeMro) {
+            this.methodResolutionOrder.setInitialized();
+        }
+
         this.needsNativeAllocation = computeNeedsNativeAllocation();
 
         setAttribute(__DOC__, PNone.NONE);
@@ -103,6 +110,18 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 this.instanceShape = PythonObject.freshShape();
             }
         }
+    }
+
+    /**
+     * Invoke metaclass mro() method and set the result as new method resolution order.
+     */
+    @TruffleBoundary
+    public void invokeMro() {
+        PythonAbstractClass[] mro = ComputeMroNode.invokeMro(this);
+        if (mro != null) {
+            this.methodResolutionOrder.setInternalArrayObject(mro);
+        }
+        this.methodResolutionOrder.setInitialized();
     }
 
     private static String getBaseName(String qname) {

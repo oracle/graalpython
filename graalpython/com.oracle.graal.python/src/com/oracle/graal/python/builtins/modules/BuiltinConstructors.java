@@ -2282,67 +2282,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (name.indexOf('\0') != -1) {
                 throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
             }
-            PythonClass pythonClass = factory().createPythonClass(metaclass, name, basesArray);
 
-            // copy the dictionary slots over, as CPython does through PyDict_Copy
-            // Also check for a __slots__ sequence variable in dict
-            Object slots = null;
-            boolean qualnameSet = false;
-            for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
-                Object key = entry.getKey();
-                Object value = entry.getValue();
-                if (__SLOTS__.equals(key)) {
-                    slots = value;
-                } else if (SpecialMethodNames.__NEW__.equals(key)) {
-                    // see CPython: if it's a plain function, make it a static function
-                    if (value instanceof PFunction) {
-                        pythonClass.setAttribute(key, factory().createStaticmethodFromCallableObj(value));
-                    } else {
-                        pythonClass.setAttribute(key, value);
-                    }
-                } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
-                                SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
-                    // see CPython: Special-case __init_subclass__ and
-                    // __class_getitem__: if they are plain functions, make them
-                    // classmethods
-                    if (value instanceof PFunction) {
-                        pythonClass.setAttribute(key, factory().createClassmethodFromCallableObj(value));
-                    } else {
-                        pythonClass.setAttribute(key, value);
-                    }
-                } else if (SpecialAttributeNames.__DOC__.equals(key)) {
-                    // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
-                    // forcibly encodes the string as UTF-8, and raises an error if that is not
-                    // possible.
-                    String doc = null;
-                    if (value instanceof String) {
-                        doc = (String) value;
-                    } else if (value instanceof PString) {
-                        doc = ((PString) value).getValue();
-                    }
-                    if (doc != null) {
-                        if (!canEncode(doc)) {
-                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
-                        }
-                    }
-                    pythonClass.setAttribute(key, value);
-                } else if (SpecialAttributeNames.__QUALNAME__.equals(key)) {
-                    try {
-                        pythonClass.setQualName(ensureCastToStringNode().execute(value));
-                        qualnameSet = true;
-                    } catch (CannotCastException e) {
-                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
-                    }
-                } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
-                    // don't populate this attribute
-                } else {
-                    pythonClass.setAttribute(key, value);
-                }
-            }
+            // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
+            // we have to copy dict slots first
+            PythonClass pythonClass = factory().createPythonClass(metaclass, name, false, basesArray);
 
-            if (!qualnameSet) {
+            // 2.) copy the dictionary slots
+            Object[] slots = new Object[1];
+            boolean[] qualnameSet = new boolean[]{false};
+            copyDictSlots(pythonClass, namespace, nslib, slots, qualnameSet);
+            if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
+
+            // 3.) invoke metaclass mro() method
+            pythonClass.invokeMro();
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
@@ -2355,7 +2309,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             boolean addDict = false;
-            if (slots == null) {
+            if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
@@ -2365,17 +2319,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // Make it into a list
                 SequenceStorage slotsStorage;
                 Object slotsObject;
-                if (slots instanceof String) {
-                    slotsObject = factory().createList(new Object[]{slots});
+                if (slots[0] instanceof String) {
+                    slotsObject = factory().createList(slots);
                     slotsStorage = ((PList) slotsObject).getSequenceStorage();
-                } else if (slots instanceof PTuple) {
-                    slotsObject = slots;
-                    slotsStorage = ((PTuple) slots).getSequenceStorage();
-                } else if (slots instanceof PList) {
-                    slotsObject = slots;
-                    slotsStorage = ((PList) slots).getSequenceStorage();
+                } else if (slots[0] instanceof PTuple) {
+                    slotsObject = slots[0];
+                    slotsStorage = ((PTuple) slots[0]).getSequenceStorage();
+                } else if (slots[0] instanceof PList) {
+                    slotsObject = slots[0];
+                    slotsStorage = ((PList) slots[0]).getSequenceStorage();
                 } else {
-                    slotsObject = getCastToListNode().execute(frame, slots);
+                    slotsObject = getCastToListNode().execute(frame, slots[0]);
                     slotsStorage = ((PList) slotsObject).getSequenceStorage();
                 }
                 int slotlen = getListLenNode().execute(slotsStorage);
@@ -2428,6 +2382,62 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary nslib, Object[] slots, boolean[] qualnameSet) {
+            // copy the dictionary slots over, as CPython does through PyDict_Copy
+            // Also check for a __slots__ sequence variable in dict
+            for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
+                Object key = entry.getKey();
+                Object value = entry.getValue();
+                if (__SLOTS__.equals(key)) {
+                    slots[0] = value;
+                } else if (SpecialMethodNames.__NEW__.equals(key)) {
+                    // see CPython: if it's a plain function, make it a static function
+                    if (value instanceof PFunction) {
+                        pythonClass.setAttribute(key, factory().createStaticmethodFromCallableObj(value));
+                    } else {
+                        pythonClass.setAttribute(key, value);
+                    }
+                } else if (SpecialMethodNames.__INIT_SUBCLASS__.equals(key) ||
+                                SpecialMethodNames.__CLASS_GETITEM__.equals(key)) {
+                    // see CPython: Special-case __init_subclass__ and
+                    // __class_getitem__: if they are plain functions, make them
+                    // classmethods
+                    if (value instanceof PFunction) {
+                        pythonClass.setAttribute(key, factory().createClassmethodFromCallableObj(value));
+                    } else {
+                        pythonClass.setAttribute(key, value);
+                    }
+                } else if (SpecialAttributeNames.__DOC__.equals(key)) {
+                    // CPython sets tp_doc to a copy of dict['__doc__'], if that is a string. It
+                    // forcibly encodes the string as UTF-8, and raises an error if that is not
+                    // possible.
+                    String doc = null;
+                    if (value instanceof String) {
+                        doc = (String) value;
+                    } else if (value instanceof PString) {
+                        doc = ((PString) value).getValue();
+                    }
+                    if (doc != null) {
+                        if (!canEncode(doc)) {
+                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                        }
+                    }
+                    pythonClass.setAttribute(key, value);
+                } else if (SpecialAttributeNames.__QUALNAME__.equals(key)) {
+                    try {
+                        pythonClass.setQualName(ensureCastToStringNode().execute(value));
+                        qualnameSet[0] = true;
+                    } catch (CannotCastException e) {
+                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "type __qualname__", "str", value);
+                    }
+                } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
+                    // don't populate this attribute
+                } else {
+                    pythonClass.setAttribute(key, value);
+                }
+            }
         }
 
         @TruffleBoundary
