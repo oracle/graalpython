@@ -3038,17 +3038,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "cell", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PCell, isPublic = false)
     @GenerateNodeFactory
     public abstract static class CellTypeNode extends PythonBinaryBuiltinNode {
-        private Assumption sharedAssumption = Truffle.getRuntime().createAssumption("cell is effectively final");
+        @CompilationFinal private Assumption sharedAssumption;
+
+        private Assumption getAssumption() {
+            if (sharedAssumption == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sharedAssumption = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+            if (CompilerDirectives.inCompiledCode()) {
+                return sharedAssumption;
+            } else {
+                return Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+        }
 
         @Specialization(guards = "isNoValue(contents)")
         Object newCellEmpty(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object contents) {
-            return factory().createCell(sharedAssumption);
+            return factory().createCell(getAssumption());
         }
 
         @Specialization(guards = "!isNoValue(contents)")
         Object newCell(@SuppressWarnings("unused") Object cls, Object contents) {
-            PCell cell = factory().createCell(sharedAssumption);
-            cell.setRef(contents, sharedAssumption);
+            Assumption assumption = getAssumption();
+            PCell cell = factory().createCell(assumption);
+            cell.setRef(contents, assumption);
             return cell;
         }
     }
