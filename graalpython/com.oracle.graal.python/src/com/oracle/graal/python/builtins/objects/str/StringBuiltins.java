@@ -1294,7 +1294,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         static String doStringNone(String self, @SuppressWarnings("unused") PNone chars) {
-            return self.trim();
+            return StringUtils.strip(self, StripKind.BOTH);
         }
 
         @Specialization(replaces = {"doStringString", "doStringNone"})

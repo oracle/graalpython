@@ -938,19 +938,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isString(name)")
-        Object getAttrGeneric(VirtualFrame frame, Object primary, Object name, Object defaultValue,
-                        @Cached("create()") GetAnyAttributeNode getAttributeNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
-            if (PGuards.isNoValue(defaultValue)) {
-                return getAttributeNode.executeObject(frame, primary, name);
-            } else {
-                try {
-                    return getAttributeNode.executeObject(frame, primary, name);
-                } catch (PException e) {
-                    e.expectAttributeError(errorProfile);
-                    return defaultValue;
-                }
-            }
+        @SuppressWarnings("unused")
+        Object getAttrGeneric(Object primary, Object name, Object defaultValue) {
+            throw raise(TypeError, ErrorMessages.GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING);
         }
     }
 

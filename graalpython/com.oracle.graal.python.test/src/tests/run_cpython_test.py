@@ -45,7 +45,26 @@ sys.path.insert(0, os.getcwd())
 
 
 class TestLoader(unittest.TestLoader):
+
+    def prepare_test_decimal(self, module):
+        # Taken from test_main() in test_decimal.py
+        module.init(module.C)
+        module.init(module.P)
+        module.TEST_ALL = True
+        module.DEBUG = None
+        for filename in os.listdir(module.directory):
+            if '.decTest' not in filename or filename.startswith("."):
+                continue
+            head, tail = filename.split('.')
+            tester = lambda self, f=filename: self.eval_file(module.directory + f)
+            setattr(module.CIBMTestCases, 'test_' + head, tester)
+            setattr(module.PyIBMTestCases, 'test_' + head, tester)
+            del filename, head, tail, tester
+        return self.suiteClass(self.loadTestsFromTestCase(cls) for cls in module.all_tests)
+
     def loadTestsFromModule(self, module, pattern=None):
+        if module.__name__.endswith('test_decimal'):
+            return self.prepare_test_decimal(module)
         suite = super().loadTestsFromModule(module, pattern=pattern)
         test_main = getattr(module, 'test_main', None)
         if callable(test_main):
