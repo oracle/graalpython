@@ -53,7 +53,7 @@ Scope: []
         FrameDescriptor: [pattern, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: generator
+    Scope: <genexpr>
         Kind: DictComp
         FrameDescriptor: [i, <return_val>]
         CellVars: Empty

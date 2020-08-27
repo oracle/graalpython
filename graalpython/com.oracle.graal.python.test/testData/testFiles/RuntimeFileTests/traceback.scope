@@ -18,7 +18,7 @@ Scope: []
             FrameDescriptor: [msg, filename, lineno, offset, badline, stype, caretspace, self, smod, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [c, <return_val>]
                 CellVars: Empty
@@ -113,7 +113,7 @@ Scope: []
             FrameDescriptor: [filename, lineno, line, name, self, *, lookup_line, <return_val>, locals]
             CellVars: Empty
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: DictComp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty

@@ -3,12 +3,12 @@ Scope: []
     FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
-    Scope: generator
+    Scope: <genexpr>
         Kind: DictComp
         FrameDescriptor: [t, i, <return_val>]
         CellVars: [i]
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: GenExp
             FrameDescriptor: [i, j, <return_val>]
             CellVars: Empty

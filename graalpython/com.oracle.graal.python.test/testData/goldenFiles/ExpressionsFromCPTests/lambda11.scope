@@ -3,7 +3,7 @@ Scope: []
     FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
-    Scope: lambda
+    Scope: <lambda>
         Kind: Function
         FrameDescriptor: [foo, y, z, blaz, <return_val>]
         CellVars: Empty

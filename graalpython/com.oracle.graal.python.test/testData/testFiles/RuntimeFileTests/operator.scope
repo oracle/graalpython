@@ -88,7 +88,7 @@ Scope: []
             FrameDescriptor: [args, self, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [v, <>temp2, <>temp3, k, <return_val>]
                 CellVars: Empty
@@ -133,7 +133,7 @@ Scope: []
                 FrameDescriptor: [obj, items, <return_val>]
                 CellVars: [obj]
                 FreeVars: [items]
-                Scope: generator
+                Scope: <genexpr>
                     Kind: GenExp
                     FrameDescriptor: [obj, i, <return_val>]
                     CellVars: Empty
@@ -173,7 +173,7 @@ Scope: []
                 FrameDescriptor: [obj, getters, <return_val>]
                 CellVars: [obj]
                 FreeVars: [getters]
-                Scope: generator
+                Scope: <genexpr>
                     Kind: GenExp
                     FrameDescriptor: [getter, obj, <return_val>]
                     CellVars: Empty

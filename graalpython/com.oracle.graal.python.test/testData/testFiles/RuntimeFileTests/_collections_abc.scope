@@ -73,7 +73,7 @@ Scope: []
             FrameDescriptor: [self, value, <return_val>]
             CellVars: [value]
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [v, value, <return_val>]
                 CellVars: Empty
@@ -328,7 +328,7 @@ Scope: []
             FrameDescriptor: [other, self, <return_val>]
             CellVars: [self]
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [self, value, <return_val>]
                 CellVars: Empty
@@ -338,7 +338,7 @@ Scope: []
             FrameDescriptor: [other, self, <return_val>]
             CellVars: [other]
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [other, value, <return_val>]
                 CellVars: Empty
@@ -348,7 +348,7 @@ Scope: []
             FrameDescriptor: [other, chain, self, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [s, e, <return_val>]
                 CellVars: Empty
@@ -363,7 +363,7 @@ Scope: []
             FrameDescriptor: [other, self, <return_val>]
             CellVars: [self]
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [self, value, <return_val>]
                 CellVars: Empty
@@ -668,7 +668,7 @@ Scope: []
         FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: lambda
+    Scope: <lambda>
         Kind: Generator
         FrameDescriptor: [<return_val>]
         CellVars: Empty

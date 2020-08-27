@@ -53,7 +53,7 @@ Scope: []
         FrameDescriptor: [result, predicate, func, iterable, i, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: lambda
+        Scope: <lambda>
             Kind: Function
             FrameDescriptor: [a, <return_val>]
             CellVars: Empty
