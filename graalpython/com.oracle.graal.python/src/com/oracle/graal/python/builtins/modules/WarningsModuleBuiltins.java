@@ -516,7 +516,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void showWarning(Object filename, int lineno, Object text, Object category, Object sourceline) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
-            Object name = polib.lookupAttribute(category, null, SpecialAttributeNames.__NAME__);
+            Object name;
+            if (category instanceof PythonBuiltinClassType) {
+                name = ((PythonBuiltinClassType) category).getName();
+            } else {
+                name = polib.lookupAttribute(category, null, SpecialAttributeNames.__NAME__);
+            }
             Object sys = PythonLanguage.getCore().lookupBuiltinModule("sys");
             Object stderr;
             try {
@@ -555,11 +560,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static void callShowWarning(Object category, Object text, Object message,
-                        Object filename,int lineno, Object sourceline, Object source) {
+                        Object filename,int lineno, Object sourceline, Object sourceIn) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
             PRaiseNode raise = PRaiseNode.getUncached();
 
-            Object showFn = getWarningsAttr("_showwarnmsg", source != null);
+            Object showFn = getWarningsAttr("_showwarnmsg", sourceIn != null);
             if (showFn == null) {
                 showWarning(filename, lineno, text, category, sourceline);
                 return;
@@ -573,7 +578,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             if (warnmsgCls == null) {
                 throw raise.raise(PythonBuiltinClassType.RuntimeError, "unable to get warnings.WarningMessage");
             }
+            Object source = sourceIn == null ? PNone.NONE : sourceIn;
 
+            assert message != null && category != null && filename != null && source != null;
+            assert message != PNone.NO_VALUE && category != PNone.NO_VALUE && filename != PNone.NO_VALUE && source != PNone.NO_VALUE;
             Object msg = polib.callObject(warnmsgCls, null, message, category, filename, lineno, PNone.NONE, PNone.NONE, source);
             polib.callObject(showFn, null, msg);
         }
