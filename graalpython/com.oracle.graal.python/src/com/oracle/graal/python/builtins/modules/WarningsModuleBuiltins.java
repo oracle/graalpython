@@ -131,8 +131,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         PythonModule warningsModule = core.lookupBuiltinModule("_warnings");
         // we need to copy these, since they must still be available even if the user `del`s the attrs
         warningsModule.setAttribute(FILTERS, warningsModule.getAttribute("filters"));
-        warningsModule.setAttribute(DEFAULTACTION, warningsModule.getAttribute("defaultaction"));
-        warningsModule.setAttribute(ONCEREGISTRY, warningsModule.getAttribute("onceregistry"));
+        warningsModule.setAttribute(DEFAULTACTION, warningsModule.getAttribute("_defaultaction"));
+        warningsModule.setAttribute(ONCEREGISTRY, warningsModule.getAttribute("_onceregistry"));
         DynamicObjectLibrary.getUncached().putLong(warningsModule, FILTERS_VERSION, 0);
     }
 
@@ -361,7 +361,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     return null;
                 }
             }
-            return polib.lookupAttribute(warningsModule, frame, attr);
+            Object result = polib.lookupAttribute(warningsModule, frame, attr);
+            if (result == PNone.NO_VALUE) {
+                return null;
+            } else {
+                return result;
+            }
         }
 
         /**
