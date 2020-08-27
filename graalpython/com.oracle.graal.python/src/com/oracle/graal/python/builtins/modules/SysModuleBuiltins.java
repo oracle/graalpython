@@ -79,7 +79,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -348,10 +348,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true)
+    // ATTENTION: this is intentionally a PythonBuiltinNode and not PythonUnaryBuiltinNode,
+    // because we need a guarantee that this builtin will get its own stack frame in order to
+    // be able to count how many frames down the call stack we need to walk
+    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
     @ArgumentClinic(name = "depth", defaultValue = "0", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class GetFrameNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class GetFrameNode extends PythonClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return GetFrameNodeClinicProviderGen.INSTANCE;
@@ -363,7 +366,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
             if (callStackDepthProfile.profile(requested == null)) {
-                assert num != 0 : "frame must not be null for depth == 0";
                 throw raiseCallStackDepth();
             }
             return requested;

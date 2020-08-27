@@ -47,12 +47,12 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.truffle.api.dsl.CreateCast;
 
 public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
-    public abstract ArgumentClinicProvider getClinicProvider();
+    protected abstract ArgumentClinicProvider getArgumentClinic();
     
     @CreateCast("arguments")
-    ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
+    protected ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
         ReadArgumentNode[] result = new ReadArgumentNode[reads.length];
-        ArgumentClinicProvider clinic = getClinicProvider();
+        ArgumentClinicProvider clinic = getArgumentClinic();
         for (int i = 0; i < reads.length; i++) {
             if (clinic.hasCastNode(i)) {
                 result[i] = new ReadAndCastArgumentNode(reads[i], clinic.createCastNode(i, this));

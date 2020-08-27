@@ -88,7 +88,7 @@ public @interface ArgumentClinic {
         Int,
         Long,
         Double,
-    };
+    }
 
     enum ClinicConversion {
         None,
