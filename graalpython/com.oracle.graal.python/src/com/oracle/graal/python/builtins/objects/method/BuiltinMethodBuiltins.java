@@ -224,11 +224,27 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }
+
+        @Specialization
+        Object getName(VirtualFrame frame, PMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+            return getNameAttrNode.executeObject(frame, method.getFunction());
+        }
     }
 
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object getQualName(VirtualFrame frame, PMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode);
+        }
+
         @Specialization(limit = "3")
         Object getQualName(VirtualFrame frame, PBuiltinMethod method,
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
@@ -236,7 +252,11 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
-            Object self = method.getSelf();
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode);
+        }
+
+        private Object makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode, CastToJavaStringNode castToJavaStringNode,
+                        PythonObjectLibrary pol, TypeNodes.IsTypeNode isTypeNode) {
             String methodName;
             try {
                 methodName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, method));

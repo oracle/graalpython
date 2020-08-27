@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -202,26 +201,6 @@ public class MethodBuiltins extends PythonBuiltins {
                 return self;
             }
             return factory().createMethod(obj, self.getFunction());
-        }
-    }
-
-    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class MethodName extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object getName(VirtualFrame frame, PMethod method,
-                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
-            return getNameAttrNode.executeObject(frame, method.getFunction());
-        }
-    }
-
-    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object getQualName(VirtualFrame frame, PMethod method,
-                        @Cached("create(__QUALNAME__)") GetAttributeNode getNameAttrNode) {
-            return getNameAttrNode.executeObject(frame, method.getFunction());
         }
     }
 }
