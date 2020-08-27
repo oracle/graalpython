@@ -26,6 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -44,8 +45,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -156,14 +158,14 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        Object getModule(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
+        Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetAttrNode getAttr,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
             Object module = readObject.execute(self, __MODULE__);
             if (module == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreter();
-                Object globals = self instanceof PMethod ? ((PMethod) self).getSelf() : ((PBuiltinMethod) self).getSelf();
+                Object globals = self.getSelf();
                 if (globals instanceof PythonModule) {
                     module = ((PythonModule) globals).getAttribute(__NAME__);
                 } else {
@@ -174,18 +176,22 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return module;
         }
 
-        @Specialization(guards = {"!isBuiltinMethod(self)", "!isNoValue(value)"})
-        Object getModule(PythonObject self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
-            writeObject.execute(self, __MODULE__, value);
-            return PNone.NONE;
-        }
-
         @Specialization(guards = "!isNoValue(value)", limit = "2")
         Object getModule(PBuiltinMethod self, Object value,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             dylib.put(self.getStorage(), __MODULE__, value);
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getModule(VirtualFrame frame, PMethod self, @SuppressWarnings("unused") Object value,
+                        @Cached("create(__MODULE__)") GetAttributeNode getAttributeNode) {
+            return getAttributeNode.executeObject(frame, self.getFunction());
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object getModule(@SuppressWarnings("unused") PMethod self, @SuppressWarnings("unused") Object value) {
+            throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "method", __MODULE__);
         }
     }
 
