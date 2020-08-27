@@ -134,25 +134,16 @@ public final class ScopeInfo {
 
     private String computeQualname() {
         if (this.scopeKind != ScopeKind.Module) {
-            boolean scopeNameVisible = getScopeKind() == ScopeKind.Function || getScopeKind() == ScopeKind.Generator || getScopeKind() == ScopeKind.Class;
             StringBuilder sb = new StringBuilder();
-            if (getParent() != null) {
-                boolean forceGlobal = scopeNameVisible && getParent().isExplicitGlobalVariable(this.scopeId);
-                if (!forceGlobal) {
-                    sb.append(getParent().getQualname());
-                    switch (getParent().getScopeKind()) {
-                        case GenExp:
-                        case ListComp:
-                        case DictComp:
-                        case SetComp:
-                        case Function:
-                        case Generator:
-                            sb.append(".<locals>");
-                            break;
+            if (parent != null) {
+                if (!parent.isExplicitGlobalVariable(this.scopeId)) {
+                    sb.append(parent.getQualname());
+                    if (isScopeFunctionLike(parent)) {
+                        sb.append(".<locals>");
                     }
                 }
             }
-            if (scopeNameVisible) {
+            if (isScopeFunctionLike(this) || scopeKind == ScopeKind.Class) {
                 if (sb.length() != 0) {
                     sb.append('.');
                 }
@@ -161,6 +152,20 @@ public final class ScopeInfo {
             return sb.toString();
         } else {
             return "";
+        }
+    }
+
+    private static boolean isScopeFunctionLike(ScopeInfo scope) {
+        switch (scope.getScopeKind()) {
+            case GenExp:
+            case ListComp:
+            case DictComp:
+            case SetComp:
+            case Function:
+            case Generator:
+                return true;
+            default:
+                return false;
         }
     }
 
