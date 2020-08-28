@@ -25,13 +25,14 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetAnyAttributeNodeGen;
@@ -49,15 +50,17 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
     @Child private GetAttributeNode getName;
+    @Child private GetAttributeNode getPath;
     @Child private GetItemNode getItem;
     @Child private ReadAttributeFromObjectNode readModules;
     @Child private GetAnyAttributeNode getAttributeNode = GetAnyAttributeNodeGen.create();
-    @Child private PRaiseNode raiseNode;
+    @Child private PRaiseImportErrorNode raiseNode;
 
     private final String importee;
     private final int level;
 
     @Child private IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile getFileErrorProfile = IsBuiltinClassProfile.create();
     @CompilationFinal(dimensions = 1) private final String[] fromlist;
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
@@ -120,9 +123,19 @@ public class ImportFromNode extends AbstractImportNode {
                 } catch (PException e2) {
                     if (raiseNode == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseNode.create());
+                        raiseNode = insert(PRaiseImportErrorNode.create());
+                        if (getPath == null) {
+                            getPath = insert(GetAttributeNode.create(__FILE__));
+                        }
                     }
-                    throw raiseNode.raise(ImportError, ErrorMessages.CANNOT_IMPORT_NAME, attr);
+                    Object path = PNone.NONE;
+                    try {
+                        path = getPath.executeObject(frame, importedModule);
+                    } catch (PException e3) {
+                        e3.expectAttributeError(getFileErrorProfile);
+                    }
+                    throw raiseNode.raiseImportError(frame, getName.executeObject(frame, importedModule), path,
+                                    ErrorMessages.CANNOT_IMPORT_NAME, attr);
                 }
             }
         }
