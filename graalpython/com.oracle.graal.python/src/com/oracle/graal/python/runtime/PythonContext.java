@@ -397,6 +397,11 @@ public final class PythonContext {
             CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import site\n", "<internal>").internal(true).build());
             site.call();
         }
+        if (!getOption(PythonOptions.WarnOptions).isEmpty()) {
+            // we must force an import of the warnings module here if warnings were passed
+            CallTarget site = env.parsePublic(Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build());
+            site.call();
+        }
     }
 
     /**
