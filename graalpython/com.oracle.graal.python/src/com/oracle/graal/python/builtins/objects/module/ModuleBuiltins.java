@@ -41,14 +41,11 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -69,6 +66,9 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -190,7 +190,16 @@ public class ModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                return PNone.NONE;
+                if (self.getShape().getPropertyCount() == 0) {
+                    return PNone.NONE;
+                }
+                dict = factory().createDictFixedStorage(self);
+                try {
+                    lib.setDict(self, dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
             }
             return dict;
         }
@@ -232,14 +241,22 @@ public class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getattribute(VirtualFrame frame, PythonModule self, Object key,
+        Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Cached("create()") IsBuiltinClassProfile isAttrError,
                         @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
                         @Cached("create()") ReadAttributeFromObjectNode readGetattr,
                         @Cached("createBinaryProfile()") ConditionProfile customGetAttr,
                         @Cached("create()") CallNode callNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Cached CastToJavaStringNode castKeyToStringNode,
+                        @Cached CastToJavaStringNode castNameToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObj);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            }
+
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
@@ -250,7 +267,7 @@ public class ModuleBuiltins extends PythonBuiltins {
                 } else {
                     String moduleName;
                     try {
-                        moduleName = castToStringNode.execute(readGetattr.execute(self, __NAME__));
+                        moduleName = castNameToStringNode.execute(readGetattr.execute(self, __NAME__));
                     } catch (CannotCastException ce) {
                         // we just don't have the module name
                         moduleName = null;
@@ -269,5 +286,11 @@ public class ModuleBuiltins extends PythonBuiltins {
                 }
             }
         }
+
+        @Specialization(guards = "!isPythonModule(self)")
+        Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETATTRIBUTE__, "module", self);
+        }
+
     }
 }

@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
@@ -245,6 +246,10 @@ public abstract class PGuards {
         return obj instanceof PythonObject;
     }
 
+    public static boolean isPythonModule(Object obj) {
+        return obj instanceof PythonModule;
+    }
+
     /**
      * Argument guards.
      */
@@ -326,6 +331,10 @@ public abstract class PGuards {
 
     public static boolean isMethod(Object value) {
         return value instanceof PMethod || value instanceof PBuiltinMethod;
+    }
+
+    public static boolean isPMethod(Object value) {
+        return value instanceof PMethod;
     }
 
     public static boolean isBuiltinMethod(Object obj) {

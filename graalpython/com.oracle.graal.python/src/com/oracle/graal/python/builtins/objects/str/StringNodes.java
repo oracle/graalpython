@@ -531,7 +531,7 @@ public abstract class StringNodes {
                         @Cached SliceLiteralNode slice,
                         @Cached CoerceToIntSlice cast,
                         @Cached ComputeIndices compute) {
-            String subStr = castSubNode.cast(sub, StringBuiltins.MUST_BE_STR, sub);
+            String subStr = castSubNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
             return findStringGeneric(frame, self, subStr, start, end, slice, cast, compute);
         }
 

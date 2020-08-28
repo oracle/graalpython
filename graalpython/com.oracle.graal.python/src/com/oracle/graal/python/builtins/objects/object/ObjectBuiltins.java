@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
@@ -346,6 +345,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(PGuards.class)
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
@@ -364,8 +364,16 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
 
         @Specialization
-        protected Object doIt(VirtualFrame frame, Object object, Object key,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+        protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObj);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            }
+
             Object type = lib.getLazyPythonClass(object);
             Object descr = lookup.execute(type, key);
             Object dataDescClass = null;
@@ -457,19 +465,26 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(PGuards.class)
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization(limit = "4")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @CachedLibrary("object") PythonObjectLibrary libObj,
-                        @Cached StringNodes.CastToJavaStringCheckedNode castToString,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            String key = castToString.cast(keyObject, "attribute name must be string, not '%p'", keyObject);
+                        @Cached("create()") WriteAttributeToObjectNode writeNode,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+
             Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
@@ -495,14 +510,22 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
-        protected PNone doIt(VirtualFrame frame, Object object, Object key,
+        protected PNone doIt(VirtualFrame frame, Object object, Object keyObj,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached("create()") CallBinaryMethodNode callSetNode,
                         @Cached("create()") ReadAttributeFromObjectNode attrRead,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+                        @Cached("create()") WriteAttributeToObjectNode writeNode,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObj);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            }
+
             Object type = lib.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {

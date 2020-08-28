@@ -963,3 +963,23 @@ def test_update():
     y = {}
     y.update(x)
     assert y == x
+
+def test_module_dict():    
+    import sys
+    ModuleType = type(sys)
+
+    foo = ModuleType.__new__(ModuleType)
+    assert foo.__dict__ == None
+
+    foo = ModuleType.__new__(ModuleType)
+    foo.f = 1
+    assert foo.__dict__ == {"f" : 1}
+
+    del foo.f 
+    assert foo.__dict__ == {}    
+    
+    foo = ModuleType.__new__(ModuleType)
+    foo.f = 1
+    del foo.f 
+    assert foo.__dict__ == {}
+

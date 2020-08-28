@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -92,6 +93,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -101,6 +104,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -664,26 +668,34 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Child private PForeignToPTypeNode toPythonNode = PForeignToPTypeNode.create();
 
         @Specialization
-        protected Object doIt(Object object, String member,
-                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
+        protected Object doIt(Object object, Object memberObj,
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
+                        @Cached CastToJavaStringNode castToString) {
             try {
+                String member = castToString.execute(memberObj);
                 if (read.isMemberReadable(object, member)) {
                     return toPythonNode.executeConvert(read.readMember(object, member));
                 }
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
             }
-            throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, member);
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
     }
 
+    @ImportStatic(PGuards.class)
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected PNone doIt(Object object, String key, Object value,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+        protected PNone doIt(Object object, Object key, Object value,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CastToJavaStringNode castToString) {
             try {
-                lib.writeMember(object, key, value);
+                lib.writeMember(object, castToString.execute(key), value);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
                 throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             }
@@ -708,9 +720,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected PNone doIt(Object object, String key,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CastToJavaStringNode castToString) {
             try {
-                lib.removeMember(object, key);
+                lib.removeMember(object, castToString.execute(key));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             }

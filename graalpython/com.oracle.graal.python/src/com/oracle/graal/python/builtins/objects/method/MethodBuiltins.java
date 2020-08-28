@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -46,10 +45,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -62,12 +65,15 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
@@ -105,26 +111,52 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class DictNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDict) {
-            return getDict.executeObject(frame, self.getFunction(), __DICT__);
+        @Specialization(limit = "1")
+        protected Object doIt(PMethod self,
+                        @CachedLibrary("self.getFunction()") PythonObjectLibrary lib) {
+            PDict dict = lib.getDict(self.getFunction());
+            if (dict == null) {
+                // A native object should already have a dict,
+                // so it's safe to assume it's a PythonObject
+                dict = factory().createDictFixedStorage((PythonObject) self.getFunction());
+                try {
+                    lib.setDict(self.getFunction(), dict);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException(e);
+                }
+            }
+            return dict;
         }
     }
 
+    @ImportStatic(PGuards.class)
     @Builtin(name = __GETATTRIBUTE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(VirtualFrame frame, PMethod self, Object key,
+        protected Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
                         @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObj);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            }
+
             try {
                 return objectGetattrNode.execute(frame, self, key);
             } catch (PException e) {
                 e.expectAttributeError(errorProfile);
                 return objectGetattrNode.execute(frame, self.getFunction(), key);
             }
+        }
+
+        @Specialization(guards = "!isPMethod(self)")
+        Object getattribute(Object self, @SuppressWarnings("unused") Object key) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GETATTRIBUTE__, "method", self);
         }
     }
 
