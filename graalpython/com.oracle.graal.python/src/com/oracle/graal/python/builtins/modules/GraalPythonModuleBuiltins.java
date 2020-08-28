@@ -88,7 +88,6 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -440,7 +439,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
 
                 String name = func.getName();
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                factory().createCode(Truffle.getRuntime().createCallTarget(functionRootNode)),
+                                factory().createCode(PythonUtils.getOrCreateCallTarget(functionRootNode)),
                                 func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 

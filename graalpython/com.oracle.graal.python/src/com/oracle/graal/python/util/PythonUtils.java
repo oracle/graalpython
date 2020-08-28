@@ -51,8 +51,12 @@ import javax.management.ReflectionException;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonUtils {
 
@@ -126,5 +130,17 @@ public final class PythonUtils {
         }
         System.gc();
         Runtime.getRuntime().freeMemory();
+    }
+
+    /**
+     * Get the existing or create a new {@link CallTarget} for the provided root node.
+     */
+    @TruffleBoundary
+    public static RootCallTarget getOrCreateCallTarget(RootNode rootNode) {
+        RootCallTarget ct = rootNode.getCallTarget();
+        if (ct == null) {
+            ct = Truffle.getRuntime().createCallTarget(rootNode);
+        }
+        return ct;
     }
 }

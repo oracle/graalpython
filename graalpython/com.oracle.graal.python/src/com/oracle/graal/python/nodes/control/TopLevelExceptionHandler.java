@@ -72,11 +72,11 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
@@ -99,7 +99,7 @@ public class TopLevelExceptionHandler extends RootNode {
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
         this.sourceSection = child.getSourceSection();
-        this.innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.innerCallTarget = PythonUtils.getOrCreateCallTarget(child);
         this.exception = null;
     }
 

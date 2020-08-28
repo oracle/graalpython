@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.util.PythonUtils;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -79,12 +78,12 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -221,7 +220,7 @@ public final class CApiContext extends CExtContext {
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = Truffle.getRuntime().createCallTarget(new CApiReferenceCleanerRootNode(getContext()));
+            referenceCleanerCallTarget = PythonUtils.getOrCreateCallTarget(new CApiReferenceCleanerRootNode(getContext()));
         }
         return referenceCleanerCallTarget;
     }
