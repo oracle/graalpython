@@ -53,6 +53,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
+    private String fileName;
     private static final PCell[] NO_CLOSURE = new PCell[0];
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
@@ -128,5 +129,13 @@ public abstract class PClosureRootNode extends PRootNode {
 
     public boolean hasAnnotations() {
         return annotationsAvailable;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 }

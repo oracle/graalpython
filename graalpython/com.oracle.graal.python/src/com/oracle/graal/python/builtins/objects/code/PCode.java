@@ -190,19 +190,42 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    private static void setRootNodeFileName(RootNode rootNode, String filename) {
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PClosureRootNode) {
+            ((PClosureRootNode) funcRootNode).setFileName(filename);
+        }
+    }
+
+    @TruffleBoundary
     public static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
-        if (src != null) {
-            if (src.getSource().getPath() == null) {
-                return src.getSource().getName();
+
+        if (funcRootNode instanceof PClosureRootNode) {
+            PClosureRootNode closureRootNode = (PClosureRootNode) funcRootNode;
+            if (closureRootNode.getFileName() != null) {
+                // for compiled modules, _imp._fix_co_filename will set the filename
+                return closureRootNode.getFileName();
+            } else if (src != null) {
+                return getSourceSectionFileName(src);
+            } else {
+                return closureRootNode.getName();
             }
-            return src.getSource().getPath();
-        } else if (funcRootNode instanceof ModuleRootNode) {
-            return funcRootNode.getName();
+        } else if (src != null) {
+            return getSourceSectionFileName(src);
         } else {
             return "<unknown source>";
         }
+    }
+
+    @TruffleBoundary
+    private static String getSourceSectionFileName(SourceSection src) {
+        String path = src.getSource().getPath();
+        if (path == null) {
+            return src.getSource().getName();
+        }
+        return path;
     }
 
     @TruffleBoundary
@@ -355,6 +378,14 @@ public final class PCode extends PythonBuiltinObject {
 
     public void setFilename(String filename) {
         this.filename = filename;
+        RootNode rootNode = getRootNode();
+        setRootNodeFileName(rootNode, filename);
+        constants = extractConstants(rootNode);
+        for (Object ob : constants) {
+            if (ob instanceof PCode) {
+                ((PCode) ob).setFilename(filename);
+            }
+        }
     }
 
     public String getFilename() {
