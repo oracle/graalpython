@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory.BytesLikeNoGeneralizationNodeGen;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ConvertToByteObjectBytesNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -161,15 +162,48 @@ public class BytesBuiltins extends PythonBuiltins {
         return BytesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"self", "source", "encoding", "errors"})
+    @ImportStatic(PGuards.class)
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    public abstract static class InitNode extends PythonQuaternaryBuiltinNode {
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isNoValue(encoding)"})
+        public PNone init(PByteArray self, PNone source, Object encoding, Object errors) {
+            throw raise(TypeError, ErrorMessages.ENCODING_WITHOUT_STR_ARG);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isNoValue(errors)"})
+        public PNone init(PByteArray self, PNone source, PNone encoding, Object errors) {
+            throw raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
+        }
+
+        @Specialization(guards = {"!isNoValue(source)"})
+        public static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+                        @Cached ConvertToByteObjectBytesNode toBytesNode) {
+            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
+            return PNone.NONE;
+        }
+
         @SuppressWarnings("unused")
         @Specialization
-        public static PNone init(Object self, Object args, Object kwargs) {
+        public static PNone doNothing(PByteArray self, PNone source, PNone encoding, PNone errors) {
             // TODO: tfel: throw an error if we get additional arguments and the __new__
             // method was the same as object.__new__
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        public static PNone doNothing(PBytes self, Object source, Object encoding, Object errors) {
+            // PBytes was already initialized on object creation - see BuiltinConstructors.BytesNode
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isBytes(source)")
+        public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __INIT__, "bytearray", self);
         }
     }
 
