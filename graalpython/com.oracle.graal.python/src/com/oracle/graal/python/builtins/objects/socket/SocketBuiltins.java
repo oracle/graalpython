@@ -275,9 +275,9 @@ public class SocketBuiltins extends PythonBuiltins {
     // getblocking()
     @Builtin(name = "getblocking", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean get(PSocket socket) {
+        public static boolean get(PSocket socket) {
             return socket.isBlocking();
         }
     }
@@ -572,25 +572,28 @@ public class SocketBuiltins extends PythonBuiltins {
 
     @Builtin(name = "setblocking", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object setBlocking(PSocket socket, boolean blocking) {
-            socket.setBlocking(blocking);
-
+        PNone doBoolean(PSocket socket, boolean blocking) {
             try {
-                if (socket.getSocket() != null) {
-                    socket.getSocket().configureBlocking(socket.isBlocking());
-                }
-
-                if (socket.getServerSocket() != null) {
-                    socket.getServerSocket().configureBlocking(socket.isBlocking());
-                }
+                SetBlockingNode.setBlocking(socket, blocking);
             } catch (IOException e) {
                 throw raise(OSError);
             }
-
             return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        public static void setBlocking(PSocket socket, boolean blocking) throws IOException {
+            socket.setBlocking(blocking);
+
+            if (socket.getSocket() != null) {
+                socket.getSocket().configureBlocking(socket.isBlocking());
+            }
+
+            if (socket.getServerSocket() != null) {
+                socket.getServerSocket().configureBlocking(socket.isBlocking());
+            }
         }
     }
 
