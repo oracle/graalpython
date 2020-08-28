@@ -16,13 +16,6 @@
 *graalpython.lib-python.3.test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error
 *graalpython.lib-python.3.test.test_signal.RaiseSignalTest.test_invalid_argument
 *graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_pending
-*graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_signum
-*graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_wakeup_fd_during
-*graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_wakeup_fd_early
-*graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_wakeup_write_error
-*graalpython.lib-python.3.test.test_signal.WakeupSocketSignalTests.test_send_error
-*graalpython.lib-python.3.test.test_signal.WakeupSocketSignalTests.test_socket
-*graalpython.lib-python.3.test.test_signal.WakeupSocketSignalTests.test_warn_on_full_buffer
 *graalpython.lib-python.3.test.test_signal.WindowsSignalTests.test_issue9324
 *graalpython.lib-python.3.test.test_signal.WindowsSignalTests.test_keyboard_interrupt_exit_code
 *graalpython.lib-python.3.test.test_signal.WindowsSignalTests.test_valid_signals
