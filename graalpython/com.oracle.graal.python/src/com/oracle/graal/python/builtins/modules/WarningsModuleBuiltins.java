@@ -404,7 +404,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         private String getFilter(VirtualFrame frame, PythonModule _warnings, Object category, Object text, int lineno, Object module, Object[] item) {
             Object filters = getWarningsAttr(frame, "filters");
             if (filters != null) {
-                getWarnLib().put(_warnings, "filters", filters);
+                getWarnLib().put(_warnings, FILTERS, filters);
             } else {
                 filters = getStateFilters(_warnings);
             }
