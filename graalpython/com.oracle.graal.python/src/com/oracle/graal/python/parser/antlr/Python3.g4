@@ -1527,7 +1527,7 @@ dictmaker returns [SSTNode result]
             { 
                 SSTNode value; 
                 SSTNode name;
-                ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.DictComp);
+                ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, ScopeInfo.ScopeKind.DictComp);
                 generator.setHasAnnotations(true);
                 
             }
@@ -1584,7 +1584,7 @@ setlisttuplemaker [PythonBuiltinClassType type, PythonBuiltinClassType compType]
                     case PSet: scopeKind = ScopeInfo.ScopeKind.SetComp; break;
                     default: scopeKind = ScopeInfo.ScopeKind.GenExp;
                 }
-                ScopeInfo generator = scopeEnvironment.pushScope("generator", scopeKind); 
+                ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, scopeKind);
                 generator.setHasAnnotations(true);
             }
             (
@@ -1672,7 +1672,7 @@ arglist returns [ArgListBuilder result]
 
 argument [ArgListBuilder args] returns [SSTNode result]
 :               {
-                    ScopeInfo generator = scopeEnvironment.pushScope("generator", ScopeInfo.ScopeKind.GenExp); 
+                    ScopeInfo generator = scopeEnvironment.pushScope(ScopeEnvironment.GENEXPR_NAME, ScopeInfo.ScopeKind.GenExp);
                     generator.setHasAnnotations(true);
                 }
 		test comp_for[$test.result, null, PythonBuiltinClassType.PGenerator, 0]

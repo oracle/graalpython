@@ -27,6 +27,9 @@ package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -40,9 +43,6 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 
 public final class ScopeInfo {
 
@@ -108,6 +108,9 @@ public final class ScopeInfo {
     // Used for serialization and deseraialization
     private final int serializationId;
 
+    // Qualified name for this scope
+    private final String qualname;
+
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this(scopeId, -1, kind, frameDescriptor, parent);
     }
@@ -125,6 +128,45 @@ public final class ScopeInfo {
             this.parent.firstChildScope = this;
         }
         this.serializationId = serializationId == -1 ? this.hashCode() : serializationId;
+
+        this.qualname = computeQualname();
+    }
+
+    private String computeQualname() {
+        if (this.scopeKind != ScopeKind.Module) {
+            StringBuilder sb = new StringBuilder();
+            if (parent != null) {
+                if (!parent.isExplicitGlobalVariable(this.scopeId)) {
+                    sb.append(parent.getQualname());
+                    if (isScopeFunctionLike(parent)) {
+                        sb.append(".<locals>");
+                    }
+                }
+            }
+            if (isScopeFunctionLike(this) || scopeKind == ScopeKind.Class) {
+                if (sb.length() != 0) {
+                    sb.append('.');
+                }
+                sb.append(this.scopeId);
+            }
+            return sb.toString();
+        } else {
+            return "";
+        }
+    }
+
+    private static boolean isScopeFunctionLike(ScopeInfo scope) {
+        switch (scope.getScopeKind()) {
+            case GenExp:
+            case ListComp:
+            case DictComp:
+            case SetComp:
+            case Function:
+            case Generator:
+                return true;
+            default:
+                return false;
+        }
     }
 
     public ScopeInfo getFirstChildScope() {
@@ -137,6 +179,10 @@ public final class ScopeInfo {
 
     public String getScopeId() {
         return scopeId;
+    }
+
+    public String getQualname() {
+        return qualname;
     }
 
     public int getSerializetionId() {

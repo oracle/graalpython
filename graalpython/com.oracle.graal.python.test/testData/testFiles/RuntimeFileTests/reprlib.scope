@@ -68,7 +68,7 @@ Scope: []
             FrameDescriptor: [level, maxiter, repr1, right, newlevel, n, pieces, trail, s, left, x, self, <return_val>]
             CellVars: [newlevel, repr1]
             FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: ListComp
                 FrameDescriptor: [elem, repr1, newlevel, <return_val>]
                 CellVars: Empty

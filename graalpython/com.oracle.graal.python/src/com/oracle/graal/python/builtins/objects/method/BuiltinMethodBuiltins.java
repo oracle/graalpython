@@ -26,6 +26,8 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
@@ -44,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltin
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -210,6 +213,76 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         Object objclass(PBuiltinMethod self,
                         @Cached("createBinaryProfile()") ConditionProfile profile) {
             return getPythonClass(self.getFunction().getEnclosingType(), profile);
+        }
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class MethodName extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getName(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+            return getNameAttrNode.executeObject(frame, method.getFunction());
+        }
+
+        @Specialization
+        Object getName(VirtualFrame frame, PMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
+            return getNameAttrNode.executeObject(frame, method.getFunction());
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class MethodQualName extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object getQualName(VirtualFrame frame, PMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached ConditionProfile isGlobalProfile,
+                        @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
+        }
+
+        @Specialization(limit = "3")
+        Object getQualName(VirtualFrame frame, PBuiltinMethod method,
+                        @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode,
+                        @Cached("create(__QUALNAME__)") GetAttributeNode getQualNameAttrNode,
+                        @Cached TypeNodes.IsTypeNode isTypeNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached ConditionProfile isGlobalProfile,
+                        @CachedLibrary("method.getSelf()") PythonObjectLibrary pol) {
+            return makeQualname(frame, method, method.getSelf(), getQualNameAttrNode, getNameAttrNode, castToJavaStringNode, pol, isTypeNode, isGlobalProfile);
+        }
+
+        private Object makeQualname(VirtualFrame frame, Object method, Object self, GetAttributeNode getQualNameAttrNode, GetAttributeNode getNameAttrNode, CastToJavaStringNode castToJavaStringNode,
+                        PythonObjectLibrary pol, TypeNodes.IsTypeNode isTypeNode, ConditionProfile isGlobalProfile) {
+            String methodName;
+            try {
+                methodName = castToJavaStringNode.execute(getNameAttrNode.executeObject(frame, method));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __NAME__, "unicode object");
+            }
+            if (isGlobalProfile.profile(self == null || self instanceof PythonModule)) {
+                return methodName;
+            }
+
+            Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
+            String typeQualName;
+            try {
+                typeQualName = castToJavaStringNode.execute(getQualNameAttrNode.executeObject(frame, type));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
+            }
+
+            return getQualNameGeneric(typeQualName, methodName);
+        }
+
+        @TruffleBoundary
+        private static Object getQualNameGeneric(String typeQualName, String name) {
+            return String.format("%s.%s", typeQualName, name);
         }
     }
 }

@@ -18,12 +18,12 @@ Scope: []
             FrameDescriptor: [hi, lo, code, print_, <>temp36, <>temp35, prefix, <>temp38, <>temp37, flags, <>temp32, prefix_len, <>temp31, skip, <>temp34, <>temp33, sys, <>temp30, prefix_skip, min, arg, end, print_2, <>temp29, op, <>temp28, mapping, <>temp25, max, level, <>temp24, <>temp27, <>temp26, start, i, j, labels, offset_width, <return_val>, dis_]
             CellVars: [end, start]
             FreeVars: [code, dis_, labels, level, offset_width, sys]
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [x, <return_val>]
                 CellVars: Empty
                 FreeVars: Empty
-            Scope: generator
+            Scope: <genexpr>
                 Kind: GenExp
                 FrameDescriptor: [x, sys, <return_val>]
                 CellVars: Empty
@@ -43,7 +43,7 @@ Scope: []
         FrameDescriptor: [code, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: GenExp
             FrameDescriptor: [x, <return_val>]
             CellVars: Empty
@@ -98,7 +98,7 @@ Scope: []
         FrameDescriptor: [s, _CODEBITS, bits, _int, <return_val>]
         CellVars: [_CODEBITS, _int, s]
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: ListComp
             FrameDescriptor: [s, _CODEBITS, i, _int, <return_val>]
             CellVars: Empty
@@ -123,12 +123,12 @@ Scope: []
         FrameDescriptor: [add_flags, flags, TYPE_FLAGS, del_flags, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: generator
+    Scope: <genexpr>
         Kind: DictComp
         FrameDescriptor: [t, i, <return_val>]
         CellVars: [i]
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: GenExp
             FrameDescriptor: [i, j, <return_val>]
             CellVars: Empty

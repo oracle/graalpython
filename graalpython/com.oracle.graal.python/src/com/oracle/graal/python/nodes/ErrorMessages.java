@@ -350,7 +350,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_REAL_NUMBER = "must be real number, not %p";
     public static final String MUST_BE_S_NOT_P = "%s must be a %s, not %p";
     public static final String MUST_BE_S_OR_S = "%s must be %s or %s";
-    public static final String MUST_BE_SET_TO_STR_OBJ = "%s must be set to a string object";
+    public static final String MUST_BE_SET_TO_S_OBJ = "%s must be set to a %s object";
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
@@ -490,7 +490,7 @@ public abstract class ErrorMessages {
     public static final String TUPLE_OR_STRUCT_TIME_ARG_REQUIRED = "Tuple or struct_time argument required";
     public static final String TYPE_DOES_NOT_PROVIDE_BASES = "type does not provide bases";
     public static final String TYPE_DOESNT_DEFINE_METHOD = "type %p doesn't define %s method";
-    public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%p' is not an acceptable base type";
+    public static final String TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE = "type '%N' is not an acceptable base type";
     public static final String TYPE_NAME_NO_NULL_CHARS = "type name must not contain null characters";
     public static final String TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ = "type '%p' is not supported by the foreign object";
     public static final String TYPE_DOESNT_SUPPORT_MRO_ENTRY_RESOLUTION = "type() doesn't support MRO entry resolution; use types.new_class()";
@@ -503,7 +503,6 @@ public abstract class ErrorMessages {
     public static final String UNKNOWN_ERROR_HANDLER = "unknown error handler name '%s'";
     public static final String UNKNOWN_FORMAT_CODE = "Unknown format code '%c' for object of type '%s'";
     public static final String UNKNOWN_S_TYPE = "unknown %s type";
-    public static final String UNOPERABLE_TYPES_P_P = "unorderable types: %p < %p";
     public static final String UNRECOGNIZED_FORMAT_CHAR = "unrecognized format char in arguments parsing: %c";
     public static final String UNRECOGNIZED_KIND = "unrecognized kind";
     public static final String UNSIGNED_BYTE_INT_GREATER_THAN_MAX = "unsigned byte integer is greater than maximum";

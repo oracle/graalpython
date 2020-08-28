@@ -71,8 +71,9 @@ import com.oracle.truffle.api.frame.FrameUtil;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
 
-    public static String CLASS_VAR_PREFIX = "<>class";
-    public static String LAMBDA_NAME = "lambda";
+    public static final String CLASS_VAR_PREFIX = "<>class";
+    public static final String LAMBDA_NAME = "<lambda>";
+    public static final String GENEXPR_NAME = "<genexpr>";
     public static int CLASS_VAR_PREFIX_IDX = CLASS_VAR_PREFIX.length();
 
     private final NodeFactory factory;

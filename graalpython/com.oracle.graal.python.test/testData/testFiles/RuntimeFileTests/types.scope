@@ -3,7 +3,7 @@ Scope: []
     FrameDescriptor: Empty
     CellVars: Empty
     FreeVars: Empty
-    Scope: generator
+    Scope: <genexpr>
         Kind: ListComp
         FrameDescriptor: [<return_val>, n]
         CellVars: Empty
@@ -158,7 +158,7 @@ Scope: []
         FrameDescriptor: [<return_val>]
         CellVars: Empty
         FreeVars: Empty
-    Scope: lambda
+    Scope: <lambda>
         Kind: Function
         FrameDescriptor: [<return_val>]
         CellVars: Empty

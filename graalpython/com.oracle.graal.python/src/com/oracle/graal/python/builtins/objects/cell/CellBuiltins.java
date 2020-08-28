@@ -41,6 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cell;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -60,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.Assumption;
@@ -72,6 +78,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
 public class CellBuiltins extends PythonBuiltins {
@@ -86,9 +93,15 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization
         public boolean eq(VirtualFrame frame, PCell self, PCell other,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("create()") GetRefNode getRefL,
-                        @Cached("create()") GetRefNode getRefR) {
-            return lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
+            }
+            return left == null && right == null;
         }
 
         @SuppressWarnings("unused")
@@ -97,19 +110,25 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__eq__", "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __EQ__, "cell", self);
         }
     }
 
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class NeqNode extends PythonBuiltinNode {
+    public abstract static class NeNode extends PythonBuiltinNode {
         @Specialization
-        public boolean neq(VirtualFrame frame, PCell self, PCell other,
+        public boolean ne(VirtualFrame frame, PCell self, PCell other,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("create()") GetRefNode getRefL,
-                        @Cached("create()") GetRefNode getRefR) {
-            return !lib.equalsWithState(getRefL.execute(self), getRefR.execute(other), lib, PArguments.getThreadState(frame));
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return !lib.equalsWithState(left, right, lib, PArguments.getThreadState(frame));
+            }
+            return left != null || right != null;
         }
 
         @SuppressWarnings("unused")
@@ -118,7 +137,135 @@ public class CellBuiltins extends PythonBuiltins {
             if (self instanceof PCell) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__neq__", "cell", self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __NE__, "cell", self);
+        }
+    }
+
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class LtNode extends PythonBuiltinNode {
+        @Specialization
+        public boolean lt(VirtualFrame frame, PCell self, PCell other,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+            }
+            return right != null;
+        }
+
+        protected static BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__LT__, __GT__, "<");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object notImplemented(Object self, Object other) {
+            if (self instanceof PCell) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __LT__, "cell", self);
+        }
+    }
+
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class LeNode extends PythonBuiltinNode {
+        @Specialization
+        public boolean le(VirtualFrame frame, PCell self, PCell other,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+            }
+            return left == null;
+        }
+
+        protected static BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object notImplemented(Object self, Object other) {
+            if (self instanceof PCell) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __LE__, "cell", self);
+        }
+    }
+
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class GtNode extends PythonBuiltinNode {
+        @Specialization
+        public boolean gt(VirtualFrame frame, PCell self, PCell other,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+            }
+            return left != null;
+        }
+
+        protected static BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__GT__, __LT__, ">");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object notImplemented(Object self, Object other) {
+            if (self instanceof PCell) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GT__, "cell", self);
+        }
+    }
+
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class GeNode extends PythonBuiltinNode {
+        @Specialization
+        public boolean ge(VirtualFrame frame, PCell self, PCell other,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ConditionProfile nonEmptyProfile,
+                        @Cached GetRefNode getRefL,
+                        @Cached GetRefNode getRefR) {
+            Object left = getRefL.execute(self);
+            Object right = getRefR.execute(other);
+            if (nonEmptyProfile.profile(left != null && right != null)) {
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+            }
+            return right == null;
+        }
+
+        protected static BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object notImplemented(Object self, Object other) {
+            if (self instanceof PCell) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __GE__, "cell", self);
         }
     }
 
@@ -148,11 +295,11 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell_contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "cell_contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        public Object get(PCell self, @SuppressWarnings("unused") PNone none,
+        Object get(PCell self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") GetRefNode getRef) {
             Object ref = getRef.execute(self);
             if (ref == null) {
@@ -161,8 +308,14 @@ public class CellBuiltins extends PythonBuiltins {
             return ref;
         }
 
-        @Specialization(guards = "!isNoValue(ref)")
-        public Object set(PCell self, Object ref) {
+        @Specialization(guards = "isDeleteMarker(marker)")
+        Object delete(PCell self, @SuppressWarnings("unused") Object marker) {
+            self.clearRef();
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isNoValue(ref)", "!isDeleteMarker(ref)"})
+        Object set(PCell self, Object ref) {
             self.setRef(ref);
             return PNone.NONE;
         }

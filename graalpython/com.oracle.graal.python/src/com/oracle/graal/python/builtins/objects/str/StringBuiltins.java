@@ -765,12 +765,13 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // static str.maketrans()
-    @Builtin(name = "maketrans", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, isStaticmethod = true)
+    @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isClassmethod = true)
     @GenerateNodeFactory
-    public abstract static class MakeTransNode extends PythonTernaryBuiltinNode {
+    public abstract static class MakeTransNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = "!isNoValue(to)")
-        PDict doString(@SuppressWarnings("unused") VirtualFrame frame, Object from, Object to, @SuppressWarnings("unused") Object z,
+        @SuppressWarnings("unused")
+        PDict doString(VirtualFrame frame, Object cls, Object from, Object to, Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
@@ -797,7 +798,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(to)")
         @SuppressWarnings("unused")
-        static PDict doDict(PDict from, Object to, Object z) {
+        static PDict doDict(PDict from, Object cls, Object to, Object z) {
             // TODO implement dict case; see CPython 'unicodeobject.c' function
             // 'unicode_maketrans_impl'
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -806,7 +807,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
-        PDict doFail(Object from, Object to, Object z) {
+        PDict doFail(Object from, Object cls, Object to, Object z) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
         }
     }

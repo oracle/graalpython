@@ -566,7 +566,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     /*
-     * Special objects: generators, proxies, references
+     * Special objects: generators, proxies, references, cells
      */
 
     public PGenerator createGenerator(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
@@ -589,6 +589,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PReferenceType createReferenceType(Object object, Object callback, ReferenceQueue<Object> queue) {
         return createReferenceType(PythonBuiltinClassType.PReferenceType, object, callback, queue);
+    }
+
+    public PCell createCell(Assumption effectivelyFinal) {
+        return trace(new PCell(effectivelyFinal));
     }
 
     /*

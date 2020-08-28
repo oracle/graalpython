@@ -28,7 +28,7 @@ Scope: []
         FrameDescriptor: [<>temp18, <>temp17, <>temp19, <>temp14, line, f, <>temp16, <>temp15, system_site, env, known_paths, executable, candidate_confs, site_prefix, exe_dir, virtual_conf, conf_basename, value, <return_val>, key, _]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: ListComp
             FrameDescriptor: [conffile, <return_val>]
             CellVars: Empty
@@ -108,7 +108,7 @@ Scope: []
         FrameDescriptor: [sitedircase, names, <>temp6, <>temp7, name, reset, sitedir, known_paths, <return_val>]
         CellVars: Empty
         FreeVars: Empty
-        Scope: generator
+        Scope: <genexpr>
             Kind: ListComp
             FrameDescriptor: [name, <return_val>]
             CellVars: Empty
