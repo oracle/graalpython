@@ -1351,7 +1351,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Specialization
+        @Specialization(guards = "isNoValue(none)")
         Object createInt(Object cls, @SuppressWarnings("unused") PNone none, @SuppressWarnings("unused") PNone base) {
             if (isPrimitiveInt(cls)) {
                 return 0;
