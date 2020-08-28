@@ -59,16 +59,19 @@ public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
         return CastToJavaLongLossyNodeGen.getUncached();
     }
 
-    @Specialization
-    protected long toLong(PInt x) {
-        try {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    protected static long toLong(PInt x) {
+        return x.longValueExact();
+    }
+
+    @Specialization(replaces = "toLong")
+    protected static long toLongOverflow(PInt x) {
+        if (x.compareTo(PInt.MAX_LONG) > 0) {
+            return Long.MAX_VALUE;
+        } else if (x.compareTo(PInt.MIN_LONG) < 0) {
+            return Long.MIN_VALUE;
+        } else {
             return x.longValueExact();
-        } catch (ArithmeticException e) {
-            if (x.isNegative()) {
-                return Long.MIN_VALUE;
-            } else {
-                return Long.MAX_VALUE;
-            }
         }
     }
 }

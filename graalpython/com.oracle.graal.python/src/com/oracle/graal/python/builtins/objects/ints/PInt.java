@@ -62,8 +62,8 @@ public final class PInt extends PythonBuiltinObject {
 
     public static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
     public static final BigInteger MIN_INT = BigInteger.valueOf(Integer.MIN_VALUE);
-    private static final BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
-    private static final BigInteger MIN_LONG = BigInteger.valueOf(Long.MIN_VALUE);
+    public static final BigInteger MAX_LONG = BigInteger.valueOf(Long.MAX_VALUE);
+    public static final BigInteger MIN_LONG = BigInteger.valueOf(Long.MIN_VALUE);
     private static final BigInteger MAX_BYTE = BigInteger.valueOf(Byte.MAX_VALUE);
     private static final BigInteger MIN_BYTE = BigInteger.valueOf(Byte.MIN_VALUE);
     private static final BigInteger MAX_SHORT = BigInteger.valueOf(Short.MAX_VALUE);
@@ -133,7 +133,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage(limit = "1")
-    boolean fitsInShort(@CachedLibrary("this.intValue()") InteropLibrary interop) {
+    boolean fitsInShort() {
         return fitsIn(MIN_SHORT, MAX_SHORT);
     }
 

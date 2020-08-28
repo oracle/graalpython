@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -60,18 +61,25 @@ public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
     }
 
     @Specialization
-    protected int toInt(long x) {
+    protected static int toInt(long x) {
         int i = (int) x;
         return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
     }
 
-    @Specialization
-    protected int toInt(PInt x) {
-        try {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    protected static int toIntPInt(PInt x) {
+        return x.intValueExact();
+    }
+
+    @TruffleBoundary
+    @Specialization(replaces = "toIntPInt")
+    protected static int toIntOverflow(PInt x) {
+        if (x.compareTo(PInt.MAX_INT) > 0) {
+            return Integer.MAX_VALUE;
+        } else if (x.compareTo(PInt.MIN_INT) < 0) {
+            return Integer.MIN_VALUE;
+        } else {
             return x.intValueExact();
-        } catch (ArithmeticException e) {
-            // return min or max int
         }
-        return !x.isNegative() ? Integer.MAX_VALUE : Integer.MIN_VALUE;
     }
 }
