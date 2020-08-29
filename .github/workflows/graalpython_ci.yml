@@ -15,14 +15,16 @@ jobs:
           java-version: '14'
       - run: java -version
       - run: git clone https://github.com/graalvm/mx.git
-      - run: cd graalpython ; ../mx/mx build
+      - run: cd graalpython ; ../mx/mx build  # 7+ minutes
       - run: mx/mx python -c "print(42)"
-      - run: mx/mx python --version || true
-      - run: mx/mx graalpython --version || true
+      - run: mx/mx python --version  # Python 3.8.5 (Interpreted JVM Development Build)
+      - run: mx/mx graalpython --version || true  # mx: unknown command 'graalpython'
+      - run: graalpython --version || true  # graalpython: command not found
+      - run: mx/mx python-svm || true  # 1 build tasks failed
+      - run: graalpython --version || true  # graalpython: command not found
+      - run: cd graalpython ; ../mx/mx python-svm || true
       - run: graalpython --version || true
-      - run: mx/mx python-svm || true
-      - run: graalpython --version || true
-      - run: mx/mx python-gate || true
-      - run: mx/mx benchmark --list || true
-      - run: mx/mx benchmark meso --list || true
-      - run: mx/mx benchmark meso:nbody3 || true
+      - run: mx/mx python-gate || true  # 22+ minutes --> java.lang.OutOfMemoryError: Java heap space
+      - run: mx/mx benchmark --list
+      - run: mx/mx benchmark meso --list
+      - run: mx/mx benchmark meso:nbody3 || true  # Could not find a Java VM to default to.
