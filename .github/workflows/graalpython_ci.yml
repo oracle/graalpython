@@ -15,15 +15,14 @@ jobs:
           java-version: '14'
       - run: java -version
       - run: git clone https://github.com/graalvm/mx.git
-      - run: cd graalpython ; pwd
-      - run: pwd ; ../mx/mx build
-      - run: ../mx/mx python -c "print(42)"
-      - run: ../mx/mx python --version || true
-      - run: ../mx/mx graalpython --version || true
+      - run: cd graalpython ; ../mx/mx build
+      - run: mx/mx python -c "print(42)"
+      - run: mx/mx python --version || true
+      - run: mx/mx graalpython --version || true
       - run: graalpython --version || true
-      - run: ../mx/mx python-svm || true
+      - run: mx/mx python-svm || true
       - run: graalpython --version || true
-      - run: ../mx/mx python-gate || true
-      - run: ../mx/mx benchmark --list || true
-      - run: ../mx/mx benchmark meso --list || true
-      - run: ../mx/mx benchmark meso:nbody3 || true
+      - run: mx/mx python-gate || true
+      - run: mx/mx benchmark --list || true
+      - run: mx/mx benchmark meso --list || true
+      - run: mx/mx benchmark meso:nbody3 || true
