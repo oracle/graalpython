@@ -13,18 +13,17 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: '14'
-      - run: |
-          java -version
-          git clone https://github.com/graalvm/mx.git
-          cd graalpython
-          ../mx/mx build
-          ../mx/mx python -c "print(42)"
-          ../mx/mx python --version || true
-          ../mx/mx graalpython --version || true
-          graalpython --version || true
-          ../mx/mx python-svm || true
-          graalpython --version || true
-          ../mx/mx python-gate || true
-          ../mx/mx benchmark --list || true
-          ../mx/mx benchmark meso --list || true
-          ../mx/mx benchmark meso:nbody3 || true
+      - run: java -version
+      - run: git clone https://github.com/graalvm/mx.git
+      - run: cd graalpython ; pwd
+      - run: pwd ; ../mx/mx build
+      - run: ../mx/mx python -c "print(42)"
+      - run: ../mx/mx python --version || true
+      - run: ../mx/mx graalpython --version || true
+      - run: graalpython --version || true
+      - run: ../mx/mx python-svm || true
+      - run: graalpython --version || true
+      - run: ../mx/mx python-gate || true
+      - run: ../mx/mx benchmark --list || true
+      - run: ../mx/mx benchmark meso --list || true
+      - run: ../mx/mx benchmark meso:nbody3 || true
