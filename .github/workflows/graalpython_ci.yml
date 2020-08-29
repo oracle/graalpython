@@ -1,0 +1,28 @@
+# https://github.com/actions/setup-java
+# https://docs.github.com/en/actions/language-and-framework-guides/github-actions-for-java
+
+name: graalpython_ci
+on:
+  pull_request:
+  push:
+jobs:
+  graalpython_ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+      - run: |
+          java -version
+          git clone https://github.com/graalvm/mx.git
+          cd graalpython
+          ../mx/mx build
+          ../mx/mx python -c "print(42)"
+          ../mx/mx python --version || true
+          ../mx/mx graalpython --version || true
+          graalpython --version || true
+          ../mx/mx python-svm || true
+          graalpython --version || true
+          ../mx/mx python-gate || true
+          ../mx/mx benchmark --list || true
+          ../mx/mx benchmark meso --list || true
+          ../mx/mx benchmark meso:nbody3 || true
