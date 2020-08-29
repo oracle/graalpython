@@ -19,6 +19,10 @@ jobs:
       - run: cd graalpython ; ../mx/mx build  # 7+ minutes
       - run: mx/mx python --version  # Python 3.8.5 (Interpreted JVM Development Build)
       - run: mx/mx python -c "print(42)"
+      - run: mx/mx python-unittests || true  # ImportError: No module named html
+      - run: mx/mx python-src-import || true  
+      - run: mx/mx python-unittests || true
+      - run: mx/mx python-import-for-graal || true  
       - run: mx/mx python-unittests || true
       - run: mx/mx graalpython --version || true  # mx: unknown command 'graalpython'
       - run: graalpython --version || true  # graalpython: command not found
