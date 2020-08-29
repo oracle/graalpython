@@ -102,13 +102,13 @@ public class ImportFromNode extends AbstractImportNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getName = insert(GetAttributeNode.create(__NAME__, null));
                 }
+                Object moduleName = getName.executeObject(frame, importedModule);
                 try {
                     String pkgname;
-                    Object pkgname_o = getName.executeObject(frame, importedModule);
-                    if (pkgname_o instanceof PString) {
-                        pkgname = ((PString) pkgname_o).getValue();
-                    } else if (pkgname_o instanceof String) {
-                        pkgname = (String) pkgname_o;
+                    if (moduleName instanceof PString) {
+                        pkgname = ((PString) moduleName).getValue();
+                    } else if (moduleName instanceof String) {
+                        pkgname = (String) moduleName;
                     } else {
                         throw pe;
                     }
@@ -128,14 +128,13 @@ public class ImportFromNode extends AbstractImportNode {
                             getPath = insert(GetAttributeNode.create(__FILE__));
                         }
                     }
-                    Object path = PNone.NONE;
+                    Object modulePath = PNone.NONE;
                     try {
-                        path = getPath.executeObject(frame, importedModule);
+                        modulePath = getPath.executeObject(frame, importedModule);
                     } catch (PException e3) {
                         e3.expectAttributeError(getFileErrorProfile);
                     }
-                    throw raiseNode.raiseImportError(frame, getName.executeObject(frame, importedModule), path,
-                                    ErrorMessages.CANNOT_IMPORT_NAME, attr);
+                    throw raiseNode.raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                 }
             }
         }
