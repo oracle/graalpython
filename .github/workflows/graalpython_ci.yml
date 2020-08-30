@@ -13,7 +13,8 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: '14'
-      - run: java -version
-      - run: echo $JAVA_HOME
       - run: git clone https://github.com/graalvm/mx.git
-      - run: cd graalpython ; ../mx/mx python-gate --tags style,fullbuild,python-unittest,python-unittest-jython
+      - run: cd graalpython ; ../mx/mx python-gate --tags style
+      - run: cd graalpython ; ../mx/mx python-gate --tags fullbuild
+      - run: cd graalpython ; ../mx/mx python-gate --tags python-unittest
+      - run: cd graalpython ; ../mx/mx python-gate --tags python-unittest-jython
