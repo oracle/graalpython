@@ -38,6 +38,7 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_filename
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_message
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_stacklevel
+*graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_stacklevel_import
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_explicit_non_ascii_filename
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_explicit_type_errors
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarnTests.test_warn_nonstandard_types
@@ -45,6 +46,8 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_formatwarning_override
 *graalpython.lib-python.3.test.test_warnings.__init__.CWarningsDisplayTests.test_showwarning
+*graalpython.lib-python.3.test.test_warnings.__init__.FinalizationTest.test_finalization
+*graalpython.lib-python.3.test.test_warnings.__init__.FinalizationTest.test_late_resource_warning
 *graalpython.lib-python.3.test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_defaults
 *graalpython.lib-python.3.test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_recording
 *graalpython.lib-python.3.test.test_warnings.__init__.PyCatchWarningTests.test_catch_warnings_reentry_guard
@@ -78,6 +81,8 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.PyFilterTests.test_simplefilter_duplicate_filters
 *graalpython.lib-python.3.test.test_warnings.__init__.PyPublicAPITests.test_module_all_attribute
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWCmdLineTests.test_improper_input
+*graalpython.lib-python.3.test.test_warnings.__init__.PyWCmdLineTests.test_improper_option
+*graalpython.lib-python.3.test.test_warnings.__init__.PyWCmdLineTests.test_warnings_bootstrap
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_bad_str
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_exec_filename
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_filename
@@ -86,13 +91,16 @@
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_stacklevel
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_stacklevel_import
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_warn_explicit_non_ascii_filename
+*graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_warn_explicit_type_errors
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_warn_nonstandard_types
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarnTests.test_warning_classes
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_formatwarning_override
 *graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_showwarning
+*graalpython.lib-python.3.test.test_warnings.__init__.PyWarningsDisplayTests.test_tracemalloc
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_default_action
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_filename_none
+*graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_filter
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_issue31285
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_issue31411
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_issue31416
@@ -102,3 +110,4 @@
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_showwarning_missing
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_showwarning_not_callable
 *graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_showwarnmsg_missing
+*graalpython.lib-python.3.test.test_warnings.__init__._WarningsTests.test_stderr_none
