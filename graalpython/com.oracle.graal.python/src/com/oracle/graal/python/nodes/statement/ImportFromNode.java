@@ -28,7 +28,7 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -102,8 +102,9 @@ public class ImportFromNode extends AbstractImportNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     getName = insert(GetAttributeNode.create(__NAME__, null));
                 }
-                Object moduleName = getName.executeObject(frame, importedModule);
+                Object moduleName = "<unknown module name>";
                 try {
+                    moduleName = getName.executeObject(frame, importedModule);
                     String pkgname;
                     if (moduleName instanceof PString) {
                         pkgname = ((PString) moduleName).getValue();
@@ -128,11 +129,14 @@ public class ImportFromNode extends AbstractImportNode {
                             getPath = insert(GetAttributeNode.create(__FILE__));
                         }
                     }
-                    Object modulePath = PNone.NONE;
-                    try {
-                        modulePath = getPath.executeObject(frame, importedModule);
-                    } catch (PException e3) {
-                        e3.expectAttributeError(getFileErrorProfile);
+
+                    Object modulePath = "unknown location";
+                    if (!getAttrErrorProfile.profileException(e2, PythonBuiltinClassType.AttributeError)) {
+                        try {
+                            modulePath = getPath.executeObject(frame, importedModule);
+                        } catch (PException e3) {
+                            e3.expectAttributeError(getFileErrorProfile);
+                        }
                     }
                     throw raiseNode.raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                 }
