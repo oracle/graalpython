@@ -33,7 +33,14 @@
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_issue31492
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_module_with_large_stack
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_timestamp_overflow
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_broken_from
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_broken_parent
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_broken_parent_from
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_broken_submodule
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_exec_failure
 *graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_import_bug
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_nonexistent_module
+*graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_syntax_error
 *graalpython.lib-python.3.test.test_import.__init__.ImportTracebackTests.test_unencodable_filename
 *graalpython.lib-python.3.test.test_import.__init__.ImportlibBootstrapTests.test_frozen_importlib
 *graalpython.lib-python.3.test.test_import.__init__.ImportlibBootstrapTests.test_frozen_importlib_external_is_bootstrap_external

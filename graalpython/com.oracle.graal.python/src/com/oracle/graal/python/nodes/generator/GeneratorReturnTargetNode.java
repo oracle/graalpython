@@ -101,7 +101,7 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                 // PEP 479 - StopIteration raised from generator body needs to be wrapped in
                 // RuntimeError
                 pe.expectStopIteration(getErrorProfile());
-                throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame), ErrorMessages.GENERATOR_RAISED_STOPITER);
+                throw raise.raise(RuntimeError, pe.setCatchingFrameAndGetEscapedException(frame, this), ErrorMessages.GENERATOR_RAISED_STOPITER);
             }
             fallthroughProfile.enter();
             throw raise.raise(StopIteration);
