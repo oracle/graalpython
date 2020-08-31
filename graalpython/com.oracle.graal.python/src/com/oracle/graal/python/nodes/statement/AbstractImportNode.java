@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.GLOBALS;
-import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -166,13 +164,10 @@ public abstract class AbstractImportNode extends StatementNode {
         PMethod builtinImport = (PMethod) ctx.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return callNode.execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
-                        new PKeyword(GLOBALS, getDictNode.execute(globals)),
-                        new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
-                                                          // can always be None
-                        new PKeyword("fromlist", factory.createTuple(fromList)),
-                        new PKeyword("level", level)
-        });
+        // the locals argument is ignored so it can always be None
+        return callNode.execute(frame, builtinImport, new Object[]{name,
+                getDictNode.execute(globals), PNone.NONE, factory.createTuple(fromList), level},
+                PKeyword.EMPTY_KEYWORDS);
     }
 
     protected boolean emulateJython() {
