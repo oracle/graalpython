@@ -47,7 +47,6 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.range.RangeNodesFactory.LenOfRangeNodeFactory;
-import com.oracle.graal.python.builtins.objects.slice.PObjectSlice.SliceObjectInfo;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -94,52 +93,55 @@ public abstract class RangeNodes {
 
     }
 
+    /**
+     * Attempts to produce result of the same type as the arguments, otherwise throws
+     * {@link ArithmeticException}. It is responsibility of the caller to widen the arguments' types
+     * if necessary.
+     */
     @GenerateNodeFactory
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class LenOfRangeNode extends Node {
         public abstract Object execute(Object start, Object stop, Object step);
 
-        public int len(Object start, Object stop, Object step) throws ArithmeticException {
-            return (int) execute(start, stop, step);
+        public abstract int executeInt(int start, int stop, int step);
+
+        public int len(int start, int stop, int step) throws ArithmeticException {
+            return executeInt(start, stop, step);
         }
 
         public int len(SliceInfo slice) throws ArithmeticException {
-            return (int) execute(slice.start, slice.stop, slice.step);
-        }
-
-        public Object len(SliceObjectInfo slice) throws ArithmeticException {
-            return execute(slice.start, slice.stop, slice.step);
+            return executeInt(slice.start, slice.stop, slice.step);
         }
 
         @Specialization(guards = {"step > 0", "lo > 0", "lo < hi"})
-        Object simple(int lo, int hi, int step) {
+        int simple(int lo, int hi, int step) {
             return 1 + ((hi - 1 - lo) / step);
         }
 
         @Specialization(guards = {"step > 0", "lo >= hi"})
-        Object zero1(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
+        int zero1(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
             return 0;
         }
 
         @Specialization(guards = {"step > 0", "lo < hi"})
-        Object mightBeBig1(int lo, int hi, int step) throws ArithmeticException {
+        int mightBeBig1(int lo, int hi, int step) throws ArithmeticException {
             long diff = Math.subtractExact(Math.subtractExact(hi, (long) lo), 1);
             return Math.toIntExact(Math.addExact(diff / step, 1));
         }
 
         @Specialization(guards = {"step < 0", "lo < 0", "lo > hi"})
-        Object simpleNegative(int lo, int hi, int step) {
+        int simpleNegative(int lo, int hi, int step) {
             return 1 + ((lo - 1 - hi) / -step);
         }
 
         @Specialization(guards = {"step < 0", "lo <= hi"})
-        Object zero2(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
+        int zero2(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
             return 0;
         }
 
         @Specialization(guards = {"step < 0", "lo > hi"})
-        Object mightBeBig2(int lo, int hi, int step) throws ArithmeticException {
+        int mightBeBig2(int lo, int hi, int step) throws ArithmeticException {
             long diff = Math.subtractExact(Math.subtractExact(lo, (long) hi), 1);
             return Math.toIntExact(Math.addExact(diff / -(long) step, 1));
         }
