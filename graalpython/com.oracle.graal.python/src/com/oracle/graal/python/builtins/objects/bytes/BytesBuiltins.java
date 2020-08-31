@@ -94,8 +94,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2053,5 +2055,28 @@ public class BytesBuiltins extends PythonBuiltins {
             return CastToByteNode.INVALID_BYTE_VALUE;
         }
 
+    }
+
+    // bytes.fromhex()
+    @Builtin(name = "fromhex", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class FromHexNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PBytes doString(Object cls, String str,
+                        @Cached PRaiseNode raiseNode) {
+            return factory().createBytes(cls, BytesUtils.fromHex(str, raiseNode));
+        }
+
+        @Specialization
+        PBytes doGeneric(Object cls, Object strObj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            try {
+                String str = castToJavaStringNode.execute(strObj);
+                return factory().createBytes(cls, BytesUtils.fromHex(str, getRaiseNode()));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
+            }
+        }
     }
 }
