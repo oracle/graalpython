@@ -19,6 +19,7 @@
 *graalpython.lib-python.3.test.test_runpy.RunModuleTestCase.test_submodule_imported_warning
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_basic_script
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_basic_script_no_suffix
+*graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_basic_script_with_path_object
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_directory
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_directory_compiled
 *graalpython.lib-python.3.test.test_runpy.RunPathTestCase.test_directory_error

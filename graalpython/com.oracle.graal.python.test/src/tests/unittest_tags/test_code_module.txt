@@ -1,0 +1,2 @@
+*graalpython.lib-python.3.test.test_code_module.TestInteractiveConsole.test_banner
+*graalpython.lib-python.3.test.test_code_module.TestInteractiveConsole.test_exit_msg

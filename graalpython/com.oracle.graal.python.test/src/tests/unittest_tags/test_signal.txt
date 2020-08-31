@@ -13,6 +13,7 @@
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwait
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwait_thread
 *graalpython.lib-python.3.test.test_signal.PendingSignalsTests.test_sigwaitinfo
+*graalpython.lib-python.3.test.test_signal.PosixTests.test_getsignal
 *graalpython.lib-python.3.test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error
 *graalpython.lib-python.3.test.test_signal.RaiseSignalTest.test_invalid_argument
 *graalpython.lib-python.3.test.test_signal.WakeupSignalTests.test_pending

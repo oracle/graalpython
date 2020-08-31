@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_iter.TestCase.test_exception_function
 *graalpython.lib-python.3.test.test_iter.TestCase.test_exception_sequence
 *graalpython.lib-python.3.test.test_iter.TestCase.test_extending_list_with_iterator_does_not_segfault
+*graalpython.lib-python.3.test.test_iter.TestCase.test_free_after_iterating
 *graalpython.lib-python.3.test.test_iter.TestCase.test_in_and_not_in
 *graalpython.lib-python.3.test.test_iter.TestCase.test_indexOf
 *graalpython.lib-python.3.test.test_iter.TestCase.test_iter_basic
@@ -51,3 +52,4 @@
 *graalpython.lib-python.3.test.test_iter.TestCase.test_unicode_join_endcase
 *graalpython.lib-python.3.test.test_iter.TestCase.test_unpack_iter
 *graalpython.lib-python.3.test.test_iter.TestCase.test_writelines
+*graalpython.lib-python.3.test.test_iter.TestMain.test_main

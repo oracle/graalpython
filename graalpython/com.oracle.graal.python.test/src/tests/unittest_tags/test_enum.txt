@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_auto_name
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_auto_name_inherit
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_auto_number
+*graalpython.lib-python.3.test.test_enum.TestEnum.test_auto_order
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_bool
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_bool_of_class
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_bool_of_member

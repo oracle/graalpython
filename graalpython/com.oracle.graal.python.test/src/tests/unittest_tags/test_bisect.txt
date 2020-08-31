@@ -15,3 +15,4 @@
 *graalpython.lib-python.3.test.test_bisect.TestErrorHandlingPython.test_non_sequence
 *graalpython.lib-python.3.test.test_bisect.TestInsortPython.test_backcompatibility
 *graalpython.lib-python.3.test.test_bisect.TestInsortPython.test_listDerived
+*graalpython.lib-python.3.test.test_bisect.TestInsortPython.test_vsBuiltinSort

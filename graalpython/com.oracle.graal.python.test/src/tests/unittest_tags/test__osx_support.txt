@@ -1,10 +1,12 @@
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__check_for_unavailable_sdk
+*graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__check_for_unavailable_sdk_alternate
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__find_build_tool
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__find_executable
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__get_system_version
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__override_all_archs
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__remove_original_values
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__remove_universal_flags
+*graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__remove_universal_flags_alternate
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__remove_unsupported_archs
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__save_modified_value
 *graalpython.lib-python.3.test.test__osx_support.Test_OSXSupport.test__save_modified_value_unchanged

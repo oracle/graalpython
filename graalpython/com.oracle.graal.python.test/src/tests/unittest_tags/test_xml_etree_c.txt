@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_xml_etree_c.MiscTests.test_parser_ref_cycle
 *graalpython.lib-python.3.test.test_xml_etree_c.MiscTests.test_setstate_leaks
 *graalpython.lib-python.3.test.test_xml_etree_c.MiscTests.test_trashcan
+*graalpython.lib-python.3.test.test_xml_etree_c.MiscTests.test_uninitialized_parser
 *graalpython.lib-python.3.test.test_xml_etree_c.MiscTests.test_xmlpullparser_leaks
 *graalpython.lib-python.3.test.test_xml_etree_c.SizeofTest.test_element
 *graalpython.lib-python.3.test.test_xml_etree_c.SizeofTest.test_element_with_attrib

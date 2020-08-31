@@ -28,6 +28,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_null_tarfile
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_parallel_iteration
 *graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_pathlike_name
+*graalpython.lib-python.3.test.test_tarfile.Bz2MiscReadTest.test_v7_dirtype
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_iter
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_link1
 *graalpython.lib-python.3.test.test_tarfile.Bz2UstarReadTest.test_fileobj_link2

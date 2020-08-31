@@ -73,9 +73,11 @@
 *graalpython.lib-python.3.test.test_statistics.TestApproxEqualErrors.test_bad_rel
 *graalpython.lib-python.3.test.test_statistics.TestApproxEqualErrors.test_bad_tol
 *graalpython.lib-python.3.test.test_statistics.TestFMean.test_basics
+*graalpython.lib-python.3.test.test_statistics.TestFMean.test_error_cases
 *graalpython.lib-python.3.test.test_statistics.TestFMean.test_special_values
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_basics
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_big_and_small
+*graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_error_cases
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_special_values
 *graalpython.lib-python.3.test.test_statistics.TestGeometricMean.test_various_input_types
 *graalpython.lib-python.3.test.test_statistics.TestHarmonicMean.test_bad_arg_types
@@ -246,6 +248,7 @@
 *graalpython.lib-python.3.test.test_statistics.TestNumericTestCase.test_error_msg_sequence
 *graalpython.lib-python.3.test.test_statistics.TestNumericTestCase.test_numerictestcase_is_testcase
 *graalpython.lib-python.3.test.test_statistics.TestPStdev.test_bad_arg_types
+*graalpython.lib-python.3.test.test_statistics.TestPStdev.test_center_not_at_mean
 *graalpython.lib-python.3.test.test_statistics.TestPStdev.test_compare_to_variance
 *graalpython.lib-python.3.test.test_statistics.TestPStdev.test_domain_error_regression
 *graalpython.lib-python.3.test.test_statistics.TestPStdev.test_empty_data
@@ -283,6 +286,7 @@
 *graalpython.lib-python.3.test.test_statistics.TestQuantiles.test_specific_cases_inclusive
 *graalpython.lib-python.3.test.test_statistics.TestSign.testZeroes
 *graalpython.lib-python.3.test.test_statistics.TestStdev.test_bad_arg_types
+*graalpython.lib-python.3.test.test_statistics.TestStdev.test_center_not_at_mean
 *graalpython.lib-python.3.test.test_statistics.TestStdev.test_compare_to_variance
 *graalpython.lib-python.3.test.test_statistics.TestStdev.test_domain_error_regression
 *graalpython.lib-python.3.test.test_statistics.TestStdev.test_empty_data
@@ -306,6 +310,7 @@
 *graalpython.lib-python.3.test.test_statistics.TestSum.test_start_argument
 *graalpython.lib-python.3.test.test_statistics.TestSum.test_strings_fail
 *graalpython.lib-python.3.test.test_statistics.TestVariance.test_bad_arg_types
+*graalpython.lib-python.3.test.test_statistics.TestVariance.test_center_not_at_mean
 *graalpython.lib-python.3.test.test_statistics.TestVariance.test_decimals
 *graalpython.lib-python.3.test.test_statistics.TestVariance.test_domain_error_regression
 *graalpython.lib-python.3.test.test_statistics.TestVariance.test_empty_data

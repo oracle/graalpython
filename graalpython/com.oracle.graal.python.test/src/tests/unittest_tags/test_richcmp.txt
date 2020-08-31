@@ -7,3 +7,4 @@
 *graalpython.lib-python.3.test.test_richcmp.MiscTest.test_not
 *graalpython.lib-python.3.test.test_richcmp.NumberTest.test_basic
 *graalpython.lib-python.3.test.test_richcmp.NumberTest.test_values
+*graalpython.lib-python.3.test.test_richcmp.VectorTest.test_mixed

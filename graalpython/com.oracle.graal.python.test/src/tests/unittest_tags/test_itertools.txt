@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_itertools.SizeofTest.test_product_sizeof
 *graalpython.lib-python.3.test.test_itertools.SubclassWithKwargsTest.test_keywords_in_subclass
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_bug_7244
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_overflow
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_tuple_reuse
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_combinations_with_replacement_overflow

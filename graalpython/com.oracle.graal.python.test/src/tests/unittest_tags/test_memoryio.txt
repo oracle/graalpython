@@ -29,6 +29,7 @@
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_truncate
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_unicode
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_write
+*graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_writelines
 *graalpython.lib-python.3.test.test_memoryio.CBytesIOTest.test_writelines_error
 *graalpython.lib-python.3.test.test_memoryio.CStringIOPickleTest.test_issue5265
 *graalpython.lib-python.3.test.test_memoryio.CStringIOPickleTest.test_newline_argument
@@ -103,6 +104,7 @@
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_truncate
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_unicode
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_write
+*graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_writelines
 *graalpython.lib-python.3.test.test_memoryio.PyBytesIOTest.test_writelines_error
 *graalpython.lib-python.3.test.test_memoryio.PyStringIOPickleTest.test_issue5265
 *graalpython.lib-python.3.test.test_memoryio.PyStringIOPickleTest.test_newline_argument
