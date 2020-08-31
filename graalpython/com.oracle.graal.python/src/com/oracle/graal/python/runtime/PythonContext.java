@@ -185,9 +185,6 @@ public final class PythonContext {
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
-    // warnings module flag
-    private final AtomicLong warningsFiltersVersion = new AtomicLong(0);
-
     @CompilationFinal private TruffleLanguage.Env env;
 
     /* this will be the single thread state if running single-threaded */
@@ -1022,13 +1019,5 @@ public final class PythonContext {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
-    }
-
-    public long getWarningsFiltersVersion() {
-        return warningsFiltersVersion.get();
-    }
-
-    public long increaseWarningsFiltersVersion() {
-        return warningsFiltersVersion.getAndIncrement();
     }
 }
