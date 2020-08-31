@@ -2338,34 +2338,48 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
-        @Specialization(guards = {"exact", "targetTypeSize == 4"})
-        static int doPIntToInt32(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed != 0"})
+        static int doPIntToInt32Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
                         @Exclusive @Cached BranchProfile errorProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (signed != 0) {
-                try {
-                    return obj.intValueExact();
-                } catch (ArithmeticException e) {
-                    // fall through
-                }
-            } else if (!exact || obj.bitCount() <= 32) {
+            try {
+                return obj.intValueExact();
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 4", "signed == 0"})
+        static int doPIntToInt32NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (!exact || obj.bitCount() <= 32) {
                 return obj.intValue();
             }
             errorProfile.enter();
             throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
         }
 
-        @Specialization(guards = {"exact", "targetTypeSize == 8"})
-        static long doPIntToInt64(PInt obj, int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed != 0"})
+        static long doPIntToInt64Signed(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") boolean exact,
                         @Exclusive @Cached BranchProfile errorProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            if (signed != 0) {
-                try {
-                    return obj.longValueExact();
-                } catch (ArithmeticException e) {
-                    // fall through
-                }
-            } else if (!exact || obj.bitCount() <= 64) {
+            try {
+                return obj.longValueExact();
+            } catch (ArithmeticException e) {
+                // fall through
+            }
+            errorProfile.enter();
+            throw raiseNode.raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, targetTypeSize);
+        }
+
+        @Specialization(guards = {"exact", "targetTypeSize == 8", "signed == 0"})
+        static long doPIntToInt64NotSigned(PInt obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, boolean exact,
+                        @Exclusive @Cached BranchProfile errorProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (!exact || obj.bitCount() <= 64) {
                 return obj.longValue();
             }
             errorProfile.enter();
@@ -2391,7 +2405,8 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.UNSUPPORTED_TARGET_SIZE, targetTypeSize);
         }
 
-        @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32", "doPIntToInt64"})
+        @Specialization(replaces = {"doIntToInt32", "doIntToInt64", "doIntToOther", "doLongToInt32", "doLongToInt64", "doVoidPtrToI64", "doPIntToInt32Signed", "doPIntToInt32NotSigned",
+                        "doPIntToInt64Signed", "doPIntToInt64NotSigned"})
         static Object doGeneric(Object obj, @SuppressWarnings("unused") int signed, int targetTypeSize, boolean exact,
                         @Cached LookupAndCallUnaryDynamicNode callIndexNode,
                         @Cached LookupAndCallUnaryDynamicNode callIntNode,
