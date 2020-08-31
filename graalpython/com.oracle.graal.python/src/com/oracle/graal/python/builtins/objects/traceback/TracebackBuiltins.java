@@ -142,7 +142,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     nextElement = element;
                 }
             }
-            if (tb.getFrame() != null || tb.getFrameInfo() != null) {
+            if (tb.getLazyTraceback().catchingFrameWantedForTraceback()) {
                 // We already have a pFrame as tb_frame, so what we compute here is the tb_next
                 // chain.
                 if (nextElement != null) {
@@ -193,7 +193,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         // case 1: not on stack: there is already a PFrame (so the frame of this frame info is
         // no
         // longer on the stack) and the frame has already been materialized
-        @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "isMaterialized(tb.getFrameInfo())"})
+        @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
         PFrame doMaterializedFrame(PTraceback tb) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
@@ -206,7 +206,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         // case 2: on stack: the PFrame is not yet available so the frame must still be on the
         // stack
-        @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "!isMaterialized(tb.getFrameInfo())"})
+        @Specialization(guards = {"!hasPFrame(tb)", "hasFrameInfo(tb)", "!isMaterialized(tb.getFrameInfo())", "hasVisibleFrame(tb)"})
         PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
@@ -241,7 +241,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         // case 3: there is no PFrame[Ref], we need to take the top frame from the Truffle
         // stacktrace instead
-        @Specialization(guards = {"!hasPFrame(tb)", "!hasFrameInfo(tb)"})
+        @Specialization(guards = "!hasVisibleFrame(tb)")
         PFrame doFromTruffle(PTraceback tb,
                         @Cached MaterializeTruffleStacktraceNode materializeTruffleStacktraceNode) {
             materializeTruffleStacktraceNode.execute(tb);
@@ -254,6 +254,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
 
         protected static boolean hasFrameInfo(PTraceback tb) {
             return tb.getFrameInfo() != null;
+        }
+
+        protected static boolean hasVisibleFrame(PTraceback tb) {
+            return tb.getLazyTraceback() == null || tb.getLazyTraceback().catchingFrameWantedForTraceback();
         }
 
         protected static boolean isMaterialized(PFrame.Reference frameInfo) {

@@ -111,7 +111,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                 _y = next.execute(frame, _i);
             } catch (PException e) {
                 e.expectStopIteration(stopIterProfile1);
-                return getGetValue().executeObject(frame, e.setCatchingFrameAndGetEscapedException(frame));
+                return getGetValue().executeObject(frame, e.setCatchingFrameAndGetEscapedException(frame, this));
             }
             access.setIterator(frame, iteratorSlot, _i);
         }
@@ -147,7 +147,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                             close = getGetCloseNode().executeObject(frame, _i);
                         } catch (PException pe) {
                             if (!hasNoCloseProfile.profileException(pe, PythonBuiltinClassType.AttributeError)) {
-                                ensureWriteUnraisable().execute(frame, pe.setCatchingFrameAndGetEscapedException(frame), null, _i);
+                                ensureWriteUnraisable().execute(frame, pe.setCatchingFrameAndGetEscapedException(frame, this), null, _i);
                             }
                         }
                         if (close != null) {
@@ -176,7 +176,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         throw _e;
                     }
                     try {
-                        PBaseException pythonException = ((PException) _s).setCatchingFrameAndGetEscapedException(frame);
+                        PBaseException pythonException = ((PException) _s).setCatchingFrameAndGetEscapedException(frame, this);
                         Object excType = getExceptionClassNode().execute(pythonException);
                         Object excTraceback = ensureGetTracebackNode().execute(((PException) _s).getTraceback());
                         if (excTraceback == null) {
@@ -186,7 +186,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     } catch (PException _e2) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e2.expectStopIteration(stopIterProfile2);
-                        return getGetValue().executeObject(frame, _e2.setCatchingFrameAndGetEscapedException(frame));
+                        return getGetValue().executeObject(frame, _e2.setCatchingFrameAndGetEscapedException(frame, this));
                     }
                 } else {
                     // else:
@@ -210,7 +210,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     } catch (PException _e) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e.expectStopIteration(stopIterProfile3);
-                        return getGetValue().executeObject(frame, _e.setCatchingFrameAndGetEscapedException(frame));
+                        return getGetValue().executeObject(frame, _e.setCatchingFrameAndGetEscapedException(frame, this));
                     }
                 }
             }

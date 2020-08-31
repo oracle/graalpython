@@ -100,7 +100,7 @@ import com.oracle.truffle.api.nodes.Node;
  * <ul>
  * <li>When you catch a {@link PException PException} and need to obtain its corresponding
  * {@link com.oracle.graal.python.builtins.objects.exception.PBaseException PBaseException}, use the
- * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame)} method, unless you're
+ * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame, Node)} method, unless you're
  * just doing a simple class check. Try to avoid the {@link PException#getExceptionObject()
  * getExceptionObject} method unless you know what you're doing.</li>
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
@@ -155,7 +155,7 @@ public abstract class GetTracebackNode extends Node {
                 return createTraceback(tb, factory);
             }
         }
-        if (hasFrame(tb) && !skipFirst) {
+        if (tb.catchingFrameWantedForTraceback() && !skipFirst) {
             return createTraceback(tb, factory);
         }
         PTraceback newTraceback = null;
@@ -167,11 +167,7 @@ public abstract class GetTracebackNode extends Node {
     }
 
     protected static boolean mayBeEmpty(LazyTraceback tb) {
-        return !hasFrame(tb) || tb.getException().shouldHideLocation();
-    }
-
-    private static boolean hasFrame(LazyTraceback tb) {
-        return tb.getFrame() != null || tb.getFrameInfo() != null;
+        return !tb.catchingFrameWantedForTraceback() || tb.getException().shouldHideLocation();
     }
 
     public static GetTracebackNode create() {

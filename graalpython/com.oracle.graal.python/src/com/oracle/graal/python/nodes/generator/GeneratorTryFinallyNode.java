@@ -86,7 +86,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 // any thrown Python exception is visible in the finally block
                 hasPExceptionProfile.enter();
                 activePException = e;
-                e.setCatchingFrameReference(frame);
+                e.setCatchingFrameReference(frame, this);
                 e.markFrameEscaped();
                 tryChainPreexistingException(frame, e);
                 gen.setActiveException(frame, activeExceptionIndex, e);
@@ -104,7 +104,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
                 }
                 hasPExceptionProfile.enter();
                 activePException = pe;
-                pe.setCatchingFrameReference(frame);
+                pe.setCatchingFrameReference(frame, this);
                 pe.markFrameEscaped();
                 tryChainPreexistingException(frame, pe);
                 gen.setActiveException(frame, activeExceptionIndex, pe);

@@ -168,7 +168,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
      * Call __exit__ to handle the exception
      */
     protected void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException pException) {
-        PBaseException caughtException = pException.setCatchingFrameAndGetEscapedException(frame);
+        PBaseException caughtException = pException.setCatchingFrameAndGetEscapedException(frame, this);
         tryChainPreexistingException(frame, caughtException);
         ExceptionState savedExceptionState = saveExceptionState(frame);
         SetCaughtExceptionNode.execute(frame, pException);

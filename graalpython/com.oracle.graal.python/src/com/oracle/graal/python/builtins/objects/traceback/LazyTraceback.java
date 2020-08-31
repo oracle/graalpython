@@ -117,8 +117,15 @@ public class LazyTraceback {
 
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
         Frame frame = element.getFrame();
-        Node location = element.getLocation();
         // only include frames of non-builtin python functions
-        return PArguments.isPythonFrame(frame) && location != null && location.getRootNode() != null && !location.getRootNode().isInternal();
+        return PArguments.isPythonFrame(frame) && locationWantedForTraceback(element.getLocation());
+    }
+
+    public boolean catchingFrameWantedForTraceback() {
+        return (frame != null || frameInfo != null) && locationWantedForTraceback(exception.getCatchLocation());
+    }
+
+    private static boolean locationWantedForTraceback(Node location) {
+        return location != null && location.getRootNode() != null && !location.getRootNode().isInternal();
     }
 }
