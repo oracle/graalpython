@@ -118,14 +118,21 @@ final class DefaultPythonIntegerExports {
             return receiver == other;
         }
 
-        @Specialization
+        @Specialization(rewriteOn = ArithmeticException.class)
         static boolean iP(Integer receiver, PInt other,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                try {
+                return receiver == other.intValueExact();
+            }
+            return false;
+        }
+
+        @Specialization(replaces = "iP")
+        static boolean iPOverflow(Integer receiver, PInt other,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                if (other.fitsInInt()) {
                     return receiver == other.intValueExact();
-                } catch (ArithmeticException e) {
-                    // pass
                 }
             }
             return false;
