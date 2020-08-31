@@ -133,10 +133,14 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] b64decode(byte[] data) {
             try {
-                return Base64.decode(new String(data, "ascii"));
+                byte[] asciis = Base64.decode(new String(data, "ascii"));
+                if (asciis != null) {
+                    return asciis;
+                }
             } catch (UnsupportedEncodingException e) {
-                throw raise(ValueError);
+                // fall through
             }
+            throw raise(ValueError);
         }
     }
 
