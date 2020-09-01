@@ -1018,6 +1018,8 @@ def main(prog, args):
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
     rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats, cpy_stats=cpy_stats)
 
+    log("[INFO] totals: {!r}", totals)
+
     missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError',
                                      msg_processor=get_missing_module)
     log("[MISSING MODULES] \n{}", pformat(dict(missing_modules)))
@@ -1060,7 +1062,7 @@ def main(prog, args):
             Col.NUM_SKIPPED: int(rows[-1][4]),
             Col.NUM_PASSES: int(rows[-1][5]),
         }
-        print(prev_totals)
+        log("[INFO] previous totals (from {}): {!r}", last_csv, prev_totals)
         if float(totals[Col.NUM_TESTS]) < float(prev_totals[Col.NUM_TESTS]) * (1.0 - flags.regression_running_tests):
             log("[REGRESSION] REGRESSION DETECTED, passed {} tests vs {} from {}".format(
                 totals[Col.NUM_TESTS], prev_totals[Col.NUM_TESTS], last_csv))
