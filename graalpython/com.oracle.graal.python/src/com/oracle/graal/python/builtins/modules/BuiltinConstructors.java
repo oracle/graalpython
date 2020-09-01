@@ -106,8 +106,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ConvertToByteObjectBytesNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -189,7 +188,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -203,7 +201,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -213,7 +210,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -253,94 +249,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
-        @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
-
-        @SuppressWarnings("unused")
-        protected Object create(Object cls, byte[] barr) {
-            throw new IllegalStateException("should not reach");
-        }
-
-        @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(Object cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return create(cls, new byte[0]);
-        }
-
-        @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(VirtualFrame frame, Object cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "5") PythonObjectLibrary lib) {
-            int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
-            return create(cls, BytesUtils.fromSize(getCore(), cap));
-        }
-
-        @Specialization(guards = "isNoValue(errors)")
-        public Object fromString(Object cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return create(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
-        }
-
-        @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
-        @SuppressWarnings("unused")
-        public Object fromString(Object cls, String source, PNone encoding, PNone errors) {
-            throw raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
-        }
-
-        protected boolean isSimpleBytes(PBytes iterable) {
-            return isClassProfile.profileObject(iterable, PythonBuiltinClassType.PBytes) && iterable.getSequenceStorage() instanceof ByteSequenceStorage;
-        }
-
-        @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(Object cls, PBytes iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
-        }
-
-        protected boolean isSimpleBytes(PByteArray iterable) {
-            return isClassProfile.profileObject(iterable, PythonBuiltinClassType.PByteArray) && iterable.getSequenceStorage() instanceof ByteSequenceStorage;
-        }
-
-        @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(Object cls, PByteArray iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return create(cls, (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject());
-        }
-
-        @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public Object bytearray(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
-                        @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-
-            Object it = getIteratorNode.executeWith(frame, iterable);
-            byte[] arr = new byte[16];
-            int i = 0;
-            while (true) {
-                try {
-                    byte item = castToByteNode.execute(frame, getNextNode.execute(frame, it));
-                    if (i >= arr.length) {
-                        arr = resize(arr, arr.length * 2);
-                    }
-                    arr[i++] = item;
-                } catch (PException e) {
-                    e.expectStopIteration(stopIterationProfile);
-                    return create(cls, resize(arr, i));
-                }
-            }
-        }
-
-        @TruffleBoundary(transferToInterpreterOnException = false)
-        private static byte[] resize(byte[] arr, int len) {
-            return Arrays.copyOf(arr, len);
-        }
-    }
-
     // bytes([source[, encoding[, errors]]])
     @Builtin(name = BYTES, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PBytes)
     @GenerateNodeFactory
-    public abstract static class BytesNode extends CreateByteOrByteArrayNode {
-        @Override
-        protected final Object create(Object cls, byte[] barr) {
-            return factory().createBytes(cls, barr);
+    public abstract static class BytesNode extends PythonBuiltinNode {
+        @Specialization
+        public Object createBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Cached ConvertToByteObjectBytesNode toBytesNode) {
+            return factory().createBytes(cls, toBytesNode.execute(frame, source, encoding, errors));
         }
     }
 
@@ -348,10 +264,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = BYTEARRAY, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PByteArray)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
-        @Override
-        protected final Object create(Object cls, byte[] barr) {
-            return factory().createByteArray(cls, barr);
+    public abstract static class ByteArrayNode extends PythonBuiltinNode {
+        @Specialization
+        public Object createByteArray(Object cls, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            // data filled in subsequent __init__ call - see BytesBuiltins.InitNode
+            return factory().createByteArray(cls, new byte[0]);
         }
     }
 

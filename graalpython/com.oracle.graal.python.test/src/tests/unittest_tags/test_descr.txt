@@ -31,6 +31,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_init
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_ipow
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_isinst_isclass
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_keyword_arguments
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_keywords
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_meth_class_get
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_method_wrapper
@@ -99,4 +100,5 @@
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_spam_lists
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_wrap_lenfunc_bad_cast
 *graalpython.lib-python.3.test.test_descr.PTypesLongInitTest.test_pytype_long_ready
+*graalpython.lib-python.3.test.test_descr.PicklingTests.test_pickle_slots
 *graalpython.lib-python.3.test.test_descr.SharedKeyTests.test_subclasses

@@ -686,7 +686,26 @@ def test_add_mv_to_bytearray():
     mv = memoryview(b'world')
     ba += mv
     assert ba == b'hello world'
-
+    
+def test_bytearray_init():
+    ba = bytearray(b'abc')
+    assert_raises(TypeError, bytearray.__init__, ba, encoding='latin1')
+    assert_raises(TypeError, bytearray.__init__, ba, errors='replace', encoding='latin1')
+    assert_raises(TypeError, bytearray.__init__, ba, errors='replace')
+    
+    bytearray.__init__(ba, b'xxx')
+    assert ba == bytearray(b'xxx')
+    bytearray.__init__(ba, 'zzz', encoding='latin1')
+    assert ba == bytearray(b'zzz')
+    bytearray.__init__(ba, 1)
+    assert ba == bytearray(b'\x00')
+    
+def test_bytes_init():
+    ba = bytes(b'abc')
+    
+    bytes.__init__(ba, b'zzz')
+    assert ba == bytes(b'abc')
+    
 class BaseLikeBytes:
 
     def test_maketrans(self):
