@@ -246,9 +246,10 @@ public final class BytesUtils {
         // ('\U00xxxxxx')
         byte[] bytes = new byte[str.length() * 10];
         int j = 0;
-        for (int i = 0; i < str.length(); i++) {
+        for (int i = 0; i < str.length();) {
             int ch = str.codePointAt(i);
             j = unicodeEscape(ch, j, bytes);
+            i += Character.charCount(ch);
         }
         bytes = Arrays.copyOf(bytes, j);
         return bytes;
@@ -258,9 +259,10 @@ public final class BytesUtils {
     public static byte[] unicodeNonAsciiEscape(String str) {
         byte[] bytes = new byte[str.length() * 10];
         int j = 0;
-        for (int i = 0; i < str.length(); i++) {
+        for (int i = 0; i < str.length();) {
             int ch = str.codePointAt(i);
             j = unicodeNonAsciiEscape(ch, j, bytes);
+            i += Character.charCount(ch);
         }
         bytes = Arrays.copyOf(bytes, j);
         return bytes;
