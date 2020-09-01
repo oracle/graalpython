@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -271,7 +272,8 @@ public abstract class StringNodes {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createBinaryProfile()") ConditionProfile isEmptyProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode,
+                        @Cached PRaiseNode raise) {
 
             SequenceStorage storage = getSequenceStorageNode.execute(sequence);
             int len = lenNode.execute(storage);
@@ -284,16 +286,20 @@ public abstract class StringNodes {
             StringBuilder sb = new StringBuilder();
             int i = 0;
 
-            // manually peel first iteration
-            Object item = getItemNode.execute(frame, storage, i);
-            append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
-
-            for (i = 1; i < len; i++) {
-                append(sb, self);
-                item = getItemNode.execute(frame, storage, i);
+            try {
+                // manually peel first iteration
+                Object item = getItemNode.execute(frame, storage, i);
                 append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+
+                for (i = 1; i < len; i++) {
+                    append(sb, self);
+                    item = getItemNode.execute(frame, storage, i);
+                    append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                }
+                return toString(sb);
+            } catch (OutOfMemoryError e) {
+                throw raise.raise(MemoryError);
             }
-            return toString(sb);
         }
 
         @Specialization
@@ -331,6 +337,8 @@ public abstract class StringNodes {
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
+            } catch (OutOfMemoryError e) {
+                throw raise.raise(MemoryError);
             }
         }
 

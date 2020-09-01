@@ -42,3 +42,9 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue28598_strsubclass_rhs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isupper
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_iterators
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_literals
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_ljust
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_mul
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_none_arguments
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printing
