@@ -307,7 +307,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetWakeupFdNode extends PythonBuiltinNode {
         @Specialization
-        int doGeneric(Object fd, Object warnOnFullBuffer) {
+        @SuppressWarnings("unused")
+        static int doGeneric(Object fd, Object warnOnFullBuffer) {
             // TODO: implement
             return -1;
         }
@@ -324,8 +325,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1", replaces = "doInt")
         static PNone doGeneric(VirtualFrame frame, Object signumObj,
-                               @CachedLibrary("signumObj") PythonObjectLibrary signumLib,
-                               @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
+                        @CachedLibrary("signumObj") PythonObjectLibrary signumLib,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
 
             int signum;
             try {

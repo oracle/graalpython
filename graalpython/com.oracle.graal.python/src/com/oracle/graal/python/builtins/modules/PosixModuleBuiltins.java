@@ -83,9 +83,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
-import com.oracle.graal.python.nodes.util.CannotCastException;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -116,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -127,6 +125,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -2071,7 +2070,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
         @Specialization
         PNone doPrimitive(VirtualFrame frame, int fd, boolean blocking,
-                          @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
             try {
                 PSocket socket = getContext().getResources().getSocket(fd);
                 if (socket != null) {
@@ -2084,7 +2083,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     return PNone.NONE;
                 }
 
-                // if we reach this point, it's an invalid FD (either it does not exist or is not selectable)
+                // if we reach this point, it's an invalid FD (either it does not exist or is not
+                // selectable)
                 throw raiseOSError(frame, OSErrorEnum.EBADFD);
             } catch (Exception e) {
                 throw raiseOSError(frame, e);
@@ -2121,7 +2121,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean doPrimitive(VirtualFrame frame, int fd,
-                            @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
             PSocket socket = getContext().getResources().getSocket(fd);
             if (socket != null) {
                 return SocketBuiltins.GetBlockingNode.get(socket);
@@ -2131,7 +2131,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 return getBlocking((SelectableChannel) fileChannel);
             }
 
-            // if we reach this point, it's an invalid FD (either it does not exist or is not selectable)
+            // if we reach this point, it's an invalid FD (either it does not exist or is not
+            // selectable)
             throw raiseOSError(frame, OSErrorEnum.EBADFD);
         }
 

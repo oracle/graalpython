@@ -496,7 +496,8 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raise(OSError);
             }
 
-            // According to 'socketmodule.c', function 'socket_send' tries to select the socket before it writes to it
+            // According to 'socketmodule.c', function 'socket_send' tries to select the socket
+            // before it writes to it
             // regardless whether it is blocking or not.
             try {
                 if (SendNode.select(socket.getSocket()) == 0) {
