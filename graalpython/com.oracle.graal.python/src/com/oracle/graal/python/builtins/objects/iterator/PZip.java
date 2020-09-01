@@ -55,4 +55,9 @@ public final class PZip extends PythonBuiltinObject {
     public boolean isIterable() {
         return true;
     }
+
+    @ExportMessage
+    public Object getIterator() {
+        return this;
+    }
 }

@@ -32,14 +32,20 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.IsIteratorObjectNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -47,6 +53,11 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ValueProfile;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
@@ -181,6 +192,32 @@ public class PythonObject extends PythonAbstractObject {
     public final void setDict(PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         dylib.put(this, DICT, dict);
+    }
+
+    @ExportMessage(limit = "1")
+    public Object getIteratorWithState(ThreadState state,
+                    @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Cached IsIteratorObjectNode isIteratorObjectNode,
+                    @Cached PythonObjectFactory factory,
+                    @Cached PRaiseNode raiseNode) {
+        Object v = plib.getDelegatedValue(this);
+        Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(this, __ITER__));
+        if (iterMethod != PNone.NONE) {
+            if (iterMethod != PNone.NO_VALUE) {
+                Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                    return iterObj;
+                }
+            } else {
+                Object getItemAttrObj = plib.lookupAttributeOnType(this, __GETITEM__);
+                if (getItemAttrObj != PNone.NO_VALUE) {
+                    return factory.createSequenceIterator(v);
+                }
+            }
+        }
+        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 
     private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();

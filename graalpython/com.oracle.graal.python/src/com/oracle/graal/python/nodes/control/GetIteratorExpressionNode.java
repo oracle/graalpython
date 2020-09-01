@@ -193,7 +193,7 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class IsIteratorObjectNode extends Node {
+    public abstract static class IsIteratorObjectNode extends Node {
 
         public abstract boolean execute(Object o);
 

@@ -1132,6 +1132,34 @@ public abstract class PythonObjectLibrary extends Library {
         return false;
     }
 
+    /**
+     * Implements the logic from {@code PyObject_GetIter}.
+     */
+    public Object getIteratorWithState(Object receiver, ThreadState state) {
+        if (state == null) {
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_ITERABLE, receiver);
+        }
+        return getIterator(receiver);
+    }
+
+    /**
+     * @see #getIteratorWithState
+     */
+    public Object getIterator(Object receiver) {
+        return getIteratorWithState(receiver, null);
+    }
+
+    /**
+     * @see #getIteratorWithState
+     */
+    public Object getIteratorWithFrame(Object receiver, VirtualFrame frame) {
+        if (profileHasFrame(frame)) {
+            return getIteratorWithState(receiver, PArguments.getThreadState(frame));
+        } else {
+            return getIterator(receiver);
+        }
+    }
+
     public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
         PythonContext context = contextRef.get();
         Object state = IndirectCallContext.enter(frame, context, callNode);
