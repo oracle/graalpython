@@ -259,9 +259,9 @@ class JythonVm(AbstractPythonIterationsControlVm):
     def interpreter(self):
         try:
             return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
-        except OSError:
-            mx.abort("{} is not set!".format(ENV_JYTHON_HOME))
-        return join(home, 'bin', JythonVm.JYTHON_INTERPRETER)
+        except OSError as e:
+            mx.log_error(e)
+            mx.abort("Error when executing `which jython`!\n")
 
     def name(self):
         return VM_NAME_JYTHON
@@ -485,7 +485,7 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
             if not arg.startswith("-"):
                 remaining = run_args[i:]
                 break
-            elif arg.startswith("-i"):
+            if arg.startswith("-i"):
                 if len(run_args) >= i and run_args[i + 1] == "-1":
                     pass
                 else:
