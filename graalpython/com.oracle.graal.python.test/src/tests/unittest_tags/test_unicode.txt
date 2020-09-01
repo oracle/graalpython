@@ -57,6 +57,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_rindex
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_rjust
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_slice
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_splitlines
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_startswith
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_startswith_endswith_errors
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_strip

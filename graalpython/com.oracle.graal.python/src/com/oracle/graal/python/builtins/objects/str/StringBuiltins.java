@@ -60,6 +60,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -1215,6 +1217,8 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
         @Child private AppendNode appendNode = AppendNode.create();
 
+        private static final Pattern LINEBREAK_PATTERN = Pattern.compile("\\R");
+
         @Specialization
         PList doString(String self, @SuppressWarnings("unused") PNone keepends) {
             return doStringKeepends(self, false);
@@ -1224,23 +1228,41 @@ public final class StringBuiltins extends PythonBuiltins {
         PList doStringKeepends(String self, boolean keepends) {
             PList list = factory().createList();
             int lastEnd = 0;
-            while (true) {
-                int nextIndex = PString.indexOf(self, "\n", lastEnd);
-                if (nextIndex == -1) {
-                    break;
-                }
+            Matcher matcher = getMatcher(self);
+            while (matcherFind(matcher)) {
+                int end = matcherEnd(matcher);
                 if (keepends) {
-                    appendNode.execute(list, PString.substring(self, lastEnd, nextIndex + 1));
+                    appendNode.execute(list, PString.substring(self, lastEnd, end));
                 } else {
-                    appendNode.execute(list, PString.substring(self, lastEnd, nextIndex));
+                    appendNode.execute(list, PString.substring(self, lastEnd, matcherStart(matcher)));
                 }
-                lastEnd = nextIndex + 1;
+                lastEnd = end;
             }
             String remainder = PString.substring(self, lastEnd);
             if (!remainder.isEmpty()) {
                 appendNode.execute(list, remainder);
             }
             return list;
+        }
+
+        @TruffleBoundary
+        private static int matcherStart(Matcher matcher) {
+            return matcher.start();
+        }
+
+        @TruffleBoundary
+        private static int matcherEnd(Matcher matcher) {
+            return matcher.end();
+        }
+
+        @TruffleBoundary
+        private static boolean matcherFind(Matcher matcher) {
+            return matcher.find();
+        }
+
+        @TruffleBoundary
+        private static Matcher getMatcher(String self) {
+            return LINEBREAK_PATTERN.matcher(self);
         }
 
         @Specialization(replaces = {"doString", "doStringKeepends"})
