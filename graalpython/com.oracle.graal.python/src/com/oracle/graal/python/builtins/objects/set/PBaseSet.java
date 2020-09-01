@@ -30,10 +30,17 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSet extends PHashingCollection {
 
     protected HashingStorage set;
@@ -59,14 +66,21 @@ public abstract class PBaseSet extends PHashingCollection {
     }
 
     @ExportMessage(limit = "1")
-    public int lengthWithState(PArguments.ThreadState state,
+    int lengthWithState(PArguments.ThreadState state,
                     @CachedLibrary("this.set") HashingStorageLibrary lib) {
         return lib.lengthWithState(set, state);
     }
 
     @ExportMessage(limit = "1")
-    public int length(
+    int length(
                     @CachedLibrary("this.set") HashingStorageLibrary lib) {
         return lib.length(set);
+    }
+
+    @ExportMessage(limit = "1")
+    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
+                    @CachedLibrary("this.set") HashingStorageLibrary lib,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        return factory.createBaseSetIterator(this, lib.keys(set).iterator(), lib.length(set));
     }
 }

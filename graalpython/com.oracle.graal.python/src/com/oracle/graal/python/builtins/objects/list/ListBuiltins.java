@@ -1162,28 +1162,14 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"isIntStorage(primary)"})
-        public PIntegerSequenceIterator doPListInt(PList primary) {
-            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"isLongStorage(primary)"})
-        public PLongSequenceIterator doPListLong(PList primary) {
-            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"isDoubleStorage(primary)"})
-        public PDoubleSequenceIterator doPListDouble(PList primary) {
-            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        public PSequenceIterator doPList(PList primary) {
-            return factory().createSequenceIterator(primary);
+        @Specialization(limit = "1")
+        static Object doPListInt(PList primary,
+                        @CachedLibrary("primary") PythonObjectLibrary lib) {
+            return lib.getIterator(primary);
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }

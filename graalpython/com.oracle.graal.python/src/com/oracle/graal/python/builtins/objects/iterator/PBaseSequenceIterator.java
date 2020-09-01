@@ -40,10 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
 
@@ -66,5 +71,11 @@ public abstract class PBaseSequenceIterator extends PBuiltinIterator {
 
     public boolean isPList() {
         return sequence instanceof PList;
+    }
+
+    @Override
+    @ExportMessage
+    public PBaseSequenceIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 }

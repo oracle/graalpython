@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
@@ -45,6 +46,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class PGenerator extends PythonBuiltinObject {
@@ -183,6 +185,7 @@ public final class PGenerator extends PythonBuiltinObject {
         return closure;
     }
 
+    @ExportMessage.Ignore
     public Object getIterator() {
         return iterator;
     }
@@ -235,5 +238,10 @@ public final class PGenerator extends PythonBuiltinObject {
 
     public void setQualname(String qualname) {
         this.qualname = qualname;
+    }
+
+    @ExportMessage
+    PGenerator getIteratorWithState(@SuppressWarnings("unused") ThreadState state) {
+        return this;
     }
 }

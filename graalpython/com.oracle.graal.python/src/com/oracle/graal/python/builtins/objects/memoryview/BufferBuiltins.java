@@ -157,13 +157,13 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self,
+        static Object doPBuffer(VirtualFrame frame, PBuffer self,
                         @Cached("create(__ITER__)") LookupAndCallUnaryNode callIterNode) {
             return callIterNode.executeObject(frame, self.getDelegate());
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }

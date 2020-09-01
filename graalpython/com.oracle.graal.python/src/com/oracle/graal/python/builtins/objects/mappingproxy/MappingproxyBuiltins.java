@@ -46,12 +46,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,10 +83,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object iter(VirtualFrame frame, PMappingproxy self,
-                        @Cached BuiltinFunctions.IterNode iterNode) {
-            return iterNode.call(frame, self.getMapping(), PNone.NO_VALUE);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object iter(VirtualFrame frame, @SuppressWarnings("unused") PMappingproxy self,
+                        @Bind("self.getMapping()") Object mapping,
+                        @CachedLibrary("mapping") PythonObjectLibrary lib) {
+            return lib.getIteratorWithState(mapping, PArguments.getThreadState(frame));
         }
     }
 

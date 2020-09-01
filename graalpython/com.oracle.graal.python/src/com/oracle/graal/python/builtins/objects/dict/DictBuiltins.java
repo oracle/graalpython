@@ -407,12 +407,10 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object run(PDict self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self)") HashingStorageLibrary lib) {
-            HashingStorage storage = getStore.execute(self);
-            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
+        @Specialization(limit = "1")
+        static Object run(PDict self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.getIterator(self);
         }
     }
 

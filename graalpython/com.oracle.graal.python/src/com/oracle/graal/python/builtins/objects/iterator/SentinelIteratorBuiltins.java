@@ -97,7 +97,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PSentinelIterator self) {
+        static Object doPSentinelIterator(PSentinelIterator self) {
             return self;
         }
     }

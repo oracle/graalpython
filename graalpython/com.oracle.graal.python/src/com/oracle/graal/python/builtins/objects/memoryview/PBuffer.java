@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public class PBuffer extends PythonBuiltinObject {
@@ -60,5 +64,11 @@ public class PBuffer extends PythonBuiltinObject {
 
     public boolean isReadOnly() {
         return readOnly;
+    }
+
+    @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+    Object getIteratorWithState(ThreadState state,
+                    @CachedLibrary("this.getDelegate()") PythonObjectLibrary lib) {
+        return lib.getIteratorWithState(delegate, state);
     }
 }

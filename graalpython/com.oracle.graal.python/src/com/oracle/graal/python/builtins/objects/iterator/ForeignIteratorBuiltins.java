@@ -83,7 +83,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PForeignArrayIterator self) {
+        static PForeignArrayIterator doForeignArrayIterator(PForeignArrayIterator self) {
             return self;
         }
     }

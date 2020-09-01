@@ -25,6 +25,10 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,13 +43,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.IsIteratorObjectNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -54,10 +58,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ValueProfile;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
@@ -194,7 +194,7 @@ public class PythonObject extends PythonAbstractObject {
         dylib.put(this, DICT, dict);
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     public Object getIteratorWithState(ThreadState state,
                     @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
                     @CachedLibrary("this") PythonObjectLibrary plib,
@@ -218,6 +218,11 @@ public class PythonObject extends PythonAbstractObject {
             }
         }
         throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+    }
+
+    /* needed for some guards in exported messages of subclasses */
+    public static int getCallSiteInlineCacheMaxDepth() {
+        return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
 
     private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();

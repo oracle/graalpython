@@ -135,7 +135,7 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PMap iter(PMap self) {
+        static PMap iter(PMap self) {
             return self;
         }
     }

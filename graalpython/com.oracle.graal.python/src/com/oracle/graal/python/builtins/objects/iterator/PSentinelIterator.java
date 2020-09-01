@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PSentinelIterator extends PythonBuiltinObject {
@@ -69,5 +71,10 @@ public final class PSentinelIterator extends PythonBuiltinObject {
 
     public boolean sentinelReached() {
         return sentinelReached;
+    }
+
+    @ExportMessage
+    PSentinelIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 }

@@ -500,13 +500,14 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PSequenceIterator doPTuple(PTuple self) {
-            return factory().createSequenceIterator(self);
+        @Specialization(limit = "1")
+        static Object doPTuple(PTuple self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.getIterator(self);
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

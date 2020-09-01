@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -41,6 +42,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -180,7 +182,7 @@ public final class PString extends PSequence {
     }
 
     @ExportMessage
-    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
+    String asPathWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached CastToJavaStringNode castToJavaStringNode) {
         try {
             return castToJavaStringNode.execute(this);
@@ -227,18 +229,19 @@ public final class PString extends PSequence {
     }
 
     @ExportMessage
-    String asString(@Cached StringMaterializeNode stringMaterializeNode) {
+    String asString(
+                    @Cached StringMaterializeNode stringMaterializeNode) {
         return stringMaterializeNode.execute(this);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public static boolean isHashable(@SuppressWarnings("unused") PString self) {
+    static boolean isHashable(@SuppressWarnings("unused") PString self) {
         return true;
     }
 
     @ExportMessage
-    public Object readArrayElement(long index,
+    Object readArrayElement(long index,
                     @Cached CastToJavaStringNode cast) {
         try {
             return cast.execute(this).codePointAt((int) index);
@@ -328,20 +331,26 @@ public final class PString extends PSequence {
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementModifiable(PString self, long index) {
+    static boolean isArrayElementModifiable(PString self, long index) {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementInsertable(PString self, long index) {
+    static boolean isArrayElementInsertable(PString self, long index) {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementRemovable(PString self, long index) {
+    static boolean isArrayElementRemovable(PString self, long index) {
         return false;
     }
 
+    @ExportMessage
+    PStringIterator getIterator(
+                    @Cached StringMaterializeNode stringMaterializeNode,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createStringIterator(asString(stringMaterializeNode));
+    }
 }

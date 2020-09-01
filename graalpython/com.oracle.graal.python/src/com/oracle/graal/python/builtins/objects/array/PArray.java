@@ -27,10 +27,13 @@ package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -42,7 +45,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public class PArray extends PSequence {
+public final class PArray extends PSequence {
 
     private SequenceStorage store;
 
@@ -142,5 +145,11 @@ public class PArray extends PSequence {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);
         }
+    }
+
+    @ExportMessage
+    PArrayIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createArrayIterator(this);
     }
 }

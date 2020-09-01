@@ -121,22 +121,11 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getKeysViewIter(PDictKeysView self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = getStore.execute(dict);
-            return factory().createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object getItemsViewIter(PDictItemsView self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = getStore.execute(dict);
-            return factory().createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
+        // 'limit = 2' because this is only expected to receive PDictKeysView and PDictItemsView
+        @Specialization(limit = "2")
+        static Object getKeysViewIter(PDictView self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.getIterator(self);
         }
     }
 

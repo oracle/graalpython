@@ -34,8 +34,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -113,5 +116,12 @@ public final class PDict extends PHashingCollection {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "PDict<" + dictStorage.getClass().getSimpleName() + ">";
+    }
+
+    @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createDictKeyIterator(lib.keys(dictStorage).iterator(), dictStorage, lib.length(dictStorage));
     }
 }

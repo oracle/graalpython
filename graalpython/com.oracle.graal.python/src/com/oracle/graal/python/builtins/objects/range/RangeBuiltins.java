@@ -176,14 +176,12 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object iter(PIntRange self) {
-            return factory().createIntRangeIterator(self);
-        }
-
-        @Specialization
-        Object iter(PBigRange self) {
-            return factory().createBigRangeIterator(self);
+        @Specialization(limit = "2")
+        static Object doPIntRange(PRange self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            // This uses 'getIterator' to avoid unnecessary overhead in the interpreter and we know
+            // that the implementation won't need it
+            return lib.getIterator(self);
         }
     }
 

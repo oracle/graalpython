@@ -25,9 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.reversed;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PZip;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PStringReverseIterator extends PBuiltinIterator {
     public final String value;
 
@@ -35,5 +41,11 @@ public final class PStringReverseIterator extends PBuiltinIterator {
         super(clazz, instanceShape);
         this.value = value;
         this.index = value.length() - 1;
+    }
+
+    @Override
+    @ExportMessage
+    public PStringReverseIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 }

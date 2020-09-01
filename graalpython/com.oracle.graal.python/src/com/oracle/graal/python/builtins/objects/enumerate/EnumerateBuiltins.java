@@ -65,7 +65,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile bigIntIndexProfile,
                         @Cached("create()") GetNextNode next) {
             Object index = self.getAndIncrementIndex(factory(), bigIntIndexProfile);
-            Object nextValue = next.execute(frame, self.getIterator());
+            Object nextValue = next.execute(frame, self.getDecoratedIterator());
             return factory().createTuple((new Object[]{index, nextValue}));
         }
     }
@@ -75,7 +75,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PEnumerate self) {
+        static Object doGeneric(PEnumerate self) {
             return self;
         }
     }
@@ -87,7 +87,7 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         public Object reduce(PEnumerate self,
                         @Cached ConditionProfile bigIntIndexProfile,
                         @CachedLibrary("self") PythonObjectLibrary pol) {
-            Object iterator = self.getIterator();
+            Object iterator = self.getDecoratedIterator();
             Object index = self.getIndex(bigIntIndexProfile);
             PTuple contents = factory().createTuple(new Object[]{iterator, index});
             return factory().createTuple(new Object[]{pol.getLazyPythonClass(self), contents});

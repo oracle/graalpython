@@ -44,12 +44,14 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.util.Iterator;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-public class PScandirIterator extends PythonBuiltinObject {
+public final class PScandirIterator extends PythonBuiltinObject {
     private boolean closed = false;
     private final DirectoryStream<TruffleFile> stream;
     private final Iterator<TruffleFile> iterator;
@@ -91,5 +93,10 @@ public class PScandirIterator extends PythonBuiltinObject {
 
     public boolean isProduceBytes() {
         return produceBytes;
+    }
+
+    @ExportMessage
+    PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
+        return this;
     }
 }

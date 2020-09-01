@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -238,5 +240,11 @@ final class DefaultPythonStringExports {
                     @Cached IsSubtypeNode isSubtypeNode) {
         Object instanceClass = PythonBuiltinClassType.PString;
         return isSameTypeNode.execute(instanceClass, type) || isSubtypeNode.execute(instanceClass, type);
+    }
+
+    @ExportMessage
+    static PStringIterator getIterator(String receiver,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createStringIterator(receiver);
     }
 }
