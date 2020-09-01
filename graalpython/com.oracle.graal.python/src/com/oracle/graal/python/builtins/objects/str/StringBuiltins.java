@@ -1524,9 +1524,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"left.length() == 1", "right > 0"})
         String doCharInt(String left, int right) {
-            char[] result = new char[right];
-            Arrays.fill(result, left.charAt(0));
-            return new String(result);
+            try {
+                char[] result = new char[right];
+                Arrays.fill(result, left.charAt(0));
+                return new String(result);
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            }
         }
 
         @Specialization(guards = {"left.length() > 1", "right > 0"})
