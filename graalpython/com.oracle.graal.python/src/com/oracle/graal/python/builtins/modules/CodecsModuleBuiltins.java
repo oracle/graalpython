@@ -274,7 +274,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = {"doStringNone", "doStringString"})
         PTuple doGeneric(Object selfObj, Object errorsObj,
-                         @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
 
             String errors;
             if (PGuards.isPNone(errorsObj)) {
