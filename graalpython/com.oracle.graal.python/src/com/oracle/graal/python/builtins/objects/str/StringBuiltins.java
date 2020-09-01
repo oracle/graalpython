@@ -1680,10 +1680,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isLetterOrDigit(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!Character.isLetterOrDigit(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1704,10 +1706,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isLetter(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!Character.isLetter(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1728,10 +1732,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isDigit(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!Character.isDigit(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1778,7 +1784,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
                 if (!Character.isLowerCase(codePoint)) {
                     if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
@@ -1787,6 +1793,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         return false;
                     }
                 }
+                i += Character.charCount(codePoint);
             }
             return uncased == 0 || self.length() > uncased;
         }
@@ -1813,10 +1820,12 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            for (int i = 0; i < self.length(); i++) {
-                if (!isPrintableChar(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!isPrintableChar(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1839,10 +1848,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!StringUtils.isSpace(self.charAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!StringUtils.isSpace(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1865,7 +1876,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
                 if (!expectLower) {
                     if (Character.isTitleCase(codePoint) || Character.isUpperCase(codePoint)) {
@@ -1883,6 +1894,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         expectLower = false;
                     }
                 }
+                i += Character.charCount(codePoint);
             }
             return hasContent;
         }
@@ -1904,7 +1916,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
                 if (!Character.isUpperCase(codePoint)) {
                     if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
@@ -1913,6 +1925,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         return false;
                     }
                 }
+                i += Character.charCount(codePoint);
             }
             return uncased == 0 || self.length() > uncased;
         }

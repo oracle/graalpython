@@ -80,7 +80,7 @@ public final class StringUtils {
                     0, 0, 0, 0, 0, 0, 0, 0
     };
 
-    public static boolean isUnicodeWhitespace(char ch) {
+    public static boolean isUnicodeWhitespace(int ch) {
         switch (ch) {
             case 0x0009:
             case 0x000A:
@@ -135,7 +135,7 @@ public final class StringUtils {
         }
     }
 
-    public static boolean isSpace(char ch) {
+    public static boolean isSpace(int ch) {
         if (ch < 128) {
             return ASCII_WHITESPACE[ch] == 1;
         }
