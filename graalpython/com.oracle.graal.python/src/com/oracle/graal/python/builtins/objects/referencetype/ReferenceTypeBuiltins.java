@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -56,8 +57,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -155,15 +156,22 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.getObject() != null")
-        @TruffleBoundary
-        public String repr(PReferenceType self,
-                        @Cached("create(__NAME__)") LookupInheritedAttributeNode getNameNode) {
+        public String repr(VirtualFrame frame, PReferenceType self,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
             Object object = self.getObject();
-            Object name = getNameNode.execute(object);
+            Object cls = lib.getLazyPythonClass(object);
+            Object className = getNameNode.execute(cls);
+            Object name = lib.lookupAttribute(object, frame, __NAME__);
+            return doFormat(self, object, className, name);
+        }
+
+        @TruffleBoundary
+        private static String doFormat(PReferenceType self, Object object, Object className, Object name) {
             if (name == PNone.NO_VALUE) {
-                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), object.hashCode(), object.hashCode());
+                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), className, object.hashCode());
             } else {
-                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), name, object.hashCode(), object);
+                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), className, object.hashCode(), name);
             }
         }
     }
