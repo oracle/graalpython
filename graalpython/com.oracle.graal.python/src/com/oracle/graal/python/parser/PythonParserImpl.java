@@ -167,7 +167,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 globalScope = ScopeInfo.read(dis, null);
                 int offset = dis.readInt();
                 sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
-                if (cellvars != null || freevars != null) {
+                if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
                     ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
                     if (cellvars != null) {
                         rootScope.setCellVars(cellvars);
