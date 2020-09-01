@@ -1682,7 +1682,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isLetterOrDigit(codePoint)) {
+                if (!UCharacter.isLetterOrDigit(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1708,7 +1708,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isLetter(codePoint)) {
+                if (!UCharacter.isLetter(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1734,7 +1734,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isDigit(codePoint)) {
+                if (!UCharacter.isDigit(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1780,22 +1780,18 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            int uncased = 0;
-            if (self.length() == 0) {
-                return false;
-            }
+            boolean hasLower = false;
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isLowerCase(codePoint)) {
-                    if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
-                        uncased++;
-                    } else {
-                        return false;
-                    }
+                if (UCharacter.isUUppercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    return false;
+                }
+                if (!hasLower && UCharacter.isULowercase(codePoint)) {
+                    hasLower = true;
                 }
                 i += Character.charCount(codePoint);
             }
-            return uncased == 0 || self.length() > uncased;
+            return hasLower;
         }
 
         @Specialization(replaces = "doString")
@@ -1810,7 +1806,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         private static boolean isPrintableChar(int i) {
-            if (Character.isISOControl(i)) {
+            if (UCharacter.isISOControl(i)) {
                 return false;
             }
             Character.UnicodeBlock block = Character.UnicodeBlock.of(i);
@@ -1879,17 +1875,17 @@ public final class StringBuiltins extends PythonBuiltins {
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
                 if (!expectLower) {
-                    if (Character.isTitleCase(codePoint) || Character.isUpperCase(codePoint)) {
+                    if (UCharacter.isTitleCase(codePoint) || UCharacter.isUUppercase(codePoint)) {
                         expectLower = true;
                         hasContent = true;
-                    } else if (Character.isLowerCase(codePoint)) {
+                    } else if (UCharacter.isULowercase(codePoint)) {
                         return false;
                     }
                     // uncased characters are allowed
                 } else {
-                    if (Character.isTitleCase(codePoint) || Character.isUpperCase(codePoint)) {
+                    if (UCharacter.isTitleCase(codePoint) || UCharacter.isUUppercase(codePoint)) {
                         return false;
-                    } else if (!Character.isLowerCase(codePoint)) {
+                    } else if (!UCharacter.isULowercase(codePoint)) {
                         // we expect another title start after an uncased character
                         expectLower = false;
                     }
@@ -1912,22 +1908,18 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            int uncased = 0;
-            if (self.length() == 0) {
-                return false;
-            }
+            boolean hasUpper = false;
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isUpperCase(codePoint)) {
-                    if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
-                        uncased++;
-                    } else {
-                        return false;
-                    }
+                if (UCharacter.isULowercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    return false;
+                }
+                if (!hasUpper && UCharacter.isUUppercase(codePoint)) {
+                    hasUpper = true;
                 }
                 i += Character.charCount(codePoint);
             }
-            return uncased == 0 || self.length() > uncased;
+            return hasUpper;
         }
 
         @Specialization(replaces = "doString")
@@ -2003,10 +1995,10 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (Character.isAlphabetic(ch)) {
                     if (shouldBeLowerCase) {
                         // Should be lower case
-                        if (Character.isUpperCase(ch)) {
+                        if (UCharacter.isUUppercase(ch)) {
                             translated = true;
                             if (ch < 256) {
-                                converted.append((char) Character.toLowerCase(ch));
+                                converted.append((char) UCharacter.toLowerCase(ch));
                             } else {
                                 String origPart = new String(Character.toChars(ch));
                                 String changedPart = origPart.toLowerCase();
@@ -2015,10 +2007,10 @@ public final class StringBuiltins extends PythonBuiltins {
                         }
                     } else {
                         // Should be upper case
-                        if (Character.isLowerCase(ch)) {
+                        if (UCharacter.isULowercase(ch)) {
                             translated = true;
                             if (ch < 256) {
-                                converted.append((char) Character.toUpperCase(ch));
+                                converted.append((char) UCharacter.toUpperCase(ch));
                             } else {
                                 String origPart = new String(Character.toChars(ch));
                                 String changedPart = origPart.toUpperCase();
