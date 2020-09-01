@@ -213,7 +213,7 @@ public class CharsetMapping {
         addMapping("utf_32_be", "UTF-32BE");
         addMapping("utf_32_le", "UTF-32LE");
         addMapping("utf_32", "UTF-32");
-        addMapping("utf_7", null);
+        addMapping("utf_7", "UTF-7");
         addMapping("utf_8", "UTF-8");
 
         // Generated from encodings.aliases.aliases, removed non-language encodings like base64

@@ -124,6 +124,16 @@ suite = {
               "version" : "66.1",
             },
         },
+        "ICU4J-CHARSET-66.1" : {
+            "moduleName" : "com.ibm.icu.charset",
+            "sha1" : "292f8736709f5c69afd9275faf92fac11a342b3e",
+            "sourceSha1" : "e981b54cb052d22f5512626dac6a29c79b1460d6",
+            "maven" : {
+              "groupId" : "com.ibm.icu",
+              "artifactId" : "icu4j-charset",
+              "version" : "66.1",
+            },
+        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -207,6 +217,7 @@ suite = {
                 "sulong:SULONG_API",
                 "XZ-1.8",
                 "ICU4J-66.1",
+                "ICU4J-CHARSET-66.1",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
