@@ -632,8 +632,9 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
         totals[Stat.UT_TOTAL] = len(unittests)
         totals[Stat.UT_RUNS] = len(unittests) - total_not_run_at_all
         totals[Stat.UT_PASS] = total_pass_all
-        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / float(totals[Stat.UT_TOTAL]) * 100.0
-        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / float(totals[Stat.UT_TOTAL]) * 100.0
+        ut_total_f = float(totals[Stat.UT_TOTAL])
+        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
+        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
         # test stats
         totals[Stat.TEST_RUNS] = totals[Col.NUM_TESTS]
         totals[Stat.TEST_PASS] = totals[Col.NUM_PASSES]
