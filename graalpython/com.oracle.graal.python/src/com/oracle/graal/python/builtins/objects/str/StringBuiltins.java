@@ -920,36 +920,71 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.partition
+    @Builtin(name = "partition", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PartitionNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object doString(String self, String sep) {
+            if (sep.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+            }
+            int indexOf = self.indexOf(sep);
+            String[] partitioned = new String[3];
+            if (indexOf == -1) {
+                partitioned[0] = self;
+                partitioned[1] = "";
+                partitioned[2] = "";
+            } else {
+                partitioned[0] = PString.substring(self, 0, indexOf);
+                partitioned[1] = sep;
+                partitioned[2] = PString.substring(self, indexOf + sep.length());
+            }
+            return factory().createTuple(partitioned);
+        }
+
+        @Specialization(replaces = "doString")
+        Object doGeneric(Object self, Object sep,
+                        @Cached CastToJavaStringCheckedNode castSelfNode,
+                        @Cached CastToJavaStringCheckedNode castSepNode) {
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "partition", self);
+            String sepStr = castSepNode.cast(sep, ErrorMessages.MUST_BE_STR_NOT_P, sep);
+            return doString(selfStr, sepStr);
+        }
+    }
+
     // str.rpartition
     @Builtin(name = "rpartition", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RPartitionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PList doString(String self, String sep,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            int lastIndexOf = self.lastIndexOf(sep);
-            PList list = factory().createList();
-            if (lastIndexOf == -1) {
-                appendNode.execute(list, "");
-                appendNode.execute(list, "");
-                appendNode.execute(list, self);
-            } else {
-                appendNode.execute(list, PString.substring(self, 0, lastIndexOf));
-                appendNode.execute(list, sep);
-                appendNode.execute(list, PString.substring(self, lastIndexOf + sep.length()));
+        Object doString(String self, String sep) {
+            if (sep.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
-            return list;
+            int lastIndexOf = self.lastIndexOf(sep);
+            String[] partitioned = new String[3];
+            if (lastIndexOf == -1) {
+                partitioned[0] = "";
+                partitioned[1] = "";
+                partitioned[2] = self;
+            } else {
+                partitioned[0] = PString.substring(self, 0, lastIndexOf);
+                partitioned[1] = sep;
+                partitioned[2] = PString.substring(self, lastIndexOf + sep.length());
+            }
+            return factory().createTuple(partitioned);
         }
 
         @Specialization(replaces = "doString")
-        PList doGeneric(Object self, Object sep,
+        Object doGeneric(Object self, Object sep,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
+                        @Cached CastToJavaStringCheckedNode castSepNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rpartition", self);
             String sepStr = castSepNode.cast(sep, ErrorMessages.MUST_BE_STR_NOT_P, sep);
-            return doString(selfStr, sepStr, appendNode);
+            return doString(selfStr, sepStr);
         }
     }
 

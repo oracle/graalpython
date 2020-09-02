@@ -24,17 +24,6 @@
 import _codecs
 
 
-def partition(self, sep):
-    l = self.split(sep, 1)
-    if len(l) == 1:
-        return l[0], "", ""
-    else:
-        return l[0], sep, l[1]
-
-
-str.partition = partition
-
-
 def expandtabs(self, tabsize=8):
     """
     S.expandtabs(tabsize=8) -> str
