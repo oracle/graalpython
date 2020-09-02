@@ -942,7 +942,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String pathname = lib.asPath(pathArg);
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
-            FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
+            FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes((int) fileMode);
             try {
                 return doOpenFile(pathname, options, attributes);
             } catch (Exception e) {
@@ -951,7 +951,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>>[] attributes) throws IOException {
+        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
             SeekableByteChannel fc;
             TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
             if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
@@ -968,11 +968,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         @TruffleBoundary(allowInlining = true)
-        private static FileAttribute<Set<PosixFilePermission>>[] modeToAttributes(int fileMode) {
-            FileAttribute<Set<PosixFilePermission>> fa1 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(otherBitsToPermission[fileMode & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa2 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa3 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7])));
-            return new FileAttribute[]{fa1, fa2, fa3};
+        private static FileAttribute<Set<PosixFilePermission>> modeToAttributes(int fileMode) {
+            HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7]));
+            perms.addAll(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7]));
+            perms.addAll(Arrays.asList(otherBitsToPermission[fileMode & 7]));
+            return PosixFilePermissions.asFileAttribute(perms);
         }
 
         @TruffleBoundary(allowInlining = true)
