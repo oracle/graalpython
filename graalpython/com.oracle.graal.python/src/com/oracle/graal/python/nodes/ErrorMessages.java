@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes;
 public abstract class ErrorMessages {
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
+    public static final String ARG_AFTER_MUST_BE_MAPPING = "%s() argument after ** must be a mapping, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
     public static final String ARG_D_MUST_BE_S = "%s arg %d must be a %s";
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
@@ -252,7 +253,7 @@ public abstract class ErrorMessages {
     public static final String GETATTR_ATTRIBUTE_NAME_MUST_BE_STRING = "getattr(): attribute name must be string";
     public static final String GETTING_THER_SOURCE_NOT_SUPPORTED_FOR_P = "getting the source is not supported for '%p'";
     public static final String GLOBALS_MUST_BE_DICT = "%s() globals must be a dict, not %p";
-    public static final String GOT_MULTIPLE_VALUES_FOR_ARG = "%s() got multiple values for argument '%s'";
+    public static final String GOT_MULTIPLE_VALUES_FOR_ARG = "%s() got multiple values for keyword argument '%s'";
     public static final String GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD = "%s() got some positional-only arguments passed as keyword arguments: '%s'";
     public static final String GOT_UNEXPECTED_KEYWORD_ARG = "%s() got an unexpected keyword argument '%s'";
     public static final String HAS_NO_ATTR = "%s has no attribute %s";

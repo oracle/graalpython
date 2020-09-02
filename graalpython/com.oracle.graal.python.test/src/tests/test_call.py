@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -167,6 +167,8 @@ def f24(*args, a, b=5):
 def f25(*args, a, b=5, **kwds):
     pass
 
+def f26(**kw):
+    return kw
 
 def assert_parses(call_expr):
     raised = False
@@ -234,8 +236,7 @@ def test_parse_args():
 
     assert_parses("f11(a=1, b=2)")
     assert_parses("f11(a=1, b=2, c=3)")
-    # TODO
-    # assert_call_raises(SyntaxError, "f11(a=1, b=2, a=3)")  # SyntaxError: keyword argument repeated
+    assert_call_raises(SyntaxError, "f11(a=1, b=2, a=3)")  # SyntaxError: keyword argument repeated
     assert_call_raises(TypeError, "f11(1, b=2, a=3)")  # TypeError: f11() got multiple values for argument 'a'
 
     assert_parses("f12(1,2)")
@@ -286,8 +287,7 @@ def test_parse_args():
     assert_parses("f20(a=1)")
     assert_parses("f20(a=1, b=2)")
     assert_parses("f20(a=1, b=2, c=3)")
-    # TODO
-    # assert_call_raises(SyntaxError, "f20(a=1, b=2, a=3)")  # SyntaxError: keyword argument repeated
+    assert_call_raises(SyntaxError, "f20(a=1, b=2, a=3)")  # SyntaxError: keyword argument repeated
     assert_call_raises(TypeError, "f20(1, b=2)")  # TypeError: f20() takes 0 positional arguments but 1 positional argument (and 1 keyword-only argument) were given
     assert_call_raises(TypeError, "f20(1)")  # TypeError: f20() takes 0 positional arguments but 1 was given
 
@@ -324,3 +324,36 @@ def test_parse_args():
     assert_call_raises(TypeError, "f25(1,2,3,c=6)")  # TypeError: f25() missing 1 required keyword-only argument: 'a'
     assert_parses("f25(a=4,c=6)")
     assert_parses("f25(a=4)")
+
+def test_multiple_values_for_keyword_argument():
+    assert_call_raises(TypeError, "f26(a=1, **{'a' : 2})") # TypeError: f26() got multiple values for keyword argument 'a'
+    assert_call_raises(TypeError, "f26(**{'a' : 4}, **{'a': 3})")  # TypeError: f26() got multiple values for keyword argument 'a'
+    
+b = 1
+def test_argument_must_be_mapping():    
+    assert_call_raises(TypeError, "f26(a=1, **b)") # TypeError: f26() argument after ** must be a mapping, not int
+    assert_call_raises(TypeError, "f26(**b)") # TypeError: f26() argument after ** must be a mapping, not int
+    class MyDict(dict):
+        pass
+    d = MyDict()
+    assert f26(**d) == {}
+
+fooo = f26
+def test_multiple_values_with_callable_name():
+    def assert_get_message(err, fn, *args, **kwargs):
+        raised = False
+        try:
+            fn(*args, **kwargs)
+        except err as ex:
+            return str(ex)
+        assert raised
+        
+    def assert_call_raises_get_message(exception, call_expr):
+        return assert_get_message(exception, eval, call_expr)
+
+    msg = assert_call_raises_get_message(TypeError, "fooo(a=1, **b)") # TypeError: f26() argument after ** must be a mapping, not int
+    assert msg == "f26() argument after ** must be a mapping, not int"
+    
+    msg = assert_call_raises_get_message(TypeError, "fooo(**{'a' : 4}, **{'a': 3})")  # TypeError: f26() got multiple values for keyword argument 'a'
+    assert msg == "f26() got multiple values for keyword argument 'a'"
+    
