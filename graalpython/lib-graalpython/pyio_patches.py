@@ -91,7 +91,7 @@ sys.__stdin__ = sys.stdin
 sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout), encoding="utf-8", line_buffering=True)
 sys.stdout.mode = "w"
 sys.__stdout__ = sys.stdout
-sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", line_buffering=True)
+sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding="utf-8", errors="backslashreplace", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 

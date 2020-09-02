@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -32,8 +33,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -331,5 +333,65 @@ public final class BytesUtils {
             buffer[i++] = hexdigits[codePoint & 0x0000000F];
         }
         return i;
+    }
+
+    @TruffleBoundary
+    public static byte[] fromHex(String str, PRaiseNode raiseNode) {
+        // This overestimates if there are spaces
+        byte[] bytes = new byte[str.length() / 2];
+        int n = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (BytesUtils.isASCIISpace(c)) {
+                continue;
+            }
+            int top = BytesUtils.digitValue(c);
+            if (top >= 16 || top < 0) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
+            }
+
+            c = i + 1 < str.length() ? str.charAt(++i) : '\0';
+            int bottom = BytesUtils.digitValue(c);
+            if (bottom >= 16 || bottom < 0) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "non-hexadecimal number found in fromhex() arg at position %d", i);
+            }
+
+            bytes[n++] = (byte) ((top << 4) | bottom);
+        }
+        if (n != bytes.length) {
+            bytes = Arrays.copyOf(bytes, n);
+        }
+        return bytes;
+    }
+
+    /**
+     * Convert a hex digit character to it's byte value. E.g. this method returns {@code (byte)10}
+     * for character {@code 'A'}. For any other character, value {@code 37} is returned. This is
+     * similar to {@code _PyLong_DigitValue}.
+     */
+    public static int digitValue(char hexChar) {
+        if ('0' <= hexChar && hexChar <= '9') {
+            return hexChar - '0';
+        } else if ('a' <= hexChar && hexChar <= 'f') {
+            return hexChar - 'a' + 10;
+        } else if ('A' <= hexChar && hexChar <= 'F') {
+            return hexChar - 'A' + 10;
+        }
+        return 37;
+    }
+
+    /**
+     * These values are derived from CPython's {@code pyctype.c:_Py_ctype_table}.
+     */
+    public static boolean isASCIISpace(char ch) {
+        switch (ch) {
+            case 0x9a:
+            case 0x9b:
+            case 0x9c:
+            case 0x9d:
+            case 0x20:
+                return true;
+        }
+        return false;
     }
 }

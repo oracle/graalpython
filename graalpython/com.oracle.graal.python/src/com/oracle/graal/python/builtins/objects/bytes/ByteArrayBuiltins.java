@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -57,6 +58,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -262,6 +265,29 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         protected static boolean isMemoryView(Object value) {
             return value instanceof PMemoryView;
+        }
+    }
+
+    // bytearray.fromhex()
+    @Builtin(name = "fromhex", minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class FromHexNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PByteArray doString(Object cls, String str,
+                        @Cached PRaiseNode raiseNode) {
+            return factory().createByteArray(cls, BytesUtils.fromHex(str, raiseNode));
+        }
+
+        @Specialization
+        PByteArray doGeneric(Object cls, Object strObj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            try {
+                String str = castToJavaStringNode.execute(strObj);
+                return factory().createByteArray(cls, BytesUtils.fromHex(str, getRaiseNode()));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "fromhex()", "str", strObj);
+            }
         }
     }
 }

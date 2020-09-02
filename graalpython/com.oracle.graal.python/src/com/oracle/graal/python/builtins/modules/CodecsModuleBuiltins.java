@@ -57,6 +57,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -261,13 +263,35 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public abstract static class RawEncodeNode extends EncodeBaseNode {
 
         @Specialization
-        PTuple encode(String self, @SuppressWarnings("unused") PNone none) {
-            return encode(self, "strict");
+        PTuple doStringNone(String self, @SuppressWarnings("unused") PNone none) {
+            return doStringString(self, "strict");
         }
 
         @Specialization
-        PTuple encode(String self, String errors) {
+        PTuple doStringString(String self, String errors) {
             return factory().createTuple(encodeString(self, errors));
+        }
+
+        @Specialization(replaces = {"doStringNone", "doStringString"})
+        PTuple doGeneric(Object selfObj, Object errorsObj,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+
+            String errors;
+            if (PGuards.isPNone(errorsObj)) {
+                errors = "strict";
+            } else {
+                try {
+                    errors = castToJavaStringNode.execute(errorsObj);
+                } catch (CannotCastException e) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "'errors'", "str", errorsObj);
+                }
+            }
+
+            try {
+                return factory().createTuple(encodeString(castToJavaStringNode.execute(selfObj), errors));
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "str", selfObj);
+            }
         }
 
         @TruffleBoundary

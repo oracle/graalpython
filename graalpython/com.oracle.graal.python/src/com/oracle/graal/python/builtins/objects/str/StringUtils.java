@@ -49,6 +49,7 @@ public final class StringUtils {
         BOTH
     }
 
+    /** corresponds to {@code unicodeobject.c:_Py_ascii_whitespace} */
     private static final int[] ASCII_WHITESPACE = {
                     0, 0, 0, 0, 0, 0, 0, 0,
                     /* case 0x0009: * CHARACTER TABULATION */

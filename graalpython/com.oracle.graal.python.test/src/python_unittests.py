@@ -632,8 +632,9 @@ def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats, 
         totals[Stat.UT_TOTAL] = len(unittests)
         totals[Stat.UT_RUNS] = len(unittests) - total_not_run_at_all
         totals[Stat.UT_PASS] = total_pass_all
-        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / float(totals[Stat.UT_TOTAL]) * 100.0
-        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / float(totals[Stat.UT_TOTAL]) * 100.0
+        ut_total_f = float(totals[Stat.UT_TOTAL])
+        totals[Stat.UT_PERCENT_RUNS] = float(totals[Stat.UT_RUNS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
+        totals[Stat.UT_PERCENT_PASS] = float(totals[Stat.UT_PASS]) / ut_total_f * 100.0 if ut_total_f > 0.0 else 0.0
         # test stats
         totals[Stat.TEST_RUNS] = totals[Col.NUM_TESTS]
         totals[Stat.TEST_PASS] = totals[Col.NUM_PASSES]
@@ -1017,6 +1018,8 @@ def main(prog, args):
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
     rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats, cpy_stats=cpy_stats)
 
+    log("[INFO] totals: {!r}", totals)
+
     missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError',
                                      msg_processor=get_missing_module)
     log("[MISSING MODULES] \n{}", pformat(dict(missing_modules)))
@@ -1059,7 +1062,7 @@ def main(prog, args):
             Col.NUM_SKIPPED: int(rows[-1][4]),
             Col.NUM_PASSES: int(rows[-1][5]),
         }
-        print(prev_totals)
+        log("[INFO] previous totals (from {}): {!r}", last_csv, prev_totals)
         if float(totals[Col.NUM_TESTS]) < float(prev_totals[Col.NUM_TESTS]) * (1.0 - flags.regression_running_tests):
             log("[REGRESSION] REGRESSION DETECTED, passed {} tests vs {} from {}".format(
                 totals[Col.NUM_TESTS], prev_totals[Col.NUM_TESTS], last_csv))
