@@ -895,16 +895,16 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next) {
-        return trace(new PScandirIterator(cls, getShape(cls), path, next));
+    public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next, boolean produceBytes) {
+        return trace(new PScandirIterator(cls, getShape(cls), path, next, produceBytes));
     }
 
-    public PDirEntry createDirEntry(String name, TruffleFile file) {
-        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(), name, file));
+    public PDirEntry createDirEntry(String name, TruffleFile file, boolean produceBytes) {
+        return trace(new PDirEntry(PythonBuiltinClassType.PDirEntry, PythonBuiltinClassType.PDirEntry.getInstanceShape(), name, file, produceBytes));
     }
 
     public Object createDirEntry(Object cls, String name, TruffleFile file) {
-        return trace(new PDirEntry(cls, getShape(cls), name, file));
+        return trace(new PDirEntry(cls, getShape(cls), name, file, false));
     }
 
     public PMMap createMMap(SeekableByteChannel channel, long length, long offset) {

@@ -169,8 +169,9 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String path(PDirEntry self) {
-            return self.getFile().getPath();
+        Object path(PDirEntry self) {
+            // TODO use fsencode or equivalent (PyUnicode_EncodeFSDefault)
+            return self.isProduceBytes() ? factory().createBytes(self.getFile().getPath().getBytes()) : self.getFile().getPath();
         }
     }
 
@@ -178,8 +179,9 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String path(PDirEntry self) {
-            return self.getName();
+        Object path(PDirEntry self) {
+            // TODO use fsencode or equivalent (PyUnicode_EncodeFSDefault)
+            return self.isProduceBytes() ? factory().createBytes(self.getName().getBytes()) : self.getName();
         }
     }
 }

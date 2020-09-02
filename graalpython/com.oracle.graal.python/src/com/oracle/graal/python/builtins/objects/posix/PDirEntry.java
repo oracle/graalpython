@@ -48,11 +48,13 @@ public class PDirEntry extends PythonBuiltinObject {
     private final TruffleFile file;
     private final String name;
     private Object cachedStatResult;
+    private boolean produceBytes;
 
-    public PDirEntry(Object cls, Shape instanceShape, String name, TruffleFile file) {
+    public PDirEntry(Object cls, Shape instanceShape, String name, TruffleFile file, boolean produceBytes) {
         super(cls, instanceShape);
         this.name = name;
         this.file = file;
+        this.produceBytes = produceBytes;
     }
 
     public TruffleFile getFile() {
@@ -69,5 +71,9 @@ public class PDirEntry extends PythonBuiltinObject {
 
     public void setCachedStatResult(Object cachedStatResult) {
         this.cachedStatResult = cachedStatResult;
+    }
+
+    public boolean isProduceBytes() {
+        return produceBytes;
     }
 }
