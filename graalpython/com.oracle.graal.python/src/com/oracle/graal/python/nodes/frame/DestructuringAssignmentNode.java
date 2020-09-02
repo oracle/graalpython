@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.frame;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -38,14 +37,10 @@ import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -56,7 +51,6 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class DestructuringAssignmentNode extends StatementNode implements WriteNode {
     /* Lazily initialized helpers, also acting as branch profiles */
     @Child private PRaiseNode raiseNode;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     /* Syntactic children */
     @Child private ExpressionNode rhs;
@@ -128,7 +122,7 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         int len = lenNode.execute(sequenceStorage);
         if (len > slots.length) {
             CompilerDirectives.transferToInterpreter();
-            throw getCore().raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
+            throw ensureRaiseNode().raise(ValueError, ErrorMessages.TOO_MANY_VALUES_TO_UNPACK, slots.length);
         } else if (len < slots.length) {
             throw ensureRaiseNode().raise(ValueError, ErrorMessages.NOT_ENOUGH_VALUES_TO_UNPACK, slots.length, len);
         } else {
@@ -185,14 +179,6 @@ public abstract class DestructuringAssignmentNode extends StatementNode implemen
         PTuple rhsValue = constructTupleNode.execute(frame, iterable);
         writeSequenceStorageStarredNode.execute(frame, rhsValue.getSequenceStorage(), slots, starredIndex);
         performAssignments(frame);
-    }
-
-    private PythonCore getCore() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get().getCore();
     }
 
     private PRaiseNode ensureRaiseNode() {

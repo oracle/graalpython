@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class StringUtils {
     public enum StripKind {
@@ -203,8 +203,24 @@ public final class StringUtils {
         return str.substring(i, j);
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public static boolean containsNullCharacter(String value) {
         return value.indexOf(0) > 0;
+    }
+
+    @TruffleBoundary
+    public static Object[] toCharacterArray(String arg) {
+        Object[] values = new Object[arg.codePointCount(0, arg.length())];
+        for (int i = 0, o = 0; i < arg.length(); o++) {
+            int codePoint = arg.codePointAt(i);
+            int charCount = Character.charCount(codePoint);
+            if (charCount == 1) {
+                values[o] = String.valueOf((char) codePoint);
+            } else {
+                values[o] = String.valueOf(Character.toChars(codePoint));
+            }
+            i += charCount;
+        }
+        return values;
     }
 }

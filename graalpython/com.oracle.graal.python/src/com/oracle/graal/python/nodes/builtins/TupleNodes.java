@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -79,11 +80,7 @@ public abstract class TupleNodes {
 
         @Specialization
         PTuple tuple(Object cls, String arg) {
-            Object[] values = new Object[arg.length()];
-            for (int i = 0; i < arg.length(); i++) {
-                values[i] = String.valueOf(arg.charAt(i));
-            }
-            return factory.createTuple(cls, values);
+            return factory.createTuple(cls, StringUtils.toCharacterArray(arg));
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(plib.getLazyPythonClass(iterable))"}, limit = "2")
