@@ -60,6 +60,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -775,7 +776,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String toUpperCase(String str) {
-            return str.toUpperCase();
+            return UCharacter.toUpperCase(Locale.ENGLISH, str);
         }
     }
 
@@ -894,7 +895,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String toLowerCase(String self) {
-            return self.toLowerCase();
+            return UCharacter.toLowerCase(Locale.ENGLISH, self);
         }
     }
 
@@ -1867,32 +1868,29 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            boolean hasContent = false;
-            boolean expectLower = false;
-            if (self.length() == 0) {
-                return false;
-            }
+            boolean cased = false;
+            boolean previousIsCased = false;
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!expectLower) {
-                    if (UCharacter.isTitleCase(codePoint) || UCharacter.isUUppercase(codePoint)) {
-                        expectLower = true;
-                        hasContent = true;
-                    } else if (UCharacter.isULowercase(codePoint)) {
+
+                if (UCharacter.isUUppercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    if (previousIsCased) {
                         return false;
                     }
-                    // uncased characters are allowed
+                    previousIsCased = true;
+                    cased = true;
+                } else if (UCharacter.isULowercase(codePoint)) {
+                    if (!previousIsCased) {
+                        return false;
+                    }
+                    previousIsCased = true;
+                    cased = true;
                 } else {
-                    if (UCharacter.isTitleCase(codePoint) || UCharacter.isUUppercase(codePoint)) {
-                        return false;
-                    } else if (!UCharacter.isULowercase(codePoint)) {
-                        // we expect another title start after an uncased character
-                        expectLower = false;
-                    }
+                    previousIsCased = false;
                 }
                 i += Character.charCount(codePoint);
             }
-            return hasContent;
+            return cased;
         }
 
         @Specialization(replaces = "doString")
@@ -1986,59 +1984,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String doTitle(String self) {
-            boolean shouldBeLowerCase = false;
-            boolean translated;
-            StringBuilder converted = new StringBuilder();
-            for (int offset = 0; offset < self.length();) {
-                int ch = self.codePointAt(offset);
-                translated = false;
-                if (Character.isAlphabetic(ch)) {
-                    if (shouldBeLowerCase) {
-                        // Should be lower case
-                        if (UCharacter.isUUppercase(ch)) {
-                            translated = true;
-                            if (ch < 256) {
-                                converted.append((char) UCharacter.toLowerCase(ch));
-                            } else {
-                                String origPart = new String(Character.toChars(ch));
-                                String changedPart = origPart.toLowerCase();
-                                converted.append(changedPart);
-                            }
-                        }
-                    } else {
-                        // Should be upper case
-                        if (UCharacter.isULowercase(ch)) {
-                            translated = true;
-                            if (ch < 256) {
-                                converted.append((char) UCharacter.toUpperCase(ch));
-                            } else {
-                                String origPart = new String(Character.toChars(ch));
-                                String changedPart = origPart.toUpperCase();
-                                if (origPart.length() < changedPart.length()) {
-                                    // the original char was mapped to more chars ->
-                                    // we need to make upper case just the first one
-                                    changedPart = doTitle(changedPart);
-                                }
-                                converted.append(changedPart);
-                            }
-                        }
-                    }
-                    // And this was a letter
-                    shouldBeLowerCase = true;
-                } else {
-                    // This was not a letter
-                    shouldBeLowerCase = false;
-                }
-                if (!translated) {
-                    if (ch < 256) {
-                        converted.append((char) ch);
-                    } else {
-                        converted.append(Character.toChars(ch));
-                    }
-                }
-                offset += Character.charCount(ch);
-            }
-            return converted.toString();
+            return UCharacter.toTitleCase(Locale.ENGLISH, self, null);
         }
     }
 

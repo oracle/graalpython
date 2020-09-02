@@ -49,6 +49,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_join_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_literals
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_ljust
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_lower
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_mul
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_none_arguments
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
@@ -67,6 +68,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_strip_whitespace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_subclass_add
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_subscript
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_title
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_unicode_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_upper
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_utf8_decode_invalid_sequences
