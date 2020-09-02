@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -142,48 +141,6 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
                 return false;
             }
             return (int) result != 0;
-        }
-    }
-
-    @Builtin(name = "eq", minNumOfPositionalArgs = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        public boolean doBoolean(boolean value1, boolean value2) {
-            return value1 == value2;
-        }
-
-        @Specialization
-        public boolean doNone(@SuppressWarnings("unused") PNone value1, @SuppressWarnings("unused") PNone value2) {
-            return true;
-        }
-
-        @Specialization
-        public boolean doInt(long value1, long value2) {
-            return value1 == value2;
-        }
-
-        @Specialization
-        public boolean doDouble(double value1, double value2) {
-            return value1 == value2;
-        }
-
-        @Specialization
-        public boolean doString(String value1, String value2) {
-            return value1.equals(value2);
-        }
-
-        private @Child BinaryComparisonNode equalsNode;
-
-        @Fallback
-        public Object doObject(VirtualFrame frame, Object value1, Object value2) {
-            if (equalsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                equalsNode = insert((BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==")));
-            }
-            return equalsNode.executeWith(frame, value1, value2);
         }
     }
 

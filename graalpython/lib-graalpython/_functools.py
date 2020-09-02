@@ -48,19 +48,3 @@ def reduce(function, iterable, initializer=None):
         value = function(value, element)
     return value
 
-
-class partial:
-    def __init__(self, func, *args, **keywords):
-        def newfunc(*fargs, **fkeywords):
-            newkeywords = keywords.copy()
-            newkeywords.update(fkeywords)
-            return func(*args, *fargs, **newkeywords)
-        self.func = func
-        self.args = args
-        self.keywords = keywords
-        self.newfunc = newfunc
-
-    def __call__(self, *args, **keywords):
-        return self.newfunc(*args, **keywords)
-
-    # TODO: correctly implement '__reduce__' and '__setstate__'
