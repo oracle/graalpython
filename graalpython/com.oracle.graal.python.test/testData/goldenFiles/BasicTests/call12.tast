@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'call12'> SourceSection: [0,25]`foo(**mydict1, **my
       KeywordArgumentsNodeGen SourceSection: None
         CompactKeywordsNodeGen SourceSection: None
         ExecuteKeywordStarargsNodeGen SourceSection: None
-          DictConcatNodeGen SourceSection: None
+          ConcatKeywordsNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,13]`mydict1`
               Identifier: mydict1
               IsBuiltinClassProfile SourceSection: None

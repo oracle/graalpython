@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
@@ -110,7 +111,10 @@ public abstract class ExecuteKeywordStarargsNode extends PNodeWithContext {
 
         @Specialization(guards = "!isDict(object)")
         static PKeyword[] doNonMapping(@SuppressWarnings("unused") Object object) {
-            return PKeyword.EMPTY_KEYWORDS;
+            if (object instanceof PNone) {
+                return PKeyword.EMPTY_KEYWORDS;
+            }
+            throw new NonMappingException(object);
         }
 
         @Specialization(replaces = {"doKeywordsArray", "doKeywordsStorage", "doEmptyStorage", "doDictCached", "doDict", "doNonMapping"})
