@@ -1,5 +1,6 @@
 *graalpython.lib-python.3.test.test_operator.CCOperatorPickleTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.CCOperatorPickleTestCase.test_itemgetter
+*graalpython.lib-python.3.test.test_operator.CCOperatorPickleTestCase.test_methodcaller
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_abs
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_add
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_attrgetter
@@ -41,8 +42,10 @@
 *graalpython.lib-python.3.test.test_operator.COperatorTestCase.test_truth
 *graalpython.lib-python.3.test.test_operator.CPyOperatorPickleTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.CPyOperatorPickleTestCase.test_itemgetter
+*graalpython.lib-python.3.test.test_operator.CPyOperatorPickleTestCase.test_methodcaller
 *graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_itemgetter
+*graalpython.lib-python.3.test.test_operator.PyCOperatorPickleTestCase.test_methodcaller
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_abs
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_add
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_attrgetter
@@ -84,3 +87,4 @@
 *graalpython.lib-python.3.test.test_operator.PyOperatorTestCase.test_truth
 *graalpython.lib-python.3.test.test_operator.PyPyOperatorPickleTestCase.test_attrgetter
 *graalpython.lib-python.3.test.test_operator.PyPyOperatorPickleTestCase.test_itemgetter
+*graalpython.lib-python.3.test.test_operator.PyPyOperatorPickleTestCase.test_methodcaller
