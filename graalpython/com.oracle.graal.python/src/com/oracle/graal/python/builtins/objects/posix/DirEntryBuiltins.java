@@ -170,8 +170,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object path(PDirEntry self) {
-            // TODO use fsencode or equivalent (PyUnicode_EncodeFSDefault)
-            return self.isProduceBytes() ? factory().createBytes(self.getFile().getPath().getBytes()) : self.getFile().getPath();
+            return self.isProduceBytes() ? factory().createBytes(getStringBytes(self.getFile().getPath())) : self.getFile().getPath();
         }
     }
 
@@ -180,8 +179,13 @@ public class DirEntryBuiltins extends PythonBuiltins {
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object path(PDirEntry self) {
-            // TODO use fsencode or equivalent (PyUnicode_EncodeFSDefault)
-            return self.isProduceBytes() ? factory().createBytes(self.getName().getBytes()) : self.getName();
+            return self.isProduceBytes() ? factory().createBytes(getStringBytes(self.getName())) : self.getName();
         }
+    }
+
+    @TruffleBoundary
+    private static byte[] getStringBytes(String s) {
+        // TODO encoding (use fsencode or equivalent e.g. PyUnicode_EncodeFSDefault)
+        return s.getBytes();
     }
 }
