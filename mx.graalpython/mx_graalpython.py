@@ -1205,6 +1205,7 @@ def import_python_sources(args):
         "_bz2module.c": "_bz2.c",
         "mmapmodule.c": "_mmap.c",
         "_struct.c": "_cpython_struct.c",
+        "_testcapimodule.c": "_testcapi.c",
     }
     extra_pypy_files = [
         "graalpython/lib-python/3/_md5.py",

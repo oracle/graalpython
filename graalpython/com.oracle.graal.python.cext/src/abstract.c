@@ -270,6 +270,10 @@ PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
     return UPCALL_CEXT_O(_jls_PyNumber_Divmod, native_to_java(a), native_to_java(b));
 }
 
+UPCALL_ID(PyNumber_ToBase);
+PyObject * PyNumber_ToBase(PyObject *n, int base) {
+    return UPCALL_CEXT_O(_jls_PyNumber_ToBase, native_to_java(n), base);
+}
 
 UPCALL_ID(PyIter_Next);
 PyObject * PyIter_Next(PyObject *iter) {
@@ -349,6 +353,11 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 UPCALL_ID(PyMapping_Keys);
 PyObject * PyMapping_Keys(PyObject *o) {
     return UPCALL_CEXT_O(_jls_PyMapping_Keys, native_to_java(o));
+}
+
+UPCALL_ID(PyMapping_Items);
+PyObject * PyMapping_Items(PyObject *o) {
+    return UPCALL_CEXT_O(_jls_PyMapping_Items, native_to_java(o));
 }
 
 UPCALL_ID(PyMapping_Values);

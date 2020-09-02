@@ -606,6 +606,20 @@ def PyNumber_Divmod(a, b):
 
 
 @may_raise
+def PyNumber_ToBase(n, base):
+    b_index = PyNumber_Index(n)
+    if base == 2:
+        return bin(b_index)
+    elif base == 8:
+        return oct(b_index)
+    elif base == 10:
+        return str(b_index)
+    elif base == 16:
+        return hex(b_index)
+    raise ValueError("Unsupported base " + str(base))
+
+
+@may_raise
 def PyIter_Next(itObj):
     try:
         return next(itObj)
@@ -950,6 +964,33 @@ def PyMethod_New(func, self):
     def bound_function(*args, **kwargs):
         return func(self, *args, **kwargs)
     return bound_function
+
+
+# corresponds to PyInstanceMethod_Type
+class instancemethod:
+    def __init__(self, func):
+        if not callable(func):
+            raise TypeError("first argument must be callable")
+        self.__func__ = func
+
+    @property
+    def __doc__(self):
+        return self.__func__.__doc__
+
+    def __call__(self, *args, **kwargs):
+        return self.__func__(*args, **kwargs)
+
+    def __get__(self, obj, type):
+        if not obj:
+            return self.__func__
+        return PyMethod_New(self.__func__, obj)
+
+    def __repr__(self):
+        return "<instancemethod {} at ?>".format(self.__func__.__name__)
+
+
+def PyInstanceMethod_New(func):
+    return instancemethod(func)
 
 
 def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
@@ -1483,6 +1524,11 @@ def PySlice_New(start, stop, step):
 @may_raise
 def PyMapping_Keys(obj):
     return list(obj.keys())
+
+
+@may_raise
+def PyMapping_Items(obj):
+    return list(obj.items())
 
 
 @may_raise

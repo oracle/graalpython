@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,38 @@
  */
 #include "capi.h"
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+PyTypeObject PyGen_Type = PY_TRUFFLE_TYPE("generator", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGenObject));
 
-PyTypeObject PyGetSetDescr_Type = PY_TRUFFLE_TYPE("getset_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyGetSetDescrObject));
-/* NOTE: we use the same Python type (namely 'PBuiltinFunction') for 'wrapper_descriptor' as for 'method_descriptor'; so the flags must be the same! */
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("wrapper_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyWrapperDescrObject));
-PyTypeObject PyMemberDescr_Type = PY_TRUFFLE_TYPE("member_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMemberDescrObject));
-PyTypeObject PyMethodDescr_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_METHOD_DESCRIPTOR| _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodDescrObject), offsetof(PyMethodDescrObject, vectorcall));
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
-
-POLYGLOT_DECLARE_TYPE(mappingproxyobject);
-
-/* Dicts */
-UPCALL_ID(PyDictProxy_New);
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
+PyObject *
+PyGen_New(struct _frame *frame)
+{
+	return NULL;
 }
 
+PyObject * PyGen_NewWithQualName(struct _frame *frame, PyObject *name, PyObject *qualname) {
+	return NULL;
+}
+
+int PyGen_NeedsFinalizing(PyGenObject *gen) {
+	return -1;
+}
+
+int _PyGen_SetStopIterationValue(PyObject *gen) {
+	return -1;
+}
+
+int _PyGen_FetchStopIterationValue(PyObject **gen) {
+	return -1;
+}
+
+PyObject * _PyGen_Send(PyGenObject *gen, PyObject *object) {
+	return NULL;
+}
+
+PyObject *_PyGen_yf(PyGenObject *gen) {
+	return NULL;
+}
+
+
+void _PyGen_Finalize(PyObject *self) {
+}

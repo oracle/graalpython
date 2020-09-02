@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 #include "capi.h"
 
-PyTypeObject PyMethod_Type = PY_TRUFFLE_TYPE("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMethodObject));
+PyTypeObject PyMethod_Type = PY_TRUFFLE_TYPE_WITH_VECTORCALL("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | _Py_TPFLAGS_HAVE_VECTORCALL, sizeof(PyMethodObject), offsetof(PyMethodObject, vectorcall));
 PyTypeObject PyInstanceMethod_Type = PY_TRUFFLE_TYPE("instancemethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyInstanceMethodObject));
 
 PyObject* PyMethod_Function(PyObject* obj) {
@@ -71,7 +71,7 @@ PyObject * PyMethod_New(PyObject *func, PyObject *self) {
     return UPCALL_CEXT_O(_jls_PyMethod_New, native_to_java(func), native_to_java(self));
 }
 
+UPCALL_ID(PyInstanceMethod_New)
 PyObject * PyInstanceMethod_New(PyObject *func) {
-	// TODO properly implement this function
-	return func;
+    return UPCALL_CEXT_O(_jls_PyInstanceMethod_New, native_to_java(func));
 }

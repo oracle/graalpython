@@ -378,7 +378,9 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             void_arg = va_arg(va, void*);
             if (c == 'O') {
                 if (format[format_idx + 1] == '&') {
-                    converter = va_arg(va, void*);
+                	/* case: "O&" expects: Py_BuildValue(fmt, "O&", converter, arg_for_conversion) */
+                    converter = void_arg;
+                    void_arg = va_arg(va, void*);
                 }
             }
 

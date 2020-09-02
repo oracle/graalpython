@@ -1,4 +1,3 @@
-*graalpython.lib-python.3.test.test_os.BlockingTests.test_blocking
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_compare_to_walk
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_dir_fd
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_fd_leak
@@ -128,7 +127,6 @@
 *graalpython.lib-python.3.test.test_os.StatAttributeTests.test_statvfs_result_pickle
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_does_not_crash
 *graalpython.lib-python.3.test.test_os.TermsizeTests.test_stty_match
-*graalpython.lib-python.3.test.test_os.TestInvalidFD.test_blocking
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_closerange
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fchdir
 *graalpython.lib-python.3.test.test_os.TestInvalidFD.test_fchmod

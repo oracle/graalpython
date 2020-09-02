@@ -108,13 +108,16 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
+    Py_ssize_t itemsize = structure->tp_itemsize;
     allocfunc alloc_fun = structure->tp_alloc;
     destructor dealloc_fun = structure->tp_dealloc;
     freefunc free_fun = structure->tp_free;
+    Py_ssize_t vectorcall_offset = structure->tp_vectorcall_offset;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
+    type_handle->tp_itemsize = itemsize;
     if (alloc_fun) {
     	type_handle->tp_alloc = alloc_fun;
     }
@@ -123,6 +126,12 @@ void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, pol
     }
     if (free_fun) {
     	type_handle->tp_free = free_fun;
+    }
+    if (free_fun) {
+    	type_handle->tp_free = free_fun;
+    }
+    if (vectorcall_offset) {
+    	type_handle->tp_vectorcall_offset = vectorcall_offset;
     }
 }
 
@@ -181,10 +190,12 @@ declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);
+declare_type(PyInstanceMethod_Type, instancemethod, PyInstanceMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
 declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
 declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference);
+declare_type(PyGen_Type, generator, PyGenObject);
 // Below types use the same object structure as others, and thus
 // POLYGLOT_DECLARE_TYPE should not be called again
 initialize_type(PySuper_Type, super, _object);

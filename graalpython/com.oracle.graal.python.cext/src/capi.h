@@ -315,13 +315,13 @@ void initialize_hashes();
           JWRAPPER_O :                                                                   \
           JWRAPPER_UNSUPPORTED)))))))
 
-#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) {\
+#define PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
     (__DEALLOC__),                              /* tp_dealloc */\
-    0,                                          /* tp_vectorcall_offset */\
+    (__VCALL_OFFSET__),                         /* tp_vectorcall_offset */\
     0,                                          /* tp_getattr */\
     0,                                          /* tp_setattr */\
     0,                                          /* tp_reserved */\
@@ -358,7 +358,9 @@ void initialize_hashes();
     0,                                          /* tp_is_gc */\
 }
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0)
+#define PY_TRUFFLE_TYPE_WITH_VECTORCALL(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __VCALL_OFFSET__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0, __VCALL_OFFSET__)
+#define PY_TRUFFLE_TYPE_WITH_ALLOC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__, 0)
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) PY_TRUFFLE_TYPE_GENERIC(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__, 0, 0, 0, 0)
 
 /** to be used from Java code only; returns a type's basic size */
 #define BASICSIZE_GETTER(__typename__)extern Py_ssize_t get_ ## __typename__ ## _basicsize() { \

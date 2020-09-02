@@ -731,6 +731,7 @@ class TestPytime(unittest.TestCase):
         self.assertIs(lt.tm_zone, None)
 
 
+@support.impl_detail("internal implementation test: _PyTime_t", graalvm=False)
 @unittest.skipIf(_testcapi is None, 'need the _testcapi module')
 class CPyTimeTestCase:
     """

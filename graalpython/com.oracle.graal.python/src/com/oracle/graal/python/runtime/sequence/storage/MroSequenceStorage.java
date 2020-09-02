@@ -42,9 +42,11 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -304,33 +306,57 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
 
     @TruffleBoundary
     public void invalidateAttributeInMROFinalAssumptions(String name) {
-        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
+        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, Collections.emptyList());
+        // the empty check is just to avoid the StringBuilder allocation
         if (!assumptions.isEmpty()) {
-            String message = getClassName() + "." + name;
-            for (Assumption assumption : assumptions) {
-                assumption.invalidate(message);
+            if (invalidateAttributesInMROFinalAssumptions(assumptions, getClassName() + "." + name)) {
+                // remove list
+                attributesInMROFinalAssumptions.remove(name);
             }
         }
     }
 
     public void lookupChanged() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
-            for (Assumption assumption : list) {
-                assumption.invalidate();
-            }
-        }
+        attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
         lookupStableAssumption.invalidate();
     }
 
     public void lookupChanged(String msg) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
+        attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
+        lookupStableAssumption.invalidate(msg);
+    }
+
+    private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<List<Assumption>>() {
+
+        @Override
+        public boolean test(List<Assumption> assumptions) {
+            return invalidateAttributesInMROFinalAssumptions(assumptions, "");
+        }
+    };
+
+    @TruffleBoundary
+    private static boolean invalidateAttributesInMROFinalAssumptions(List<Assumption> list, String reason) {
+        int n = list.size();
+        if (n > 0) {
             for (Assumption assumption : list) {
-                assumption.invalidate();
+                assumption.invalidate(reason);
             }
         }
-        lookupStableAssumption.invalidate(msg);
+
+        // clear assumptions to avoid memory leak; they are all invalidated, so we don't need
+        // them any longer
+        if (n < 16) {
+            // keep small lists; they don't hurt too much and we save allocations as well as GC
+            // pressure
+            list.clear();
+
+            // indicate to keep the list instance
+            return false;
+        }
+        // indicate that the list should completely be removed
+        return true;
     }
 
     @Override

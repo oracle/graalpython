@@ -59,6 +59,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -123,6 +125,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -2059,6 +2062,99 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, e);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "set_blocking", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class SetBlockingNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone doPrimitive(VirtualFrame frame, int fd, boolean blocking,
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+            try {
+                PSocket socket = getContext().getResources().getSocket(fd);
+                if (socket != null) {
+                    SocketBuiltins.SetBlockingNode.setBlocking(socket, blocking);
+                    return PNone.NONE;
+                }
+                Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
+                if (fileChannel instanceof SelectableChannel) {
+                    setBlocking((SelectableChannel) fileChannel, blocking);
+                    return PNone.NONE;
+                }
+
+                // if we reach this point, it's an invalid FD (either it does not exist or is not
+                // selectable)
+                throw raiseOSError(frame, OSErrorEnum.EBADFD);
+            } catch (Exception e) {
+                throw raiseOSError(frame, e);
+            }
+        }
+
+        @Specialization(limit = "1")
+        PNone doGeneric(VirtualFrame frame, Object fdObj, Object blockingObj,
+                        @CachedLibrary("fdObj") PythonObjectLibrary fdLib,
+                        @CachedLibrary("blockingObj") PythonObjectLibrary blockingLib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+
+            int fd;
+            try {
+                fd = castToJavaIntNode.execute(fdLib.asPIntWithState(fdObj, PArguments.getThreadState(frame)));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            boolean blocking = blockingLib.isTrueWithState(blockingObj, PArguments.getThreadState(frame));
+
+            return doPrimitive(frame, fd, blocking, classProfile);
+        }
+
+        @TruffleBoundary
+        private static void setBlocking(SelectableChannel channel, boolean block) throws IOException {
+            channel.configureBlocking(block);
+        }
+    }
+
+    @Builtin(name = "get_blocking", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean doPrimitive(VirtualFrame frame, int fd,
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+            PSocket socket = getContext().getResources().getSocket(fd);
+            if (socket != null) {
+                return SocketBuiltins.GetBlockingNode.get(socket);
+            }
+            Channel fileChannel = getContext().getResources().getFileChannel(fd, classProfile);
+            if (fileChannel instanceof SelectableChannel) {
+                return getBlocking((SelectableChannel) fileChannel);
+            }
+
+            // if we reach this point, it's an invalid FD (either it does not exist or is not
+            // selectable)
+            throw raiseOSError(frame, OSErrorEnum.EBADFD);
+        }
+
+        @Specialization(limit = "1")
+        boolean doGeneric(VirtualFrame frame, Object fdObj,
+                        @CachedLibrary("fdObj") PythonObjectLibrary fdLib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Shared("classProfile") @Cached("createClassProfile()") ValueProfile classProfile) {
+
+            int fd;
+            try {
+                fd = castToJavaIntNode.execute(fdLib.asPIntWithState(fdObj, PArguments.getThreadState(frame)));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            return doPrimitive(frame, fd, classProfile);
+        }
+
+        @TruffleBoundary
+        private static boolean getBlocking(SelectableChannel channel) {
+            return channel.isBlocking();
         }
     }
 }

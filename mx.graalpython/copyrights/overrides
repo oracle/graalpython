@@ -89,6 +89,7 @@ graalpython/com.oracle.graal.python.cext/include/fileutils.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/funcobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/genobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/hpy.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
@@ -125,6 +126,7 @@ graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/tracemalloc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/typeslots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ucnhash.h,python.copyright
@@ -139,9 +141,10 @@ graalpython/com.oracle.graal.python.cext/include/weakrefobject.h,python.copyrigh
 graalpython/com.oracle.graal.python.cext/modules/_bz2.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
@@ -150,6 +153,7 @@ graalpython/com.oracle.graal.python.cext/modules/clinic/unicodedata.c.h,python.c
 graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_lib.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/complexobject.c,python.copyright

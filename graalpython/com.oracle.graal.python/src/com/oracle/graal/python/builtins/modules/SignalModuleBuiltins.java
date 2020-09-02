@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -59,18 +60,23 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
+import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 @CoreFunctions(defineModule = "_signal")
@@ -294,6 +300,42 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalStateException("the signal trigger semaphore was modified!");
             }
+        }
+    }
+
+    @Builtin(name = "set_wakeup_fd", minNumOfPositionalArgs = 1, parameterNames = {"", "warn_on_full_buffer"})
+    @GenerateNodeFactory
+    abstract static class SetWakeupFdNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static int doGeneric(Object fd, Object warnOnFullBuffer) {
+            // TODO: implement
+            return -1;
+        }
+    }
+
+    @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class RaiseSignalNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static PNone doInt(int signum) {
+            Signal.raise(new sun.misc.Signal(Signals.signalNumberToName(signum)));
+            return PNone.NONE;
+        }
+
+        @Specialization(limit = "1", replaces = "doInt")
+        static PNone doGeneric(VirtualFrame frame, Object signumObj,
+                        @CachedLibrary("signumObj") PythonObjectLibrary signumLib,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
+
+            int signum;
+            try {
+                signum = castToJavaIntExactNode.execute(signumLib.asPIntWithState(signumObj, PArguments.getThreadState(frame)));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            return doInt(signum);
         }
     }
 }
