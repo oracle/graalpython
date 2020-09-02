@@ -887,7 +887,7 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.pow(left, right);
         }
 
-        @Specialization(rewriteOn = OverflowException.class)
+        @Specialization(rewriteOn = {OverflowException.class, ArithmeticException.class})
         Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
                         @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) throws OverflowException {
             long lright = right.longValueExact();
