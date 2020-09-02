@@ -1230,10 +1230,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object readLong(@SuppressWarnings("unused") VirtualFrame frame, int fd, long requestedSize,
                         @Shared("profile") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                         @Shared("readNode") @Cached ReadFromChannelNode readNode) {
-            int size;
-            try {
-                size = Math.toIntExact(requestedSize);
-            } catch (ArithmeticException e) {
+            int size = (int) requestedSize;
+            if (size != requestedSize) {
                 tooLargeProfile.enter();
                 size = ReadFromChannelNode.MAX_READ;
             }
