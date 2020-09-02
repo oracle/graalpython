@@ -70,7 +70,7 @@ public interface PythonCore extends ParserErrorCallback {
     public PException raise(PythonBuiltinClassType type, String format, Object... args);
 
     @Override
-    void warn(Object type, String format, Object... args);
+    void warn(PythonBuiltinClassType type, String format, Object... args);
 
     // Accessors
     @Override

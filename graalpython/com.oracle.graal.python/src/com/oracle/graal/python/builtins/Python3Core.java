@@ -566,10 +566,8 @@ public final class Python3Core implements PythonCore {
 
     @Override
     @TruffleBoundary
-    public void warn(Object type, String format, Object... args) {
-        PythonModule warningsModule = lookupBuiltinModule("_warnings");
-        Object warn = ReadAttributeFromDynamicObjectNode.getUncached().execute(warningsModule.getStorage(), "warn");
-        CallNode.getUncached().execute(warn, String.format(format, args), type);
+    public void warn(PythonBuiltinClassType type, String format, Object... args) {
+        WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
     private void publishBuiltinModules() {

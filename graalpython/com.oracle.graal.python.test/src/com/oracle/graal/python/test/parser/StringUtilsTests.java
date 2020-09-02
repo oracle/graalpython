@@ -73,7 +73,7 @@ public class StringUtilsTests extends ParserTestBase {
         }
 
         @Override
-        public void warn(Object type, String format, Object... args) {
+        public void warn(PythonBuiltinClassType type, String format, Object... args) {
             Assert.fail("Unexpected warning: " + String.format(format, args));
         }
 

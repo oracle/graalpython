@@ -109,7 +109,7 @@ public interface PythonParser {
             return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, new Object[0]);
         }
 
-        void warn(Object type, String format, Object... args);
+        void warn(PythonBuiltinClassType type, String format, Object... args);
 
         PythonLanguage getLanguage();
     }
@@ -118,7 +118,7 @@ public interface PythonParser {
      * Parses the given {@link Source} object according to the requested {@link ParserMode}. Also
      * according the TruffleLanguage.ParsingRequest can be influence the result of parsing if there
      * are provided argumentsNames.
-     * 
+     *
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
     Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);

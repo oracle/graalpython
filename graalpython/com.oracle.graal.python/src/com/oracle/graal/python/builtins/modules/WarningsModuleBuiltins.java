@@ -94,6 +94,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -918,39 +919,85 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
      */
     public static abstract class WarnNode extends Node {
         private static final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
+        private static final WarnNode UNCACHED = new WarnNodeUncached();
 
-        protected abstract void execute(VirtualFrame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs);
+        public static WarnNode create() {
+            return new WarnNodeCached();
+        }
 
-        public final void warnUnicode(VirtualFrame frame, Object category, String message, int stackLevel, Object source) {
+        public static WarnNode getUncached() {
+            return UNCACHED;
+        }
+
+        public final void warnUnicode(Frame frame, Object category, String message, int stackLevel, Object source) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
-        public final void warnFormat(VirtualFrame frame, Object source, Object category, int stackLevel, String message, Object... formatArgs) {
+        public final void warnFormat(Frame frame, Object source, Object category, int stackLevel, String message, Object... formatArgs) {
             execute(frame, source, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel, formatArgs);
         }
 
-        public final void resourceWarning(VirtualFrame frame, Object source, int stackLevel, String message, Object... formatArgs) {
+        public final void resourceWarning(Frame frame, Object source, int stackLevel, String message, Object... formatArgs) {
             execute(frame, source, PythonBuiltinClassType.ResourceWarning, message, stackLevel, formatArgs);
         }
 
-        public final void warnEx(VirtualFrame frame, Object category, String message, int stackLevel) {
+        public final void warnEx(Frame frame, Object category, String message, int stackLevel) {
             execute(frame, null, category == null ? PythonBuiltinClassType.RuntimeWarning : category, message, stackLevel);
         }
 
-        @Specialization
-        static void doit(VirtualFrame frame, Object source, Object category, String format, int stackLevel, Object[] formatArgs,
-                        @Cached WarningsModuleNode moduleFunctionsNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            PythonModule _warnings = ctx.getCore().lookupBuiltinModule("_warnings");
-            String message;
-            try {
-                message = formatter.format(lib, format, formatArgs);
-            } catch (IllegalFormatException e) {
-                throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
-            }
-            moduleFunctionsNode.doWarn(frame, _warnings, message, category, stackLevel, source);
+        public final void warn(Frame frame, Object category, String message) {
+            warnEx(frame, category, message, 1);
         }
 
+        protected abstract void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs);
+
+        private static final class WarnNodeCached extends WarnNode {
+            @CompilationFinal ContextReference<PythonContext> ctxRef;
+            @Child PythonObjectLibrary lib;
+            @Child WarningsModuleNode moduleFunctionsNode;
+
+            @Override
+            protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+                assert frame instanceof VirtualFrame;
+                if (ctxRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    ctxRef = lookupContextReference(PythonLanguage.class);
+                }
+                PythonModule _warnings = ctxRef.get().getCore().lookupBuiltinModule("_warnings");
+                if (lib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+                }
+                String message;
+                try {
+                    message = formatter.format(lib, format, formatArgs);
+                } catch (IllegalFormatException e) {
+                    throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
+                }
+                if (moduleFunctionsNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    moduleFunctionsNode = insert(WarningsModuleNode.create());
+                }
+                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source);
+            }
+
+        }
+
+        private static final class WarnNodeUncached extends WarnNode {
+            @Override
+            protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+                PythonModule _warnings = lookupContextReference(PythonLanguage.class).get().getCore().lookupBuiltinModule("_warnings");
+                Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
+                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                String message;
+                try {
+                    message = formatter.format(lib, format, formatArgs);
+                } catch (IllegalFormatException e) {
+                    throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
+                }
+                lib.callObject(warn, null, message, category, stackLevel, source);
+            }
+
+        }
     }
 }
