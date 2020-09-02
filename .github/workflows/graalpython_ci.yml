@@ -13,6 +13,9 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: '14'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8 
       - run: git clone https://github.com/graalvm/mx.git
       - run: cd graalpython ; ../mx/mx python-gate --tags style,fullbuild,python-unittest-jython
       - run: cd graalpython ; ../mx/mx python-gate --tags python-unittest || true
