@@ -5348,7 +5348,8 @@ static PyMethodDef TestMethods[] = {
     {"tracemalloc_untrack", tracemalloc_untrack, METH_VARARGS},
     {"tracemalloc_get_traceback", tracemalloc_get_traceback, METH_VARARGS},
     {"dict_get_version", dict_get_version, METH_VARARGS},
-    {"raise_SIGINT_then_send_None", raise_SIGINT_then_send_None, METH_VARARGS},
+    /* we do not support 'raise_SIGINT_then_send_None' because of incomplete signal support */
+    /* {"raise_SIGINT_then_send_None", raise_SIGINT_then_send_None, METH_VARARGS}, */
     {"pyobject_fastcall", test_pyobject_fastcall, METH_VARARGS},
     {"pyobject_fastcalldict", test_pyobject_fastcalldict, METH_VARARGS},
     {"pyobject_vectorcall", test_pyobject_vectorcall, METH_VARARGS},
