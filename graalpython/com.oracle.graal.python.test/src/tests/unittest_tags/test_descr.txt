@@ -53,6 +53,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_overloading
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_properties_doc_attrib
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_properties_plus
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_proxy_call
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_proxy_super
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_python_dicts
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_python_lists
@@ -82,6 +83,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_vicious_descriptor_nonsense
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_weakref_segfault
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_wrapper_segfault
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_wrong_class_slot_wrapper
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_dict_type_with_metaclass
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_repr
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_extend

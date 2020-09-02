@@ -40,12 +40,22 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -61,6 +71,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 // cpython://Objects/abstract.c#binary_op1
@@ -87,6 +98,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     protected final boolean ignoreDescriptorException;
     private final boolean alwaysCheckReverse;
 
+    @Child private PRaiseNode raiseNode;
+    @Child private GetNameNode getNameNode;
     @Child private CallBinaryMethodNode dispatchNode;
     @Child private CallBinaryMethodNode reverseDispatchNode;
     @Child private NotImplementedHandler handler;
@@ -175,6 +188,22 @@ public abstract class LookupAndCallBinaryNode extends Node {
             dispatchNode = insert(CallBinaryMethodNode.create());
         }
         return dispatchNode;
+    }
+
+    private PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
+
+    private GetNameNode ensureGetNameNode() {
+        if (getNameNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getNameNode = insert(GetNameNode.create());
+        }
+        return getNameNode;
     }
 
     private CallBinaryMethodNode ensureReverseDispatch() {
@@ -390,7 +419,13 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @CachedLibrary("right") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
-                    @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
+                    @Cached("createBinaryProfile()") ConditionProfile hasLeftCallable,
+                    @Cached("createBinaryProfile()") ConditionProfile hasRightCallable,
+                    @Cached("createBinaryProfile()") ConditionProfile notImplementedProfile,
+                    @Cached("createBinaryProfile()") ConditionProfile hasEnclosingBuiltin,
+                    @Cached BranchProfile noLeftBuiltinClassType,
+                    @Cached BranchProfile noRightBuiltinClassType,
+                    @Cached BranchProfile gotResultBranch) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
         // (the structure is modelled closely on it), as well as the additional logic in
         // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
@@ -408,29 +443,50 @@ public abstract class LookupAndCallBinaryNode extends Node {
         Object rightClass = libRight.getLazyPythonClass(right);
         Object rightValue = libRight.getDelegatedValue(right);
         Object rightCallable = getattrR.execute(frame, rightClass, rightValue);
+
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
-        if (leftCallable != PNone.NO_VALUE) {
-            if (rightCallable != PNone.NO_VALUE && !isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass)) {
-                result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
+
+        if (hasLeftCallable.profile(leftCallable != PNone.NO_VALUE)) {
+            if (hasRightCallable.profile(rightCallable != PNone.NO_VALUE) &&
+                            (!isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
+                                            isFlagSequenceCompat(leftClass, rightClass, name, noLeftBuiltinClassType, noRightBuiltinClassType))) {
+                result = dispatch(frame, ensureReverseDispatch(), rightCallable, rightValue, leftValue, rightClass, rname, isSubtype, hasEnclosingBuiltin);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
+                gotResultBranch.enter();
                 rightCallable = PNone.NO_VALUE;
             }
-            result = ensureDispatch().executeObject(frame, leftCallable, leftValue, rightValue);
+            result = dispatch(frame, ensureDispatch(), leftCallable, leftValue, rightValue, leftClass, name, isSubtype, hasEnclosingBuiltin);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
+            gotResultBranch.enter();
         }
-        if (notImplementedBranch.profile(rightCallable != PNone.NO_VALUE)) {
-            result = ensureReverseDispatch().executeObject(frame, rightCallable, rightValue, leftValue);
+        if (notImplementedProfile.profile(rightCallable != PNone.NO_VALUE)) {
+            result = dispatch(frame, ensureReverseDispatch(), rightCallable, rightValue, leftValue, rightClass, rname, isSubtype, hasEnclosingBuiltin);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
             return runErrorHandler(frame, leftValue, rightValue);
         }
         return result;
+    }
+
+    private Object dispatch(VirtualFrame frame, CallBinaryMethodNode dispatch, Object callable, Object leftValue, Object rightValue, Object leftClass, String op, IsSubtypeNode isSubtype,
+                    ConditionProfile hasEnclosingBuiltin) {
+        // see descrobject.c/wrapperdescr_call()
+        Object enclosing = null;
+        if (callable instanceof PBuiltinFunction) {
+            enclosing = ((PBuiltinFunction) callable).getEnclosingType();
+        } else if (callable instanceof PBuiltinMethod) {
+            enclosing = ((PBuiltinMethod) callable).getFunction().getEnclosingType();
+        }
+        if (hasEnclosingBuiltin.profile(enclosing != null) && !isSubtype.execute(leftClass, enclosing)) {
+            throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op, ensureGetNameNode().execute(leftClass), leftValue);
+        }
+        return dispatch.executeObject(frame, callable, leftValue, rightValue);
     }
 
     @Specialization(guards = {"isReversible()"}, replaces = "callObjectR")
@@ -441,8 +497,41 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @CachedLibrary(limit = "1") PythonObjectLibrary libRight,
                     @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached("create()") IsSubtypeNode isSubtype,
-                    @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
-        return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype, notImplementedBranch);
+                    @Cached("createBinaryProfile()") ConditionProfile hasLeftCallable,
+                    @Cached("createBinaryProfile()") ConditionProfile hasRightCallable,
+                    @Cached("createBinaryProfile()") ConditionProfile notImplementedProfile,
+                    @Cached("createBinaryProfile()") ConditionProfile hasEnclosingBuiltin,
+                    @Cached BranchProfile noLeftBuiltinClassType,
+                    @Cached BranchProfile noRightBuiltinClassType,
+                    @Cached BranchProfile gotResultBranch) {
+        return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype,
+                        hasLeftCallable, hasRightCallable, notImplementedProfile, hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+    }
+
+    private static boolean isFlagSequenceCompat(Object leftClass, Object rightClass, String name, BranchProfile gotLeftBuiltinClassType, BranchProfile gotRightBuiltinClassType) {
+        if (PGuards.isNativeClass(leftClass) || PGuards.isNativeClass(rightClass)) {
+            return false;
+        }
+        // see pypy descroperation.py#_make_binop_impl()
+        boolean isSeqBugCompatOperation = (name.equals(__ADD__) || name.equals(__MUL__));
+        return isSeqBugCompatOperation && isFlagSequenceBugCompat(leftClass, gotLeftBuiltinClassType) && !isFlagSequenceBugCompat(rightClass, gotRightBuiltinClassType);
+    }
+
+    private static boolean isFlagSequenceBugCompat(Object clazz, BranchProfile gotBuiltinClassType) {
+        PythonBuiltinClassType type = null;
+        if (clazz instanceof PythonBuiltinClassType) {
+            type = (PythonBuiltinClassType) clazz;
+        } else if (clazz instanceof PythonBuiltinClass) {
+            type = ((PythonBuiltinClass) clazz).getType();
+        } else {
+            return false;
+        }
+        gotBuiltinClassType.enter();
+        return type == PythonBuiltinClassType.PString ||
+                        type == PythonBuiltinClassType.PByteArray ||
+                        type == PythonBuiltinClassType.PBytes ||
+                        type == PythonBuiltinClassType.PList ||
+                        type == PythonBuiltinClassType.PTuple;
     }
 
     private Object runErrorHandler(VirtualFrame frame, Object left, Object right) {
