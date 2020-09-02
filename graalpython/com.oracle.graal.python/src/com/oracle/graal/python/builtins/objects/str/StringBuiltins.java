@@ -1807,11 +1807,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         private static boolean isPrintableChar(int i) {
-            if (UCharacter.isISOControl(i)) {
-                return false;
-            }
-            Character.UnicodeBlock block = Character.UnicodeBlock.of(i);
-            return block != null && block != Character.UnicodeBlock.SPECIALS;
+            return UCharacter.isPrintable(i);
         }
 
         @Specialization

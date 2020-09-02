@@ -41,6 +41,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isascii
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isdecimal
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_islower
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isprintable
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isspace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue28598_strsubclass_rhs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_istitle
@@ -68,6 +69,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_strip_whitespace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_subclass_add
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_subscript
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_surrogates
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_title
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_unicode_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_upper
