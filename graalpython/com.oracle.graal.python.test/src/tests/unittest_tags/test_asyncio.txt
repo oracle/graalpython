@@ -16,6 +16,7 @@
 *test.test_asyncio.test_events.PolicyTests.test_get_event_loop_policy
 *test.test_asyncio.test_events.PolicyTests.test_get_event_loop_thread
 *test.test_asyncio.test_events.PolicyTests.test_set_event_loop_policy
+*test.test_asyncio.test_events.SelectEventLoopTests.test_create_datagram_endpoint_ipv6
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_server_dual_stack
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_server_reuse_port
 *test.test_asyncio.test_events.SelectEventLoopTests.test_create_server_ssl

@@ -21,6 +21,10 @@
 *graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_is_default
 *graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_many_threads
 *graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_many_threads_nonblock
+*graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_many_threads_timeout
+*graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_negative_timeout_raises_exception
+*graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_order
+*graalpython.lib-python.3.test.test_queue.CSimpleQueueTest.test_reentrancy
 *graalpython.lib-python.3.test.test_queue.PyFailingQueueTest.test_failing_queue
 *graalpython.lib-python.3.test.test_queue.PyLifoQueueTest.test_basic
 *graalpython.lib-python.3.test.test_queue.PyLifoQueueTest.test_negative_timeout_raises_exception

@@ -58,6 +58,7 @@
 *graalpython.lib-python.3.test.test_math.MathTests.testTanhSign
 *graalpython.lib-python.3.test.test_math.MathTests.test_exceptions
 *graalpython.lib-python.3.test.test_math.MathTests.test_inf_constant
+*graalpython.lib-python.3.test.test_math.MathTests.test_issue39871
 *graalpython.lib-python.3.test.test_math.MathTests.test_mtestfile
 *graalpython.lib-python.3.test.test_math.MathTests.test_nan_constant
 *graalpython.lib-python.3.test.test_math.MathTests.test_prod

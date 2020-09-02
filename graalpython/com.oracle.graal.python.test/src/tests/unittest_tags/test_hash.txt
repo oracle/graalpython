@@ -3,6 +3,8 @@
 *graalpython.lib-python.3.test.test_hash.BytesHashRandomizationTests.test_long_fixed_hash
 *graalpython.lib-python.3.test.test_hash.HashBuiltinsTestCase.test_hashes
 *graalpython.lib-python.3.test.test_hash.HashDistributionTestCase.test_hash_distribution
+*graalpython.lib-python.3.test.test_hash.HashEqualityTestCase.test_coerced_floats
+*graalpython.lib-python.3.test.test_hash.HashEqualityTestCase.test_coerced_integers
 *graalpython.lib-python.3.test.test_hash.HashEqualityTestCase.test_numeric_literals
 *graalpython.lib-python.3.test.test_hash.HashInheritanceTestCase.test_default_hash
 *graalpython.lib-python.3.test.test_hash.HashInheritanceTestCase.test_error_hash

@@ -24,7 +24,9 @@
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads_incomplete_body
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_partial_reads_no_content_length
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_domain_validation
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_encoding
+*graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_host_validation
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_putrequest_override_validation
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_read1_bound_content_length
 *graalpython.lib-python.3.test.test_httplib.BasicTest.test_read1_content_length

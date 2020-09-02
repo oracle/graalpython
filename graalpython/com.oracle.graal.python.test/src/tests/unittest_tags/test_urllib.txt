@@ -65,6 +65,10 @@
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_read_bogus
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_redirect_limit_independent
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_fragment
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_host_with_control_char_rejected
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_host_with_newline_header_injection_rejected
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_path_with_control_char_rejected
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_path_with_newline_header_injection_rejected
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_with_control_char_rejected
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_with_newline_header_injection_rejected
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_userpass_inurl
