@@ -318,6 +318,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RaiseSignalNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         static PNone doInt(int signum) {
             Signal.raise(new sun.misc.Signal(Signals.signalNumberToName(signum)));
             return PNone.NONE;
