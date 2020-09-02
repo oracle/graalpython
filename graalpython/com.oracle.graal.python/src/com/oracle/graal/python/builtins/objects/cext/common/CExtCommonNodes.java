@@ -548,7 +548,7 @@ public abstract class CExtCommonNodes {
                     }
                     return obj.intValue();
                 }
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
             return raiseTooLarge(raiseNativeNode, targetTypeSize);
@@ -567,7 +567,7 @@ public abstract class CExtCommonNodes {
                     }
                     return obj.longValue();
                 }
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
             return raiseTooLarge(raiseNativeNode, targetTypeSize);

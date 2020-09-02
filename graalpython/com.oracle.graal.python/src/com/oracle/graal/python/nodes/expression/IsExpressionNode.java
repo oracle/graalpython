@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -153,7 +154,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             if (isBuiltin.profileIsAnyBuiltinObject(right)) {
                 try {
                     return right.intValueExact() == left;
-                } catch (ArithmeticException e) {
+                } catch (OverflowException e) {
                     return false;
                 }
             } else {
@@ -189,7 +190,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
             if (isBuiltin.profileIsAnyBuiltinObject(right)) {
                 try {
                     return left == right.longValueExact();
-                } catch (ArithmeticException e) {
+                } catch (OverflowException e) {
                     return false;
                 }
             } else {

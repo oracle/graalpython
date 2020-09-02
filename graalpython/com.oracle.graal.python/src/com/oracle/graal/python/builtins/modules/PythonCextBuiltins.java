@@ -1423,7 +1423,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doUnicode(VirtualFrame frame, String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
             try {
                 return doUnicode(frame, s, elementSize.longValueExact(), -1, errorMarker);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
@@ -1432,7 +1432,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object doUnicode(VirtualFrame frame, String s, PInt elementSize, PInt elements, Object errorMarker) {
             try {
                 return doUnicode(frame, s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return raiseNative(frame, errorMarker, PythonErrorType.ValueError, ErrorMessages.INVALID_PARAMS);
             }
         }
@@ -2088,8 +2088,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        PBytes doPInt(PInt size) {
+        @Specialization(rewriteOn = OverflowException.class)
+        PBytes doPInt(PInt size) throws OverflowException {
             return doInt(size.intValueExact());
         }
 
@@ -2098,7 +2098,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doInt(size.intValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(IndexError, size);
             }
         }
@@ -2504,7 +2504,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached BranchProfile overflowProfile) {
             try {
                 return n.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 overflowProfile.enter();
                 throw raise(OverflowError);
             }

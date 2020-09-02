@@ -160,6 +160,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -989,12 +990,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         long doId(PInt value,
+                        @Cached BranchProfile overflowProfile,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileIsAnyBuiltinObject(value)) {
                 try {
                     return doId(value.intValueExact());
-                } catch (ArithmeticException e) {
-                    // fall through
+                } catch (OverflowException e) {
+                    overflowProfile.enter();
                 }
             }
             return doGeneric(value);

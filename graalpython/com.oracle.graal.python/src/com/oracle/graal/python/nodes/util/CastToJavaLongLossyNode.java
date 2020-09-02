@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -59,8 +60,8 @@ public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
         return CastToJavaLongLossyNodeGen.getUncached();
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    protected static long toLong(PInt x) {
+    @Specialization(rewriteOn = OverflowException.class)
+    protected static long toLong(PInt x) throws OverflowException {
         return x.longValueExact();
     }
 
@@ -71,7 +72,7 @@ public abstract class CastToJavaLongLossyNode extends CastToJavaLongNode {
         } else if (x.compareTo(PInt.MIN_LONG) < 0) {
             return Long.MIN_VALUE;
         } else {
-            return x.longValueExact();
+            return x.longValue();
         }
     }
 }

@@ -84,6 +84,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.util.OverflowException;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -903,8 +904,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int dupPInt(VirtualFrame frame, PInt fd, PInt fd2) {
+        @Specialization(rewriteOn = OverflowException.class)
+        int dupPInt(VirtualFrame frame, PInt fd, PInt fd2) throws OverflowException {
             try {
                 return getResources().dup2(fd.intValueExact(), fd2.intValueExact());
             } catch (IOException e) {
@@ -916,7 +917,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int dupOvf(VirtualFrame frame, PInt fd, PInt fd2) {
             try {
                 return dupPInt(frame, fd, fd2);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseOSError(frame, OSErrorEnum.EBADF);
             }
         }
@@ -1876,7 +1877,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 if (getContext().getResources().getFileChannel(value) == null) {
                     throw raiseOSError(frame, OSErrorEnum.EBADF);
                 }
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
             return factory().createTuple(new Object[]{getTerminalWidth(), getTerminalHeight()});

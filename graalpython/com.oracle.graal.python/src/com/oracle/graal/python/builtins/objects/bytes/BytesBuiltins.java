@@ -105,6 +105,7 @@ import com.oracle.graal.python.runtime.formatting.BytesFormatProcessor;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1386,7 +1387,7 @@ public class BytesBuiltins extends PythonBuiltins {
         private int getIntValue(PInt from) {
             try {
                 return from.intValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }

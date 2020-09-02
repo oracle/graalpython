@@ -1226,7 +1226,7 @@ public abstract class SequenceStorageNodes {
         protected static void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setIntItemNormalized(idx, value.intValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw new SequenceStoreException(value);
             }
         }
@@ -1245,7 +1245,7 @@ public abstract class SequenceStorageNodes {
         protected static void doLong(LongSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setLongItemNormalized(idx, value.longValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw new SequenceStoreException(value);
             }
         }

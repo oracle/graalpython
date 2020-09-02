@@ -142,9 +142,9 @@ final class DefaultPythonLongExports {
             return receiver == other;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         static boolean lP(Long receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) throws OverflowException {
             if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
                 return receiver == other.longValueExact();
             }
@@ -156,7 +156,7 @@ final class DefaultPythonLongExports {
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
                 if (other.fitsInLong()) {
-                    return receiver == other.longValueExact();
+                    return receiver == other.longValue();
                 }
             }
             return false;

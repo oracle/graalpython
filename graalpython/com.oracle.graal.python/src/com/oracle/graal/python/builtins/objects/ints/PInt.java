@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.BigIntegerUtils;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -141,7 +142,7 @@ public final class PInt extends PythonBuiltinObject {
     short asShort(@CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asShort(intValueExact());
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -157,7 +158,7 @@ public final class PInt extends PythonBuiltinObject {
     public int asInt() throws UnsupportedMessageException {
         try {
             return this.intValueExact();
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -172,7 +173,7 @@ public final class PInt extends PythonBuiltinObject {
     public long asLong() throws UnsupportedMessageException {
         try {
             return this.longValueExact();
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -180,14 +181,18 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     boolean fitsInFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) {
-        return fitsInLong() && interop.fitsInFloat(longValueExact());
+        try {
+            return fitsInLong() && interop.fitsInFloat(longValueExact());
+        } catch (OverflowException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @ExportMessage(limit = "1")
     float asFloat(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asFloat(longValueExact());
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -195,14 +200,18 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage(limit = "1")
     boolean fitsInDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) {
-        return fitsInLong() && interop.fitsInDouble(longValueExact());
+        try {
+            return fitsInLong() && interop.fitsInDouble(longValueExact());
+        } catch (OverflowException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     @ExportMessage(limit = "1")
     double asDouble(@CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
         try {
             return interop.asDouble(longValueExact());
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -346,13 +355,8 @@ public final class PInt extends PythonBuiltinObject {
         return value.intValue();
     }
 
-    public int intValueExact() {
-        return intValueExact(value);
-    }
-
-    @TruffleBoundary
-    public static int intValueExact(BigInteger value) {
-        return value.intValueExact();
+    public int intValueExact() throws OverflowException {
+        return BigIntegerUtils.intValueExact(value);
     }
 
     public long longValue() {
@@ -364,13 +368,12 @@ public final class PInt extends PythonBuiltinObject {
         return integer.longValue();
     }
 
-    public long longValueExact() throws ArithmeticException {
+    public long longValueExact() throws OverflowException {
         return longValueExact(value);
     }
 
-    @TruffleBoundary
-    public static long longValueExact(BigInteger value) throws ArithmeticException {
-        return value.longValueExact();
+    public static long longValueExact(BigInteger value) throws OverflowException {
+        return BigIntegerUtils.longValueExact(value);
     }
 
     public PInt max(PInt val) {

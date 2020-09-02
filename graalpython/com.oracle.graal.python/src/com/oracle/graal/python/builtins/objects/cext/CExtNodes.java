@@ -135,6 +135,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2344,7 +2345,7 @@ public abstract class CExtNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return obj.intValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
             errorProfile.enter();
@@ -2368,7 +2369,7 @@ public abstract class CExtNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return obj.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // fall through
             }
             errorProfile.enter();

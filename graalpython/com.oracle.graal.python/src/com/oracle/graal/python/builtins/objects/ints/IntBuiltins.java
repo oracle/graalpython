@@ -206,7 +206,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             try {
                 return makeInt(op(arg, n.intValueExact()));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
             }
@@ -219,7 +219,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             try {
                 return makeInt(op(arg.getValue(), n.intValueExact()));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
             }
@@ -308,8 +308,8 @@ public class IntBuiltins extends PythonBuiltins {
             return r;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object addPIntLongAndNarrow(PInt left, long right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        Object addPIntLongAndNarrow(PInt left, long right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -318,8 +318,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object addLongPIntAndNarrow(long left, PInt right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        Object addLongPIntAndNarrow(long left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -328,8 +328,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object addPIntPIntAndNarrow(PInt left, PInt right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        Object addPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -383,8 +383,8 @@ public class IntBuiltins extends PythonBuiltins {
             return r;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doPIntLongAndNarrow(PInt left, long right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doPIntLongAndNarrow(PInt left, long right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -393,8 +393,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLongPIntAndNarrow(long left, PInt right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doLongPIntAndNarrow(long left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -403,8 +403,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doPIntPIntAndNarrow(PInt left, PInt right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -511,15 +511,15 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FloorDivNode extends IntBinaryBuiltinNode {
         @Specialization
-        int doLL(int left, int right) {
+        int doII(int left, int right) {
             raiseDivisionByZero(right == 0);
             return Math.floorDiv(left, right);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long left, long right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doLL(long left, long right) throws OverflowException {
             if (left == Long.MIN_VALUE && right == -1) {
-                throw new ArithmeticException();
+                throw OverflowException.INSTANCE;
             }
             raiseDivisionByZero(right == 0);
             return Math.floorDiv(left, right);
@@ -530,40 +530,40 @@ public class IntBuiltins extends PythonBuiltins {
             return doPiPi(factory().createInt(left), factory().createInt(right));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doLPi(int left, PInt right) throws ArithmeticException {
+        @Specialization(rewriteOn = OverflowException.class)
+        int doIPi(int left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return Math.floorDiv(left, right.intValueExact());
         }
 
-        @Specialization
-        int doLPiOvf(int left, PInt right) {
+        @Specialization(replaces = "doIPi")
+        int doIPiOvf(int left, PInt right) {
             raiseDivisionByZero(right.isZero());
             try {
                 return Math.floorDiv(left, right.intValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLPi(long left, PInt right) throws ArithmeticException {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doLPi(long left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return Math.floorDiv(left, right.longValueExact());
         }
 
-        @Specialization
+        @Specialization(replaces = "doLPi")
         long doLPiOvf(long left, PInt right) {
             raiseDivisionByZero(right.isZero());
             try {
                 return Math.floorDiv(left, right.longValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doPiIAndNarrow(PInt left, int right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doPiIAndNarrow(PInt left, int right) throws OverflowException {
             raiseDivisionByZero(right == 0);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
@@ -574,8 +574,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doPiLAndNarrow(PInt left, long right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doPiLAndNarrow(PInt left, long right) throws OverflowException {
             raiseDivisionByZero(right == 0);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
@@ -586,8 +586,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doPiPiAndNarrow(PInt left, PInt right) {
+        @Specialization(rewriteOn = OverflowException.class)
+        long doPiPiAndNarrow(PInt left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
@@ -668,8 +668,8 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.floorMod(left, right);
         }
 
-        @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
-        long doLPiAndNarrow(long left, PInt right) {
+        @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
+        long doLPiAndNarrow(long left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
@@ -680,8 +680,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
-        @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
-        long doLPiNegativeAndNarrow(long left, PInt right) {
+        @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
+        long doLPiNegativeAndNarrow(long left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return PInt.longValueExact(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
@@ -692,8 +692,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(opNeg(PInt.longToBigInteger(left), right.getValue()));
         }
 
-        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doPiLAndNarrow(PInt left, long right) {
+        @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
+        long doPiLAndNarrow(PInt left, long right) throws OverflowException {
             raiseDivisionByZero(right == 0);
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
@@ -704,8 +704,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(guards = "right < 0", rewriteOn = ArithmeticException.class)
-        long doPiLNegAndNarrow(PInt left, long right) {
+        @Specialization(guards = "right < 0", rewriteOn = OverflowException.class)
+        long doPiLNegAndNarrow(PInt left, long right) throws OverflowException {
             raiseDivisionByZero(right == 0);
             return PInt.longValueExact(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
@@ -716,8 +716,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(opNeg(left.getValue(), PInt.longToBigInteger(right)));
         }
 
-        @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
-        long doPiPiAndNarrow(PInt left, PInt right) {
+        @Specialization(guards = "right.isZeroOrPositive()", rewriteOn = OverflowException.class)
+        long doPiPiAndNarrow(PInt left, PInt right) throws OverflowException {
             raiseDivisionByZero(right.isZero());
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
@@ -728,8 +728,8 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
 
-        @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = ArithmeticException.class)
-        long doPiPiNegAndNarrow(PInt left, PInt right) {
+        @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
+        long doPiPiNegAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(opNeg(left.getValue(), right.getValue()));
         }
 
@@ -887,9 +887,9 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.pow(left, right);
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         Object doLPNarrow(long left, PInt right, @SuppressWarnings("unused") PNone none,
-                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) {
+                        @Shared("leftIsZero") @Cached ConditionProfile leftIsZero) throws OverflowException {
             long lright = right.longValueExact();
             if (lright >= 0) {
                 return doLLFast(left, lright, none);
@@ -907,8 +907,8 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doPLNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) {
+        @Specialization(guards = "right >= 0", rewriteOn = OverflowException.class)
+        long doPLNarrow(PInt left, long right, @SuppressWarnings("unused") PNone none) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right));
         }
 
@@ -940,7 +940,7 @@ public class IntBuiltins extends PythonBuiltins {
         static long doLLPosLPos(long left, long right, long mod) {
             try {
                 return PInt.longValueExact(op(left, right, mod));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // cannot happen since we took modulo long AND 'mod > 0'
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
@@ -959,7 +959,7 @@ public class IntBuiltins extends PythonBuiltins {
                     return PInt.longValueExact(opNeg(left, right, mod));
                 }
                 return PInt.longValueExact(op(left, right, mod));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // cannot happen since we took modulo long AND 'mod != 0'
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException();
@@ -1379,7 +1379,7 @@ public class IntBuiltins extends PythonBuiltins {
             try {
                 int iright = right.intValueExact();
                 return factory().createInt(op(PInt.longToBigInteger(left), iright));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
         }
@@ -1421,7 +1421,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             try {
                 return factory().createInt(op(left.getValue(), right.intValueExact()));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
         }
@@ -1525,7 +1525,7 @@ public class IntBuiltins extends PythonBuiltins {
             raiseNegativeShiftCount(!right.isZeroOrPositive());
             try {
                 return factory().createInt(op(left, right.intValueExact()));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // right is >= 2**31, BigInteger's bitLength is at most 2**31-1
                 // therefore the result of shifting right is just the sign bit
                 return left.signum() < 0 ? -1 : 0;
@@ -1675,8 +1675,8 @@ public class IntBuiltins extends PythonBuiltins {
             return a ? b.isOne() : b.isZero();
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiL(PInt a, long b) throws ArithmeticException {
+        @Specialization(rewriteOn = OverflowException.class)
+        boolean eqPiL(PInt a, long b) throws OverflowException {
             return a.longValueExact() == b;
         }
 
@@ -1684,13 +1684,13 @@ public class IntBuiltins extends PythonBuiltins {
         boolean eqPiLOvf(PInt a, long b) {
             try {
                 return a.longValueExact() == b;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqLPi(long b, PInt a) throws ArithmeticException {
+        @Specialization(rewriteOn = OverflowException.class)
+        boolean eqLPi(long b, PInt a) throws OverflowException {
             return a.longValueExact() == b;
         }
 
@@ -1698,7 +1698,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() == b;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }
@@ -1739,7 +1739,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             try {
                 return PythonObjectLibrary.getFactory().getUncached(a).hash(a) == b.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }
@@ -1765,30 +1765,30 @@ public class IntBuiltins extends PythonBuiltins {
             return a != b;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiL(PInt a, long b) {
+        @Specialization(rewriteOn = OverflowException.class)
+        boolean eqPiL(PInt a, long b) throws OverflowException {
             return a.longValueExact() != b;
         }
 
-        @Specialization
+        @Specialization(replaces = "eqPiL")
         boolean eqPiLOvf(PInt a, long b) {
             try {
                 return a.longValueExact() != b;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return true;
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqLPi(long b, PInt a) {
+        @Specialization(rewriteOn = OverflowException.class)
+        boolean eqLPi(long b, PInt a) throws OverflowException {
             return a.longValueExact() != b;
         }
 
-        @Specialization
+        @Specialization(replaces = "eqLPi")
         boolean eqLPiOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return true;
             }
         }
@@ -1823,7 +1823,7 @@ public class IntBuiltins extends PythonBuiltins {
         static boolean doLP(long left, PInt right) {
             try {
                 return left < right.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return right.doubleValue() > 0;
             }
         }
@@ -1832,7 +1832,7 @@ public class IntBuiltins extends PythonBuiltins {
         static boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() < right;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left.doubleValue() < 0;
             }
         }
@@ -1903,7 +1903,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doLP(long left, PInt right) {
             try {
                 return left <= right.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return right.doubleValue() > 0;
             }
         }
@@ -1912,7 +1912,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() <= right;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left.doubleValue() < 0;
             }
         }
@@ -1948,7 +1948,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doLP(long left, PInt right) {
             try {
                 return left > right.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return right.doubleValue() < 0;
             }
         }
@@ -1957,7 +1957,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() > right;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left.doubleValue() > 0;
             }
         }
@@ -1993,7 +1993,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doLP(long left, PInt right) {
             try {
                 return left >= right.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return right.doubleValue() < 0;
             }
         }
@@ -2002,7 +2002,7 @@ public class IntBuiltins extends PythonBuiltins {
         boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() >= right;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return left.doubleValue() > 0;
             }
         }
@@ -2759,15 +2759,15 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", rewriteOn = ArithmeticException.class, limit = "3")
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", rewriteOn = OverflowException.class, limit = "3")
         static int doPIntOverridenNarrowInt(PInt self,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) throws OverflowException {
             return self.intValueExact();
         }
 
-        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", replaces = "doPIntOverridenNarrowInt", rewriteOn = ArithmeticException.class, limit = "3")
+        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", replaces = "doPIntOverridenNarrowInt", rewriteOn = OverflowException.class, limit = "3")
         static long doPIntOverridenNarrowLong(PInt self,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) throws OverflowException {
             return self.longValueExact();
         }
 

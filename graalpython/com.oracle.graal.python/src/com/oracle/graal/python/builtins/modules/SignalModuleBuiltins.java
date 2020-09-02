@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -164,8 +165,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return 0;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int alarm(PInt seconds) {
+        @Specialization(rewriteOn = OverflowException.class)
+        int alarm(PInt seconds) throws OverflowException {
             Signals.scheduleAlarm(seconds.longValueExact());
             return 0;
         }
@@ -175,7 +176,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             try {
                 Signals.scheduleAlarm(seconds.longValueExact());
                 return 0;
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
             }
         }

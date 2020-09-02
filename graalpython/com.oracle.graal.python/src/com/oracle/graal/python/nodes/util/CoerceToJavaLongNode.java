@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongExactNodeGen;
 import com.oracle.graal.python.nodes.util.CoerceToJavaLongNodeGen.CoerceToJavaLongLossyNodeGen;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -132,7 +133,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
         protected long toLongInternal(PInt x) {
             try {
                 return x.longValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_BE_INTEPRETED_AS_LONG, x);
             }

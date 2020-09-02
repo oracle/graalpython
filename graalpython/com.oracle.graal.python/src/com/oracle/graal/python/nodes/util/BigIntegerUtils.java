@@ -40,47 +40,73 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
 
-/**
- * Casts a Python integer to a Java int, lossy and without coercion. <b>ATTENTION:</b> If the cast
- * isn't possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntLossyNode extends CastToJavaIntNode {
-
-    public static CastToJavaIntLossyNode create() {
-        return CastToJavaIntLossyNodeGen.create();
+public class BigIntegerUtils {
+    public static int intValueExact(BigInteger x) throws OverflowException {
+        int signum = x.signum();
+        if (signum == 0) {
+            return 0;
+        }
+        int[] mag = getMag(x);
+        if (mag.length == 1) {
+            int mag0 = mag[0];
+            if (mag0 > 0 || (mag0 == 0x80000000 && signum < 0)) {
+                return signum * mag0;
+            }
+        }
+        throw OverflowException.INSTANCE;
     }
 
-    public static CastToJavaIntLossyNode getUncached() {
-        return CastToJavaIntLossyNodeGen.getUncached();
+    public static long longValueExact(BigInteger x) throws OverflowException {
+        int signum = x.signum();
+        if (signum == 0) {
+            return 0;
+        }
+        int[] mag = getMag(x);
+        if (mag.length == 1) {
+            int mag0 = mag[0];
+            if (mag0 > 0 || (mag0 == 0x80000000 && signum < 0)) {
+                return signum * mag0;
+            } else {
+                long mag0l = mag0 & 0xFFFFFFFFL;
+                return signum * mag0l;
+            }
+        }
+        if (mag.length == 2) {
+            int mag0 = mag[0];
+            int mag1 = mag[1];
+            if (mag0 > 0 || (mag0 == 0x80000000 && signum < 0 && mag1 == 0)) {
+                long mag0l = mag0 & 0xFFFFFFFFL;
+                long mag1l = mag1 & 0xFFFFFFFFL;
+                return signum * ((mag0l << 32) | mag1l);
+            }
+        }
+        throw OverflowException.INSTANCE;
     }
 
-    @Specialization
-    protected static int toInt(long x) {
-        int i = (int) x;
-        return x == i ? i : (x > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE);
+    private static final Field MAG_FIELD;
+
+    static {
+        try {
+            MAG_FIELD = BigInteger.class.getDeclaredField("mag");
+            MAG_FIELD.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Unable to access BigInteger.mag", e);
+        }
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
-    protected static int toIntPInt(PInt x) throws OverflowException {
-        return x.intValueExact();
-    }
-
-    @TruffleBoundary
-    @Specialization(replaces = "toIntPInt")
-    protected static int toIntOverflow(PInt x) {
-        if (x.compareTo(PInt.MAX_INT) > 0) {
-            return Integer.MAX_VALUE;
-        } else if (x.compareTo(PInt.MIN_INT) < 0) {
-            return Integer.MIN_VALUE;
-        } else {
-            return x.intValue();
+    @TruffleBoundary(allowInlining = true)
+    static int[] getMag(BigInteger x) {
+        try {
+            return (int[]) MAG_FIELD.get(x);
+        } catch (IllegalAccessException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 }
