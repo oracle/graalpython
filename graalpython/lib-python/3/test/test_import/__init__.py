@@ -512,6 +512,7 @@ class ImportTests(unittest.TestCase):
 class FilePermissionTests(unittest.TestCase):
     # tests for file mode on cached .pyc files
 
+    @impl_detail("GR-25941: truffle umask support", graalvm=False)
     @unittest.skipUnless(os.name == 'posix',
                          "test meaningful only on posix systems")
     def test_creation_mode(self):
@@ -855,7 +856,7 @@ class PycacheTests(unittest.TestCase):
                         'bytecode file {!r} for {!r} does not '
                         'exist'.format(pyc_path, TESTFN))
 
-    @impl_detail("umask not yet supported", graalvm=False)
+    @impl_detail("GR-25941: truffle umask support", graalvm=False)
     @unittest.skipUnless(os.name == 'posix',
                          "test meaningful only on posix systems")
     @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
