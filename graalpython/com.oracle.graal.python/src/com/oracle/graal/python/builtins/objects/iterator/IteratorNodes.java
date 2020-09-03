@@ -53,15 +53,18 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IteratorNodes {
@@ -141,6 +144,24 @@ public abstract class IteratorNodes {
                 }
             }
             return -1;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class IsIteratorObjectNode extends Node {
+
+        public abstract boolean execute(Object o);
+
+        @Specialization
+        static boolean doPIterator(@SuppressWarnings("unused") PBuiltinIterator it) {
+            // a PIterator object is guaranteed to be an iterator object
+            return true;
+        }
+
+        @Specialization
+        static boolean doGeneric(Object it,
+                                 @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
+            return lookupAttributeNode.execute(it, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
         }
     }
 }

@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -299,27 +298,26 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return selfLib.isDisjointWithState(self.getDictStorage(), other.getDictStorage(), state);
         }
 
-        @Specialization(guards = {"self != other", "!cannotBeOverridden(pLib.getLazyPythonClass(other))"}, limit = "2")
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(otherLib.getLazyPythonClass(other))"}, limit = "2")
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary pLib,
-                        @Cached GetIteratorNode getIteratorNode,
+                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, getIteratorNode, getNextNode, errorProfile);
+            return isDisjointGeneric(frame, self, other, hasFrame, selfLib, otherLib, getNextNode, errorProfile);
         }
 
         @Specialization(guards = {"!isAnySet(other)"}, limit = "3")
         static boolean isDisjointGeneric(VirtualFrame frame, PBaseSet self, Object other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
-                        @Cached GetIteratorNode getIteratorNode,
+                        @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
             HashingStorage selfStorage = self.getDictStorage();
-            Object iterator = getIteratorNode.executeWith(frame, other);
+            Object iterator = otherLib.getIteratorWithFrame(other, frame);
             while (true) {
                 try {
                     Object nextValue = getNextNode.execute(frame, iterator);

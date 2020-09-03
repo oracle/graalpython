@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
@@ -225,7 +224,7 @@ abstract class AccessForeignItemNodes {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObjectSlice(VirtualFrame frame, Object object, PSlice idxSlice, Object pvalues,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GetIteratorNode getIterator,
+                        @CachedLibrary("pvalues") PythonObjectLibrary pvaluesLib,
                         @Cached GetNextNode getNext,
                         @Cached PTypeToForeignNode valueToForeignNode,
                         @Cached BranchProfile unsupportedMessage,
@@ -240,7 +239,7 @@ abstract class AccessForeignItemNodes {
             } catch (UnsupportedMessageException e) {
                 throw raiseNoSetItem(object);
             }
-            Object iter = getIterator.executeWith(frame, pvalues);
+            Object iter = pvaluesLib.getIteratorWithFrame(pvalues, frame);
             for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
                 value = getNext.execute(frame, iter);
                 Object convertedValue = valueToForeignNode.executeConvert(value);

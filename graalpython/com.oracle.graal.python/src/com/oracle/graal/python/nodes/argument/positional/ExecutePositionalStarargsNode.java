@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -72,6 +71,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
+@ImportStatic(PythonOptions.class)
 public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(VirtualFrame frame, Object starargs);
 
@@ -125,18 +125,18 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         return new Object[0];
     }
 
-    @Specialization
+    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
     static Object[] starargs(VirtualFrame frame, Object object,
                     @Cached PRaiseNode raise,
-                    @Cached GetIteratorNode getIterator,
-                    @Cached GetNextNode next,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached GetNextNode nextNode,
                     @Cached IsBuiltinClassProfile errorProfile) {
-        Object iterator = getIterator.executeWith(frame, object);
+        Object iterator = lib.getIteratorWithFrame(object, frame);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
                 try {
-                    addToList(internalStorage, next.execute(frame, iterator));
+                    addToList(internalStorage, nextNode.execute(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return toArray(internalStorage);

@@ -58,9 +58,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -193,7 +193,7 @@ public abstract class HashingCollectionNodes {
         }
     }
 
-    @ImportStatic({PGuards.class})
+    @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
 
@@ -255,20 +255,20 @@ public abstract class HashingCollectionNodes {
             return doString(frame, pstr.getValue(), value, hasFrame, lib);
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"})
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static HashingStorage doIterable(VirtualFrame frame, Object other, Object value,
-                        @Cached("create()") GetIteratorExpressionNode.GetIteratorNode getIteratorNode,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage curStorage = EconomicMapStorage.create();
-            Object iterator = getIteratorNode.executeWith(frame, other);
+            Object iterator = otherLib.getIteratorWithFrame(other, frame);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             while (true) {
                 Object key;
                 try {
-                    key = next.execute(frame, iterator);
+                    key = nextNode.execute(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return curStorage;

@@ -43,9 +43,9 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -60,7 +60,6 @@ public abstract class ContainsNode extends BinaryOpNode {
     @Child private LookupAndCallBinaryNode callNode = LookupAndCallBinaryNode.create(__CONTAINS__, null);
     @Child private CoerceToBooleanNode castBool = CoerceToBooleanNode.createIfTrueNode();
 
-    @Child private GetIteratorNode getIterator;
     @Child private GetNextNode next;
     @Child private IsBuiltinClassProfile errorProfile;
 
@@ -74,10 +73,11 @@ public abstract class ContainsNode extends BinaryOpNode {
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doBoolean(VirtualFrame frame, boolean item, Object iter,
+                    @Shared("iterLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary iterLib,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            Object iterator = getGetIterator().executeWith(frame, iter);
+            Object iterator = iterLib.getIteratorWithState(iter, PArguments.getThreadState(frame));
             return sequenceContains(frame, iterator, item, lib);
         }
         return castBool.executeBoolean(frame, result);
@@ -85,40 +85,44 @@ public abstract class ContainsNode extends BinaryOpNode {
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doInt(VirtualFrame frame, int item, Object iter,
+                    @Shared("iterLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary iterLib,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
+            return sequenceContains(frame, iterLib.getIteratorWithState(iter, PArguments.getThreadState(frame)), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doLong(VirtualFrame frame, long item, Object iter,
+                    @Shared("iterLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary iterLib,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
+            return sequenceContains(frame, iterLib.getIteratorWithState(iter, PArguments.getThreadState(frame)), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     boolean doDouble(VirtualFrame frame, double item, Object iter,
+                    @Shared("iterLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary iterLib,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) throws UnexpectedResultException {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContains(frame, getGetIterator().executeWith(frame, iter), item, lib);
+            return sequenceContains(frame, iterLib.getIteratorWithState(iter, PArguments.getThreadState(frame)), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
 
     @Specialization
     boolean doGeneric(VirtualFrame frame, Object item, Object iter,
+                    @Shared("iterLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary iterLib,
                     @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         Object result = callNode.executeObject(frame, iter, item);
         if (result == PNotImplemented.NOT_IMPLEMENTED) {
-            return sequenceContainsObject(frame, getGetIterator().executeWith(frame, iter), item, lib);
+            return sequenceContainsObject(frame, iterLib.getIteratorWithState(iter, PArguments.getThreadState(frame)), item, lib);
         }
         return castBool.executeBoolean(frame, result);
     }
@@ -225,13 +229,5 @@ public abstract class ContainsNode extends BinaryOpNode {
             next = insert(GetNextNode.create());
         }
         return next;
-    }
-
-    private GetIteratorNode getGetIterator() {
-        if (getIterator == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getIterator = insert(GetIteratorNode.create());
-        }
-        return getIterator;
     }
 }

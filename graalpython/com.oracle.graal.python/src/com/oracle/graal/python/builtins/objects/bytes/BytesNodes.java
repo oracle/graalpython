@@ -41,8 +41,10 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.PythonLanguage.getCore;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -63,14 +65,12 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -85,23 +85,23 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import java.util.Arrays;
 
 public abstract class BytesNodes {
 
+    @ImportStatic(PythonOptions.class)
     public abstract static class BytesJoinNode extends PNodeWithContext {
 
         public abstract byte[] execute(VirtualFrame frame, byte[] sep, Object iterable);
 
-        @Specialization
-        byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") ToBytesNode toBytesNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static byte[] join(VirtualFrame frame, byte[] sep, Object iterable,
+                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached GetNextNode getNextNode,
+                        @Cached ToBytesNode toBytesNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             ArrayList<byte[]> parts = new ArrayList<>();
             int partsTotalSize = 0;
-            Object iterator = getIteratorNode.executeWith(frame, iterable);
+            Object iterator = lib.getIteratorWithFrame(iterable, frame);
             while (true) {
                 try {
                     partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
@@ -112,13 +112,13 @@ public abstract class BytesNodes {
             }
         }
 
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        @TruffleBoundary(allowInlining = true)
         private static int append(ArrayList<byte[]> parts, byte[] barr) {
             parts.add(barr);
             return barr.length;
         }
 
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
+        @TruffleBoundary(allowInlining = true)
         private static byte[] joinArrays(byte[] sep, ArrayList<byte[]> parts, int partsTotalSize) {
             byte[] joinedBytes = new byte[Math.max(0, partsTotalSize + (parts.size() - 1) * sep.length)];
             if (parts.size() > 0) {
@@ -535,30 +535,30 @@ public abstract class BytesNodes {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(PGuards.class)
     public abstract static class ConvertToByteObjectBytesNode extends Node {
-        @Node.Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
+        @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
 
         public abstract byte[] execute(VirtualFrame frame, Object source, Object encoding, Object errors);
 
         @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public byte[] bytearray(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        byte[] bytearray(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return new byte[0];
         }
 
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public byte[] bytearray(VirtualFrame frame, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        byte[] bytearray(VirtualFrame frame, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "5") PythonObjectLibrary lib) {
             int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
             return BytesUtils.fromSize(getCore(), cap);
         }
 
         @Specialization
-        public byte[] fromString(String source, String encoding, @SuppressWarnings("unused") Object errors) {
+        byte[] fromString(String source, String encoding, @SuppressWarnings("unused") Object errors) {
             return BytesUtils.fromStringAndEncoding(getCore(), source, encoding);
         }
 
         @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
         @SuppressWarnings("unused")
-        public byte[] fromString(String source, PNone encoding, PNone errors,
+        byte[] fromString(String source, PNone encoding, PNone errors,
                         @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.STRING_ARG_WO_ENCODING);
         }
@@ -568,7 +568,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public byte[] bytearray(PBytes iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        byte[] bytearray(PBytes iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
@@ -577,19 +577,18 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"isSimpleBytes(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public byte[] bytearray(PByteArray iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        byte[] bytearray(PByteArray iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
         @Specialization(guards = {"!lib.canBeIndex(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public byte[] bytearray(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") GetIteratorExpressionNode.GetIteratorNode getIteratorNode,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") IsBuiltinClassProfile stopIterationProfile,
-                        @Cached("create()") CastToByteNode castToByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+        byte[] bytearray(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile stopIterationProfile,
+                        @Cached CastToByteNode castToByteNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
 
-            Object it = getIteratorNode.executeWith(frame, iterable);
+            Object it = lib.getIteratorWithFrame(iterable, frame);
             byte[] arr = new byte[16];
             int i = 0;
             while (true) {

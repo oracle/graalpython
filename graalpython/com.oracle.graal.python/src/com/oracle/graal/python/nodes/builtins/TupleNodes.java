@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -91,10 +90,9 @@ public abstract class TupleNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, plib)"}, limit = "2")
         PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") CreateStorageFromIteratorNode storageNode,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary plib) {
-            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+                        @Cached CreateStorageFromIteratorNode storageNode,
+                        @CachedLibrary("iterable") PythonObjectLibrary plib) {
+            Object iterObj = plib.getIteratorWithFrame(iterable, frame);
             return factory.createTuple(cls, storageNode.execute(frame, iterObj));
         }
 

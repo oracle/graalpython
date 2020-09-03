@@ -79,7 +79,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -618,15 +618,15 @@ public final class DictBuiltins extends PythonBuiltins {
         public static Object updateMapping(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
-                        @Cached GetIteratorNode getIteratorNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached GetDictStorageNode getStorage,
                         @Cached SetDictStorageNode setStorage) {
             HashingStorage storage = HashingStorage.copyToStorage(frame, args[0], kwargs, getStorage.execute(self),
-                            callKeysNode, callGetItemNode, getIteratorNode, nextNode, errorProfile, lib);
+                            callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
             setStorage.execute(self, storage);
             return PNone.NONE;
         }
@@ -635,8 +635,8 @@ public final class DictBuiltins extends PythonBuiltins {
         public static Object updateSequence(VirtualFrame frame, PDict self, Object[] args, PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary libArg,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
+                        @Shared("keysLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached PRaiseNode raise,
-                        @Cached GetIteratorNode getIterator,
                         @Cached GetNextNode nextNode,
                         @Cached ListNodes.FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
@@ -648,7 +648,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached SetDictStorageNode setStorage) {
             StorageSupplier storageSupplier = (boolean isStringKey, int length) -> getStorage.execute(self);
             HashingStorage storage = HashingStorage.addSequenceToStorage(frame, args[0], kwargs, storageSupplier,
-                            getIterator, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile, errorProfile, lib);
+                            keysLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile, errorProfile, lib);
             setStorage.execute(self, storage);
             return PNone.NONE;
         }
@@ -707,7 +707,6 @@ public final class DictBuiltins extends PythonBuiltins {
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
                         // 2 for method calls, 2 for setitem lookups
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @Cached GetIteratorNode getIteratorNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile noSetItemProfile) {
@@ -715,7 +714,7 @@ public final class DictBuiltins extends PythonBuiltins {
             Object setitemMethod = lib.lookupAttributeOnType(dict, __SETITEM__);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             if (noSetItemProfile.profile(setitemMethod != PNone.NO_VALUE)) {
-                Object it = getIteratorNode.executeWith(frame, iterable);
+                Object it = lib.getIteratorWithFrame(iterable, frame);
                 while (true) {
                     try {
                         Object key = nextNode.execute(frame, it);
