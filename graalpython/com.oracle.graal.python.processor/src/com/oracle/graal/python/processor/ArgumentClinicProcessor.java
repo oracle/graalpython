@@ -111,6 +111,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         writeCode(collectEnclosingTypes(roundEnv));
     }
 
+    @SuppressWarnings("try")
     private void writeCode(HashMap<TypeElement, Set<BuiltinClinicData>> enclosingTypes) throws IOException {
         for (Entry<TypeElement, Set<BuiltinClinicData>> enclosingType : enclosingTypes.entrySet()) {
             String pkgName = getPackage(enclosingType.getKey());
@@ -155,6 +156,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         }
     }
 
+    @SuppressWarnings("try")
     private void writeClinicNode(CodeWriter w, BuiltinClinicData builtin) throws IOException {
         TypeElement type = builtin.type;
         String clinicClassName = type.getSimpleName() + "ClinicProviderGen";
