@@ -43,6 +43,7 @@ package com.oracle.graal.python.processor;
 import javax.lang.model.element.Element;
 
 final class ProcessingError extends Exception {
+    private static final long serialVersionUID = -7741682404828028813L;
     private final Element element;
 
     ProcessingError(Element element, String fmt, Object... args) {

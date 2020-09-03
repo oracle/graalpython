@@ -56,6 +56,8 @@ import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 
 public class ArgumentClinicModel {
     static final class BuiltinConvertor {
+        public static final String CLINIC_PACKAGE = "com.oracle.graal.python.nodes.function.builtins.clinic";
+
         public static String getCodeSnippet(ArgumentClinic annotation, BuiltinAnnotation builtin) {
             switch (annotation.conversion()) {
                 case Boolean:
@@ -71,6 +73,35 @@ public class ArgumentClinicModel {
                     return format("JavaIntConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
                 case Index:
                     return format("IndexConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
+                case None:
+                default:
+                    throw new IllegalArgumentException(annotation.conversion().toString());
+            }
+        }
+
+        public static void addImports(ArgumentClinic annotation, Set<String> imports) {
+            // We may add imports for some other prominent constants
+            // Another possibility is to introduce something like ArgumentClinicImportStatic
+            // annotation, or piggy-back on Truffle DSL's ImportStatic annotation, but then we can
+            // also use fully qualified names in such rare cases
+            if (annotation.defaultValue().startsWith("PNone.")) {
+                imports.add("com.oracle.graal.python.builtins.objects.PNone");
+            }
+            if (annotation.conversion() != ClinicConversion.None) {
+                imports.add(CLINIC_PACKAGE + '.' + getConvertorImport(annotation));
+            }
+        }
+
+        private static String getConvertorImport(ArgumentClinic annotation) {
+            switch (annotation.conversion()) {
+                case Boolean:
+                    return "JavaBooleanConvertorNodeGen";
+                case String:
+                    return annotation.defaultValue().isEmpty() ? "JavaStringConvertorNodeGen" : "JavaStringConvertorWithDefaultValueNodeGen";
+                case Int:
+                    return "JavaIntConversionNodeGen";
+                case Index:
+                    return "IndexConversionNodeGen";
                 case None:
                 default:
                     throw new IllegalArgumentException(annotation.conversion().toString());
@@ -150,6 +181,10 @@ public class ArgumentClinicModel {
             this.index = index;
             this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
             this.castNodeFactory = castNodeFactory;
+        }
+
+        public boolean isClinicArgument() {
+            return annotation != null;
         }
 
         public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index) throws ProcessingError {
