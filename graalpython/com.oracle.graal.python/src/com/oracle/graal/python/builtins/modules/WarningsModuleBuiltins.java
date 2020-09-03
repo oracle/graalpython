@@ -976,17 +976,31 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
                 }
+                String message = formatMessage(format, formatArgs);
+                if (moduleFunctionsNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    moduleFunctionsNode = insert(WarningsModuleNode.create());
+                }
+                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source);
+            }
+
+            /*
+             * Unfortunately, this has do be done eagerly for now, because of the way that the
+             * action filters filter by message text. So we cannot easily wait until we find "ah,
+             * this warning will be ignored" and then format behind the TruffleBoundary at the end
+             * of warnExplicit, since matching the filters needs the text. We could very carefully
+             * delay this formatting if e.g. there's a catch-all ignore filter in the filters list,
+             * but that's a bit involved and might not be worth it.
+             */
+            @TruffleBoundary
+            private String formatMessage(String format, Object... formatArgs) {
                 String message;
                 try {
                     message = formatter.format(lib, format, formatArgs);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
-                if (moduleFunctionsNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    moduleFunctionsNode = insert(WarningsModuleNode.create());
-                }
-                moduleFunctionsNode.doWarn((VirtualFrame) frame, _warnings, message, category, stackLevel, source);
+                return message;
             }
 
         }
