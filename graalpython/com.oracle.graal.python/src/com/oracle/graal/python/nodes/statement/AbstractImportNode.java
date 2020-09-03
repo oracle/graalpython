@@ -162,7 +162,8 @@ public abstract class AbstractImportNode extends StatementNode {
         }
     }
 
-    private static Object __import__(VirtualFrame frame, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode, GetDictNode getDictNode, PythonObjectFactory factory) {
+    private static Object __import__(VirtualFrame frame, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode, GetDictNode getDictNode,
+                    PythonObjectFactory factory) {
         PMethod builtinImport = (PMethod) ctx.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;

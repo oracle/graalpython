@@ -130,7 +130,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     public void postInitialize(PythonCore core) {
         super.postInitialize(core);
         PythonModule warningsModule = core.lookupBuiltinModule("_warnings");
-        // we need to copy these, since they must still be available even if the user `del`s the attrs
+        // we need to copy these, since they must still be available even if the user `del`s the
+        // attrs
         warningsModule.setAttribute(FILTERS, warningsModule.getAttribute("filters"));
         warningsModule.setAttribute(DEFAULTACTION, warningsModule.getAttribute("_defaultaction"));
         warningsModule.setAttribute(ONCEREGISTRY, warningsModule.getAttribute("_onceregistry"));
@@ -138,17 +139,17 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     private static PTuple createFilter(PythonCore core, PythonBuiltinClassType cat, String id, Object mod) {
-        return core.factory().createTuple(new Object[] { id, PNone.NONE, cat, mod, 0 });
+        return core.factory().createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
     private static PList initFilters(PythonCore core) {
-        return core.factory().createList(new Object[] {
-                            createFilter(core, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
-                            createFilter(core, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
-                            createFilter(core, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
-                            createFilter(core, PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
-                            createFilter(core, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE) });
+        return core.factory().createList(new Object[]{
+                        createFilter(core, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
+                        createFilter(core, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(core, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(core, PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
+                        createFilter(core, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
     }
 
     static class WarningsModuleNode extends Node implements IndirectCallNode {
@@ -423,7 +424,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 try {
                     action = getCastStr().execute(actionObj);
                 } catch (CannotCastException e) {
-                    // CPython does this check after the other __getitem__ calls, but we know it's a tuple so...
+                    // CPython does this check after the other __getitem__ calls, but we know it's a
+                    // tuple so...
                     throw getRaise().raise(PythonBuiltinClassType.TypeError, "action must be a string, not %p", actionObj);
                 }
                 Object msg = getPyLib().lookupAndCallSpecialMethod(tmpItem, frame, SpecialMethodNames.__GETITEM__, 1);
@@ -507,9 +509,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PTuple altKey;
             if (addZero) {
-                altKey = factory.createTuple(new Object[] { text, category, 0 });
+                altKey = factory.createTuple(new Object[]{text, category, 0});
             } else {
-                altKey = factory.createTuple(new Object[] { text, category });
+                altKey = factory.createTuple(new Object[]{text, category});
             }
             return alreadyWarnedShouldSet(_warnings, registry, altKey);
         }
@@ -547,7 +549,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             polib.lookupAndCallRegularMethod(stderr, null, "write", polib.lookupAndCallRegularMethod(text, null, SpecialMethodNames.__STR__));
             polib.lookupAndCallRegularMethod(stderr, null, "write", "\n");
 
-            // Print "  source_line\n"
+            // Print " source_line\n"
             if (sourceline != null) {
                 // CPython goes through the trouble of getting a substring of sourceline with
                 // leading whitespace removed, but then ignores the substring and prints the full
@@ -561,7 +563,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static void callShowWarning(Object category, Object text, Object message,
-                        Object filename,int lineno, Object sourceline, Object sourceIn) {
+                        Object filename, int lineno, Object sourceline, Object sourceIn) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
             PRaiseNode raise = PRaiseNode.getUncached();
 
@@ -625,7 +627,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 message = getPyLib().callObject(category, frame, message);
             }
 
-            Object key = getFactory().createTuple(new Object[] { text, category, lineno });
+            Object key = getFactory().createTuple(new Object[]{text, category, lineno});
             if (registry != null && registry != PNone.NONE) {
                 if (alreadyWarnedShouldNotSet(frame, warnings, registry, key)) {
                     return;
@@ -653,13 +655,15 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void warnExplicitPart2(Node node, PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category, Object message, Object text,
+        private static void warnExplicitPart2(Node node, PythonModule warnings, Object filename, int lineno, Object registry, PDict globals, Object source, Object category, Object message,
+                        Object text,
                         Object key, Object[] item, String action) {
             PythonObjectLibrary polib = PythonObjectLibrary.getUncached();
 
             if (PString.equals("error", action)) {
                 if (!(message instanceof PBaseException)) {
-                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass", polib.lookupAndCallRegularMethod(message, null, SpecialMethodNames.__REPR__));
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass",
+                                    polib.lookupAndCallRegularMethod(message, null, SpecialMethodNames.__REPR__));
                 } else {
                     throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.getCurrent()));
                 }
@@ -683,7 +687,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         alreadyWarned = updateRegistry(warnings, registry, text, category, false);
                     }
                 } else if (!PString.equals("default", action)) {
-                    PRaiseNode.getUncached().raise(PythonBuiltinClassType.RuntimeError, "Unrecognized action (%s) in warnings.filters:\n %s", action, polib.lookupAndCallRegularMethod(item, null, SpecialMethodNames.__REPR__));
+                    PRaiseNode.getUncached().raise(PythonBuiltinClassType.RuntimeError, "Unrecognized action (%s) in warnings.filters:\n %s", action,
+                                    polib.lookupAndCallRegularMethod(item, null, SpecialMethodNames.__REPR__));
                 }
 
                 if (alreadyWarned) {
@@ -705,7 +710,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * Used from doWarn. On the fast path.
          */
         private void setupContext(VirtualFrame frame, int stackLevel, String[] filename, int[] lineno, String[] module, Object[] registry) {
-            PFrame f = getCallerFrame(frame, stackLevel - 1); // the stack level for the intrinsified version is off-by-one compared to the Python version
+            PFrame f = getCallerFrame(frame, stackLevel - 1); // the stack level for the
+                                                              // intrinsified version is off-by-one
+                                                              // compared to the Python version
             Object globals;
             if (f == null) {
                 globals = getSysDict();
@@ -857,7 +864,8 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     @ReportPolymorphism
     @NodeInfo(shortName = "warnings_warn_explicit")
-    @Builtin(name = "warn_explicit", minNumOfPositionalArgs = 5, parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals", "source"}, declaresExplicitSelf = true)
+    @Builtin(name = "warn_explicit", minNumOfPositionalArgs = 5, parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals",
+                    "source"}, declaresExplicitSelf = true)
     @GenerateNodeFactory
     static abstract class WarnExplicitBuiltinNode extends PythonBuiltinNode {
         @Specialization
