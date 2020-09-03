@@ -121,7 +121,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
         builtinConstants.put("_defaultaction", "default");
-        builtinConstants.put("_onceregistry", core.factory().createDict());
+        builtinConstants.put("_onceregistry", PythonObjectFactory.getUncached().createDict());
         builtinConstants.put("filters", initFilters(core));
         super.initialize(core);
     }
@@ -139,12 +139,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     private static PTuple createFilter(PythonCore core, PythonBuiltinClassType cat, String id, Object mod) {
-        return core.factory().createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
+        return PythonObjectFactory.getUncached().createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
     private static PList initFilters(PythonCore core) {
-        return core.factory().createList(new Object[]{
+        return PythonObjectFactory.getUncached().createList(new Object[]{
                         createFilter(core, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
                         createFilter(core, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
                         createFilter(core, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
