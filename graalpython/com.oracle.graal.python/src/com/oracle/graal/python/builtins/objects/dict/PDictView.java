@@ -48,12 +48,13 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
@@ -109,6 +110,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictKeysView extends PDictView {
 
         public PDictKeysView(Object clazz, Shape instanceShape, PHashingCollection dict) {
@@ -136,6 +138,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictValuesView extends PDictView {
 
         public PDictValuesView(Object clazz, Shape instanceShape, PHashingCollection dict) {
@@ -174,6 +177,7 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictItemsView extends PDictView {
 
         public PDictItemsView(Object clazz, Shape instanceShape, PHashingCollection dict) {
