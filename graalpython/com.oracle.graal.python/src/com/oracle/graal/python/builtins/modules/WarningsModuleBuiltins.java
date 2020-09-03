@@ -105,10 +105,10 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
-    private static HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
-    private static HiddenKey FILTERS = new HiddenKey("filters");
-    private static HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
-    private static HiddenKey ONCEREGISTRY = new HiddenKey("_onceregistry");
+    private static final HiddenKey FILTERS_VERSION = new HiddenKey("filters_version");
+    private static final HiddenKey FILTERS = new HiddenKey("filters");
+    private static final HiddenKey DEFAULTACTION = new HiddenKey("_defaultaction");
+    private static final HiddenKey ONCEREGISTRY = new HiddenKey("_onceregistry");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
