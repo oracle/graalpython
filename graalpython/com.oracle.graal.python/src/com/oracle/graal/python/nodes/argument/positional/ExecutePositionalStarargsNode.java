@@ -49,22 +49,24 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -159,6 +161,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @GenerateUncached
+    @ImportStatic(PythonOptions.class)
     public abstract static class ExecutePositionalStarargsInteropNode extends PNodeWithContext {
         public abstract Object[] executeWithGlobalState(Object starargs);
 
@@ -196,18 +199,18 @@ public abstract class ExecutePositionalStarargsNode extends Node {
             return ExecutePositionalStarargsNode.doNone(none);
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static Object[] starargs(Object object,
                         @Cached PRaiseNode raise,
-                        @Cached GetIteratorWithoutFrameNode getIterator,
-                        @Cached GetNextWithoutFrameNode next,
+                        @CachedLibrary("object") PythonObjectLibrary lib,
+                        @Cached GetNextWithoutFrameNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object iterator = getIterator.executeWithGlobalState(object);
+            Object iterator = lib.getIterator(object);
             if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
                 ArrayList<Object> internalStorage = new ArrayList<>();
                 while (true) {
                     try {
-                        addToList(internalStorage, next.executeWithGlobalState(iterator));
+                        addToList(internalStorage, nextNode.executeWithGlobalState(iterator));
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         return toArray(internalStorage);

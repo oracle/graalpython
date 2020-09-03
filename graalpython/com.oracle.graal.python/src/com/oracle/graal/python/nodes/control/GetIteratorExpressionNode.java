@@ -51,12 +51,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorNodeGen;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorWithoutFrameNodeGen;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
@@ -84,45 +82,6 @@ public abstract class GetIteratorExpressionNode extends UnaryOpNode {
 
     public static GetIteratorExpressionNode create(ExpressionNode collection) {
         return GetIteratorExpressionNodeGen.create(collection);
-    }
-
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithContext {
-        public abstract Object executeWithGlobalState(Object value);
-
-        @Specialization
-        static PythonObject doPZip(PZip value) {
-            return GetIteratorNode.doPZip(value);
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"}, limit = "4")
-        static Object doGeneric(Object value,
-                        @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
-                        @CachedLibrary("value") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
-                        @Cached IsIteratorObjectNode isIteratorObjectNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
-            // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
-            // global state
-            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, methodLib, isIteratorObjectNode, factory,
-                            raiseNode);
-        }
-
-        @Specialization
-        static PythonObject doNone(PNone none,
-                        @Cached PRaiseNode raiseNode) {
-            return GetIteratorNode.doNone(none, raiseNode);
-        }
-
-        public static GetIteratorWithoutFrameNode create() {
-            return GetIteratorWithoutFrameNodeGen.create();
-        }
-
-        public static GetIteratorWithoutFrameNode getUncached() {
-            return GetIteratorWithoutFrameNodeGen.getUncached();
-        }
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
