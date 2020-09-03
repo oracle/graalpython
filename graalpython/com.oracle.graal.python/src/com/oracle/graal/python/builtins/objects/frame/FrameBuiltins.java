@@ -182,7 +182,8 @@ public final class FrameBuiltins extends PythonBuiltins {
             }
             // TODO: frames: this just shouldn't happen anymore
             assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
+            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
+                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
                             "<internal>",
                             "<internal>", -1, new byte[0]);
         }
