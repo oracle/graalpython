@@ -102,7 +102,7 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
     // ----------------------
     // execute methods
 
-    protected abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
+    public abstract Object execute(VirtualFrame frame, Object arg, Object arg2);
 
     protected boolean executeBool(VirtualFrame frame, boolean arg, boolean arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(frame, arg, arg2));
