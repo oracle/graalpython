@@ -152,7 +152,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         createFilter(core, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
     }
 
-    static class WarningsModuleNode extends Node implements IndirectCallNode {
+    static final class WarningsModuleNode extends Node implements IndirectCallNode {
         private static final String WARNINGS = "warnings";
 
         @CompilationFinal ContextReference<PythonContext> contextRef;
@@ -595,7 +595,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * are set to ignore. On the fast path.
          */
         private void warnExplicit(VirtualFrame frame, PythonModule warnings,
-                        Object categoryIn, Object messageIn, Object filename, int lineno, Object moduleIn,
+                        Object categoryIn, Object messageIn, String filename, int lineno, Object moduleIn,
                         Object registry, PDict globals /* see comment in method */, Object source) {
             // CPython passes the sourceline directly here where we pass the globals argument. If
             // it's not null, and we need the source line eventually, we will get it on the slow
@@ -613,7 +613,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             }
 
             if (module == null) {
-                module = normalizeModule(getCastStr().execute(filename));
+                module = normalizeModule(filename);
             }
 
             // Python code uses PyObject_IsInstance but on the built-in Warning class, so we know
