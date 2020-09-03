@@ -68,6 +68,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
     @Override
@@ -176,6 +178,9 @@ public class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         public PInt getrandbits(PRandom random, int k) {
+            if (k <= 0) {
+                throw raise(ValueError, "number of bits must be greater than zero");
+            }
             return factory().createInt(createRandomBits(random, k));
         }
     }
