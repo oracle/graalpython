@@ -592,7 +592,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
             try {
                 return containsInt(self, other.intValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }

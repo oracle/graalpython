@@ -210,10 +210,10 @@ public abstract class IndexNodes {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         int doPInt(PInt index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
-                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile, boundsCheckNode);
         }
@@ -225,7 +225,7 @@ public abstract class IndexNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
@@ -268,9 +268,9 @@ public abstract class IndexNodes {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         static int doPInt(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
@@ -281,7 +281,7 @@ public abstract class IndexNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }

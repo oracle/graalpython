@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.interop;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -64,22 +65,22 @@ public abstract class PTypeUnboxNode extends Node {
         return obj.getValue();
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    int accessInt(PInt obj) {
+    @Specialization(rewriteOn = OverflowException.class)
+    int accessInt(PInt obj) throws OverflowException {
         return obj.intValueExact();
     }
 
-    @Specialization(rewriteOn = ArithmeticException.class)
-    long accessLong(PInt obj) {
+    @Specialization(rewriteOn = OverflowException.class, replaces = "accessInt")
+    long accessLong(PInt obj) throws OverflowException {
         return obj.longValueExact();
     }
 
-    @Specialization
+    @Specialization(replaces = "accessLong")
     Object accessPInt(PInt obj) {
         try {
             // try to use primitive
             return obj.longValueExact();
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             // PInt is a Truffle object, so just use it
             return obj;
         }

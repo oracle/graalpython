@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -118,14 +119,21 @@ final class DefaultPythonIntegerExports {
             return receiver == other;
         }
 
-        @Specialization
+        @Specialization(rewriteOn = OverflowException.class)
         static boolean iP(Integer receiver, PInt other,
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) throws OverflowException {
+            if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                return receiver == other.intValueExact();
+            }
+            return false;
+        }
+
+        @Specialization(replaces = "iP")
+        static boolean iPOverflow(Integer receiver, PInt other,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
             if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
-                try {
-                    return receiver == other.intValueExact();
-                } catch (ArithmeticException e) {
-                    // pass
+                if (other.fitsInInt()) {
+                    return receiver == other.intValue();
                 }
             }
             return false;

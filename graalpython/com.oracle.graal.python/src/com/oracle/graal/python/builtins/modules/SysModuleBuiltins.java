@@ -386,10 +386,10 @@ public class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(rewriteOn = OverflowException.class)
         PFrame countedPInt(VirtualFrame frame, PInt num,
                         @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) throws OverflowException {
             return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
         }
 
@@ -399,7 +399,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             try {
                 return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raiseCallStackDepth();
             }
         }

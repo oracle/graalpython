@@ -79,7 +79,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
     public int toInt(PInt x) {
         try {
             return x.intValueExact();
-        } catch (ArithmeticException e) {
+        } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreter();
             throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
         }

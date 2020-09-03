@@ -351,7 +351,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
                         @Shared("indexErrorProfile") @Cached BranchProfile indexErrorProfile) {
             try {
                 return i.intValueExact();
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 indexErrorProfile.enter();
                 return overflowValue;
             }

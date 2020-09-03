@@ -481,7 +481,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
         static boolean doLong(PInt checkID) {
             try {
                 return doInt(checkID.intValueExact());
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 return false;
             }
         }

@@ -40,37 +40,19 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import static com.oracle.graal.python.nodes.util.BigIntegerUtils.getMag;
 
-import java.lang.reflect.Field;
 import java.math.BigInteger;
 
-@TypeSystemReference(PythonArithmeticTypes.class)
-@ImportStatic(MathGuards.class)
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
+
 @GenerateUncached
 public abstract class NarrowBigIntegerNode extends PNodeWithContext {
-
-    private static final Field MAG_FIELD;
-
-    static {
-        try {
-            MAG_FIELD = BigInteger.class.getDeclaredField("mag");
-            MAG_FIELD.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException("Unable to access BigInteger.mag", e);
-        }
-    }
 
     public abstract Object execute(BigInteger x);
 
@@ -100,14 +82,5 @@ public abstract class NarrowBigIntegerNode extends PNodeWithContext {
         }
         neddsPIntProfile.enter();
         return factory.createInt(x);
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    static int[] getMag(BigInteger x) {
-        try {
-            return (int[]) MAG_FIELD.get(x);
-        } catch (IllegalAccessException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
     }
 }

@@ -226,7 +226,6 @@ def compare_unittests(args):
 
 
 def run_cpython_test(args):
-    import glob
     interp_args = []
     globs = []
     test_args = []
@@ -511,7 +510,8 @@ def graalpytest(args):
         return do_run_python(cmd_args)
 
 
-def _list_graalpython_unittests(paths=None, exclude=[]):
+def _list_graalpython_unittests(paths=None, exclude=None):
+    exclude = [] if exclude is None else exclude
     paths = paths or [_graalpytest_root()]
     def is_included(path):
         if path.endswith(".py"):
@@ -1708,7 +1708,7 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         args += ["--python.WithThread",
                  "--python.PyCachePrefix=" + pycache_dir,
                  "-B",
-                 "-S", os.path.join(self.src_dir() , "setup.py"),
+                 "-S", os.path.join(self.src_dir(), "setup.py"),
                  self.subject.get_output_root()]
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
@@ -1842,21 +1842,21 @@ def checkout_find_version_for_graalvm(args):
 orig_clean = mx.command_function("clean")
 def python_clean(args):
     orig_clean(args)
-    count = 0;
+    count = 0
     for path in os.walk(SUITE.dir):
         for file in glob.iglob(os.path.join(path[0], '*.pyc')):
             count += 1
             os.remove(file)
 
     if count > 0:
-        print ('Cleaning', count, "`*.pyc` files...")
+        print('Cleaning', count, "`*.pyc` files...")
 
 def update_hpy_import_cmd(args):
     """Update our import of HPy sources."""
     parser = ArgumentParser('mx python-update-hpy-import')
     parser.add_argument('--pull', action='store_true', help='Perform a pull of the HPy repo first.', required=False)
     parser.add_argument('hpy_repo', metavar='HPY_REPO', help='Path to the HPy repo to import from.')
-    parsed_args, remaining_args = parser.parse_known_args(args)
+    parsed_args, _ = parser.parse_known_args(args)
 
     join = os.path.join
     vc = SUITE.vc
@@ -1901,7 +1901,7 @@ def update_hpy_import_cmd(args):
 
     def import_files(from_dir, to_dir):
         mx.log("Importing HPy files from {}".format(from_dir))
-        for dirpath, dirnames, filenames in os.walk(from_dir):
+        for dirpath, _, filenames in os.walk(from_dir):
             relative_dir_path = os.path.relpath(dirpath, start=from_dir)
             # ignore dir 'cpython' and all its subdirs
             for filename in filenames:
