@@ -54,13 +54,15 @@ public class PScandirIterator extends PythonBuiltinObject {
     private final DirectoryStream<TruffleFile> stream;
     private final Iterator<TruffleFile> iterator;
     private final String path;
+    private final boolean produceBytes;
 
     @TruffleBoundary
-    public PScandirIterator(Object cls, Shape instanceShape, String path, DirectoryStream<TruffleFile> stream) {
+    public PScandirIterator(Object cls, Shape instanceShape, String path, DirectoryStream<TruffleFile> stream, boolean produceBytes) {
         super(cls, instanceShape);
         this.path = path;
         this.stream = stream;
         this.iterator = stream.iterator();
+        this.produceBytes = produceBytes;
     }
 
     @TruffleBoundary
@@ -85,5 +87,9 @@ public class PScandirIterator extends PythonBuiltinObject {
 
     public String getPath() {
         return path;
+    }
+
+    public boolean isProduceBytes() {
+        return produceBytes;
     }
 }

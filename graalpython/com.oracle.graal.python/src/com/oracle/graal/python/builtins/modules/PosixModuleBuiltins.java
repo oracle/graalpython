@@ -83,6 +83,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.oracle.graal.python.nodes.PGuards;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -848,7 +849,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             String path = lib.asPath(pathArg);
             try {
                 TruffleFile file = getContext().getEnv().getPublicTruffleFile(path);
-                return factory().createScandirIterator(cls, path, file.newDirectoryStream());
+                return factory().createScandirIterator(cls, path, file.newDirectoryStream(), PGuards.isBytes(pathArg));
             } catch (Exception e) {
                 throw raiseOSError(frame, e, path);
             }

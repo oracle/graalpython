@@ -398,15 +398,16 @@ class SRE_Pattern():
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
-                if repl[pos + 1].isdigit() and pattern.groupCount > 0:
+                c = repl[pos + 1:pos + 2].decode('ascii') if self.__binary else repl[pos + 1]
+                if c.isdigit() and pattern.groupCount > 0:
                     # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
-                    group_nr = int(repl[pos+1].decode('ascii')) if self.__binary else int(repl[pos+1])
+                    group_nr = int(c)
                     group_str = group(pattern, match_result, group_nr, string)
                     if group_str is None:
                         raise error("invalid group reference %s at position %s" % (group_nr, pos))
                     result += repl[start:pos] + group_str
                     start = pos + 2
-                elif repl[pos + 1] == (b'g' if self.__binary else 'g'):
+                elif c == 'g':
                     group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
                     if group_ref:
                         group_str = group(pattern, match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
@@ -414,7 +415,7 @@ class SRE_Pattern():
                             raise error("invalid group reference %s at position %s" % (group_ref, pos))
                         result += repl[start:pos] + group_str
                     start = group_ref_end + 1
-                elif repl[pos + 1] == backslash:
+                elif c == '\\':
                     result += repl[start:pos] + backslash
                     start = pos + 2
                 else:
