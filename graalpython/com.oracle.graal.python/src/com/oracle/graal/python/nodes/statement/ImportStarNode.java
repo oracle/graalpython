@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -202,6 +203,6 @@ public class ImportStarNode extends AbstractImportNode {
 
     @TruffleBoundary
     private static String[] getModuleAttrs(Object importedModule) {
-        return ((PythonModule) importedModule).getAttributeNames().toArray(new String[0]);
+        return ((PythonModule) importedModule).getAttributeNames().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 }

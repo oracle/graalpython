@@ -89,6 +89,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -405,7 +406,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PBaseException wrapJavaException(Throwable e) {
-            PBaseException excObject = factory().createBaseException(SystemError, e.getMessage(), new Object[0]);
+            PBaseException excObject = factory().createBaseException(SystemError, e.getMessage(), PythonUtils.EMPTY_OBJECT_ARRAY);
             return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject).getEscapedException();
         }
 

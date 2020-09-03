@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -66,8 +67,6 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
-    private static final String[] FROM_LIST = new String[0];
-
     @Child PythonObjectFactory objectFactory;
 
     @Child private CallNode callNode;
@@ -109,7 +108,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected Object importModule(VirtualFrame frame, String name) {
-        return importModule(frame, name, PNone.NONE, FROM_LIST, 0);
+        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }
 
     CallNode getCallNode() {
@@ -134,7 +133,7 @@ public abstract class AbstractImportNode extends StatementNode {
         CallNode callNode = CallNode.getUncached();
         GetDictNode getDictNode = GetDictNode.getUncached();
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        return __import__(null, ctx, name, PNone.NONE, FROM_LIST, 0, callNode, getDictNode, factory);
+        return __import__(null, ctx, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0, callNode, getDictNode, factory);
     }
 
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {

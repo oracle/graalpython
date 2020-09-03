@@ -227,7 +227,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             warnoptions = new Object[strWarnoptions.length];
             System.arraycopy(strWarnoptions, 0, warnoptions, 0, strWarnoptions.length);
         } else {
-            warnoptions = new Object[0];
+            warnoptions = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         sys.setAttribute("warnoptions", core.factory().createList(warnoptions));
 

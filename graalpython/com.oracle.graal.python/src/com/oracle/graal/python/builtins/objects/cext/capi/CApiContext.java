@@ -304,7 +304,7 @@ public final class CApiContext extends CExtContext {
      * Simple root node that executes a reference decrease.
      */
     private static final class CApiReferenceCleanerRootNode extends PRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"ptr", "managedRefCount"}, PythonUtils.EMPTY_STRING_ARRAY);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiReferenceCleanerRootNode.class);
 
         @Child private CalleeContext calleeContext;

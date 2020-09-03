@@ -136,6 +136,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1633,7 +1634,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 1")
         Object upcall0(VirtualFrame frame, Object[] args,
                         @Cached("create()") CallNode callNode) {
-            return callNode.execute(frame, args[0], new Object[0], new PKeyword[0]);
+            return callNode.execute(frame, args[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 2")
@@ -1815,7 +1816,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
-            return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 2")
@@ -1888,7 +1889,7 @@ public abstract class CExtNodes {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
-            return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 3")

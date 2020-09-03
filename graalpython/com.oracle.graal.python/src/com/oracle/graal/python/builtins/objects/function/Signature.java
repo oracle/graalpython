@@ -33,7 +33,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public final class Signature {
-    public static final Signature EMPTY = new Signature(-1, false, -1, false, new String[0], new String[0]);
+    public static final Signature EMPTY = new Signature(-1, false, -1, false, PythonUtils.EMPTY_STRING_ARRAY, PythonUtils.EMPTY_STRING_ARRAY);
 
     private final int varArgIndex;
     private final int positionalOnlyArgIndex;
@@ -46,15 +46,15 @@ public final class Signature {
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     List<String> parameterIds, List<String> keywordNames) {
         this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
-                        parameterIds != null ? parameterIds.toArray(new String[0]) : null,
-                        keywordNames != null ? keywordNames.toArray(new String[0]) : null);
+                        parameterIds != null ? parameterIds.toArray(PythonUtils.EMPTY_STRING_ARRAY) : null,
+                        keywordNames != null ? keywordNames.toArray(PythonUtils.EMPTY_STRING_ARRAY) : null);
     }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     List<String> parameterIds, List<String> keywordNames) {
         this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
-                        parameterIds != null ? parameterIds.toArray(new String[0]) : null,
-                        keywordNames != null ? keywordNames.toArray(new String[0]) : null);
+                        parameterIds != null ? parameterIds.toArray(PythonUtils.EMPTY_STRING_ARRAY) : null,
+                        keywordNames != null ? keywordNames.toArray(PythonUtils.EMPTY_STRING_ARRAY) : null);
     }
 
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
@@ -68,8 +68,8 @@ public final class Signature {
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
         this.isVarArgsMarker = varArgsMarker;
-        this.positionalParameterNames = (parameterIds != null) ? parameterIds : new String[0];
-        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : new String[0];
+        this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_STRING_ARRAY;
+        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_STRING_ARRAY;
     }
 
     public static Signature createOneArgumentWithVarKwArgs() {

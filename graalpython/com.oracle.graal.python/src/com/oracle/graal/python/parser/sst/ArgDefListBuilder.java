@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class ArgDefListBuilder {
 
@@ -257,7 +258,7 @@ public final class ArgDefListBuilder {
             }
         }
 
-        String[] kwId = kwargIndex == -1 ? new String[0] : new String[kwargsLen - 1];
+        String[] kwId = kwargIndex == -1 ? PythonUtils.EMPTY_STRING_ARRAY : new String[kwargsLen - 1];
         delta = argsLen - delta;
         int starMarkerDelta = starMarker ? 0 : 1;
         for (int i = 0; i < kwargsLen; i++) {

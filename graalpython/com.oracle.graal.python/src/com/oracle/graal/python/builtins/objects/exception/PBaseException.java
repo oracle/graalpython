@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -60,7 +61,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PBaseException extends PythonObject {
-    private static final Object[] EMPTY_ARGS = new Object[0];
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     private PTuple args; // can be null for lazily generated message
@@ -233,7 +233,7 @@ public final class PBaseException extends PythonObject {
                     @Cached PRaiseNode raiseNode) {
         Object[] newArgs = messageArgs;
         if (newArgs == null) {
-            newArgs = EMPTY_ARGS;
+            newArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         Object format = messageFormat;
         if (format == null) {

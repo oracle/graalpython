@@ -3159,7 +3159,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static Object[] doNull(VirtualFrame frame, Object argsObj,
                         @Shared("lib") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return new Object[0];
+            return PythonUtils.EMPTY_OBJECT_ARRAY;
         }
 
         @Specialization(guards = "!lib.isNull(argsObj)")

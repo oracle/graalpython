@@ -158,7 +158,7 @@ public final class MapBuiltins extends PythonBuiltins {
                 args = new Object[iterators.length - 1];
                 PythonUtils.arraycopy(iterators, 1, args, 0, args.length);
             } else {
-                args = PArguments.EMPTY_VARARGS;
+                args = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             InitNode.doGeneric(frame, iterMap, self.getFunction(), iterator, args, argsLib);
             ThreadState state = PArguments.getThreadState(frame);

@@ -107,6 +107,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -875,7 +876,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         public final Object sort(VirtualFrame frame, PList list) {
-            return this.execute(frame, list, PArguments.EMPTY_VARARGS, PKeyword.EMPTY_KEYWORDS);
+            return this.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         public abstract Object execute(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords);

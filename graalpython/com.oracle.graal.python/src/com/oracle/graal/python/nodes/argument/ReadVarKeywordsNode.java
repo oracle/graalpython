@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -43,14 +44,13 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
-    private static final String[] EMPTY = new String[0];
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     @Child private PythonObjectFactory factory;
 
     public abstract PKeyword[] executePKeyword(VirtualFrame frame);
 
     public static ReadVarKeywordsNode create() {
-        return ReadVarKeywordsNodeGen.create(EMPTY, false);
+        return ReadVarKeywordsNodeGen.create(PythonUtils.EMPTY_STRING_ARRAY, false);
     }
 
     public static ReadVarKeywordsNode create(String[] keywordNames) {

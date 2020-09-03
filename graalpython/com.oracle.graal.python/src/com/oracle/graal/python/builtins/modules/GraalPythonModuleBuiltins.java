@@ -177,7 +177,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doCache(modulename, moduleFile, new String[0], ctxt, lang);
+            return doCache(modulename, moduleFile, PythonUtils.EMPTY_STRING_ARRAY, ctxt, lang);
         }
 
         @Specialization
@@ -226,7 +226,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
-            return cacheWithModulePath(modulename, new String[0], lang, ct);
+            return cacheWithModulePath(modulename, PythonUtils.EMPTY_STRING_ARRAY, lang, ct);
         }
 
         @Specialization

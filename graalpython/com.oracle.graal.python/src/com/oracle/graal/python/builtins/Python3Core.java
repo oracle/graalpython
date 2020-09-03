@@ -544,7 +544,7 @@ public final class Python3Core implements PythonCore {
     @Override
     @TruffleBoundary
     public String[] builtinModuleNames() {
-        return builtinModules.keySet().toArray(new String[0]);
+        return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
     @Override
