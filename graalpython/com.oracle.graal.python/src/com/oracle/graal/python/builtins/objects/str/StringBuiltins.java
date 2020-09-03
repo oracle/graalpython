@@ -776,7 +776,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String toUpperCase(String str) {
-            return UCharacter.toUpperCase(Locale.ENGLISH, str);
+            return UCharacter.toUpperCase(Locale.ROOT, str);
         }
     }
 
@@ -903,7 +903,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private static String internalToLowerCase(String self) {
-            return UCharacter.toLowerCase(Locale.ENGLISH, self);
+            return UCharacter.toLowerCase(Locale.ROOT, self);
         }
     }
 
@@ -2035,7 +2035,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String doTitle(String self) {
-            return UCharacter.toTitleCase(Locale.ENGLISH, self, null);
+            return UCharacter.toTitleCase(Locale.ROOT, self, null);
         }
     }
 
