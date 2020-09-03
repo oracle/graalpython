@@ -985,6 +985,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         private static final class WarnNodeUncached extends WarnNode {
             @Override
+            public boolean isAdoptable() {
+                return false;
+            }
+
+            @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
                 PythonModule _warnings = lookupContextReference(PythonLanguage.class).get().getCore().lookupBuiltinModule("_warnings");
                 Object warn = DynamicObjectLibrary.getUncached().getOrDefault(_warnings, "warn", PNone.NONE);
