@@ -64,8 +64,6 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -250,7 +248,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         }
                         break;
                     default:
-                        if (isPrintable(codepoint)) {
+                        if (StringUtils.isPrintable(codepoint)) {
                             str.appendCodePoint(codepoint);
                         } else {
                             int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
@@ -267,19 +265,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return str.toString();
         }
 
-        private static boolean isPrintable(int codepoint) {
-            if (ImageInfo.inImageBuildtimeCode()) {
-                // Executing ICU4J at image build time causes issues with runtime/build time
-                // initialization
-                assert codepoint < 0x100;
-                return codepoint >= 32;
-            }
-            return isPrintableNonAscii(codepoint);
-        }
-
-        private static boolean isPrintableNonAscii(int codepoint) {
-            return UCharacter.isPrintable(codepoint);
-        }
     }
 
     abstract static class BinaryStringOpNode extends PythonBinaryBuiltinNode {
@@ -890,21 +875,9 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
+            return StringUtils.toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
         }
 
-        @TruffleBoundary
-        private static String toLowerCase(String self) {
-            if (ImageInfo.inImageBuildtimeCode()) {
-                // Avoid initializing ICU4J in image build
-                return self.toLowerCase();
-            }
-            return internalToLowerCase(self);
-        }
-
-        private static String internalToLowerCase(String self) {
-            return UCharacter.toLowerCase(Locale.ROOT, self);
-        }
     }
 
     // str.capitalize()
@@ -1726,7 +1699,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!isLetterOrDigit(codePoint)) {
+                if (!StringUtils.isLetterOrDigit(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1739,18 +1712,6 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalnum", self));
         }
-    }
-
-    private static boolean isLetterOrDigit(int codePoint) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Avoid initializing ICU4J in image build
-            return Character.isLetterOrDigit(codePoint);
-        }
-        return internalIsLetterOrDigit(codePoint);
-    }
-
-    private static boolean internalIsLetterOrDigit(int codePoint) {
-        return UCharacter.isLetterOrDigit(codePoint);
     }
 
     @Builtin(name = "isalpha", minNumOfPositionalArgs = 1)

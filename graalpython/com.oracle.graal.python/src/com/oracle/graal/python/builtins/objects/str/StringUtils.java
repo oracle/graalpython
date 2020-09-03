@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import java.util.Locale;
+
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.ibm.icu.lang.UCharacter;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class StringUtils {
@@ -222,5 +227,46 @@ public final class StringUtils {
             i += charCount;
         }
         return values;
+    }
+
+    public static boolean isPrintable(int codepoint) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Executing ICU4J at image build time causes issues with runtime/build time
+            // initialization
+            assert codepoint < 0x100;
+            return codepoint >= 32;
+        }
+        return isPrintableICU(codepoint);
+    }
+
+    @TruffleBoundary
+    private static boolean isPrintableICU(int codepoint) {
+        return UCharacter.isPrintable(codepoint);
+    }
+
+    @TruffleBoundary
+    public static String toLowerCase(String self) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Avoid initializing ICU4J in image build
+            return self.toLowerCase();
+        }
+        return toLowerCaseICU(self);
+    }
+
+    private static String toLowerCaseICU(String self) {
+        return UCharacter.toLowerCase(Locale.ROOT, self);
+    }
+
+    @TruffleBoundary
+    public static boolean isLetterOrDigit(int codePoint) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Avoid initializing ICU4J in image build
+            return Character.isLetterOrDigit(codePoint);
+        }
+        return isLetterOrDigitICU(codePoint);
+    }
+
+    private static boolean isLetterOrDigitICU(int codePoint) {
+        return UCharacter.isLetterOrDigit(codePoint);
     }
 }
