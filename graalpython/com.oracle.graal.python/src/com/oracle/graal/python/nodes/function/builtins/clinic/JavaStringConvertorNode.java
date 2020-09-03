@@ -45,22 +45,33 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-public class JavaStringConvertorNode extends ArgumentCastNodeWithRaise {
+public abstract class JavaStringConvertorNode extends ArgumentCastNodeWithRaise {
     private final String builtinName;
-    @Child CastToJavaStringNode castToJavaStringNode = CastToJavaStringNode.create();
 
     public JavaStringConvertorNode(String builtinName) {
         this.builtinName = builtinName;
     }
 
-    @Override
-    public Object execute(VirtualFrame frame, Object value) {
+    @Specialization
+    static Object doString(String value) {
+        return value;
+    }
+
+    @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
+    Object doOthers(Object value,
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
         try {
             return castToJavaStringNode.execute(value);
         } catch (CannotCastException ex) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
         }
+    }
+
+    // to be overridden in the subclass
+    protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
+        return false;
     }
 }

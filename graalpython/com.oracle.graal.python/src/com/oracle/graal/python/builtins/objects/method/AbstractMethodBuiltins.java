@@ -169,7 +169,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     module = ((PythonModule) globals).getAttribute(__NAME__);
                 } else {
-                    module = getAttr.execute(frame, globals, __MODULE__, PNone.NONE);
+                    module = getAttr.call(frame, globals, __MODULE__, PNone.NONE);
                 }
                 writeObject.execute(self, __MODULE__, module);
             }

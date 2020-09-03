@@ -922,6 +922,17 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asSizeWithState(Object, Object, ThreadState)
      */
+    public final int asSizeWithFrame(Object receiver, Object errorClass, VirtualFrame frame) {
+        ThreadState state = null;
+        if (profileHasFrame(frame)) {
+            state = PArguments.getThreadState(frame);
+        }
+        return asSizeWithState(receiver, errorClass, state);
+    }
+
+    /**
+     * @see #asSizeWithState(Object, Object, ThreadState)
+     */
     public int asSize(Object receiver, Object errorClass) {
         return asSizeWithState(receiver, errorClass, null);
     }

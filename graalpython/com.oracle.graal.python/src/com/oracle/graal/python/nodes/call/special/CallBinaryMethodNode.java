@@ -445,7 +445,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
+        return builtinNode.call(frame, func.getSelf(), arg1, arg2);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -463,7 +463,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, func.getSelf(), arg1, arg2);
+        return builtinNode.call(frame, func.getSelf(), arg1, arg2);
     }
 
     @Specialization(replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle", "callBoolLong",

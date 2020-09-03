@@ -40,36 +40,31 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
-public abstract class JavaIntConversionNode extends IntConversionBaseNode {
-    protected JavaIntConversionNode(int defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+public abstract class JavaStringConvertorWithDefaultValue extends JavaStringConvertorNode {
+    private final Object defaultValue;
+    protected final boolean useDefaultForNone;
+
+    public JavaStringConvertorWithDefaultValue(String builtinName, Object defaultValue, boolean useDefaultForNone) {
+        super(builtinName);
+        this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
-    int doOthers(VirtualFrame frame, Object value,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
-            isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
-        }
-        long result = lib.asJavaLong(value, frame);
-        if (!fitsInInt(result)) {
-            throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-        return (int) result;
+    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
+    Object doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
+    }
+
+    @Specialization(guards = "useDefaultForNone")
+    Object doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
+    }
+
+    @Override
+    protected final boolean shouldUseDefaultValue(Object value) {
+        return isHandledPNone(useDefaultForNone, value);
     }
 }

@@ -40,36 +40,44 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
-public abstract class JavaIntConversionNode extends IntConversionBaseNode {
-    protected JavaIntConversionNode(int defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+public abstract class IntConversionBaseNode extends ArgumentCastNodeWithRaise {
+    private final int defaultValue;
+    protected final boolean useDefaultForNone;
+
+    protected IntConversionBaseNode(int defaultValue, boolean useDefaultForNone) {
+        this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
-    int doOthers(VirtualFrame frame, Object value,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
-            isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
-        }
-        long result = lib.asJavaLong(value, frame);
-        if (!fitsInInt(result)) {
-            throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-        return (int) result;
+    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
+    int doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
+    }
+
+    @Specialization(guards = "useDefaultForNone")
+    int doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
+    }
+
+    @Specialization
+    static int doInt(int i) {
+        return i;
+    }
+
+    @Specialization(guards = "fitsInInt(l)")
+    static int doLong(long l) {
+        return (int) l;
+    }
+
+    protected static boolean fitsInInt(long l) {
+        return (int) l == l;
+    }
+
+    protected boolean isHandledPNone(Object value) {
+        return isHandledPNone(useDefaultForNone, value);
     }
 }

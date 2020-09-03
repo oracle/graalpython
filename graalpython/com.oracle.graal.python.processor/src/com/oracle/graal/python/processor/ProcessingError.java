@@ -38,38 +38,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.processor;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import javax.lang.model.element.Element;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+final class ProcessingError extends Exception {
+    private final Element element;
 
-public abstract class JavaIntConversionNode extends IntConversionBaseNode {
-    protected JavaIntConversionNode(int defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+    ProcessingError(Element element, String fmt, Object... args) {
+        super(String.format(fmt, args));
+        this.element = element;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
-    int doOthers(VirtualFrame frame, Object value,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
-            isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
-        }
-        long result = lib.asJavaLong(value, frame);
-        if (!fitsInInt(result)) {
-            throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-        return (int) result;
+    public Element getElement() {
+        return element;
     }
 }

@@ -58,6 +58,17 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ArgumentCastNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object value);
 
+    /**
+     * Helper auxiliary method for specialization guards.
+     */
+    protected static boolean isHandledPNone(boolean useDefaultForNone, Object value) {
+        if (useDefaultForNone) {
+            return PGuards.isPNone(value);
+        } else {
+            return PGuards.isNoValue(value);
+        }
+    }
+
     public abstract static class ArgumentCastNodeWithRaise extends ArgumentCastNode {
         @Child private PRaiseNode raiseNode;
 

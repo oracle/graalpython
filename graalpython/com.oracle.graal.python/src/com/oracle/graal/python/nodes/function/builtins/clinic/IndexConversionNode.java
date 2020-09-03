@@ -52,8 +52,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public abstract class JavaIntConversionNode extends IntConversionBaseNode {
-    protected JavaIntConversionNode(int defaultValue, boolean useDefaultForNone) {
+public abstract class IndexConversionNode extends IntConversionBaseNode {
+    protected IndexConversionNode(int defaultValue, boolean useDefaultForNone) {
         super(defaultValue, useDefaultForNone);
     }
 
@@ -61,15 +61,13 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
     int doOthers(VirtualFrame frame, Object value,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
+                    @CachedLibrary("value") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary indexLib) {
         if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
-        long result = lib.asJavaLong(value, frame);
-        if (!fitsInInt(result)) {
-            throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-        return (int) result;
+        Object result = lib.asIndexWithFrame(value, frame);
+        return indexLib.asSizeWithFrame(result, TypeError, frame);
     }
 }

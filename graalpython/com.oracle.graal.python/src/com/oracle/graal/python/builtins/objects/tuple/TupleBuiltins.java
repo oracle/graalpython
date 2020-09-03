@@ -122,6 +122,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         static int doInt(int i) {
+            // fast-path for the most common case
             return i;
         }
 

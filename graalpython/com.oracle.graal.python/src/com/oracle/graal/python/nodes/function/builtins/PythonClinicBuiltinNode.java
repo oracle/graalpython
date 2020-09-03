@@ -48,7 +48,7 @@ import com.oracle.truffle.api.dsl.CreateCast;
 
 public abstract class PythonClinicBuiltinNode extends PythonBuiltinNode {
     protected abstract ArgumentClinicProvider getArgumentClinic();
-    
+
     @CreateCast("arguments")
     protected ReadArgumentNode[] createCasts(ReadArgumentNode[] reads) {
         ReadArgumentNode[] result = new ReadArgumentNode[reads.length];

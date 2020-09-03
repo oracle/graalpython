@@ -633,7 +633,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, bufsize);
             }
             Object bufferLen = lib.asPInt(bufsize);
-            return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);
+            return (PBytes) recursiveNode.call(frame, data, wbits, bufferLen);
         }
 
         protected static DecompressNode create() {

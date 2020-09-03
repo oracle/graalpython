@@ -97,12 +97,12 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         } catch (IOException ex) {
             ex.printStackTrace();
         } catch (ProcessingError ex) {
-            // should have been reported already
+            processingEnv.getMessager().printMessage(Kind.ERROR, ex.getMessage(), ex.getElement());
         }
         return true;
     }
 
-    private void doProcess(RoundEnvironment roundEnv) throws IOException {
+    private void doProcess(RoundEnvironment roundEnv) throws IOException, ProcessingError {
         log("Running the ArgumentClinicProcessor");
         writeCode(collectEnclosingTypes(roundEnv));
     }
@@ -122,6 +122,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 w.writeLn();
                 w.writeLn("import com.oracle.graal.python.nodes.function.builtins.clinic.*;");
                 w.writeLn("import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;");
+                w.writeLn("import com.oracle.graal.python.builtins.objects.PNone;");
                 w.writeLn();
                 w.writeLn("public class %s {", className);
                 for (BuiltinClinicData builtin : enclosingType.getValue()) {
@@ -155,7 +156,11 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 w.writeLn("@Override");
                 w.writeLn("public boolean accepts%s(int argIndex) {", primitiveType.toString());
                 try (Block i2 = w.newIndent()) {
-                    w.startLn().write("return ").writeEach(argIndices, " || ", "argIndex == %d").endLn(";");
+                    if (builtin.containsAllArguments(argIndices)) {
+                        w.writeLn("return true;");
+                    } else {
+                        w.startLn().write("return ").writeEach(argIndices, " || ", "argIndex == %d").endLn(";");
+                    }
                 }
                 w.writeLn("}");
             }
@@ -166,7 +171,11 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 w.writeLn("@Override");
                 w.writeLn("public boolean hasCastNode(int argIndex) {");
                 try (Block i2 = w.newIndent()) {
-                    w.startLn().write("return ").writeEach(hasCastNodeArgsIndices, " || ", "argIndex == %d").endLn(";");
+                    if (builtin.containsAllArguments(hasCastNodeArgsIndices)) {
+                        w.writeLn("return true;");
+                    } else {
+                        w.startLn().write("return ").writeEach(hasCastNodeArgsIndices, " || ", "argIndex == %d").endLn(";");
+                    }
                 }
                 w.writeLn("}");
             }
@@ -192,7 +201,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         w.writeLn("}");
     }
 
-    private HashMap<TypeElement, Set<BuiltinClinicData>> collectEnclosingTypes(RoundEnvironment roundEnv) {
+    private HashMap<TypeElement, Set<BuiltinClinicData>> collectEnclosingTypes(RoundEnvironment roundEnv) throws ProcessingError {
         HashMap<TypeElement, Set<BuiltinClinicData>> enclosingTypes = new HashMap<>();
         HashSet<Element> elements = new HashSet<>(roundEnv.getElementsAnnotatedWith(ArgumentsClinic.class));
         elements.addAll(roundEnv.getElementsAnnotatedWith(ArgumentClinic.class));
@@ -212,7 +221,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         return enclosingTypes;
     }
 
-    private BuiltinClinicData getBuiltinClinicData(TypeElement type, BuiltinAnnotation builtinAnnotation) {
+    private BuiltinClinicData getBuiltinClinicData(TypeElement type, BuiltinAnnotation builtinAnnotation) throws ProcessingError {
         ArgumentClinic[] rawArgAnnotations;
         ArgumentsClinic argsClinicAnnotation = type.getAnnotation(ArgumentsClinic.class);
         if (argsClinicAnnotation == null) {
@@ -233,7 +242,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private BuiltinAnnotation getBuiltinAnnotation(TypeElement type) {
+    private BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
         String builtinName = null;
         String[] parameterNames = null;
         for (AnnotationMirror annot : type.getAnnotationMirrors()) {
@@ -254,12 +263,8 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         return new BuiltinAnnotation(builtinName, parameterNames);
     }
 
-    private static final class ProcessingError extends RuntimeException {
-    }
-
-    private ProcessingError error(Element element, String fmt, Object... args) {
-        processingEnv.getMessager().printMessage(Kind.ERROR, String.format(fmt, args), element);
-        throw new ProcessingError();
+    private static ProcessingError error(Element element, String fmt, Object... args) throws ProcessingError {
+        throw new ProcessingError(element, fmt, args);
     }
 
     private void log(String fmt, Object... args) {

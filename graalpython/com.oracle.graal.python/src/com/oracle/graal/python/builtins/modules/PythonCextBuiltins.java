@@ -1154,7 +1154,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
                     return convertPIntToPrimitiveNode.execute(frame, resolvedPointer, signed, targetTypeSize);
                 }
-                Object coerced = constructIntNode.execute(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
+                Object coerced = constructIntNode.call(frame, PythonBuiltinClassType.PInt, toJavaNode.execute(resolvedPointer), PNone.NO_VALUE);
                 return castToNativeLongNode.execute(convertPIntToPrimitiveNode.execute(frame, coerced, signed, targetTypeSize));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);

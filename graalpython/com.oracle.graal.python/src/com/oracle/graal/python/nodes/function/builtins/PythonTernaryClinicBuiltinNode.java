@@ -40,20 +40,54 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class PythonTernaryBuiltinNode extends PythonBuiltinBaseNode {
+public abstract class PythonTernaryClinicBuiltinNode extends PythonTernaryBuiltinNode {
+    private @Children ArgumentCastNode[] castNodes;
 
+    /**
+     * Returns the provider of argument clinic logic. It should be singleton instance of a class
+     * generated from the {@link ArgumentClinic} annotations.
+     */
+    protected abstract ArgumentClinicProvider getArgumentClinic();
+
+    private Object cast(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
+        if (!clinic.hasCastNode(argIndex)) {
+            return value;
+        } else {
+            return castWithNode(clinic, frame, argIndex, value);
+        }
+    }
+
+    protected Object castWithNode(ArgumentClinicProvider clinic, VirtualFrame frame, int argIndex, Object value) {
+        if (castNodes == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castNodes = new ArgumentCastNode[3];
+        }
+        if (castNodes[argIndex] == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castNodes[argIndex] = insert(clinic.createCastNode(argIndex, this));
+        }
+        return castNodes[argIndex].execute(frame, value);
+    }
+
+    @Override
     public Object callWithInt(VirtualFrame frame, Object arg, int arg2, Object arg3) {
-        return executeWithInt(frame, arg, arg2, arg3);
+        ArgumentClinicProvider clinic = getArgumentClinic();
+        if (clinic.acceptsInt(1)) {
+            return executeWithInt(frame, arg, arg2, arg3);
+        } else {
+            return call(frame, arg, arg2, arg3);
+        }
     }
 
+    @Override
     public Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3) {
-        return execute(frame, arg, arg2, arg3);
+        ArgumentClinicProvider clinic = getArgumentClinic();
+        return execute(frame, cast(clinic, frame, 0, arg), cast(clinic, frame, 1, arg2), cast(clinic, frame, 2, arg3));
     }
-
-    protected abstract Object executeWithInt(VirtualFrame frame, Object arg, int arg2, Object arg3);
-
-    protected abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3);
 }

@@ -49,7 +49,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class PythonBinaryClinicBuiltinNode extends PythonBinaryBuiltinNode {
-    @Children ArgumentCastNode[] castNodes;
+    private @Children ArgumentCastNode[] castNodes;
 
     /**
      * Returns the provider of argument clinic logic. It should be singleton instance of a class

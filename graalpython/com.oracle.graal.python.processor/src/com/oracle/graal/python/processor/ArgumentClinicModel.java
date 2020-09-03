@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.processor;
 
+import static java.lang.String.format;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -53,41 +55,48 @@ import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 
 public class ArgumentClinicModel {
-
     static final class BuiltinConvertor {
-        public final String factory;
-        public final PrimitiveType[] acceptedPrimitiveTypes;
-
-        private BuiltinConvertor(String factory, PrimitiveType... acceptedPrimitiveTypes) {
-            this.factory = factory;
-            this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
-        }
-
-        public String getCastNodeFactoryExpression(ArgumentClinic config, String builtinName) {
-            if (factory == null) {
-                return null;
-            }
-            return factory.replace("$isRequired$", java.lang.Boolean.toString(config.defaultValue().isEmpty())).//
-                            replace("$builtinName$", '"' + builtinName + '"').//
-                            replace("$defaultValue$", config.defaultValue());
-        }
-
-        public static BuiltinConvertor fromConvertorEnum(ClinicConversion conversion) {
-            switch (conversion) {
-                case None:
-                    return new BuiltinConvertor(null, PrimitiveType.values());
+        public static String getCodeSnippet(ArgumentClinic annotation, BuiltinAnnotation builtin) {
+            switch (annotation.conversion()) {
                 case Boolean:
-                    return new BuiltinConvertor("JavaBooleanConvertorNodeGen.create($defaultValue$)", PrimitiveType.Boolean);
+                    return format("JavaBooleanConvertorNodeGen.create(%s)", annotation.defaultValue());
                 case String:
-                    return new BuiltinConvertor("new JavaStringConvertorNode($builtinName$)");
+                    String defaultVal = annotation.defaultValue();
+                    if (defaultVal.isEmpty()) {
+                        return format("JavaStringConvertorNodeGen.create(\"%s\")", builtin.name);
+                    } else {
+                        return format("JavaStringConvertorWithDefaultValueNodeGen.create(\"%s\", %s, %s)", builtin.name, defaultVal, annotation.useDefaultForNone());
+                    }
                 case Int:
-                    return new BuiltinConvertor("JavaIntConversionNodeGen.create($defaultValue$)", PrimitiveType.Int);
+                    return format("JavaIntConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
+                case Index:
+                    return format("IndexConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
+                case None:
                 default:
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException(annotation.conversion().toString());
+            }
+        }
+
+        public static PrimitiveType[] getAcceptedPrimitiveTypes(ArgumentClinic annotation) {
+            switch (annotation.conversion()) {
+                case Boolean:
+                    return new PrimitiveType[]{PrimitiveType.Boolean};
+                case String:
+                    return new PrimitiveType[0];
+                case Int:
+                case Index:
+                    return new PrimitiveType[]{PrimitiveType.Int};
+                case None:
+                default:
+                    throw new IllegalArgumentException(annotation.conversion().toString());
             }
         }
     }
 
+    /**
+     * Mirrors the data of the {@code Builtin} annotation, which cannot be in the "annotations"
+     * project because of its dependence on other GraalPython runtime classes.
+     */
     static final class BuiltinAnnotation {
         public final String name;
         public final String[] argumentNames;
@@ -107,6 +116,10 @@ public class ArgumentClinicModel {
             this.type = type;
             this.builtinAnnotation = builtinAnnotation;
             this.arguments = arguments;
+        }
+
+        public boolean containsAllArguments(int[] argIndices) {
+            return argIndices.length == arguments.size();
         }
 
         public int[] getIndicesForPrimitiveTypeAccepts(PrimitiveType primitiveType) {
@@ -139,7 +152,7 @@ public class ArgumentClinicModel {
             this.castNodeFactory = castNodeFactory;
         }
 
-        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index) {
+        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index) throws ProcessingError {
             if (annotation == null) {
                 return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null);
             }
@@ -147,9 +160,11 @@ public class ArgumentClinicModel {
             PrimitiveType[] acceptedPrimitives = new PrimitiveType[0];
             String castNodeFactory;
             if (annotation.customConversion().isEmpty()) {
-                BuiltinConvertor convertor = BuiltinConvertor.fromConvertorEnum(annotation.conversion());
-                castNodeFactory = convertor.getCastNodeFactoryExpression(annotation, builtinAnnotation.name);
-                acceptedPrimitives = convertor.acceptedPrimitiveTypes;
+                if (annotation.conversion() == ClinicConversion.None) {
+                    throw new ProcessingError(type, "ArgumentClinic annotation must declare either builtin conversion or custom conversion.");
+                }
+                castNodeFactory = BuiltinConvertor.getCodeSnippet(annotation, builtinAnnotation);
+                acceptedPrimitives = BuiltinConvertor.getAcceptedPrimitiveTypes(annotation);
             } else {
                 castNodeFactory = type.getQualifiedName().toString() + '.' + annotation.customConversion() + "()";
             }

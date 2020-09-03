@@ -57,6 +57,10 @@ public @interface ArgumentClinic {
      * Specifies a predefined conversion routine to use. Other fields of this annotation specify
      * configuration for the conversion routine. Note that not all routines support all the
      * configuration options.
+     * 
+     * Conversion routines are implemented in {@code ArgumentClinicModel#BuiltinConvertor}. It
+     * creates Java code snippets that instantiate the actual cast nodes, which should implement
+     * {@code ArgumentCastNode}.
      */
     ClinicConversion conversion() default ClinicConversion.None;
 
@@ -69,8 +73,8 @@ public @interface ArgumentClinic {
 
     /**
      * The boxing optimized execute method variants will not attempt to cast the listed primitive
-     * types and will just pass them to the specializations. This does not apply to primitive values
-     * that are already boxed: those are always passed to the convertor.
+     * types and will just pass them directly to the specializations. This does not apply to
+     * primitive values that are already boxed: those are always passed to the convertor.
      * 
      * It is not necessary to set this when using a builtin conversion. Built-in convertors provide
      * their own list of short circuit types, which is applied if this field is set to its default
@@ -79,9 +83,17 @@ public @interface ArgumentClinic {
     PrimitiveType[] shortCircuitPrimitive() default {};
 
     /**
-     * The string should contain valid Java constant value expression, for example, {@code "true"}.
+     * The string should contain valid Java constant value expression, for example, {@code true}, or
+     * {@code \"some string\"}. You may have to update the annotation processor to include import of
+     * necessary packages or use fully qualified names.
      */
     String defaultValue() default "";
+
+    /**
+     * Whether to use the default value also for {@code PNone.NONE} values. Otherwise, it is used
+     * only for {@code PNone.NO_VALUE}.
+     */
+    boolean useDefaultForNone() default false;
 
     enum PrimitiveType {
         Boolean,
@@ -91,9 +103,29 @@ public @interface ArgumentClinic {
     }
 
     enum ClinicConversion {
+        /**
+         * No builtin convertor will be used.
+         */
         None,
+        /**
+         * Corresponds to CPython's {@code bool} convertor. Supports {@link #defaultValue()}.
+         * {@code PNone.NONE} is, for now, always converted to {@code false}.
+         */
         Boolean,
+        /**
+         * GraalPython specific convertor that narrows any String representation to Java String.
+         * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
+         */
         String,
+        /**
+         * Corresponds to CPython's {@code int} convertor. Supports {@link #defaultValue()}, and
+         * {@link #useDefaultForNone()}.
+         */
         Int,
+        /**
+         * Corresponds to CPython's {@code Py_ssize_t} convertor. Supports {@link #defaultValue()},
+         * and {@link #useDefaultForNone()}.
+         */
+        Index,
     }
 }

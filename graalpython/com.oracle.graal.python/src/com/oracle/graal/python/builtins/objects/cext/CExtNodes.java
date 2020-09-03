@@ -1887,7 +1887,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -1899,7 +1899,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached GetAttrNode getAttrNode) {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, argToJavaNode.execute(args[2]));
         }
 
@@ -1912,7 +1912,7 @@ public abstract class CExtNodes {
             Object[] converted = allToJavaNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.executeObject(frame, callable, converted[0], converted[1]);
         }
 
@@ -1925,7 +1925,7 @@ public abstract class CExtNodes {
             Object[] converted = allToJavaNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted[0], converted[1], converted[2]);
         }
 
@@ -1940,7 +1940,7 @@ public abstract class CExtNodes {
             Object[] converted = allToJavaNode.execute(args, 2);
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
-            Object callable = getAttrNode.execute(frame, receiver, args[1], PNone.NO_VALUE);
+            Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
             return callNode.execute(frame, callable, converted, PKeyword.EMPTY_KEYWORDS);
         }
     }
