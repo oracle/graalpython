@@ -19,3 +19,4 @@ jobs:
       - run: git clone https://github.com/graalvm/mx.git
       - run: cd graalpython ; ../mx/mx python-gate --tags style,fullbuild,python-unittest-jython
       - run: cd graalpython ; ../mx/mx python-gate --tags python-unittest || true
+        env: MX_PYTHON: 3.8
