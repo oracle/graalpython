@@ -405,27 +405,29 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!concatGuard(self, other.getCharSequence())")
-        Object doSSSimple(String self, PString other) {
+        String doSSSimple(String self, PString other) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
-                return other;
+                // result type has to be str
+                return toString(other.getCharSequence());
             }
             return self;
         }
 
         @Specialization(guards = "!concatGuard(self.getCharSequence(), other)")
-        Object doSSSimple(PString self, String other) {
+        String doSSSimple(PString self, String other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
             }
-            return self;
+            // result type has to be str
+            return toString(self.getCharSequence());
         }
 
         @Specialization(guards = "!concatGuard(self.getCharSequence(), other.getCharSequence())")
-        PString doSSSimple(PString self, PString other) {
+        String doSSSimple(PString self, PString other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
-                return other;
+                return toString(other.getCharSequence());
             }
-            return self;
+            return toString(self.getCharSequence());
         }
 
         @Specialization(guards = "concatGuard(self.getCharSequence(), other)")
@@ -472,6 +474,11 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static String stringConcat(CharSequence left, CharSequence right) {
             return left.toString() + right.toString();
+        }
+
+        @TruffleBoundary
+        private static String toString(CharSequence cs) {
+            return cs.toString();
         }
 
         @Specialization(guards = "isString(self)")
