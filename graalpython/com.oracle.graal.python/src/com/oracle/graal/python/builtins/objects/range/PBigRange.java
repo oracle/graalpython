@@ -150,6 +150,7 @@ public class PBigRange extends PRange {
         return !step.isOne();
     }
 
+    /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
     PBigRangeIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                     @Cached PythonObjectFactory factory) {

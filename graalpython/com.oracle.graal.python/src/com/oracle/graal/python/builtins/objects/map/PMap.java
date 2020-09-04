@@ -40,15 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.map;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PMap extends PythonBuiltinObject {
     @CompilationFinal private Object function;
     @CompilationFinal(dimensions = 1) private Object[] iterators;
@@ -71,10 +68,5 @@ public final class PMap extends PythonBuiltinObject {
 
     public void setIterators(Object[] iterators) {
         this.iterators = iterators;
-    }
-
-    @ExportMessage
-    PMap getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
     }
 }

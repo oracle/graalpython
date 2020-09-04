@@ -68,6 +68,7 @@ public class PBuffer extends PythonBuiltinObject {
         return readOnly;
     }
 
+    /* this is correct because it cannot be subclassed in Python */
     @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
     Object getIteratorWithState(ThreadState state,
                     @CachedLibrary("this.getDelegate()") PythonObjectLibrary lib) {

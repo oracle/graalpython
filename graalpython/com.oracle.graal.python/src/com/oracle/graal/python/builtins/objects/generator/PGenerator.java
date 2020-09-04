@@ -243,6 +243,7 @@ public final class PGenerator extends PythonBuiltinObject {
         this.qualname = qualname;
     }
 
+    /* this is correct because PGenerator cannot be subclassed */
     @ExportMessage
     PGenerator getIteratorWithState(@SuppressWarnings("unused") ThreadState state) {
         return this;

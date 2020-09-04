@@ -98,6 +98,7 @@ public final class PScandirIterator extends PythonBuiltinObject {
         return produceBytes;
     }
 
+    /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
     PScandirIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;

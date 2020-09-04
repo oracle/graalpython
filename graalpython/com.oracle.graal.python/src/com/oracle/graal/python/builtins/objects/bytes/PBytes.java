@@ -32,11 +32,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -148,11 +146,5 @@ public final class PBytes extends PBytesLike {
     @SuppressWarnings("unused")
     public static boolean isArrayElementRemovable(PBytes self, long index) {
         return false;
-    }
-
-    @ExportMessage
-    PSequenceIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached PythonObjectFactory factory) {
-        return factory.createSequenceIterator(this);
     }
 }

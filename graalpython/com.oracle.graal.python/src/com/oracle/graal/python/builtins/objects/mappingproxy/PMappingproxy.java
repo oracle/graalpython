@@ -61,6 +61,7 @@ public final class PMappingproxy extends PythonBuiltinObject {
         return mapping;
     }
 
+    /* this is correct because it cannot be subclassed in Python */
     @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
     Object getIteratorWithState(ThreadState state,
                     @CachedLibrary("this.getMapping()") PythonObjectLibrary lib) {

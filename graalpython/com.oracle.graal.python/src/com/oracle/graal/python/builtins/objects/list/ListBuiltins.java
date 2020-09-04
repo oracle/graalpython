@@ -70,7 +70,11 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
@@ -1157,10 +1161,24 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static Object doPListInt(PList primary,
-                        @CachedLibrary("primary") PythonObjectLibrary lib) {
-            return lib.getIterator(primary);
+        @Specialization(guards = {"isIntStorage(primary)"})
+        PIntegerSequenceIterator doPListInt(PList primary) {
+            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isLongStorage(primary)"})
+        PLongSequenceIterator doPListLong(PList primary) {
+            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isDoubleStorage(primary)"})
+        PDoubleSequenceIterator doPListDouble(PList primary) {
+            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
+        PSequenceIterator doPList(PList primary) {
+            return factory().createSequenceIterator(primary);
         }
 
         @Fallback

@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -53,12 +52,7 @@ public final class PZip extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isIterable() {
+    boolean isIterable() {
         return true;
-    }
-
-    @ExportMessage
-    PZip getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
     }
 }

@@ -117,6 +117,7 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, instanceShape, "dict_keys", dict);
         }
 
+        /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
@@ -145,11 +146,12 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, instanceShape, "dict_values", dict);
         }
 
+        /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
                         @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
-                        @CachedLibrary("getStore.execute(this.getWrappedDict())") HashingStorageLibrary lib,
+                        @CachedLibrary("storage") HashingStorageLibrary lib,
                         @Cached PythonObjectFactory factory) {
             return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
         }
@@ -184,6 +186,7 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, instanceShape, "dict_items", dict);
         }
 
+        /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,

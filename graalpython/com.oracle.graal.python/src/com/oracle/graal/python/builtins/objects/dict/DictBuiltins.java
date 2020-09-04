@@ -89,8 +89,10 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -407,10 +409,11 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static Object run(PDict self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.getIterator(self);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object run(PDict self,
+                        @Bind("self.getDictStorage()") HashingStorage dictStorage,
+                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
+            return factory().createDictKeyIterator(lib.keys(dictStorage).iterator(), dictStorage, lib.length(dictStorage));
         }
     }
 

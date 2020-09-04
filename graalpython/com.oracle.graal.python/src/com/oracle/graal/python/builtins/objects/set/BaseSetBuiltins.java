@@ -165,10 +165,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class BaseIterNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
-        static Object iter(PBaseSet self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            // use 'getIterator' without frame or state since we know that the impl won't need it
-            return lib.getIterator(self);
+        Object doBaseSet(PBaseSet self,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+            return factory().createBaseSetIterator(self, lib.keys(self.getDictStorage()).iterator(), lib.length(self.getDictStorage()));
         }
     }
 

@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -500,10 +499,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static Object doPTuple(PTuple self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.getIterator(self);
+        @Specialization
+        Object doPTuple(PTuple self) {
+            return factory().createSequenceIterator(self);
         }
 
         @Fallback

@@ -27,28 +27,15 @@ package com.oracle.graal.python.builtins.objects.list;
 
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -215,34 +202,6 @@ public final class PList extends PSequence {
         } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);
-        }
-    }
-
-    @ExportMessage
-    @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithState {
-        @Specialization(guards = {"isIntStorage(primary)"})
-        static PIntegerSequenceIterator doPListInt(PList primary, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"isLongStorage(primary)"})
-        static PLongSequenceIterator doPListLong(PList primary, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"isDoubleStorage(primary)"})
-        static PDoubleSequenceIterator doPListDouble(PList primary, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
-        }
-
-        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        static PSequenceIterator doPList(PList primary, @SuppressWarnings("unused") ThreadState threadState,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createSequenceIterator(primary);
         }
     }
 }

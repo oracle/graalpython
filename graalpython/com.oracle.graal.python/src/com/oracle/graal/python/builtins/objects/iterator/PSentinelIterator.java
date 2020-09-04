@@ -76,6 +76,7 @@ public final class PSentinelIterator extends PythonBuiltinObject {
         return sentinelReached;
     }
 
+    /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
     PSentinelIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
         return this;

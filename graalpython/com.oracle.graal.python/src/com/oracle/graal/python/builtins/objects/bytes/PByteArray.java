@@ -29,13 +29,10 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -158,11 +155,5 @@ public final class PByteArray extends PBytesLike {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);
         }
-    }
-
-    @ExportMessage
-    PSequenceIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached PythonObjectFactory factory) {
-        return factory.createSequenceIterator(this);
     }
 }

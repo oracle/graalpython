@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +43,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -194,6 +194,12 @@ public class PythonObject extends PythonAbstractObject {
         dylib.put(this, DICT, dict);
     }
 
+    /**
+     * Unfortunately, this must be defined on the abstract type and we can only have special
+     * implementations on types that cannot be subclassed. This is because we don't do inheritance
+     * in the same way as CPython. They just install function {@code typeobject.c:slot_tp_iter} to
+     * {@code tp_iter} for every user class.
+     */
     @ExportMessage
     public Object getIteratorWithState(ThreadState state,
                     @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
@@ -217,7 +223,7 @@ public class PythonObject extends PythonAbstractObject {
                 }
             }
         }
-        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+        throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 
     /* needed for some guards in exported messages of subclasses */
