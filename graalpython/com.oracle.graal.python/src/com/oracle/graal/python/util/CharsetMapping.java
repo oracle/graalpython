@@ -47,8 +47,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.ibm.icu.charset.CharsetICU;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -81,15 +79,17 @@ public class CharsetMapping {
     private static Charset getJavaCharset(String name) {
         Charset charset = JAVA_CHARSETS.get(name);
         if (charset == null) {
-            try {
-                charset = Charset.forName(name);
-            } catch (UnsupportedCharsetException e) {
-                // Let it stay null
-            }
-            if (charset == null && !ImageInfo.inImageBuildtimeCode()) {
+            // Important: When adding additional ICU4J charset, the implementation class needs to be
+            // added to reflect-config.json
+            if (name.equals("UTF-7") || name.equals("HZ")) {
                 try {
-                    // Note: Used ICU encoding implementations have to be added to reflect-config
                     charset = CharsetICU.forNameICU(name);
+                } catch (UnsupportedCharsetException e) {
+                    // Let it stay null
+                }
+            } else {
+                try {
+                    charset = Charset.forName(name);
                 } catch (UnsupportedCharsetException e) {
                     // Let it stay null
                 }
