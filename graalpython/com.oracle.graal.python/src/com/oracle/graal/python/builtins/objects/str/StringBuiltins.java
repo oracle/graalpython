@@ -65,6 +65,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -1673,18 +1674,16 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isalnum", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class IsAlnumNode extends PythonUnaryBuiltinNode {
+    abstract static class IsCategoryBaseNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static boolean doString(String self) {
+        boolean doString(String self) {
             if (self.length() == 0) {
                 return false;
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!StringUtils.isLetterOrDigit(codePoint)) {
+                if (!isCategory(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1693,72 +1692,92 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
+        boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalnum", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, getName(), self));
+        }
+
+        @SuppressWarnings("unused")
+        protected boolean isCategory(int codePoint) {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new IllegalStateException("should not be reached");
+        }
+
+        protected String getName() {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new IllegalStateException("should not be reached");
+        }
+    }
+
+    @Builtin(name = "isalnum", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsAlnumNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return StringUtils.isAlnum(codePoint);
+        }
+
+        @Override
+        protected String getName() {
+            return "isalnum";
         }
     }
 
     @Builtin(name = "isalpha", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsAlphaNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static boolean doString(String self) {
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length();) {
-                int codePoint = self.codePointAt(i);
-                if (!UCharacter.isLetter(codePoint)) {
-                    return false;
-                }
-                i += Character.charCount(codePoint);
-            }
-            return true;
+    abstract static class IsAlphaNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return UCharacter.isLetter(codePoint);
         }
 
-        @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalpha", self));
+        @Override
+        protected String getName() {
+            return "isalpha";
         }
     }
 
     @Builtin(name = "isdecimal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsDecimalNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static boolean doString(String self) {
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length();) {
-                int codePoint = self.codePointAt(i);
-                if (!UCharacter.isDigit(codePoint)) {
-                    return false;
-                }
-                i += Character.charCount(codePoint);
-            }
-            return true;
+    abstract static class IsDecimalNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return UCharacter.isDigit(codePoint);
         }
 
-        @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isdecimal", self));
+        @Override
+        protected String getName() {
+            return "isdecimal";
         }
     }
 
     @Builtin(name = "isdigit", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsDigitNode extends IsDecimalNode {
+    abstract static class IsDigitNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+            return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT;
+        }
+
+        @Override
+        protected String getName() {
+            return "isdigit";
+        }
     }
 
     @Builtin(name = "isnumeric", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsNumericNode extends IsDecimalNode {
+    abstract static class IsNumericNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return UCharacter.hasBinaryProperty(codePoint, UProperty.NUMERIC_TYPE);
+        }
+
+        @Override
+        protected String getName() {
+            return "isnumeric";
+        }
     }
 
     @Builtin(name = "isidentifier", minNumOfPositionalArgs = 1)

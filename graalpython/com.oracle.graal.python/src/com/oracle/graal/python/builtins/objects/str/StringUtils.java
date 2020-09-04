@@ -45,6 +45,7 @@ import java.util.Locale;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class StringUtils {
@@ -258,15 +259,19 @@ public final class StringUtils {
     }
 
     @TruffleBoundary
-    public static boolean isLetterOrDigit(int codePoint) {
+    public static boolean isAlnum(int codePoint) {
         if (ImageInfo.inImageBuildtimeCode()) {
             // Avoid initializing ICU4J in image build
             return Character.isLetterOrDigit(codePoint);
         }
-        return isLetterOrDigitICU(codePoint);
+        return isAlnumICU(codePoint);
     }
 
-    private static boolean isLetterOrDigitICU(int codePoint) {
-        return UCharacter.isLetterOrDigit(codePoint);
+    private static boolean isAlnumICU(int codePoint) {
+        if (UCharacter.isLetter(codePoint) || UCharacter.isDigit(codePoint) || UCharacter.hasBinaryProperty(codePoint, UProperty.NUMERIC_TYPE)) {
+            return true;
+        }
+        int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+        return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT || numericType == UCharacter.NumericType.NUMERIC;
     }
 }

@@ -42,9 +42,11 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_invalid_cb_for_2bytes_seq
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_invalid_cb_for_4bytes_seq
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_invalid_start_byte
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isalnum
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isalpha
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isascii
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isdecimal
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isdigit
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_islower
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isprintable
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isspace
