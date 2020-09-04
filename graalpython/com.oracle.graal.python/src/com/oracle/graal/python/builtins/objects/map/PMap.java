@@ -41,9 +41,7 @@
 package com.oracle.graal.python.builtins.objects.map;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PMap extends PythonBuiltinObject {

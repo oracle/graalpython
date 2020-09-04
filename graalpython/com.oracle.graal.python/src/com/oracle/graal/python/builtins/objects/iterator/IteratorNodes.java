@@ -160,7 +160,7 @@ public abstract class IteratorNodes {
 
         @Specialization
         static boolean doGeneric(Object it,
-                                 @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
+                        @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
             return lookupAttributeNode.execute(it, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
         }
     }

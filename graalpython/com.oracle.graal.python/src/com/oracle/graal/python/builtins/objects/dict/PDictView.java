@@ -119,6 +119,7 @@ public abstract class PDictView extends PythonBuiltinObject {
 
         /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
                         @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
@@ -128,11 +129,11 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
-// -----------------------------------------------------------------------------------------------------------------
-//
-// the values
-//
-// -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // the values
+    //
+    // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictValueIterator extends PBaseDictIterator<Object> {
         public PDictValueIterator(Object clazz, Shape instanceShape, HashingStorageIterator<Object> iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
@@ -148,6 +149,7 @@ public abstract class PDictView extends PythonBuiltinObject {
 
         /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
                         @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
@@ -157,11 +159,11 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
-// -----------------------------------------------------------------------------------------------------------------
-//
-// the items
-//
-// -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    //
+    // the items
+    //
+    // -----------------------------------------------------------------------------------------------------------------
     public static final class PDictItemIterator extends PBaseDictIterator<DictEntry> {
         public PDictItemIterator(Object clazz, Shape instanceShape, HashingStorageIterator<DictEntry> iterator, HashingStorage hashingStorage, int initialSize) {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
@@ -188,6 +190,7 @@ public abstract class PDictView extends PythonBuiltinObject {
 
         /* this is correct because it cannot be subclassed in Python */
         @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
         Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
                         @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
                         @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
