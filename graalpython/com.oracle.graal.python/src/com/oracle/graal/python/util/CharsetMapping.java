@@ -47,6 +47,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.ibm.icu.charset.CharsetICU;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -82,6 +85,13 @@ public class CharsetMapping {
                 charset = Charset.forName(name);
             } catch (UnsupportedCharsetException e) {
                 // Let it stay null
+            }
+            if (charset == null && !ImageInfo.inImageBuildtimeCode()) {
+                try {
+                    charset = CharsetICU.forNameICU(name);
+                } catch (UnsupportedCharsetException e) {
+                    // Let it stay null
+                }
             }
             JAVA_CHARSETS.put(name, charset);
         }
