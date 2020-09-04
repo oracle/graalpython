@@ -88,6 +88,7 @@ public class CharsetMapping {
             }
             if (charset == null && !ImageInfo.inImageBuildtimeCode()) {
                 try {
+                    // Note: Used ICU encoding implementations have to be added to reflect-config
                     charset = CharsetICU.forNameICU(name);
                 } catch (UnsupportedCharsetException e) {
                     // Let it stay null
