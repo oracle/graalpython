@@ -171,7 +171,7 @@ public class CharsetMapping {
         addMapping("gb2312", "GB2312");
         addMapping("gbk", "GBK");
         addMapping("hp_roman8", null);
-        addMapping("hz", "GB2312");
+        addMapping("hz", "HZ");
         addMapping("iso2022_jp_1", null);
         addMapping("iso2022_jp_2004", null);
         addMapping("iso2022_jp_2", "ISO-2022-JP-2");
