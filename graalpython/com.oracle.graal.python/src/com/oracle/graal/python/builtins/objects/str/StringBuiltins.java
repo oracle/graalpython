@@ -60,8 +60,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.List;
-
-import org.graalvm.nativeimage.ImageInfo;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
@@ -247,7 +248,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         }
                         break;
                     default:
-                        if (isPrintable(codepoint)) {
+                        if (StringUtils.isPrintable(codepoint)) {
                             str.appendCodePoint(codepoint);
                         } else {
                             int len = BytesUtils.unicodeEscape(codepoint, 0, buffer);
@@ -264,19 +265,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return str.toString();
         }
 
-        private static boolean isPrintable(int codepoint) {
-            if (ImageInfo.inImageBuildtimeCode()) {
-                // Executing ICU4J at image build time causes issues with runtime/build time
-                // initialization
-                assert codepoint < 0x100;
-                return codepoint >= 32;
-            }
-            return isPrintableNonAscii(codepoint);
-        }
-
-        private static boolean isPrintableNonAscii(int codepoint) {
-            return UCharacter.isPrintable(codepoint);
-        }
     }
 
     abstract static class BinaryStringOpNode extends PythonBinaryBuiltinNode {
@@ -773,7 +761,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String toUpperCase(String str) {
-            return str.toUpperCase();
+            return UCharacter.toUpperCase(Locale.ROOT, str);
         }
     }
 
@@ -887,13 +875,9 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
+            return StringUtils.toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
         }
 
-        @TruffleBoundary
-        private static String toLowerCase(String self) {
-            return self.toLowerCase();
-        }
     }
 
     // str.capitalize()
@@ -917,36 +901,71 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.partition
+    @Builtin(name = "partition", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class PartitionNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object doString(String self, String sep) {
+            if (sep.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+            }
+            int indexOf = self.indexOf(sep);
+            String[] partitioned = new String[3];
+            if (indexOf == -1) {
+                partitioned[0] = self;
+                partitioned[1] = "";
+                partitioned[2] = "";
+            } else {
+                partitioned[0] = PString.substring(self, 0, indexOf);
+                partitioned[1] = sep;
+                partitioned[2] = PString.substring(self, indexOf + sep.length());
+            }
+            return factory().createTuple(partitioned);
+        }
+
+        @Specialization(replaces = "doString")
+        Object doGeneric(Object self, Object sep,
+                        @Cached CastToJavaStringCheckedNode castSelfNode,
+                        @Cached CastToJavaStringCheckedNode castSepNode) {
+            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "partition", self);
+            String sepStr = castSepNode.cast(sep, ErrorMessages.MUST_BE_STR_NOT_P, sep);
+            return doString(selfStr, sepStr);
+        }
+    }
+
     // str.rpartition
     @Builtin(name = "rpartition", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RPartitionNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PList doString(String self, String sep,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            int lastIndexOf = self.lastIndexOf(sep);
-            PList list = factory().createList();
-            if (lastIndexOf == -1) {
-                appendNode.execute(list, "");
-                appendNode.execute(list, "");
-                appendNode.execute(list, self);
-            } else {
-                appendNode.execute(list, PString.substring(self, 0, lastIndexOf));
-                appendNode.execute(list, sep);
-                appendNode.execute(list, PString.substring(self, lastIndexOf + sep.length()));
+        Object doString(String self, String sep) {
+            if (sep.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
-            return list;
+            int lastIndexOf = self.lastIndexOf(sep);
+            String[] partitioned = new String[3];
+            if (lastIndexOf == -1) {
+                partitioned[0] = "";
+                partitioned[1] = "";
+                partitioned[2] = self;
+            } else {
+                partitioned[0] = PString.substring(self, 0, lastIndexOf);
+                partitioned[1] = sep;
+                partitioned[2] = PString.substring(self, lastIndexOf + sep.length());
+            }
+            return factory().createTuple(partitioned);
         }
 
         @Specialization(replaces = "doString")
-        PList doGeneric(Object self, Object sep,
+        Object doGeneric(Object self, Object sep,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
+                        @Cached CastToJavaStringCheckedNode castSepNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rpartition", self);
             String sepStr = castSepNode.cast(sep, ErrorMessages.MUST_BE_STR_NOT_P, sep);
-            return doString(selfStr, sepStr, appendNode);
+            return doString(selfStr, sepStr);
         }
     }
 
@@ -1215,6 +1234,8 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
         @Child private AppendNode appendNode = AppendNode.create();
 
+        private static final Pattern LINEBREAK_PATTERN = Pattern.compile("\\R");
+
         @Specialization
         PList doString(String self, @SuppressWarnings("unused") PNone keepends) {
             return doStringKeepends(self, false);
@@ -1224,23 +1245,41 @@ public final class StringBuiltins extends PythonBuiltins {
         PList doStringKeepends(String self, boolean keepends) {
             PList list = factory().createList();
             int lastEnd = 0;
-            while (true) {
-                int nextIndex = PString.indexOf(self, "\n", lastEnd);
-                if (nextIndex == -1) {
-                    break;
-                }
+            Matcher matcher = getMatcher(self);
+            while (matcherFind(matcher)) {
+                int end = matcherEnd(matcher);
                 if (keepends) {
-                    appendNode.execute(list, PString.substring(self, lastEnd, nextIndex + 1));
+                    appendNode.execute(list, PString.substring(self, lastEnd, end));
                 } else {
-                    appendNode.execute(list, PString.substring(self, lastEnd, nextIndex));
+                    appendNode.execute(list, PString.substring(self, lastEnd, matcherStart(matcher)));
                 }
-                lastEnd = nextIndex + 1;
+                lastEnd = end;
             }
             String remainder = PString.substring(self, lastEnd);
             if (!remainder.isEmpty()) {
                 appendNode.execute(list, remainder);
             }
             return list;
+        }
+
+        @TruffleBoundary
+        private static int matcherStart(Matcher matcher) {
+            return matcher.start();
+        }
+
+        @TruffleBoundary
+        private static int matcherEnd(Matcher matcher) {
+            return matcher.end();
+        }
+
+        @TruffleBoundary
+        private static boolean matcherFind(Matcher matcher) {
+            return matcher.find();
+        }
+
+        @TruffleBoundary
+        private static Matcher getMatcher(String self) {
+            return LINEBREAK_PATTERN.matcher(self);
         }
 
         @Specialization(replaces = {"doString", "doStringKeepends"})
@@ -1524,9 +1563,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"left.length() == 1", "right > 0"})
         String doCharInt(String left, int right) {
-            char[] result = new char[right];
-            Arrays.fill(result, left.charAt(0));
-            return new String(result);
+            try {
+                char[] result = new char[right];
+                Arrays.fill(result, left.charAt(0));
+                return new String(result);
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            }
         }
 
         @Specialization(guards = {"left.length() > 1", "right > 0"})
@@ -1654,10 +1697,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isLetterOrDigit(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!StringUtils.isLetterOrDigit(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1678,10 +1723,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isLetter(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!UCharacter.isLetter(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1702,10 +1749,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!Character.isDigit(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!UCharacter.isDigit(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1748,21 +1797,18 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            int uncased = 0;
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length(); i++) {
+            boolean hasLower = false;
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isLowerCase(codePoint)) {
-                    if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
-                        uncased++;
-                    } else {
-                        return false;
-                    }
+                if (UCharacter.isUUppercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    return false;
                 }
+                if (!hasLower && UCharacter.isULowercase(codePoint)) {
+                    hasLower = true;
+                }
+                i += Character.charCount(codePoint);
             }
-            return uncased == 0 || self.length() > uncased;
+            return hasLower;
         }
 
         @Specialization(replaces = "doString")
@@ -1777,20 +1823,18 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         private static boolean isPrintableChar(int i) {
-            if (Character.isISOControl(i)) {
-                return false;
-            }
-            Character.UnicodeBlock block = Character.UnicodeBlock.of(i);
-            return block != null && block != Character.UnicodeBlock.SPECIALS;
+            return UCharacter.isPrintable(i);
         }
 
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            for (int i = 0; i < self.length(); i++) {
-                if (!isPrintableChar(self.codePointAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!isPrintableChar(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1813,10 +1857,12 @@ public final class StringBuiltins extends PythonBuiltins {
             if (self.length() == 0) {
                 return false;
             }
-            for (int i = 0; i < self.length(); i++) {
-                if (!StringUtils.isSpace(self.charAt(i))) {
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                if (!StringUtils.isSpace(codePoint)) {
                     return false;
                 }
+                i += Character.charCount(codePoint);
             }
             return true;
         }
@@ -1834,31 +1880,29 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            boolean hasContent = false;
-            boolean expectLower = false;
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length(); i++) {
+            boolean cased = false;
+            boolean previousIsCased = false;
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!expectLower) {
-                    if (Character.isTitleCase(codePoint) || Character.isUpperCase(codePoint)) {
-                        expectLower = true;
-                        hasContent = true;
-                    } else if (Character.isLowerCase(codePoint)) {
+
+                if (UCharacter.isUUppercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    if (previousIsCased) {
                         return false;
                     }
-                    // uncased characters are allowed
+                    previousIsCased = true;
+                    cased = true;
+                } else if (UCharacter.isULowercase(codePoint)) {
+                    if (!previousIsCased) {
+                        return false;
+                    }
+                    previousIsCased = true;
+                    cased = true;
                 } else {
-                    if (Character.isTitleCase(codePoint) || Character.isUpperCase(codePoint)) {
-                        return false;
-                    } else if (!Character.isLowerCase(codePoint)) {
-                        // we expect another title start after an uncased character
-                        expectLower = false;
-                    }
+                    previousIsCased = false;
                 }
+                i += Character.charCount(codePoint);
             }
-            return hasContent;
+            return cased;
         }
 
         @Specialization(replaces = "doString")
@@ -1874,21 +1918,18 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doString(String self) {
-            int uncased = 0;
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length(); i++) {
+            boolean hasUpper = false;
+            for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!Character.isUpperCase(codePoint)) {
-                    if (Character.toLowerCase(codePoint) == Character.toUpperCase(codePoint)) {
-                        uncased++;
-                    } else {
-                        return false;
-                    }
+                if (UCharacter.isULowercase(codePoint) || UCharacter.isTitleCase(codePoint)) {
+                    return false;
                 }
+                if (!hasUpper && UCharacter.isUUppercase(codePoint)) {
+                    hasUpper = true;
+                }
+                i += Character.charCount(codePoint);
             }
-            return uncased == 0 || self.length() > uncased;
+            return hasUpper;
         }
 
         @Specialization(replaces = "doString")
@@ -1955,59 +1996,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static String doTitle(String self) {
-            boolean shouldBeLowerCase = false;
-            boolean translated;
-            StringBuilder converted = new StringBuilder();
-            for (int offset = 0; offset < self.length();) {
-                int ch = self.codePointAt(offset);
-                translated = false;
-                if (Character.isAlphabetic(ch)) {
-                    if (shouldBeLowerCase) {
-                        // Should be lower case
-                        if (Character.isUpperCase(ch)) {
-                            translated = true;
-                            if (ch < 256) {
-                                converted.append((char) Character.toLowerCase(ch));
-                            } else {
-                                String origPart = new String(Character.toChars(ch));
-                                String changedPart = origPart.toLowerCase();
-                                converted.append(changedPart);
-                            }
-                        }
-                    } else {
-                        // Should be upper case
-                        if (Character.isLowerCase(ch)) {
-                            translated = true;
-                            if (ch < 256) {
-                                converted.append((char) Character.toUpperCase(ch));
-                            } else {
-                                String origPart = new String(Character.toChars(ch));
-                                String changedPart = origPart.toUpperCase();
-                                if (origPart.length() < changedPart.length()) {
-                                    // the original char was mapped to more chars ->
-                                    // we need to make upper case just the first one
-                                    changedPart = doTitle(changedPart);
-                                }
-                                converted.append(changedPart);
-                            }
-                        }
-                    }
-                    // And this was a letter
-                    shouldBeLowerCase = true;
-                } else {
-                    // This was not a letter
-                    shouldBeLowerCase = false;
-                }
-                if (!translated) {
-                    if (ch < 256) {
-                        converted.append((char) ch);
-                    } else {
-                        converted.append(Character.toChars(ch));
-                    }
-                }
-                offset += Character.charCount(ch);
-            }
-            return converted.toString();
+            return UCharacter.toTitleCase(Locale.ROOT, self, null);
         }
     }
 

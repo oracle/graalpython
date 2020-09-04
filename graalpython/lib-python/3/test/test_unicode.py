@@ -467,6 +467,9 @@ class UnicodeTest(string_tests.CommonTest,
 
     @unittest.skipIf(sys.maxsize > 2**32,
         'needs too much memory on a 64-bit platform')
+    # CPython creates an intermediate list, so it raises OverflowError on the size
+    # We have an optimized implementation that doesn't, so we raise MemoryError
+    @support.impl_detail(graalvm=False)
     def test_join_overflow(self):
         size = int(sys.maxsize**0.5) + 1
         seq = ('A' * size,) * size

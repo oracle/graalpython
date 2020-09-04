@@ -45,7 +45,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -258,6 +257,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // Encoder for raw_unicode_escape
     @Builtin(name = "__truffle_raw_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
     @GenerateNodeFactory
     public abstract static class RawEncodeNode extends EncodeBaseNode {
@@ -425,6 +425,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // Decoder for raw_escape_unicode
     @Builtin(name = "__truffle_raw_decode", minNumOfPositionalArgs = 1, parameterNames = {"bytes", "errors"})
     @GenerateNodeFactory
     abstract static class RawDecodeNode extends EncodeBaseNode {
@@ -432,7 +433,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object decode(PBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
-            String string = decodeBytes(getBytesBuffer(bytes), "strict");
+            String string = decodeBytes(getBytes(bytes), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -446,60 +447,64 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
             }
-            String string = decodeBytes(getBytesBuffer(bytes), profiledErrors);
+            String string = decodeBytes(getBytes(bytes), profiledErrors);
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
-        private ByteBuffer getBytesBuffer(PBytesLike bytesLike) {
+        private byte[] getBytes(PBytesLike bytesLike) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
             }
-            byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
-            return ByteBuffer.wrap(barr, 0, barr.length);
+            return toByteArrayNode.execute(bytesLike.getSequenceStorage());
         }
 
         @TruffleBoundary
-        String decodeBytes(ByteBuffer bytes, String errors) {
+        String decodeBytes(byte[] bytes, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             try {
-                ByteBuffer buf = ByteBuffer.allocate(bytes.remaining() * Integer.BYTES);
-                byte[] hexString = new byte[8];
-                while (bytes.hasRemaining()) {
-                    int val;
-                    byte b = bytes.get();
-                    if (b == (byte) '\\') {
-                        byte b1 = bytes.get();
+                ByteBuffer buf = ByteBuffer.allocate(bytes.length * Integer.BYTES);
+                int i = 0;
+                while (i < bytes.length) {
+                    byte b = bytes[i];
+                    if (b == (byte) '\\' && i + 1 < bytes.length) {
+                        byte b1 = bytes[i + 1];
+                        int numIndex = i + 2;
                         if (b1 == (byte) 'u') {
-                            bytes.get(hexString, 0, 4);
-                            val = Integer.parseInt(new String(hexString, 0, 4), 16);
+                            final int count = 4;
+                            if (numIndex + count > bytes.length) {
+                                throw raise(UnicodeDecodeError);
+                            }
+                            buf.putInt(Integer.parseInt(new String(bytes, numIndex, count), 16));
+                            i = numIndex + count;
+                            continue;
                         } else if (b1 == (byte) 'U') {
-                            bytes.get(hexString, 0, 8);
-                            val = Integer.parseInt(new String(hexString, 0, 8), 16);
-                        } else {
-                            throw new CharacterCodingException();
+                            final int count = 8;
+                            if (numIndex + count > bytes.length) {
+                                throw raise(UnicodeDecodeError);
+                            }
+                            buf.putInt(Integer.parseInt(new String(bytes, numIndex, count), 16));
+                            i = numIndex + count;
+                            continue;
                         }
-                    } else {
-                        // Bytes that are not an escape sequence are latin-1, which maps to unicode
-                        // codepoints directly
-                        val = b & 0xFF;
                     }
-                    buf.putInt(val);
+                    // Bytes that are not an escape sequence are latin-1, which maps to unicode
+                    // codepoints directly
+                    buf.putInt(b & 0xFF);
+                    i++;
                 }
                 buf.flip();
                 CharBuffer decoded = UTF32.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
                 return String.valueOf(decoded);
-            } catch (CharacterCodingException | NumberFormatException | BufferUnderflowException e) {
+            } catch (CharacterCodingException | NumberFormatException e) {
                 throw raise(UnicodeDecodeError, e);
             }
         }
     }
 
-    // _codecs.lookup(name)
     @Builtin(name = "__truffle_lookup", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
-        // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(String encoding) {
             if (CharsetMapping.getCharset(encoding) != null) {
@@ -510,7 +515,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // _codecs.lookup(name)
     @Builtin(name = "charmap_build", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CharmapBuildNode extends PythonBuiltinNode {

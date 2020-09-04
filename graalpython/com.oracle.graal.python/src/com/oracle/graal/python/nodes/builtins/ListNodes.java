@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -96,24 +96,9 @@ public abstract class ListNodes {
         protected abstract PList execute(Object cls, Object value);
 
         @Specialization
-        PList listString(Object cls, PString arg,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return listString(cls, arg.getValue(), appendNode, factory);
-        }
-
-        @Specialization
         PList listString(Object cls, String arg,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            char[] chars = arg.toCharArray();
-            PList list = factory.createList(cls);
-
-            for (char c : chars) {
-                appendNode.execute(list, Character.toString(c));
-            }
-
-            return list;
+            return factory.createList(cls, StringUtils.toCharacterArray(arg));
         }
 
         @Specialization(guards = "isNoValue(none)")

@@ -1797,9 +1797,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract Object executeWith(VirtualFrame frame, Object strClass, Object arg, Object encoding, Object errors);
 
-        @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!isNativeClass(strClass)", "isNoValue(arg)"})
         @SuppressWarnings("unused")
-        Object strNoArgs(Object strClass, PNone arg, PNone encoding, PNone errors) {
+        Object strNoArgs(Object strClass, PNone arg, Object encoding, Object errors) {
             return asPString(strClass, "");
         }
 

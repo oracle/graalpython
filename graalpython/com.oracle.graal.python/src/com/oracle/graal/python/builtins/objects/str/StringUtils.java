@@ -40,7 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import com.oracle.truffle.api.CompilerDirectives;
+import java.util.Locale;
+
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.ibm.icu.lang.UCharacter;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class StringUtils {
     public enum StripKind {
@@ -80,7 +85,7 @@ public final class StringUtils {
                     0, 0, 0, 0, 0, 0, 0, 0
     };
 
-    public static boolean isUnicodeWhitespace(char ch) {
+    public static boolean isUnicodeWhitespace(int ch) {
         switch (ch) {
             case 0x0009:
             case 0x000A:
@@ -135,7 +140,7 @@ public final class StringUtils {
         }
     }
 
-    public static boolean isSpace(char ch) {
+    public static boolean isSpace(int ch) {
         if (ch < 128) {
             return ASCII_WHITESPACE[ch] == 1;
         }
@@ -203,8 +208,65 @@ public final class StringUtils {
         return str.substring(i, j);
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public static boolean containsNullCharacter(String value) {
         return value.indexOf(0) > 0;
+    }
+
+    @TruffleBoundary
+    public static Object[] toCharacterArray(String arg) {
+        Object[] values = new Object[arg.codePointCount(0, arg.length())];
+        for (int i = 0, o = 0; i < arg.length(); o++) {
+            int codePoint = arg.codePointAt(i);
+            int charCount = Character.charCount(codePoint);
+            if (charCount == 1) {
+                values[o] = String.valueOf((char) codePoint);
+            } else {
+                values[o] = String.valueOf(Character.toChars(codePoint));
+            }
+            i += charCount;
+        }
+        return values;
+    }
+
+    public static boolean isPrintable(int codepoint) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Executing ICU4J at image build time causes issues with runtime/build time
+            // initialization
+            assert codepoint < 0x100;
+            return codepoint >= 32;
+        }
+        return isPrintableICU(codepoint);
+    }
+
+    @TruffleBoundary
+    private static boolean isPrintableICU(int codepoint) {
+        return UCharacter.isPrintable(codepoint);
+    }
+
+    @TruffleBoundary
+    public static String toLowerCase(String self) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Avoid initializing ICU4J in image build
+            return self.toLowerCase();
+        }
+        return toLowerCaseICU(self);
+    }
+
+    private static String toLowerCaseICU(String self) {
+        return UCharacter.toLowerCase(Locale.ROOT, self);
+    }
+
+    @TruffleBoundary
+    public static boolean isLetterOrDigit(int codePoint) {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            // Avoid initializing ICU4J in image build
+            return Character.isLetterOrDigit(codePoint);
+        }
+        return isLetterOrDigitICU(codePoint);
+    }
+
+    private static boolean isLetterOrDigitICU(int codePoint) {
+        return UCharacter.isLetterOrDigit(codePoint);
     }
 }
