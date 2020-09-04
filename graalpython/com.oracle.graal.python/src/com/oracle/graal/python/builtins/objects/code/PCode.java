@@ -48,8 +48,6 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -536,60 +534,60 @@ public final class PCode extends PythonBuiltinObject {
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
 
-    public Object co_name() {
-        String codeName = this.getName();
-        if (codeName != null) {
-            return codeName;
+    private PTuple createTuple(Object[] array, PythonObjectFactory factory) {
+        Object[] data = array;
+        if (data == null) {
+            data = new Object[0];
         }
-        return PNone.NONE;
+        return factory.createTuple(data);
+    }
+
+    private PBytes createBytes(byte[] array, PythonObjectFactory factory) {
+        byte[] bytes = array;
+        if (bytes == null) {
+            bytes = new byte[0];
+        }
+        return factory.createBytes(bytes);
+    }
+
+    public String co_name() {
+        String codeName = this.getName();
+        assert codeName != null : "PCode.co_name cannot be null!";
+        return codeName;
+    }
+
+    public String co_filename() {
+        String filename = this.getFilename();
+        assert filename != null : "PCode.co_filename cannot be null";
+        return filename;
     }
 
     public PBytes co_code(PythonObjectFactory factory) {
-        byte[] codeCodeString = this.getCodestring();
-        if (codeCodeString == null) {
-            codeCodeString = new byte[0];
-        }
-        return factory.createBytes(codeCodeString);
+        return createBytes(this.getCodestring(), factory);
+    }
+
+    public PBytes co_lnotab(PythonObjectFactory factory) {
+        return createBytes(this.getLnotab(), factory);
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        Object[] codeConstants = this.getConstants();
-        if (codeConstants == null) {
-            codeConstants = PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-        return factory.createTuple(codeConstants);
+        return createTuple(this.getConstants(), factory);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {
-        Object[] codeNames = this.getNames();
-        if (codeNames == null) {
-            codeNames = PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-        return factory.createTuple(codeNames);
+        return createTuple(this.getNames(), factory);
     }
 
-    public PythonAbstractObject co_varnames(PythonObjectFactory factory) {
-        Object[] codeVarNames = this.getVarnames();
-        if (codeVarNames != null) {
-            return factory.createTuple(codeVarNames);
-        }
-        return PNone.NONE;
+    public PTuple co_varnames(PythonObjectFactory factory) {
+        return createTuple(this.getVarnames(), factory);
     }
 
-    public PythonAbstractObject co_freevars(PythonObjectFactory factory) {
-        Object[] codeFreeVars = this.getFreeVars();
-        if (codeFreeVars != null) {
-            return factory.createTuple(codeFreeVars);
-        }
-        return PNone.NONE;
+    public PTuple co_freevars(PythonObjectFactory factory) {
+        return createTuple(this.getFreeVars(), factory);
     }
 
-    public PythonAbstractObject co_cellvars(PythonObjectFactory factory) {
-        Object[] codeCellVars = this.getCellVars();
-        if (codeCellVars != null) {
-            return factory.createTuple(codeCellVars);
-        }
-        return PNone.NONE;
+    public PTuple co_cellvars(PythonObjectFactory factory) {
+        return createTuple(this.getCellVars(), factory);
     }
 
     public int co_argcount() {
@@ -610,5 +608,13 @@ public final class PCode extends PythonBuiltinObject {
 
     public int co_flags() {
         return this.getFlags();
+    }
+
+    public int co_firstlineno() {
+        return this.getFirstLineNo();
+    }
+
+    public int co_stacksize() {
+        return this.getStacksize();
     }
 }

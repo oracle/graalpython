@@ -260,12 +260,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void writeBytes(byte[] bytes, int version, DataOutputStream buffer) {
-            int len = bytes.length;
-            writeInt(len, version, buffer);
-            try {
-                buffer.write(bytes);
-            } catch (IOException e) {
-                throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL);
+            if (bytes != null) {
+                int len = bytes.length;
+                writeInt(len, version, buffer);
+                try {
+                    buffer.write(bytes);
+                } catch (IOException e) {
+                    throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL);
+                }
+            } else {
+                writeInt(0, version, buffer);
             }
         }
 
@@ -386,26 +390,29 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             throw raise(NotImplementedError, "marshal.dumps(array)");
         }
 
+        private void writeArray(VirtualFrame frame, Object[] items, int version, DataOutputStream buffer) {
+            if (items != null) {
+                writeInt(items.length, version, buffer);
+                for (Object item : items) {
+                    getRecursiveNode().execute(frame, item, version, buffer);
+                }
+            } else {
+                writeInt(0, version, buffer);
+            }
+        }
+
         @Specialization
         void handlePTuple(VirtualFrame frame, PTuple t, int version, DataOutputStream buffer,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             writeByte(TYPE_TUPLE, version, buffer);
-            Object[] items = getObjectArrayNode.execute(t);
-            writeInt(items.length, version, buffer);
-            for (int i = 0; i < items.length; i++) {
-                getRecursiveNode().execute(frame, items[i], version, buffer);
-            }
+            writeArray(frame, getObjectArrayNode.execute(t), version, buffer);
         }
 
         @Specialization
         void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
             writeByte(TYPE_LIST, version, buffer);
-            Object[] items = getArray.execute(l.getSequenceStorage());
-            writeInt(items.length, version, buffer);
-            for (int i = 0; i < items.length; i++) {
-                getRecursiveNode().execute(frame, items[i], version, buffer);
-            }
+            writeArray(frame, getArray.execute(l.getSequenceStorage()), version, buffer);
         }
 
         @Specialization(limit = "1")
@@ -426,13 +433,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            writeString(getSourceCode(c), version, buffer);
+            writeInt(c.getArgcount(), version, buffer);
+            writeInt(c.getPositionalOnlyArgCount(), version, buffer);
+            writeInt(c.getKwonlyargcount(), version, buffer);
+            writeInt(c.getNlocals(), version, buffer);
+            writeInt(c.getStacksize(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
-            byte[] code = c.getCodestring();
-            writeBytes(code == null ? new byte[0] : code, version, buffer);
-            writeString(c.getFilename(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
-            writeBytes(c.getLnotab() == null ? new byte[0] : c.getLnotab(), version, buffer);
+            writeString(c.getFilename(), version, buffer);
+            writeString(c.getName(), version, buffer);
+            writeBytes(c.getCodestring(), version, buffer);
+            writeBytes(c.getLnotab(), version, buffer);
+            writeArray(frame, c.getConstants(), version, buffer);
+            writeArray(frame, c.getNames(), version, buffer);
+            writeArray(frame, c.getVarnames(), version, buffer);
+            writeArray(frame, c.getFreeVars(), version, buffer);
+            writeArray(frame, c.getCellVars(), version, buffer);
         }
 
         @TruffleBoundary
@@ -598,19 +614,52 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return bytes;
         }
 
+        private Object[] readArray(int depth, HashingStorageLibrary lib) {
+            int n = readInt();
+            if (n < 0) {
+                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+            }
+            Object[] items = new Object[n];
+            for (int i = 0; i < n; i++) {
+                Object item = readObject(depth + 1, lib);
+                if (item == null) {
+                    throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+                }
+                items[i] = item;
+            }
+            return items;
+        }
+
         private PBytes readBytesLike() {
             byte[] bytes = readBytes();
             return factory().createBytes(bytes);
         }
 
-        private PCode readCode() {
-            String codetext = readString();
+        private PCode readCode(int depth, HashingStorageLibrary lib) {
+            int argCount = readInt();
+            int posOnlyArgCount = readInt();
+            int kwOnlyArgCount = readInt();
+            int nLocals = readInt();
+            int stackSize = readInt();
             int flags = readInt();
-            byte[] serializationData = readBytes();
-            String filename = readString();
-            int firstlineno = readInt();
-            byte[] lnotab = readBytes();
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, codetext, flags, serializationData, filename, firstlineno, lnotab);
+            int firstLineNo = readInt();
+            String fileName = readString();
+            String name = readString();
+            byte[] codeString = readBytes();
+            byte[] lnoTab = readBytes();
+            Object[] constants = readArray(depth, lib);
+            Object[] names = readArray(depth, lib);
+            Object[] varNames = readArray(depth, lib);
+            Object[] freeVars = readArray(depth, lib);
+            Object[] cellVars = readArray(depth, lib);
+
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, posOnlyArgCount,
+                            argCount, kwOnlyArgCount,
+                            nLocals, stackSize, flags,
+                            codeString, constants, names,
+                            varNames, freeVars, cellVars,
+                            fileName, name, firstLineNo,
+                            lnoTab);
         }
 
         private PDict readDict(int depth, HashingStorageLibrary lib) {
@@ -631,20 +680,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return dict;
         }
 
+        private PTuple readTuple(int depth, HashingStorageLibrary lib) {
+            return factory().createTuple(readArray(depth, lib));
+        }
+
         private PList readList(int depth, HashingStorageLibrary lib) {
-            int n = readInt();
-            if (n < 0) {
-                throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-            }
-            Object[] items = new Object[n];
-            for (int i = 0; i < n; i++) {
-                Object item = readObject(depth + 1, lib);
-                if (item == null) {
-                    throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-                }
-                items[i] = item;
-            }
-            return factory().createList(items);
+            return factory().createList(readArray(depth, lib));
         }
 
         private PSet readSet(int depth, HashingStorageLibrary lib) {
@@ -656,7 +697,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < n; i++) {
                 Object key = readObject(depth + 1, lib);
                 // note: we may pass a 'null' frame here because global state is ensured to be
-                // transfered
+                // transferred
                 newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
@@ -716,17 +757,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readInternedString();
                 case TYPE_BYTESLIKE:
                     return readBytesLike();
-                case TYPE_TUPLE: {
-                    int n = readInt();
-                    if (n < 0) {
-                        throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-                    }
-                    Object[] items = new Object[n];
-                    for (int i = 0; i < n; i++) {
-                        items[i] = readObject(depth + 1, lib);
-                    }
-                    return factory().createTuple(items);
-                }
+                case TYPE_TUPLE:
+                    return readTuple(depth, lib);
                 case TYPE_DICT:
                     return readDict(depth, lib);
                 case TYPE_LIST:
@@ -736,7 +768,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_FROZENSET:
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode();
+                    return readCode(depth, lib);
                 default:
                     throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }

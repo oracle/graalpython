@@ -55,7 +55,7 @@ import com.oracle.graal.python.parser.sst.SerializationUtils.SSTId;
 public final class SSTDeserializer {
 
     private final DataInputStream stream;
-    private final int offsetDelta;
+    private int offsetDelta;
     private int startIndex;
     private int endIndex;
     private ScopeInfo currentScope;
@@ -663,9 +663,12 @@ public final class SSTDeserializer {
             literals[i] = s.isEmpty() ? null : s;
         }
         SSTNode[] expressions = new SSTNode[readInt()];
+        int prevOffsetDelta = offsetDelta;
+        offsetDelta = 0;
         for (int i = 0; i < expressions.length; i++) {
             expressions[i] = readNode();
         }
+        offsetDelta = prevOffsetDelta;
         String[] exprsSources = new String[expressions.length];
         for (int i = 0; i < exprsSources.length; i++) {
             exprsSources[i] = readString();
