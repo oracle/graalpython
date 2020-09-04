@@ -47,8 +47,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -360,5 +364,54 @@ final class DefaultPythonObjectExports {
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(receiver, state, methodName);
         return methodLib.callObjectWithState(method, state, arguments);
+    }
+
+    @ExportMessage
+    abstract static class GetIterator {
+
+        @Specialization(guards = "lib.hasArrayElements(receiver)")
+        static PForeignArrayIterator doForeignArray(Object receiver,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                long size = lib.getArraySize(receiver);
+                if (size < Integer.MAX_VALUE) {
+                    return factory.createForeignArrayIterator(receiver);
+                }
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be an array but isn't");
+            }
+            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+        }
+
+        @Specialization(guards = "lib.isString(receiver)")
+        static PStringIterator doBoxedString(Object receiver,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return factory.createStringIterator(lib.asString(receiver));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be a string but isn't");
+            }
+        }
+
+        @Specialization(replaces = {"doForeignArray", "doBoxedString"})
+        static PythonBuiltinObject doGeneric(Object receiver,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+
+            if (lib.hasArrayElements(receiver)) {
+                return doForeignArray(receiver, factory, raiseNode, lib);
+            } else if (lib.isString(receiver)) {
+                return doBoxedString(receiver, factory, lib);
+            }
+            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+        }
+
+        static int getLimit() {
+            return PythonOptions.getCallSiteInlineCacheMaxDepth();
+        }
     }
 }
