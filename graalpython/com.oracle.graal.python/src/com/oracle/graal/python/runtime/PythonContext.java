@@ -42,6 +42,7 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -176,7 +178,7 @@ public final class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
-    private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final EconomicMap<Object, CallTarget> atExitHooks = EconomicMap.create();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
@@ -657,14 +659,20 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void deregisterShutdownHook(Object callable) {
-        atExitHooks.remove(callable);
+        atExitHooks.removeKey(callable);
     }
 
     @TruffleBoundary
     public void runShutdownHooks() {
         handler.shutdown();
-        for (CallTarget f : atExitHooks.values()) {
-            f.call();
+        // run atExitHooks in reverse order they were registered
+        CallTarget[] hooks = new CallTarget[atExitHooks.size()];
+        Iterator<CallTarget> hooksIter = atExitHooks.getValues().iterator();
+        for (int i = 0; i < hooks.length; i++) {
+            hooks[i] = hooksIter.next();
+        }
+        for (int i = hooks.length - 1; i >= 0; i--) {
+            hooks[i].call();
         }
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
