@@ -61,7 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class YieldFromNode extends AbstractYieldNode implements GeneratorControlNode {
-    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().create(PythonOptions.getCallSiteInlineCacheMaxDepth());
+    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth());
     @Child private GetNextNode next = GetNextNode.create();
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
