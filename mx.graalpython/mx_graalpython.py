@@ -1438,10 +1438,25 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(java_bench_suite)
 
 
+class CharsetFilteringPariticpant:
+    """
+    Remove charset providers from the resulting JAR distribution. Done to avoid libraries (icu4j-charset)
+    adding their charsets implicitly to native image. We need to add them explicitly in a controlled way.
+    """
+    def __opened__(self, archive, src_archive, services):
+        self.__services = services
+
+    def __closing__(self):
+        self.__services.pop('java.nio.charset.spi.CharsetProvider', None)
+
+
 def mx_post_parse_cmd_line(namespace):
     # all projects are now available at this time
     _register_vms(namespace)
     _register_bench_suites(namespace)
+    for dist in mx.suite('graalpython').dists:
+        if hasattr(dist, 'set_archiveparticipant'):
+            dist.set_archiveparticipant(CharsetFilteringPariticpant())
 
 
 def python_coverage(args):

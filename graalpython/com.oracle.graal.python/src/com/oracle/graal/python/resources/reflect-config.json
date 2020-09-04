@@ -42,5 +42,13 @@
 {
   "name":"com.ibm.icu.text.BreakIteratorFactory",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.ibm.icu.charset.CharsetUTF7",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "java.lang.String[]"]}]
+},
+{
+  "name":"com.ibm.icu.charset.CharsetHZ",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String", "java.lang.String", "java.lang.String[]"]}]
 }
 ]

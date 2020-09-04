@@ -14,6 +14,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_bytes_comparison
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_case_operation_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_center
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs_idna
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_comparison
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_concatenation

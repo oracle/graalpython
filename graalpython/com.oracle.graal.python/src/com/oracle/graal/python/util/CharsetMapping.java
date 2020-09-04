@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import com.ibm.icu.charset.CharsetICU;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -78,10 +79,20 @@ public class CharsetMapping {
     private static Charset getJavaCharset(String name) {
         Charset charset = JAVA_CHARSETS.get(name);
         if (charset == null) {
-            try {
-                charset = Charset.forName(name);
-            } catch (UnsupportedCharsetException e) {
-                // Let it stay null
+            // Important: When adding additional ICU4J charset, the implementation class needs to be
+            // added to reflect-config.json
+            if (name.equals("UTF-7") || name.equals("HZ")) {
+                try {
+                    charset = CharsetICU.forNameICU(name);
+                } catch (UnsupportedCharsetException e) {
+                    // Let it stay null
+                }
+            } else {
+                try {
+                    charset = Charset.forName(name);
+                } catch (UnsupportedCharsetException e) {
+                    // Let it stay null
+                }
             }
             JAVA_CHARSETS.put(name, charset);
         }
@@ -161,7 +172,7 @@ public class CharsetMapping {
         addMapping("gb2312", "GB2312");
         addMapping("gbk", "GBK");
         addMapping("hp_roman8", null);
-        addMapping("hz", "GB2312");
+        addMapping("hz", "HZ");
         addMapping("iso2022_jp_1", null);
         addMapping("iso2022_jp_2004", null);
         addMapping("iso2022_jp_2", "ISO-2022-JP-2");
@@ -213,7 +224,7 @@ public class CharsetMapping {
         addMapping("utf_32_be", "UTF-32BE");
         addMapping("utf_32_le", "UTF-32LE");
         addMapping("utf_32", "UTF-32");
-        addMapping("utf_7", null);
+        addMapping("utf_7", "UTF-7");
         addMapping("utf_8", "UTF-8");
 
         // Generated from encodings.aliases.aliases, removed non-language encodings like base64
