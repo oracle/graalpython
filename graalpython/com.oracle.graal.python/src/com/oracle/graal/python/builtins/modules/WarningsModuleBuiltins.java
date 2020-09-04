@@ -121,7 +121,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                         "It is a helper module to speed up interpreter start-up.");
         builtinConstants.put("_defaultaction", "default");
         builtinConstants.put("_onceregistry", PythonObjectFactory.getUncached().createDict());
-        builtinConstants.put("filters", initFilters(core));
+        builtinConstants.put("filters", initFilters());
         super.initialize(core);
     }
 
@@ -137,18 +137,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         DynamicObjectLibrary.getUncached().putLong(warningsModule, FILTERS_VERSION, 0);
     }
 
-    private static PTuple createFilter(PythonCore core, PythonBuiltinClassType cat, String id, Object mod) {
+    private static PTuple createFilter(PythonBuiltinClassType cat, String id, Object mod) {
         return PythonObjectFactory.getUncached().createTuple(new Object[]{id, PNone.NONE, cat, mod, 0});
     }
 
     // init_filters
-    private static PList initFilters(PythonCore core) {
+    private static PList initFilters() {
         return PythonObjectFactory.getUncached().createList(new Object[]{
-                        createFilter(core, PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
-                        createFilter(core, PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(core, PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
-                        createFilter(core, PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
-                        createFilter(core, PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
+                        createFilter(PythonBuiltinClassType.DeprecationWarning, "default", "__main__"),
+                        createFilter(PythonBuiltinClassType.DeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(PythonBuiltinClassType.PendingDeprecationWarning, "ignore", PNone.NONE),
+                        createFilter(PythonBuiltinClassType.ImportWarning, "ignore", PNone.NONE),
+                        createFilter(PythonBuiltinClassType.ResourceWarning, "ignore", PNone.NONE)});
     }
 
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
