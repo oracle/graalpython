@@ -259,7 +259,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (!lib.canBePInt(value)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
             }
-            return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
+            return (long) recursiveNode.call(frame, data, lib.asPInt(value));
         }
 
         protected static Crc32Node create() {
@@ -333,7 +333,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (!lib.canBePInt(value)) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
             }
-            return (long) recursiveNode.execute(frame, data, lib.asPInt(value));
+            return (long) recursiveNode.call(frame, data, lib.asPInt(value));
         }
 
         protected static Adler32Node create() {
@@ -633,7 +633,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, bufsize);
             }
             Object bufferLen = lib.asPInt(bufsize);
-            return (PBytes) recursiveNode.execute(frame, data, wbits, bufferLen);
+            return (PBytes) recursiveNode.call(frame, data, wbits, bufferLen);
         }
 
         protected static DecompressNode create() {

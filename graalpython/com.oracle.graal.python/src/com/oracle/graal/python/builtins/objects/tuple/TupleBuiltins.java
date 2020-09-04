@@ -43,9 +43,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import java.math.BigInteger;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -61,20 +62,24 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory.SliceIndexNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -88,6 +93,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public class TupleBuiltins extends PythonBuiltins {
@@ -97,160 +103,91 @@ public class TupleBuiltins extends PythonBuiltins {
         return TupleBuiltinsFactory.getFactories();
     }
 
+    // CPython narrows the result down to long range, but in Java we can use only int range for
+    // array indices
+    public abstract static class SliceIndexNode extends ArgumentCastNodeWithRaise {
+        private final int defaultValue;
+
+        protected SliceIndexNode(int defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        @Override
+        public abstract Object execute(VirtualFrame frame, Object value);
+
+        @Specialization(guards = "isNoValue(none)")
+        int handleNone(@SuppressWarnings("unused") PNone none) {
+            return defaultValue;
+        }
+
+        @Specialization
+        static int doInt(int i) {
+            // fast-path for the most common case
+            return i;
+        }
+
+        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        int doOthers(VirtualFrame frame, Object value,
+                        @Cached CastToJavaIntLossyNode castToInt,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            if (lib.canBeIndex(value)) {
+                return castToInt.execute(lib.asIndexWithFrame(value, frame));
+            }
+            throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
+        }
+    }
+
     // index(element)
-    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value", "start", "stop"})
+    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = PrimitiveType.Int)
+    @ArgumentClinic(name = "stop", customConversion = "createSliceIndexStop", shortCircuitPrimitive = PrimitiveType.Int)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class IndexNode extends PythonBuiltinNode {
+    public abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
 
-        private static final String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
-
-        @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
-        @Child private SequenceStorageNodes.LenNode lenNode;
-
-        public abstract int execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3, Object arg4);
-
-        private int correctIndex(PTuple tuple, long index) {
-            long resultIndex = index;
-            if (resultIndex < 0) {
-                resultIndex += getLength(tuple);
-                if (resultIndex < 0) {
-                    return 0;
-                }
-            }
-            return (int) Math.min(resultIndex, Integer.MAX_VALUE);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IndexNodeClinicProviderGen.INSTANCE;
         }
 
-        @TruffleBoundary
-        private int correctIndex(PTuple tuple, PInt index) {
-            BigInteger value = index.getValue();
-            if (value.compareTo(BigInteger.ZERO) < 0) {
-                BigInteger resultAdd = value.add(BigInteger.valueOf(getLength(tuple)));
-                if (resultAdd.compareTo(BigInteger.ZERO) < 0) {
-                    return 0;
-                }
-                return resultAdd.intValue();
-            }
-            return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
+        public static SliceIndexNode createSliceIndexStart() {
+            return SliceIndexNodeGen.create(0);
         }
 
-        private int findIndex(VirtualFrame frame, SequenceStorage s, Object value, int start, int end) {
-            int idx = getItemIndexNode().execute(frame, s, value, start, end);
+        public static SliceIndexNode createSliceIndexStop() {
+            return SliceIndexNodeGen.create(Integer.MAX_VALUE);
+        }
+
+        @Specialization
+        int index(VirtualFrame frame, PTuple self, Object value, int startIn, int endIn,
+                        @Cached BranchProfile startLe0Profile,
+                        @Cached BranchProfile endLe0Profile,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.ItemIndexNode itemIndexNode) {
+            SequenceStorage storage = self.getSequenceStorage();
+            int start = startIn;
+            if (start < 0) {
+                startLe0Profile.enter();
+                start += lenNode.execute(storage);
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+
+            int end = endIn;
+            if (end < 0) {
+                endLe0Profile.enter();
+                end += lenNode.execute(storage);
+            }
+
+            // Note: ItemIndexNode normalizes the end to min(end, length(storage))
+            int idx = itemIndexNode.execute(frame, storage, value, start, end);
             if (idx != -1) {
                 return idx;
             }
             throw raise(PythonErrorType.ValueError, ErrorMessages.X_NOT_IN_TUPLE);
         }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return findIndex(frame, self.getSequenceStorage(), value, 0, getLength(self));
-        }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
-        }
-
-        @Specialization
-        int index(VirtualFrame frame, PTuple self, Object value, long start, long end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
-        }
-
-        @Specialization
-        int indexPI(VirtualFrame frame, PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), getLength(self));
-        }
-
-        @Specialization
-        int indexPIPI(VirtualFrame frame, PTuple self, Object value, PInt start, PInt end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
-        }
-
-        @Specialization
-        int indexLPI(VirtualFrame frame, PTuple self, Object value, long start, PInt end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
-        }
-
-        @Specialization
-        int indexPIL(VirtualFrame frame, PTuple self, Object value, PInt start, Long end) {
-            return findIndex(frame, self.getSequenceStorage(), value, correctIndex(self, start), correctIndex(self, end));
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        int indexDO(PTuple self, Object value, double start, Object end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        int indexOD(PTuple self, Object value, Object start, double end) {
-            throw raise(TypeError, ERROR_TYPE_MESSAGE);
-        }
-
-        @Specialization(guards = "!isNumber(start)")
-        int indexO(VirtualFrame frame, PTuple self, Object value, Object start, PNone end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(frame, start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, startValue, end);
-        }
-
-        @Specialization(guards = {"!isNumber(end)"})
-        int indexLO(VirtualFrame frame, PTuple self, Object value, long start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object endValue = endNode.executeObject(frame, end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, start, endValue);
-        }
-
-        @Specialization(guards = {"!isNumber(start) || !isNumber(end)"})
-        int indexOO(VirtualFrame frame, PTuple self, Object value, Object start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
-                        @Cached("createIndexNode()") IndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(frame, start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            Object endValue = endNode.executeObject(frame, end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            return indexNode.execute(frame, self, value, startValue, endValue);
-        }
-
-        protected int getLength(PTuple t) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(t.getSequenceStorage());
-        }
-
-        protected IndexNode createIndexNode() {
-            return TupleBuiltinsFactory.IndexNodeFactory.create(null);
-        }
-
-        private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
-            if (itemIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
-            }
-            return itemIndexNode;
-        }
-
     }
 
     @Builtin(name = "count", minNumOfPositionalArgs = 2)
@@ -299,7 +236,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         public String toString(VirtualFrame frame, Object item, BuiltinFunctions.ReprNode reprNode) {
             if (item != null) {
-                Object value = reprNode.execute(frame, item);
+                Object value = reprNode.call(frame, item);
                 if (value instanceof String) {
                     return (String) value;
                 } else if (value instanceof PString) {

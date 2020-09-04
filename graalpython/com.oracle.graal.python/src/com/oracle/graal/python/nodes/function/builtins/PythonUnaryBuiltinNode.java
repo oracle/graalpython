@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,33 +46,69 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class PythonUnaryBuiltinNode extends PythonBuiltinBaseNode {
-    public abstract Object execute(VirtualFrame VirtualFrame, Object arg);
 
-    public boolean executeBool(VirtualFrame VirtualFrame, boolean arg) throws UnexpectedResultException {
+    public Object call(VirtualFrame frame, Object arg) {
+        return execute(frame, arg);
+    }
+
+    public boolean callBool(VirtualFrame VirtualFrame, boolean arg) throws UnexpectedResultException {
+        return executeBool(VirtualFrame, arg);
+    }
+
+    public int callInt(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
+        return executeInt(VirtualFrame, arg);
+    }
+
+    public long callLong(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
+        return executeLong(VirtualFrame, arg);
+    }
+
+    public double callDouble(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
+        return executeDouble(VirtualFrame, arg);
+    }
+
+    public boolean callBool(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
+        return executeBool(VirtualFrame, arg);
+    }
+
+    public boolean callBool(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
+        return executeBool(VirtualFrame, arg);
+    }
+
+    public boolean callBool(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
+        return executeBool(VirtualFrame, arg);
+    }
+
+    // ------------------
+    // execute methods:
+
+    protected abstract Object execute(VirtualFrame VirtualFrame, Object arg);
+
+    protected boolean executeBool(VirtualFrame VirtualFrame, boolean arg) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(VirtualFrame, arg));
     }
 
-    public int executeInt(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
+    protected int executeInt(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
         return PGuards.expectInteger(execute(VirtualFrame, arg));
     }
 
-    public long executeLong(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
+    protected long executeLong(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
         return PGuards.expectLong(execute(VirtualFrame, arg));
     }
 
-    public double executeDouble(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
+    protected double executeDouble(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
         return PGuards.expectDouble(execute(VirtualFrame, arg));
     }
 
-    public boolean executeBool(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
+    protected boolean executeBool(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(VirtualFrame, arg));
     }
 
-    public boolean executeBool(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
+    protected boolean executeBool(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(VirtualFrame, arg));
     }
 
-    public boolean executeBool(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
+    protected boolean executeBool(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(VirtualFrame, arg));
     }
 }

@@ -67,7 +67,7 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return builtinNode.call(frame, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -75,7 +75,7 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return builtinNode.call(frame, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg",
@@ -85,7 +85,7 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return builtinNode.call(frame, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -94,7 +94,7 @@ public abstract class CallQuaternaryMethodNode extends CallSpecialMethodNode {
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getQuaternary(frame, func.getFunction())") PythonQuaternaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.execute(frame, arg1, arg2, arg3, arg4);
+        return builtinNode.call(frame, arg1, arg2, arg3, arg4);
     }
 
     @Specialization(replaces = {"callSingle", "call", "callMethodSingle", "callMethod"})

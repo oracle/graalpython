@@ -426,7 +426,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 objectGetattributeNode = insert(ObjectBuiltinsFactory.GetAttributeNodeFactory.create());
             }
-            return objectGetattributeNode.execute(frame, object, attr);
+            return objectGetattributeNode.call(frame, object, attr);
         }
 
         @Specialization

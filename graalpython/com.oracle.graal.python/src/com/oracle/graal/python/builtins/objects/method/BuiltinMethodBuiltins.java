@@ -190,12 +190,12 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getTextSignature(VirtualFrame frame, PBuiltinMethod self, Object value) {
-            return subNode.execute(frame, self.getFunction(), value);
+            return subNode.call(frame, self.getFunction(), value);
         }
 
         @Specialization
         Object getTextSignature(VirtualFrame frame, PMethod self, Object value) {
-            return subNode.execute(frame, self.getFunction(), value);
+            return subNode.call(frame, self.getFunction(), value);
         }
     }
 

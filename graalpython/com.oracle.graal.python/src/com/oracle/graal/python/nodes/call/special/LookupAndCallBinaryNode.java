@@ -241,7 +241,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     boolean callBoolean(VirtualFrame frame, boolean left, boolean right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(frame, left, right);
+            return function.callBool(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -251,7 +251,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     int callInt(VirtualFrame frame, boolean left, boolean right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeInt(frame, left, right);
+            return function.callInt(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -263,7 +263,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     int callInt(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeInt(frame, left, right);
+            return function.callInt(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -273,7 +273,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     boolean callBoolean(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(frame, left, right);
+            return function.callBool(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -283,7 +283,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     long callLong(VirtualFrame frame, int left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeLong(frame, left, right); // implicit conversion to long
+            return function.callLong(frame, left, right); // implicit conversion to long
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -295,7 +295,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     long callLong(VirtualFrame frame, long left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeLong(frame, left, right);
+            return function.callLong(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -305,7 +305,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     boolean callBoolean(VirtualFrame frame, long left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(frame, left, right);
+            return function.callBool(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -316,25 +316,25 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBoolean(VirtualFrame frame, int left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, left, right);
+        return function.callBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBoolean(VirtualFrame frame, double left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, left, right);
+        return function.callBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static double callDouble(VirtualFrame frame, int left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeDouble(frame, left, right);
+        return function.callDouble(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static double callDouble(VirtualFrame frame, double left, int right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeDouble(frame, left, right);
+        return function.callDouble(frame, left, right);
     }
 
     // long, double
@@ -342,25 +342,25 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBoolean(VirtualFrame frame, long left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, left, right);
+        return function.callBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static boolean callBoolean(VirtualFrame frame, double left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeBool(frame, left, right);
+        return function.callBool(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static double callDouble(VirtualFrame frame, long left, double right,
                     @Cached("getBuiltin(right)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeDouble(frame, left, right);
+        return function.callDouble(frame, left, right);
     }
 
     @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
     static double callDouble(VirtualFrame frame, double left, long right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
-        return function.executeDouble(frame, left, right);
+        return function.callDouble(frame, left, right);
     }
 
     // double, double
@@ -369,7 +369,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     double callDouble(VirtualFrame frame, double left, double right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeDouble(frame, left, right);
+            return function.callDouble(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }
@@ -379,7 +379,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     boolean callBoolean(VirtualFrame frame, double left, double right,
                     @Cached("getBuiltin(left)") PythonBinaryBuiltinNode function) throws UnexpectedResultException {
         try {
-            return function.executeBool(frame, left, right);
+            return function.callBool(frame, left, right);
         } catch (UnexpectedResultException e) {
             throw handleLeftURE(frame, left, right, e);
         }

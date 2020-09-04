@@ -89,10 +89,13 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsClinicProviders.StatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -124,8 +127,10 @@ import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -490,7 +495,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     statNode = insert(StatNode.create());
                 }
-                return statNode.executeWith(frame, resources.getFilePath(fd), PNone.NO_VALUE);
+                return statNode.call(frame, resources.getFilePath(fd), PNone.NO_VALUE);
             } else {
                 fstatForNonFile.enter();
                 return fstatWithoutPath(resources, fd, channelClassProfile);
@@ -554,10 +559,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"path", "follow_symlinks"})
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class StatNode extends PythonBinaryBuiltinNode {
+    public abstract static class StatNode extends PythonBinaryClinicBuiltinNode {
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
         private static final int S_IFBLK = 0060000;
@@ -566,18 +572,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final int S_IFDIR = 0040000;
         private static final int S_IFREG = 0100000;
 
-        protected abstract Object executeWith(VirtualFrame frame, Object path, Object followSymlinks);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StatNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization(limit = "2")
         Object doStatPath(VirtualFrame frame, Object path, boolean followSymlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
             return stat(frame, lib.asPath(path), followSymlinks);
-        }
-
-        @Specialization(guards = "isNoValue(followSymlinks)", limit = "2")
-        Object doStatDefault(VirtualFrame frame, Object path, @SuppressWarnings("unused") PNone followSymlinks,
-                        @CachedLibrary("path") PythonObjectLibrary lib) {
-            return stat(frame, lib.asPath(path), true);
         }
 
         @TruffleBoundary
@@ -1900,7 +1903,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = create();
             }
-            return recursiveNode.execute(frame, value);
+            return recursiveNode.call(frame, value);
         }
 
         protected static GetTerminalSizeNode create() {

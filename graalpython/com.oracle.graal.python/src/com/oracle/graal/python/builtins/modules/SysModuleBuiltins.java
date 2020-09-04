@@ -54,15 +54,17 @@ import java.util.List;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -77,6 +79,8 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -86,7 +90,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -345,63 +348,27 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, needsFrame = true)
+    // ATTENTION: this is intentionally a PythonBuiltinNode and not PythonUnaryBuiltinNode,
+    // because we need a guarantee that this builtin will get its own stack frame in order to
+    // be able to count how many frames down the call stack we need to walk
+    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @ArgumentClinic(name = "depth", defaultValue = "0", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class GetFrameNode extends PythonBuiltinNode {
-        @Specialization
-        PFrame first(VirtualFrame frame, @SuppressWarnings("unused") PNone arg,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode) {
-            PFrame requested = escapeFrame(frame, 0, readCallerNode);
-            // there must always be *the current frame*
-            assert requested != null : "frame must not be null";
-            return requested;
+    public abstract static class GetFrameNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetFrameNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+                        @Cached ReadCallerFrameNode readCallerNode,
+                        @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
             if (callStackDepthProfile.profile(requested == null)) {
                 throw raiseCallStackDepth();
             }
             return requested;
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        PFrame countedLong(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) throws OverflowException {
-            return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
-        }
-
-        @Specialization
-        PFrame countedLongOvf(VirtualFrame frame, long num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
-            try {
-                return counted(frame, PInt.intValueExact(num), readCallerNode, callStackDepthProfile);
-            } catch (OverflowException e) {
-                throw raiseCallStackDepth();
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        PFrame countedPInt(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) throws OverflowException {
-            return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
-        }
-
-        @Specialization
-        PFrame countedPIntOvf(VirtualFrame frame, PInt num,
-                        @Shared("caller") @Cached ReadCallerFrameNode readCallerNode,
-                        @Shared("callStackDepthProfile") @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
-            try {
-                return counted(frame, num.intValueExact(), readCallerNode, callStackDepthProfile);
-            } catch (OverflowException e) {
-                throw raiseCallStackDepth();
-            }
         }
 
         private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {

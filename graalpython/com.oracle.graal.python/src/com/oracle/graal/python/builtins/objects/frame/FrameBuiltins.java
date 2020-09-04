@@ -101,7 +101,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         getDictNode = insert(DictNodeFactory.create());
                     }
-                    return getDictNode.execute(curFrame, globals, PNone.NO_VALUE);
+                    return getDictNode.call(curFrame, globals, PNone.NO_VALUE);
                 } else {
                     return globals != null ? globals : factory().createDict();
                 }
@@ -118,7 +118,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {
             // TODO: builtins can be set per frame
-            return dictNode.execute(frame, getContext().getBuiltins(), PNone.NO_VALUE);
+            return dictNode.call(frame, getContext().getBuiltins(), PNone.NO_VALUE);
         }
     }
 

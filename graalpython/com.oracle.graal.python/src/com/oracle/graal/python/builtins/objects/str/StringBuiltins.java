@@ -66,6 +66,8 @@ import java.util.regex.Pattern;
 
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
@@ -107,7 +110,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -970,25 +975,27 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "split", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, needsFrame = true)
+    @Builtin(name = "split", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "maxsplit"}, needsFrame = true)
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "sep", conversion = ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "maxsplit", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class SplitNode extends PythonTernaryBuiltinNode {
+    public abstract static class SplitNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SplitNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
         @SuppressWarnings("unused")
-        PList doStringWhitespace(String self, PNone sep, PNone maxsplit,
+        PList doStringNoSep(String self, PNone sep, int maxsplit,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
-            return splitfields(self, -1, appendNode);
+            return splitfields(self, maxsplit, appendNode);
         }
 
         @Specialization
-        PList doStringSep(String self, String sep, @SuppressWarnings("unused") PNone maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            return doStringSepMaxsplit(self, sep, -1, appendNode);
-        }
-
-        @Specialization
-        PList doStringSepMaxsplit(String self, String sep, int maxsplit,
+        PList doStringSep(String self, String sep, int maxsplit,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
             if (sep.isEmpty()) {
                 throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
@@ -1008,28 +1015,6 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             appendNode.execute(list, self.substring(lastEnd));
             return list;
-        }
-
-        @Specialization
-        PList doStringMaxsplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            return splitfields(self, maxsplit, appendNode);
-        }
-
-        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object doGeneric(VirtualFrame frame, Object self, Object sep, Object maxsplit,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @CachedLibrary("maxsplit") PythonObjectLibrary lib,
-                        @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Cached AppendNode appendNode) {
-            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "split", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
-            if (PGuards.isPNone(sep)) {
-                return splitfields(selfStr, imaxsplit, appendNode);
-            } else {
-                String sepStr = castSepNode.cast(sep, "Can't convert %p object to str implicitly", sep);
-                return doStringSepMaxsplit(selfStr, sepStr, imaxsplit, appendNode);
-            }
         }
 
         // See {@link PyString}
@@ -1090,7 +1075,6 @@ public final class StringBuiltins extends PythonBuiltins {
 
             return list;
         }
-
     }
 
     // str.split
@@ -1138,7 +1122,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
 
             appendNode.execute(list, remainder);
-            reverseNode.execute(frame, list);
+            reverseNode.call(frame, list);
             return list;
         }
 
@@ -1223,7 +1207,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 end = index - 1;
             }
 
-            reverseNode.execute(frame, list);
+            reverseNode.call(frame, list);
             return list;
         }
     }

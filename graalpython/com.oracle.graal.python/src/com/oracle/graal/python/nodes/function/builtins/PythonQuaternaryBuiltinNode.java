@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,5 +44,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class PythonQuaternaryBuiltinNode extends PythonBuiltinBaseNode {
-    public abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4);
+    public Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4) {
+        return execute(frame, arg, arg2, arg3, arg4);
+    }
+
+    protected abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3, Object arg4);
 }

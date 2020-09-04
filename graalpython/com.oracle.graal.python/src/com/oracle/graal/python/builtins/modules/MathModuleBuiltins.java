@@ -505,7 +505,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object factorialObject(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached("create()") FactorialNode recursiveNode) {
-            return recursiveNode.execute(frame, lib.asIndex(value));
+            return recursiveNode.call(frame, lib.asIndex(value));
         }
 
         protected boolean isInteger(double value) {
@@ -659,7 +659,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object perm(VirtualFrame frame, Object n, @SuppressWarnings("unused") PNone k,
                         @Cached FactorialNode factorialNode) {
-            return factorialNode.execute(frame, n);
+            return factorialNode.call(frame, n);
         }
 
         @Specialization(guards = "!isPNone(k)")
@@ -746,7 +746,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(frame, value);
             if (PNone.NO_VALUE == result) {
-                return recursiveNode.execute(frame, lib.asJavaDouble(value));
+                return recursiveNode.call(frame, lib.asJavaDouble(value));
             }
             return result;
         }
@@ -2614,7 +2614,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         Object doGeneral(VirtualFrame frame, Object x,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached IsqrtNode recursiveNode) {
-            return recursiveNode.execute(frame, lib.asIndexWithFrame(x, frame));
+            return recursiveNode.call(frame, lib.asIndexWithFrame(x, frame));
         }
 
         @TruffleBoundary

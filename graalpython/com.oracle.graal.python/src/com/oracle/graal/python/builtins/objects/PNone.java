@@ -37,7 +37,15 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PNone extends PythonAbstractObject {
 
+    /**
+     * Represents the {@code None} constant available to user code.
+     */
     public static final PNone NONE = new PNone();
+
+    /**
+     * This is used when no value was provided for given argument, not even the {@code None} Python
+     * level constant.
+     */
     public static final PNone NO_VALUE = new PNone();
 
     private PNone() {

@@ -84,7 +84,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         Object iter(VirtualFrame frame, PMappingproxy self,
                         @Cached BuiltinFunctions.IterNode iterNode) {
-            return iterNode.execute(frame, self.getMapping(), PNone.NO_VALUE);
+            return iterNode.call(frame, self.getMapping(), PNone.NO_VALUE);
         }
     }
 
@@ -206,7 +206,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         public String repr(VirtualFrame frame, PMappingproxy self,
                         @Cached BuiltinFunctions.ReprNode reprNode) {
-            Object mappingRepr = reprNode.execute(frame, self.getMapping());
+            Object mappingRepr = reprNode.call(frame, self.getMapping());
             return PString.cat("mappingproxy(", mappingRepr, ")");
         }
     }

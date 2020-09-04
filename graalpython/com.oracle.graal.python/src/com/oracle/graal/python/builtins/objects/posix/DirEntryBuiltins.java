@@ -152,13 +152,12 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self", "follow_symlinks"}, doc = "return stat_result object for the entry; cached per entry")
     @GenerateNodeFactory
     abstract static class StatNode extends PythonBinaryBuiltinNode {
-
         @Specialization
         Object test(VirtualFrame frame, PDirEntry self, Object followSymlinks,
                         @Cached("create()") PosixModuleBuiltins.StatNode statNode) {
             Object statResult = self.getCachedStatResult();
             if (statResult == null) {
-                statResult = statNode.execute(frame, self.getFile().getAbsoluteFile().getPath(), followSymlinks);
+                statResult = statNode.call(frame, self.getFile().getAbsoluteFile().getPath(), followSymlinks);
                 self.setCachedStatResult(statResult);
             }
             return statResult;

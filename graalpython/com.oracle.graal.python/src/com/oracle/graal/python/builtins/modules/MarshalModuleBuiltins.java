@@ -37,10 +37,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -73,6 +76,8 @@ import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -109,10 +114,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"self", "version"})
+    @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class DumpsNode extends PythonBuiltinNode {
+    abstract static class DumpsNode extends PythonBinaryClinicBuiltinNode {
 
         @Child private MarshallerNode marshaller = MarshallerNode.create();
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DumpsNodeClinicProviderGen.INSTANCE;
+        }
 
         private byte[] dump(VirtualFrame frame, Object o, int version) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -138,11 +149,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object value, int version) {
             return factory().createBytes(dump(frame, value, version));
-        }
-
-        @Specialization
-        Object doit(VirtualFrame frame, Object value, @SuppressWarnings("unused") PNone version) {
-            return factory().createBytes(dump(frame, value, CURRENT_VERSION));
         }
     }
 
@@ -204,6 +210,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final char TYPE_FROZENSET = '>';
     private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
     private static final int CURRENT_VERSION = 1;
+    private static final String CURRENT_VERSION_STR = "1";
 
     static final class InternedString {
         public final String string;
