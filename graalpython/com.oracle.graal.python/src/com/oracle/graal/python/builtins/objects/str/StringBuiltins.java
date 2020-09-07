@@ -142,6 +142,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -1986,6 +1987,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = "center", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
+    @ImportStatic(PString.class)
     abstract static class CenterNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isNoValue(fill)")
@@ -1993,7 +1995,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return make(self, width, " ");
         }
 
-        @Specialization(guards = "fill.codePointCount(0, fill.length()) == 1")
+        @Specialization(guards = "codePointCount(fill, 0, fill.length()) == 1")
         String doStringIntString(String self, int width, String fill) {
             return make(self, width, fill);
         }
@@ -2004,7 +2006,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String fillStr = PGuards.isNoValue(fill) ? " " : castFillNode.cast(fill, "", fill);
-            if (errorProfile.profile(fillStr.codePointCount(0, fillStr.length()) != 1)) {
+            if (errorProfile.profile(PString.codePointCount(fillStr, 0, fillStr.length()) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
             }
             return make(self, lib.asSizeWithState(width, PArguments.getThreadState(frame)), fillStr);

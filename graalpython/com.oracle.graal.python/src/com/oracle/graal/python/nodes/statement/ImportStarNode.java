@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -150,7 +151,7 @@ public class ImportStarNode extends AbstractImportNode {
                 for (String name : exportedModuleAttrs) {
                     // skip attributes with leading '__' if there was no '__all__' attribute (see
                     // 'ceval.c: import_all_from')
-                    if (!name.startsWith("__")) {
+                    if (!PString.startsWith(name, "__")) {
                         Object attr = readAttribute(frame, importedModule, name);
                         writeAttribute(frame, locals, name, attr);
                     }

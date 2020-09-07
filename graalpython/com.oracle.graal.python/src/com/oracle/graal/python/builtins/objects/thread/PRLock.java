@@ -72,6 +72,7 @@ public final class PRLock extends AbstractPythonLock {
         return new InternalReentrantLock();
     }
 
+    @TruffleBoundary
     public boolean isOwned() {
         return lock.isHeldByCurrentThread();
     }
@@ -123,6 +124,7 @@ public final class PRLock extends AbstractPythonLock {
     }
 
     @Override
+    @TruffleBoundary
     public boolean locked() {
         return lock.isLocked();
     }

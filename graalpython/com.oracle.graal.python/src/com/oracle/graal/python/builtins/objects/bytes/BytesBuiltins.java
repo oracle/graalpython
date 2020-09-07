@@ -51,6 +51,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1401,10 +1402,26 @@ public class BytesBuiltins extends PythonBuiltins {
 
         private PList getBytesResult(List<byte[]> bytes) {
             PList result = factory().createList();
-            for (byte[] bs : bytes) {
-                getAppendNode().execute(result, factory().createBytes(bs));
+            Iterator<byte[]> it = iterator(bytes);
+            while (hasNext(it)) {
+                getAppendNode().execute(result, factory().createBytes(next(it)));
             }
             return result;
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static Iterator<byte[]> iterator(List<byte[]> bytes) {
+            return bytes.iterator();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static byte[] next(Iterator<byte[]> it) {
+            return it.next();
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static boolean hasNext(Iterator<byte[]> it) {
+            return it.hasNext();
         }
 
         private PList getByteArrayResult(List<byte[]> bytes) {

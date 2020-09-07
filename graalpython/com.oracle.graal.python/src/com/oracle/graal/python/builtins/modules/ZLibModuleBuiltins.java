@@ -393,14 +393,11 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, Object pb, int mode) {
             byte[] data = toBytes.execute(frame, pb);
             byte[] result = new byte[DEF_BUF_SIZE];
-
-            ByteArrayOutputStream baos = deflate(stream, mode, data, result);
-
-            return factory().createBytes(baos.toByteArray());
+            return factory().createBytes(deflate(stream, mode, data, result));
         }
 
         @TruffleBoundary
-        private static ByteArrayOutputStream deflate(DeflaterWrapper stream, int mode, byte[] data, byte[] result) {
+        private static byte[] deflate(DeflaterWrapper stream, int mode, byte[] data, byte[] result) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             stream.deflater.setInput(data);
             int deflateMode = mode;
@@ -418,7 +415,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             if (mode == Z_FINISH) {
                 stream.deflater.end();
             }
-            return baos;
+            return baos.toByteArray();
         }
     }
 

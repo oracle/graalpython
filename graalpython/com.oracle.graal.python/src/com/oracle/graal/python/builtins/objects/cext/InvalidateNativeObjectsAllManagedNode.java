@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.InvalidateNativeObjectsAllManagedNodeFactory.InvalidateNativeObjectsAllManagedCachedNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -54,6 +55,7 @@ public abstract class InvalidateNativeObjectsAllManagedNode extends PNodeWithCon
     abstract static class InvalidateNativeObjectsAllManagedCachedNode extends InvalidateNativeObjectsAllManagedNode {
 
         @Specialization(assumptions = {"singleContextAssumption()", "nativeObjectsAllManagedAssumption"})
+        @TruffleBoundary
         void doValid(
                         @Cached("nativeObjectsAllManagedAssumption()") Assumption nativeObjectsAllManagedAssumption) {
             nativeObjectsAllManagedAssumption.invalidate();

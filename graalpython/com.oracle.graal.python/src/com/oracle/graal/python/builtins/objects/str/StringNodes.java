@@ -456,7 +456,7 @@ public abstract class StringNodes {
         }
 
         private static PException raiseError(PRaiseNode raise) {
-            return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, Integer.toHexString(Character.MAX_CODE_POINT + 1));
+            return raise.raise(ValueError, ErrorMessages.CHARACTER_MAPPING_MUST_BE_IN_RANGE, PInt.toHexString(Character.MAX_CODE_POINT + 1));
         }
 
     }

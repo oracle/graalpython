@@ -510,38 +510,35 @@ public class MMapBuiltins extends PythonBuiltins {
     abstract static class ReadlineNode extends PythonUnaryBuiltinNode implements ByteReadingNode {
 
         @Specialization
-        Object readline(PMMap self,
-                        @Cached SequenceStorageNodes.AppendNode appendNode) {
-
+        Object readline(PMMap self) {
             try {
-                ByteBuffer buf = ByteBuffer.allocate(4096);
-                SeekableByteChannel channel = self.getChannel();
-                ByteSequenceStorage res = new ByteSequenceStorage(16);
-                // search for newline char
-                outer: while (readIntoBuffer(channel, buf) > 0) {
-                    buf.flip();
-                    while (buf.hasRemaining()) {
-                        byte b = buf.get();
-                        // CPython really tests for '\n' only
-                        if (b != (byte) '\n') {
-                            appendNode.execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
-                        } else {
-                            // recover correct position (i.e. number of remaining bytes in buffer)
-                            PMMap.position(channel, PMMap.position(channel) - buf.remaining() - 1);
-                            break outer;
-                        }
-                    }
-                    buf.clear();
-                }
-                return factory().createBytes(res);
+                return factory().createBytes(doReadline(self.getChannel()));
             } catch (IOException e) {
                 throw raise(PythonBuiltinClassType.OSError, e);
             }
         }
 
-        @TruffleBoundary(allowInlining = true)
-        private static int readIntoBuffer(SeekableByteChannel ch, ByteBuffer dst) throws IOException {
-            return ch.read(dst);
+        @TruffleBoundary
+        static ByteSequenceStorage doReadline(SeekableByteChannel channel) throws IOException {
+            ByteBuffer buf = ByteBuffer.allocate(4096);
+            ByteSequenceStorage res = new ByteSequenceStorage(16);
+            // search for newline char
+            outer: while (channel.read(buf) > 0) {
+                buf.flip();
+                while (buf.hasRemaining()) {
+                    byte b = buf.get();
+                    // CPython really tests for '\n' only
+                    if (b != (byte) '\n') {
+                        SequenceStorageNodes.AppendNode.getUncached().execute(res, b, BytesLikeNoGeneralizationNode.SUPPLIER);
+                    } else {
+                        // recover correct position (i.e. number of remaining bytes in buffer)
+                        PMMap.position(channel, PMMap.position(channel) - buf.remaining() - 1);
+                        break outer;
+                    }
+                }
+                buf.clear();
+            }
+            return res;
         }
     }
 

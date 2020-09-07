@@ -320,6 +320,11 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    public static String toHexString(long value) {
+        return Long.toHexString(value);
+    }
+
+    @TruffleBoundary
     public static BigInteger longToBigInteger(long value) {
         return BigInteger.valueOf(value);
     }
