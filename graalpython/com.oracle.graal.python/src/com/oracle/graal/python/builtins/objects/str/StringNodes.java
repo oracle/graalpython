@@ -44,8 +44,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -282,20 +280,20 @@ public abstract class StringNodes {
                 return "";
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringUtils.newStringBuilder();
             int i = 0;
 
             try {
                 // manually peel first iteration
                 Object item = getItemNode.execute(frame, storage, i);
-                append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
 
                 for (i = 1; i < len; i++) {
-                    append(sb, self);
+                    StringUtils.append(sb, self);
                     item = getItemNode.execute(frame, storage, i);
-                    append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                    StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
                 }
-                return toString(sb);
+                return StringUtils.toString(sb);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
             }
@@ -318,9 +316,9 @@ public abstract class StringNodes {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
-                StringBuilder str = new StringBuilder();
+                StringBuilder str = StringUtils.newStringBuilder();
                 try {
-                    append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
+                    StringUtils.append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
@@ -332,10 +330,10 @@ public abstract class StringNodes {
                         value = nextNode.execute(frame, iterator);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile2);
-                        return toString(str);
+                        return StringUtils.toString(str);
                     }
-                    append(str, string);
-                    append(str, checkItem(value, i++, castStrNode, raise));
+                    StringUtils.append(str, string);
+                    StringUtils.append(str, checkItem(value, i++, castStrNode, raise));
                 }
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
@@ -350,33 +348,34 @@ public abstract class StringNodes {
             }
         }
 
-        @TruffleBoundary(allowInlining = true)
-        static StringBuilder append(StringBuilder sb, String o) {
-            return sb.append(o);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        static String toString(StringBuilder sb) {
-            return sb.toString();
-        }
-
         static boolean isExactlyListOrTuple(PythonObjectLibrary lib, IsBuiltinClassProfile tupleProfile, IsBuiltinClassProfile listProfile, PSequence sequence) {
             Object cls = lib.getLazyPythonClass(sequence);
             return tupleProfile.profileClass(cls, PythonBuiltinClassType.PTuple) || listProfile.profileClass(cls, PythonBuiltinClassType.PList);
         }
     }
 
+    @ImportStatic(PGuards.class)
     public abstract static class SpliceNode extends PNodeWithContext {
 
-        public abstract char[] execute(char[] translatedChars, int i, Object translated);
+        public abstract void execute(StringBuilder sb, Object translated);
+
+        @Specialization(guards = "isNone(none)")
+        @SuppressWarnings("unused")
+        static void doNone(StringBuilder sb, PNone none) {
+        }
 
         @Specialization
-        static char[] doInt(char[] translatedChars, int i, int translated,
+        @TruffleBoundary(allowInlining = true)
+        static void doInt(StringBuilder sb, int translated) {
+            sb.appendCodePoint(translated);
+        }
+
+        @Specialization
+        static void doLong(StringBuilder sb, long translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached BranchProfile ovf) {
+                        @Shared("overflow") @Cached BranchProfile ovf) {
             try {
-                translatedChars[i] = PInt.charValueExact(translated);
-                return translatedChars;
+                doInt(sb, PInt.intValueExact(translated));
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
@@ -384,12 +383,11 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static char[] doLong(char[] translatedChars, int i, long translated,
+        static void doPInt(StringBuilder sb, PInt translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached BranchProfile ovf) {
+                        @Shared("overflow") @Cached BranchProfile ovf) {
             try {
-                translatedChars[i] = PInt.charValueExact(translated);
-                return translatedChars;
+                doInt(sb, translated.intValueExact());
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
@@ -397,59 +395,19 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static char[] doPInt(char[] translatedChars, int i, PInt translated,
+        @TruffleBoundary(allowInlining = true)
+        static void doString(StringBuilder sb, String translated) {
+            sb.append(translated);
+        }
+
+        @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
+        static void doObject(StringBuilder sb, Object translated,
                         @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached BranchProfile ovf) {
-            double doubleValue = translated.doubleValue();
-            char t = (char) doubleValue;
-            if (t != doubleValue) {
-                ovf.enter();
-                throw raiseError(raise);
-            }
-            translatedChars[i] = t;
-            return translatedChars;
-        }
-
-        @Specialization(guards = "translated.length() == 1")
-        @TruffleBoundary
-        static char[] doStringChar(char[] translatedChars, int i, String translated) {
-            translatedChars[i] = translated.charAt(0);
-            return translatedChars;
-        }
-
-        @Specialization(replaces = "doStringChar")
-        @TruffleBoundary
-        static char[] doString(char[] translatedChars, int i, String translated) {
-            int transLen = translated.length();
-            if (transLen == 1) {
-                translatedChars[i] = translated.charAt(0);
-            } else if (transLen == 0) {
-                int len = translatedChars.length;
-                return Arrays.copyOf(translatedChars, len - 1);
-            } else {
-                int len = translatedChars.length;
-                char[] copy = Arrays.copyOf(translatedChars, len + transLen - 1);
-                translated.getChars(0, transLen, copy, i);
-                return copy;
-            }
-            return translatedChars;
-        }
-
-        @Specialization
-        static char[] doObject(char[] translatedChars, int i, Object translated,
-                        @Shared("raise") @Cached PRaiseNode raise,
-                        @Cached BranchProfile ovf,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-
-            if (translated instanceof Integer || translated instanceof Long) {
-                return doLong(translatedChars, i, ((Number) translated).longValue(), raise, ovf);
-            } else if (translated instanceof PInt) {
-                return doPInt(translatedChars, i, (PInt) translated, raise, ovf);
-            }
 
             try {
                 String translatedStr = castToJavaStringNode.execute(translated);
-                return doString(translatedChars, i, translatedStr);
+                doString(sb, translatedStr);
             } catch (CannotCastException e) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR);
             }

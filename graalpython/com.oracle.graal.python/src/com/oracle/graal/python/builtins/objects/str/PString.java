@@ -272,6 +272,16 @@ public final class PString extends PSequence {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static int codePointAt(String s, int i) {
+        return s.codePointAt(i);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int charCount(int codePoint) {
+        return Character.charCount(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int indexOf(String s, String sub, int fromIndex) {
         return s.indexOf(sub, fromIndex);
     }

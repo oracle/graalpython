@@ -847,31 +847,27 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached SpliceNode spliceNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
 
-            char[] translatedChars = new char[selfStr.length()];
+            StringBuilder sb = StringUtils.newStringBuilder(selfStr.length());
 
-            int offset = 0;
-            for (int i = 0; i < selfStr.length(); i++) {
-                char original = selfStr.charAt(i);
+            for (int i = 0; i < selfStr.length();) {
+                int original = PString.codePointAt(selfStr, i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.execute(frame, table, (int) original);
+                    translated = getItemNode.execute(frame, table, original);
                 } catch (PException e) {
                     if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }
-                if (PGuards.isNone(translated)) {
-                    // untranslatable
-                } else if (translated != null) {
-                    int oldlen = translatedChars.length;
-                    translatedChars = spliceNode.execute(translatedChars, i + offset, translated);
-                    offset += translatedChars.length - oldlen;
+                if (translated != null) {
+                    spliceNode.execute(sb, translated);
                 } else {
-                    translatedChars[i + offset] = original;
+                    StringUtils.appendCodePoint(sb, original);
                 }
+                i += PString.charCount(original);
             }
 
-            return new String(translatedChars);
+            return StringUtils.toString(sb);
         }
     }
 

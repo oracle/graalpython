@@ -56,7 +56,9 @@ public final class StringUtils {
         BOTH
     }
 
-    /** corresponds to {@code unicodeobject.c:_Py_ascii_whitespace} */
+    /**
+     * corresponds to {@code unicodeobject.c:_Py_ascii_whitespace}
+     */
     private static final int[] ASCII_WHITESPACE = {
                     0, 0, 0, 0, 0, 0, 0, 0,
                     /* case 0x0009: * CHARACTER TABULATION */
@@ -289,5 +291,30 @@ public final class StringUtils {
         }
         int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
         return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT || numericType == UCharacter.NumericType.NUMERIC;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder() {
+        return new StringBuilder();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder(int initialCapacity) {
+        return new StringBuilder(initialCapacity);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static void appendCodePoint(StringBuilder sb, int codePoint) {
+        sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static void append(StringBuilder sb, String str) {
+        sb.append(str);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(StringBuilder sb) {
+        return sb.toString();
     }
 }
