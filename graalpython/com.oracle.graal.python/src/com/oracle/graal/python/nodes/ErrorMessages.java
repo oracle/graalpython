@@ -469,6 +469,7 @@ public abstract class ErrorMessages {
     public static final String STAR_WANTS_INT = "* wants int";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
+    public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
