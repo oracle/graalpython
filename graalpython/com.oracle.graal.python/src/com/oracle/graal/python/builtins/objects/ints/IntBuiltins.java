@@ -161,50 +161,55 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundLongInt(long arg, int n) {
+        public Object roundLongInt(long arg, int n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg, n));
+            return makeInt(op(arg, n), intOverflow);
         }
 
         @Specialization
-        public Object roundPIntInt(PInt arg, int n) {
+        public Object roundPIntInt(PInt arg, int n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg.getValue(), n));
+            return makeInt(op(arg.getValue(), n), intOverflow);
         }
 
         @Specialization
-        public Object roundLongLong(long arg, long n) {
-            if (n >= 0) {
-                return arg;
-            }
-            if (n < Integer.MIN_VALUE) {
-                return 0;
-            }
-            return makeInt(op(arg, (int) n));
-        }
-
-        @Specialization
-        public Object roundPIntLong(PInt arg, long n) {
+        public Object roundLongLong(long arg, long n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
             if (n < Integer.MIN_VALUE) {
                 return 0;
             }
-            return makeInt(op(arg.getValue(), (int) n));
+            return makeInt(op(arg, (int) n), intOverflow);
         }
 
         @Specialization
-        public Object roundPIntLong(long arg, PInt n) {
+        public Object roundPIntLong(PInt arg, long n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg.getValue(), (int) n), intOverflow);
+        }
+
+        @Specialization
+        public Object roundPIntLong(long arg, PInt n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg, n.intValueExact()));
+                return makeInt(op(arg, n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -212,12 +217,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntPInt(PInt arg, PInt n) {
+        public Object roundPIntPInt(PInt arg, PInt n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg.getValue(), n.intValueExact()));
+                return makeInt(op(arg.getValue(), n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -230,33 +236,52 @@ public class IntBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
         }
 
-        private Object makeInt(BigDecimal d) {
+        private Object makeInt(BigDecimal d, BranchProfile intOverflow) {
             try {
                 return intValueExact(d);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // does not fit int, so try long
+                intOverflow.enter();
             }
             try {
                 return longValueExact(d);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // does not fit long, try BigInteger
             }
             try {
-                return factory().createInt(d.toBigIntegerExact());
-            } catch (ArithmeticException e) {
+                // lazy factory initialization should serve as branch profile
+                return factory().createInt(toBigIntegerExact(d));
+            } catch (OverflowException e) {
                 // has non-zero fractional part, which should not happen
                 throw CompilerDirectives.shouldNotReachHere("non-integer produced after rounding an integer", e);
             }
         }
 
         @TruffleBoundary
-        private static int intValueExact(BigDecimal d) {
-            return d.intValueExact();
+        private static BigInteger toBigIntegerExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.toBigIntegerExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         @TruffleBoundary
-        private static long longValueExact(BigDecimal d) {
-            return d.longValueExact();
+        private static int intValueExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.intValueExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
+        }
+
+        @TruffleBoundary
+        private static long longValueExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.longValueExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         @TruffleBoundary
@@ -1357,10 +1382,13 @@ public class IntBuiltins extends PythonBuiltins {
             } catch (OverflowException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
-                    return factory().createInt(op(PInt.longToBigInteger(left), rightI));
-                } else {
-                    throw raise(PythonErrorType.OverflowError);
+                    try {
+                        return factory().createInt(op(PInt.longToBigInteger(left), rightI));
+                    } catch (OverflowException ex) {
+                        // fallback to the raise of overflow error
+                    }
                 }
+                throw raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1392,7 +1420,7 @@ public class IntBuiltins extends PythonBuiltins {
         protected PInt doGuardedBiI(BigInteger left, int right) {
             try {
                 return factory().createInt(op(left, right));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
         }
@@ -1432,8 +1460,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public static BigInteger op(BigInteger left, int right) {
-            return left.shiftLeft(right);
+        public static BigInteger op(BigInteger left, int right) throws OverflowException {
+            try {
+                return left.shiftLeft(right);
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         private void raiseNegativeShiftCount(boolean cond) {
