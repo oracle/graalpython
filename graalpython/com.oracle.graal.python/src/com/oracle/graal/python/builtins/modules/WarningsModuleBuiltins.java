@@ -45,10 +45,13 @@ import java.util.IllegalFormatException;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -68,6 +71,8 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -830,33 +835,21 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     @ReportPolymorphism
     @NodeInfo(shortName = "warnings_warn_impl", description = "implements warnings_warn_impl and the clinic wrapper")
     @Builtin(name = "warn", minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
+    @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
+    @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
+    @ArgumentClinic(name = "source", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    abstract static class WarnBuiltinNode extends PythonBuiltinNode {
-        @Specialization(limit = "2")
-        Object doWarn(VirtualFrame frame, PythonModule mod, Object msg, Object cat, Object lvl, Object src,
-                        @Cached IsSubtypeNode isFloatSubtype,
-                        @Cached WarningsModuleNode moduleFunctionsNode,
-                        @CachedLibrary("lvl") PythonObjectLibrary lvlLib) {
-            // argument processing like clinic
-            Object message = msg;
-            Object category = cat;
-            if (category == PNone.NO_VALUE) {
-                category = PNone.NONE;
-            }
-            int stacklevel = 1;
-            if (lvl != PNone.NO_VALUE) {
-                if (isFloatSubtype.execute(frame, lvlLib.getLazyPythonClass(lvl), PythonBuiltinClassType.PFloat)) {
-                    throw raise(PythonBuiltinClassType.TypeError, "integer argument expected, got float");
-                }
-                stacklevel = lvlLib.asSize(lvl);
-            }
-            Object source = src;
-            if (source == PNone.NO_VALUE) {
-                source = PNone.NONE;
-            }
+    abstract static class WarnBuiltinNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return WarnBuiltinNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, int stacklevel, Object source,
+                        @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl
-            category = moduleFunctionsNode.getCategory(frame, message, category);
-            moduleFunctionsNode.doWarn(frame, mod, message, category, stacklevel, source);
+            moduleFunctionsNode.doWarn(frame, mod, message, moduleFunctionsNode.getCategory(frame, message, category), stacklevel, source);
             return PNone.NONE;
         }
     }
