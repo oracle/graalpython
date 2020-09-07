@@ -706,6 +706,15 @@ def test_bytes_init():
     bytes.__init__(ba, b'zzz')
     assert ba == bytes(b'abc')
     
+def test_bytes_mod():
+    assert b'%s' % (b'a') == b'a'
+    raised = False
+    try:
+        b'%s' % (b'a', b'b') 
+    except TypeError:
+        raised = True
+    assert raised
+    
 class BaseLikeBytes:
 
     def test_maketrans(self):

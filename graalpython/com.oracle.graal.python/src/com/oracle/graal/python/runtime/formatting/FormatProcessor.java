@@ -490,7 +490,7 @@ abstract class FormatProcessor<T> {
          * of range; if a special value, it would be wrong if it were -1, indicating a single item
          * that has not yet been used.
          */
-        if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) > argIndex + 1)) {
+        if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) >= argIndex + 1)) {
             throw core.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
