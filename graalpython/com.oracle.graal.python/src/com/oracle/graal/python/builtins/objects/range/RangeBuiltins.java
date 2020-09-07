@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -176,14 +175,12 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object iter(PIntRange self) {
-            return factory().createIntRangeIterator(self);
-        }
-
-        @Specialization
-        Object iter(PBigRange self) {
-            return factory().createBigRangeIterator(self);
+        @Specialization(limit = "2")
+        static Object doPIntRange(PRange self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            // This uses 'getIterator' to avoid unnecessary overhead in the interpreter and we know
+            // that the implementation won't need it
+            return lib.getIterator(self);
         }
     }
 
@@ -623,10 +620,10 @@ public class RangeBuiltins extends PythonBuiltins {
             return containsBigInt(self, other.getValue());
         }
 
-        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)")
-        boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
+        @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)", limit = "1")
+        static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached GetIteratorExpressionNode.GetIteratorNode getIterator,
+                        @CachedLibrary("self") PythonObjectLibrary selfLib,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile,
@@ -635,7 +632,7 @@ public class RangeBuiltins extends PythonBuiltins {
             if (hasFrame.profile(frame != null)) {
                 state = PArguments.getThreadState(frame);
             }
-            Object iter = getIterator.executeWith(frame, self);
+            Object iter = selfLib.getIteratorWithFrame(self, frame);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
@@ -742,10 +739,10 @@ public class RangeBuiltins extends PythonBuiltins {
          * XXX: (mq) currently sys.maxsize in {@link SysModuleBuiltins#MAXSIZE} is
          * {@link Integer#MAX_VALUE}.
          */
-        @Specialization(guards = "!canBeInteger(elem)")
+        @Specialization(guards = "!canBeInteger(elem)", limit = "1")
         Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached GetIteratorExpressionNode.GetIteratorNode getIterator,
+                        @CachedLibrary("self") PythonObjectLibrary selfLib,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {
@@ -754,7 +751,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 state = PArguments.getThreadState(frame);
             }
             int idx = 0;
-            Object iter = getIterator.executeWith(frame, self);
+            Object iter = selfLib.getIteratorWithState(self, state);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);
@@ -856,10 +853,10 @@ public class RangeBuiltins extends PythonBuiltins {
             return count + 1;
         }
 
-        @Specialization(guards = "isFallback(elem)")
+        @Specialization(guards = "isFallback(elem)", limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
+                        @CachedLibrary("self") PythonObjectLibrary selfLib,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached GetIteratorExpressionNode.GetIteratorNode getIterator,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {
@@ -868,7 +865,7 @@ public class RangeBuiltins extends PythonBuiltins {
             if (hasFrame.profile(frame != null)) {
                 state = PArguments.getThreadState(frame);
             }
-            Object iter = getIterator.executeWith(frame, self);
+            Object iter = selfLib.getIteratorWithState(self, state);
             while (true) {
                 try {
                     Object item = nextNode.execute(frame, iter);

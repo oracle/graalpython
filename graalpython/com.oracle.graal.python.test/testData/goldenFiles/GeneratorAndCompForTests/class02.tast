@@ -177,7 +177,6 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [98,110]`self.items()`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [98,110]`self.items()`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -201,7 +200,6 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                 Frame: [2,elem,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [149,160]`nonpositive`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [149,160]`nonpositive`
                                               Frame: [1,nonpositive,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None

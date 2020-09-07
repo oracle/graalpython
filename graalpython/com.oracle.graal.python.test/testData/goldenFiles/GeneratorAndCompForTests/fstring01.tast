@@ -106,7 +106,6 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [56,63]`someset`
-                                GetIteratorNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [56,63]`someset`
                                   Frame: [0,someset,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None

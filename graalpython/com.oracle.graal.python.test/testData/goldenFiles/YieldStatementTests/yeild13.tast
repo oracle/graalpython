@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'yeild13'> SourceSection: [0,26]`def f(): f((yield 
                           Identifier: f
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         YieldFromNode SourceSection: [12,24]`yield from 1`
-                          GetIteratorNodeGen SourceSection: None
+                          CachedDispatchFirst SourceSection: None
                           GetNextNode SourceSection: None
                             LookupAndCallUnaryNodeGen SourceSection: None
                               Op: __next__

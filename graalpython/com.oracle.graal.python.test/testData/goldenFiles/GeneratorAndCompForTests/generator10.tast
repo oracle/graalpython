@@ -74,7 +74,6 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [1,line,Illegal]
                           GetIteratorExpressionNodeGen SourceSection: [73,74]`f`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [73,74]`f`
                               Frame: [2,f,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

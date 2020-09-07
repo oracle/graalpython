@@ -103,7 +103,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [0,file,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [72,77]`files`
-                                        GetIteratorNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [72,77]`files`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [2,files,Illegal]
@@ -135,7 +134,6 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [55,59]`dirs`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [55,59]`dirs`
                                 Frame: [1,dirs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

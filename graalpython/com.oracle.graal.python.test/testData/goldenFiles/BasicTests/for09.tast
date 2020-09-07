@@ -49,7 +49,6 @@ ModuleRootNode Name: <module 'for09'> SourceSection: [0,94]`for i in range(1, 10
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,21]`range(1, 10)`
-              GetIteratorNodeGen SourceSection: None
               PythonCallBinary SourceSection: [9,21]`range(1, 10)`
                 CallBinaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`

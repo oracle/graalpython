@@ -235,7 +235,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object __iter__(Object self) {
+        static Object doGeneric(Object self) {
             return self;
         }
     }

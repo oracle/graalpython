@@ -58,6 +58,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PString extends PSequence {
 
     private CharSequence value;
@@ -180,7 +181,7 @@ public final class PString extends PSequence {
     }
 
     @ExportMessage
-    public String asPathWithState(@SuppressWarnings("unused") ThreadState state,
+    String asPathWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached CastToJavaStringNode castToJavaStringNode) {
         try {
             return castToJavaStringNode.execute(this);
@@ -227,18 +228,19 @@ public final class PString extends PSequence {
     }
 
     @ExportMessage
-    String asString(@Cached StringMaterializeNode stringMaterializeNode) {
+    String asString(
+                    @Cached StringMaterializeNode stringMaterializeNode) {
         return stringMaterializeNode.execute(this);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public static boolean isHashable(@SuppressWarnings("unused") PString self) {
+    static boolean isHashable(@SuppressWarnings("unused") PString self) {
         return true;
     }
 
     @ExportMessage
-    public Object readArrayElement(long index,
+    Object readArrayElement(long index,
                     @Cached CastToJavaStringNode cast) {
         try {
             return cast.execute(this).codePointAt((int) index);
@@ -328,20 +330,19 @@ public final class PString extends PSequence {
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementModifiable(PString self, long index) {
+    static boolean isArrayElementModifiable(PString self, long index) {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementInsertable(PString self, long index) {
+    static boolean isArrayElementInsertable(PString self, long index) {
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public static boolean isArrayElementRemovable(PString self, long index) {
+    static boolean isArrayElementRemovable(PString self, long index) {
         return false;
     }
-
 }

@@ -42,7 +42,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-public class PArray extends PSequence {
+public final class PArray extends PSequence {
 
     private SequenceStorage store;
 

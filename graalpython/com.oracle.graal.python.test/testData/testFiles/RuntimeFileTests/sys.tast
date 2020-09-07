@@ -398,7 +398,6 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                   Frame: [1,get_set_descriptor,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3121,3137]`enumerate(names)`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [3121,3137]`enumerate(names)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3121,3130]`enumerate`

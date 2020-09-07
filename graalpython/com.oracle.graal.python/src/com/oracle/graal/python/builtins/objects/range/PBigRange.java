@@ -44,10 +44,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -121,7 +124,7 @@ public class PBigRange extends PRange {
         return length.getValue();
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public BigInteger getBigIntItemNormalized(BigInteger index) {
         assert index.compareTo(length.getValue()) < 0;
         return step.multiply(index).add(start.getValue());
@@ -137,7 +140,7 @@ public class PBigRange extends PRange {
     }
 
     @ExportMessage
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public boolean isTrue() {
         return length.getValue().compareTo(BigInteger.ZERO) != 0;
     }
@@ -145,5 +148,12 @@ public class PBigRange extends PRange {
     @Override
     protected boolean withStep() {
         return !step.isOne();
+    }
+
+    /* this is correct because it cannot be subclassed in Python */
+    @ExportMessage
+    PBigRangeIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createBigRangeIterator(this);
     }
 }

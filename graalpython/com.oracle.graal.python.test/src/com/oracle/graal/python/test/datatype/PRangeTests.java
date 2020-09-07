@@ -28,13 +28,13 @@ package com.oracle.graal.python.test.datatype;
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 import static org.junit.Assert.assertEquals;
 
-import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -71,9 +71,7 @@ public class PRangeTests {
         PRange range = PythonObjectFactory.getUncached().createIntRange(10);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
-        GetIteratorNode getIter = GetIteratorNode.create();
-        testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(null, range);
+        Object iter = PythonObjectLibrary.getUncached().getIterator(range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();
@@ -95,9 +93,7 @@ public class PRangeTests {
         PRange range = PythonObjectFactory.getUncached().createIntRange(0, 10, 2, 5);
         int index = 0;
         TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
-        GetIteratorNode getIter = GetIteratorNode.create();
-        testRoot.doInsert(getIter);
-        Object iter = getIter.executeWith(null, range);
+        Object iter = PythonObjectLibrary.getUncached().getIterator(range);
         GetNextNode next = GetNextNode.create();
         testRoot.doInsert(next);
         IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.getUncached();

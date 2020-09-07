@@ -35,7 +35,7 @@ public final class PEnumerate extends PythonBuiltinObject {
 
     private final Object iterator;
     private long index;
-    private PInt bigIndex = null;
+    private PInt bigIndex;
 
     public PEnumerate(Object clazz, Shape instanceShape, Object iterator, PInt start) {
         this(clazz, instanceShape, iterator, -1);
@@ -48,7 +48,7 @@ public final class PEnumerate extends PythonBuiltinObject {
         this.index = start;
     }
 
-    public Object getIterator() {
+    public Object getDecoratedIterator() {
         return iterator;
     }
 

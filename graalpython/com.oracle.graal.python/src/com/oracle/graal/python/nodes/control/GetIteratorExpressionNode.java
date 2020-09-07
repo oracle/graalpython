@@ -40,181 +40,23 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PZip;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorNodeGen;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.GetIteratorWithoutFrameNodeGen;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class GetIteratorExpressionNode extends UnaryOpNode {
-    protected static final int MAX_CACHE_SIZE = 5;
 
-    @Child private GetIteratorNode getIteratorNode = GetIteratorNode.create();
-
-    @Specialization
-    Object doGeneric(VirtualFrame frame, Object value) {
-        return getIteratorNode.executeWith(frame, value);
+    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object doGeneric(VirtualFrame frame, Object value,
+                    @CachedLibrary("value") PythonObjectLibrary lib) {
+        return lib.getIteratorWithState(value, PArguments.getThreadState(frame));
     }
 
     public static GetIteratorExpressionNode create(ExpressionNode collection) {
         return GetIteratorExpressionNodeGen.create(collection);
-    }
-
-    @GenerateUncached
-    @ImportStatic(PGuards.class)
-    public abstract static class GetIteratorWithoutFrameNode extends PNodeWithContext {
-        public abstract Object executeWithGlobalState(Object value);
-
-        @Specialization
-        static PythonObject doPZip(PZip value) {
-            return GetIteratorNode.doPZip(value);
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"}, limit = "4")
-        static Object doGeneric(Object value,
-                        @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
-                        @CachedLibrary("value") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary methodLib,
-                        @Cached IsIteratorObjectNode isIteratorObjectNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
-            // NOTE: it's fine to pass 'null' frame since the caller must already take care of the
-            // global state
-            return GetIteratorNode.doGeneric(null, value, getattributeProfile, plib, methodLib, isIteratorObjectNode, factory,
-                            raiseNode);
-        }
-
-        @Specialization
-        static PythonObject doNone(PNone none,
-                        @Cached PRaiseNode raiseNode) {
-            return GetIteratorNode.doNone(none, raiseNode);
-        }
-
-        public static GetIteratorWithoutFrameNode create() {
-            return GetIteratorWithoutFrameNodeGen.create();
-        }
-
-        public static GetIteratorWithoutFrameNode getUncached() {
-            return GetIteratorWithoutFrameNodeGen.getUncached();
-        }
-    }
-
-    @ImportStatic({PGuards.class, PythonOptions.class})
-    public abstract static class GetIteratorNode extends Node {
-        public abstract Object executeWith(VirtualFrame frame, Object value);
-
-        @Specialization
-        static PythonObject doPZip(PZip value) {
-            return value;
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"}, limit = "5")
-        static Object doGeneric(VirtualFrame frame, Object value,
-                        @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
-                        @CachedLibrary("value") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Cached IsIteratorObjectNode isIteratorObjectNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
-            Object v = plib.getDelegatedValue(value);
-            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(value, __ITER__));
-            if (iterMethod != PNone.NONE) {
-                if (iterMethod != PNone.NO_VALUE) {
-                    Object iterObj = methodLib.callUnboundMethodIgnoreGetException(iterMethod, frame, v);
-                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                        return iterObj;
-                    } else {
-                        throw nonIterator(raiseNode, iterObj);
-                    }
-                }
-                Object getItemAttrObj = plib.lookupAttributeOnType(value, __GETITEM__);
-                if (getItemAttrObj != PNone.NO_VALUE) {
-                    return factory.createSequenceIterator(v);
-                }
-            }
-            throw notIterable(raiseNode, v);
-        }
-
-        @Specialization(guards = {"!isNoValue(value)"}, replaces = "doGeneric")
-        static Object doGenericUncached(VirtualFrame frame, Object value,
-                        @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary plib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Cached IsIteratorObjectNode isIteratorObjectNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PRaiseNode raiseNode) {
-            return doGeneric(frame, value, iterMethodProfile, plib, methodLib, isIteratorObjectNode, factory, raiseNode);
-        }
-
-        @Specialization
-        static PythonObject doNone(PNone none,
-                        @Cached PRaiseNode raiseNode) {
-            throw notIterable(raiseNode, none);
-        }
-
-        private static PException notIterable(PRaiseNode raiseNode, Object value) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, value);
-        }
-
-        private static PException nonIterator(PRaiseNode raiseNode, Object value) {
-            throw raiseNode.raise(TypeError, ErrorMessages.ITER_RETURNED_NON_ITERABLE, value);
-        }
-
-        public static GetIteratorNode create() {
-            return GetIteratorNodeGen.create();
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
-    abstract static class IsIteratorObjectNode extends Node {
-
-        public abstract boolean execute(Object o);
-
-        @Specialization
-        static boolean doPIterator(@SuppressWarnings("unused") PBuiltinIterator it) {
-            // a PIterator object is guaranteed to be an iterator object
-            return true;
-        }
-
-        @Specialization
-        static boolean doGeneric(Object it,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupAttributeNode) {
-            return lookupAttributeNode.execute(it, SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
-        }
-
-        public static IsIteratorObjectNode create() {
-            return IsIteratorObjectNodeGen.create();
-        }
-
-        public static IsIteratorObjectNode getUncached() {
-            return IsIteratorObjectNodeGen.getUncached();
-        }
     }
 }

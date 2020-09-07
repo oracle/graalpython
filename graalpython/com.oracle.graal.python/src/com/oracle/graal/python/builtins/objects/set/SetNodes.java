@@ -45,33 +45,35 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateNodeFactory
 public abstract class SetNodes {
 
-    @ImportStatic({PGuards.class, SpecialMethodNames.class})
+    @ImportStatic({PGuards.class, SpecialMethodNames.class, PythonOptions.class})
     public abstract static class ConstructSetNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
         @Child private SetItemNode setItemNode;
+        @Child private PythonObjectFactory factory;
 
         public abstract PSet execute(VirtualFrame frame, Object cls, Object value);
 
@@ -80,9 +82,8 @@ public abstract class SetNodes {
         }
 
         @Specialization
-        PSet setString(VirtualFrame frame, Object cls, String arg,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            PSet set = factory.createSet(cls);
+        PSet setString(VirtualFrame frame, Object cls, String arg) {
+            PSet set = factory().createSet(cls);
             for (int i = 0; i < PString.length(arg); i++) {
                 getSetItemNode().execute(frame, set, PString.valueOf(PString.charAt(arg, i)), PNone.NONE);
             }
@@ -90,24 +91,21 @@ public abstract class SetNodes {
         }
 
         @Specialization(guards = "emptyArguments(none)")
-        @SuppressWarnings("unused")
-        PSet set(Object cls, PNone none,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createSet(cls);
+        PSet set(Object cls, @SuppressWarnings("unused") PNone none) {
+            return factory().createSet(cls);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = "!isNoValue(iterable)", limit = "getCallSiteInlineCacheMaxDepth()")
         PSet setIterable(VirtualFrame frame, Object cls, Object iterable,
-                        @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
 
-            PSet set = factory.createSet(cls);
-            Object iterator = getIterator.executeWith(frame, iterable);
+            PSet set = factory().createSet(cls);
+            Object iterator = lib.getIteratorWithFrame(iterable, frame);
             while (true) {
                 try {
-                    getSetItemNode().execute(frame, set, next.execute(frame, iterator), PNone.NONE);
+                    getSetItemNode().execute(frame, set, nextNode.execute(frame, iterator), PNone.NONE);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return set;
@@ -130,6 +128,14 @@ public abstract class SetNodes {
                 setItemNode = insert(SetItemNode.create());
             }
             return setItemNode;
+        }
+
+        private PythonObjectFactory factory() {
+            if (factory == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                factory = insert(PythonObjectFactory.create());
+            }
+            return factory;
         }
 
         public static ConstructSetNode create() {

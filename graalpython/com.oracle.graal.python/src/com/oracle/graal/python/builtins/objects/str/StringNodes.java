@@ -64,7 +64,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -232,7 +231,7 @@ public abstract class StringNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class JoinInternalNode extends PNodeWithContext {
 
         public static final String INVALID_SEQ_ITEM = "sequence item %d: expected str instance, %p found";
@@ -302,21 +301,21 @@ public abstract class StringNodes {
             }
         }
 
-        @Specialization
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static String doGeneric(VirtualFrame frame, String string, Object iterable,
                         @Cached PRaiseNode raise,
-                        @Cached GetIteratorNode getIterator,
-                        @Cached GetNextNode next,
+                        @CachedLibrary("iterable") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile0,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached CastToJavaStringNode castStrNode) {
 
             try {
-                Object iterator = getIterator.executeWith(frame, iterable);
+                Object iterator = lib.getIteratorWithFrame(iterable, frame);
                 StringBuilder str = new StringBuilder();
                 try {
-                    append(str, checkItem(next.execute(frame, iterator), 0, castStrNode, raise));
+                    append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
@@ -326,7 +325,7 @@ public abstract class StringNodes {
                 while (true) {
                     Object value;
                     try {
-                        value = next.execute(frame, iterator);
+                        value = nextNode.execute(frame, iterator);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile2);
                         return toString(str);

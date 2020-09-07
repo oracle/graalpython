@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -144,16 +143,15 @@ public abstract class CopyKeywordsNode extends Node {
         lib.forEach(hashingStorage, addKeywordNode, new CopyKeywordsState(hashingStorage, keywords));
     }
 
-    @Specialization(guards = "!isBuiltinDict(starargs, classProfile)")
+    @Specialization(guards = "!isBuiltinDict(starargs, classProfile)", limit = "getCallSiteInlineCacheMaxDepth()")
     void doDict(PArguments.ThreadState state, PDict starargs, PKeyword[] keywords,
-                    @Cached GetIteratorExpressionNode.GetIteratorWithoutFrameNode getIteratorNode,
                     @Cached GetNextNode.GetNextWithoutFrameNode getNextNode,
                     @Cached CastToJavaStringNode castToJavaStringNode,
                     @Cached IsBuiltinClassProfile errorProfile,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
+                    @CachedLibrary("starargs") PythonObjectLibrary pol,
                     @Cached PRaiseNode raiseNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile classProfile) {
-        Object iter = getIteratorNode.executeWithGlobalState(starargs);
+        Object iter = pol.getIteratorWithState(starargs, state);
         int i = 0;
         while (true) {
             Object key;

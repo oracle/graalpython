@@ -76,7 +76,6 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,104]`def merge(h):
                                   Identifier: next
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [35,38]`b()`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallNodeGen SourceSection: [35,38]`b()`
                               CallNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [35,36]`b`

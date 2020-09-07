@@ -97,7 +97,6 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                         GeneratorAccessNode SourceSection: None
                         PRaiseNodeGen SourceSection: None
                   GetIteratorExpressionNodeGen SourceSection: [84,97]`dict1.items()`
-                    GetIteratorNodeGen SourceSection: None
                     PythonCallNodeGen SourceSection: [84,97]`dict1.items()`
                       CallNodeGen SourceSection: None
                       GetCallAttributeNodeGen SourceSection: None

@@ -60,7 +60,6 @@ ModuleRootNode Name: <module 'setCompr'> SourceSection: [0,21]`{i for i in range
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [12,20]`range(3)`
-          GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [12,20]`range(3)`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [12,17]`range`

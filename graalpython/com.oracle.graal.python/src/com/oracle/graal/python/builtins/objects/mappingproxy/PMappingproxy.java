@@ -40,10 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-public class PMappingproxy extends PythonBuiltinObject {
+@ExportLibrary(PythonObjectLibrary.class)
+public final class PMappingproxy extends PythonBuiltinObject {
     private final Object mapping;
 
     public PMappingproxy(Object klass, Shape instanceShape, Object mapping) {
@@ -53,5 +59,12 @@ public class PMappingproxy extends PythonBuiltinObject {
 
     public Object getMapping() {
         return mapping;
+    }
+
+    /* this is correct because it cannot be subclassed in Python */
+    @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+    Object getIteratorWithState(ThreadState state,
+                    @CachedLibrary("this.getMapping()") PythonObjectLibrary lib) {
+        return lib.getIteratorWithState(mapping, state);
     }
 }

@@ -739,7 +739,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2035,2051]`enumerate(names)`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [2035,2051]`enumerate(names)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2035,2044]`enumerate`
@@ -826,7 +825,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [2103,2108]`items`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [2103,2108]`items`
                                 Frame: [1,items,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1291,7 +1289,6 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonObjectFactoryNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [5682,5687]`items`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [5682,5687]`items`
                                     Frame: [3,items,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None

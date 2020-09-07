@@ -27,7 +27,6 @@ ModuleRootNode Name: <module 'for02'> SourceSection: [0,31]`for i in range(210):
                     IsBuiltinClassProfile SourceSection: None
                       CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,19]`range(210)`
-              GetIteratorNodeGen SourceSection: None
               PythonCallUnary SourceSection: [9,19]`range(210)`
                 CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`

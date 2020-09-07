@@ -54,7 +54,6 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                         Frame: [0,b,Illegal]
                     GetIteratorExpressionNodeGen SourceSection: [31,33]`d2`
-                      GetIteratorNodeGen SourceSection: None
                       ReadGlobalOrBuiltinNodeGen SourceSection: [31,33]`d2`
                         Identifier: d2
                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -85,7 +84,6 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [13,15]`d1`
-          GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [13,15]`d1`
             Identifier: d1
             IsBuiltinClassProfile SourceSection: None

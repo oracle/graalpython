@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -181,6 +182,11 @@ public class PythonObject extends PythonAbstractObject {
     public final void setDict(PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         dylib.put(this, DICT, dict);
+    }
+
+    /* needed for some guards in exported messages of subclasses */
+    public static int getCallSiteInlineCacheMaxDepth() {
+        return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
 
     private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();

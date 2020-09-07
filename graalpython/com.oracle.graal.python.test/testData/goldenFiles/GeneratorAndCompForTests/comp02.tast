@@ -129,7 +129,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                           GeneratorAccessNode SourceSection: None
                                           PRaiseNodeGen SourceSection: None
                                     GetIteratorExpressionNodeGen SourceSection: [95,108]`cls.__bases__`
-                                      GetIteratorNodeGen SourceSection: None
                                       GetAttributeNodeGen SourceSection: [95,108]`cls.__bases__`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: __bases__
@@ -156,7 +155,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     ReadFromCellNodeGen SourceSection: None
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [41,45]`abcs`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [41,45]`abcs`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,abcs,Illegal]
@@ -237,7 +235,6 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [197,202]`other`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [197,202]`other`
                                 Frame: [3,other,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

@@ -42,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -77,13 +78,10 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object doPDictValuesView(PDictValuesView self,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStore,
-                        @CachedLibrary("getStore.execute(self.getWrappedDict())") HashingStorageLibrary lib) {
-            PHashingCollection dict = self.getWrappedDict();
-            HashingStorage storage = getStore.execute(dict);
-            return factory().createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
+        @Specialization(limit = "1")
+        static Object doPDictValuesView(PDictValuesView self,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
+            return lib.getIterator(self);
         }
     }
 

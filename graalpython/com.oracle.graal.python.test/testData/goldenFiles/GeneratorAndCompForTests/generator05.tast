@@ -96,7 +96,6 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,85]`def fn(self):â
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [53,63]`caretspace`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [53,63]`caretspace`
                               Frame: [1,caretspace,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

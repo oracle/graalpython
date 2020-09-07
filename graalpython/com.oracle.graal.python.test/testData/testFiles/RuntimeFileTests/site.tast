@@ -350,7 +350,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonObjectFactoryNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3806,3831]`set(sys.modules.valu...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [3806,3831]`set(sys.modules.valu...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3806,3809]`set`
@@ -493,7 +492,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [4644,4652]`sys.path`
-                          GetIteratorNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [4644,4652]`sys.path`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: path
@@ -653,7 +651,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [5137,5145]`sys.path`
-                          GetIteratorNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [5137,5145]`sys.path`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: path
@@ -1076,7 +1073,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                           Identifier: print
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [6634,6653]`record.splitlines()`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     PythonCallNodeGen SourceSection: [6634,6653]`record.splitlines()`
                                                       CallNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
@@ -1085,7 +1081,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [6557,6600]`traceback.format_exc...`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [6557,6600]`traceback.format_exc...`
                                                 CallNodeGen SourceSection: None
                                                 PositionalArgumentsNode SourceSection: None
@@ -1130,7 +1125,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [5879,5891]`enumerate(f)`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [5879,5891]`enumerate(f)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5879,5888]`enumerate`
@@ -1421,7 +1415,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [7421,7426]`names`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [7421,7426]`names`
                               Frame: [4,names,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1450,7 +1443,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 Frame: [1,known_paths,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7469,7482]`sorted(names)`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [7469,7482]`sorted(names)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7469,7475]`sorted`
@@ -2594,7 +2586,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         StringLiteralNode SourceSection: [11812,11817]`"lib"`
                                         StringLiteralNode SourceSection: [11819,11834]`"site-packages"`
                         GetIteratorExpressionNodeGen SourceSection: [11113,11121]`prefixes`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [11113,11121]`prefixes`
                             Frame: [0,prefixes,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2694,7 +2685,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [11970,11995]`getsitepackages(pref...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [11970,11995]`getsitepackages(pref...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [11970,11985]`getsitepackages`
@@ -3639,7 +3629,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [16139,16257]`(↵            os.pat...`
-                            GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [16139,16257]`(↵            os.pat...`
                               PythonCallBinary SourceSection: [16153,16189]`os.path.join(exe_dir...`
                                 CallBinaryMethodNodeGen SourceSection: None
@@ -3837,7 +3826,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [16583,16584]`f`
-                                GetIteratorNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [16583,16584]`f`
                                   Frame: [13,f,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -4662,7 +4650,6 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20304,20312]`sys.path`
-                              GetIteratorNodeGen SourceSection: None
                               GetAttributeNodeGen SourceSection: [20304,20312]`sys.path`
                                 GetFixedAttributeNodeGen SourceSection: None
                                   Key: path

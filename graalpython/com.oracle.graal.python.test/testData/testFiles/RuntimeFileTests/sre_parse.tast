@@ -1508,7 +1508,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             Frame: [5,a,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [3844,3846]`av`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [3844,3846]`av`
                                                         Frame: [10,av,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -1600,7 +1599,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 IntegerLiteralNode SourceSection: [4112,4113]`1`
                                                                   Value: 1
                                                       GetIteratorExpressionNodeGen SourceSection: [3986,4002]`enumerate(av[1])`
-                                                        GetIteratorNodeGen SourceSection: None
                                                         PythonCallUnary SourceSection: [3986,4002]`enumerate(av[1])`
                                                           CallUnaryMethodNodeGen SourceSection: None
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3986,3995]`enumerate`
@@ -1850,7 +1848,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     Frame: [2,nl,Illegal]
                                                                   BooleanLiteralNode SourceSection: [4870,4875]`False`
                                                           GetIteratorExpressionNodeGen SourceSection: [4493,4495]`av`
-                                                            GetIteratorNodeGen SourceSection: None
                                                             ReadLocalVariableNode SourceSection: [4493,4495]`av`
                                                               Frame: [10,av,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -1880,7 +1877,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           Frame: [10,av,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3670,3679]`self.data`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [3670,3679]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
@@ -2618,7 +2614,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             Frame: [6,h,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [5833,5838]`av[1]`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     GetItemNodeGen SourceSection: [5833,5838]`av[1]`
                                                       ReadLocalVariableNode SourceSection: None
                                                         Frame: [7,av,Illegal]
@@ -3172,7 +3167,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           BreakNode SourceSection: [7022,7027]`break`
                                                           BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [5711,5720]`self.data`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [5711,5720]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: data
@@ -3878,7 +3872,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [8226,8234]`range(n)`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [8226,8234]`range(n)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8226,8231]`range`
@@ -6202,7 +6195,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [14161,14166]`items`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [14161,14166]`items`
                             Frame: [0,items,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6494,7 +6486,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           BreakNode SourceSection: [14987,14992]`break`
                                           BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [14817,14822]`items`
-                                    GetIteratorNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [14817,14822]`items`
                                       Frame: [4,items,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -6514,7 +6505,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           IntegerLiteralNode SourceSection: [15160,15161]`0`
                                             Value: 0
                                       GetIteratorExpressionNodeGen SourceSection: [15128,15133]`items`
-                                        GetIteratorNodeGen SourceSection: None
                                         ReadLocalVariableNode SourceSection: [15128,15133]`items`
                                           Frame: [4,items,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -6664,7 +6654,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 BreakNode SourceSection: [15583,15588]`break`
                         GetIteratorExpressionNodeGen SourceSection: [15344,15349]`items`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [15344,15349]`items`
                             Frame: [4,items,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -10779,7 +10768,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   BlockNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [31409,31437]`range(len(subpattern...`
-                          GetIteratorNodeGen SourceSection: None
                           GetItemNodeGen SourceSection: [31409,31437]`range(len(subpattern...`
                             PythonCallUnary SourceSection: [31409,31431]`range(len(subpattern...`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -13205,7 +13193,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [38914,38922]`literals`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalCellNodeGen SourceSection: [38914,38922]`literals`
                                 ReadLocalVariableNode SourceSection: None
                                   Frame: [5,literals,Illegal]
@@ -13405,7 +13392,6 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         IsBuiltinClassProfile SourceSection: None
                                           CachedDispatchFirst SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [39136,39142]`groups`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [39136,39142]`groups`
                                     Frame: [4,groups,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None

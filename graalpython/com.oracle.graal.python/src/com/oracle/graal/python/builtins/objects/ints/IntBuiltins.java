@@ -83,7 +83,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2269,7 +2268,6 @@ public class IntBuiltins extends PythonBuiltins {
         @Child private LookupAndCallVarargsNode constructNode;
         @Child private BytesNodes.FromSequenceNode fromSequenceNode;
         @Child private BytesNodes.FromIteratorNode fromIteratorNode;
-        @Child private GetIteratorNode getIteratorNode;
 
         @Child private BytesNodes.ToBytesNode toBytesNode;
         @Child private LookupAndCallUnaryNode callBytesNode;
@@ -2288,14 +2286,6 @@ public class IntBuiltins extends PythonBuiltins {
                 fromIteratorNode = insert(BytesNodes.FromIteratorNode.create());
             }
             return fromIteratorNode;
-        }
-
-        protected GetIteratorNode getGetIteratorNode() {
-            if (getIteratorNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getIteratorNode = insert(GetIteratorNode.create());
-            }
-            return getIteratorNode;
         }
 
         protected BytesNodes.ToBytesNode getToBytesNode() {
@@ -2366,77 +2356,77 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PBytesLike
         @Specialization
-        public Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, boolean signed) {
+        Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+        Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
             return fromPBytes(frame, cl, bytes, byteorder, false);
         }
 
         // from PArray
         @Specialization
-        public Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, boolean signed,
+        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, boolean signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return compute(cl, fromSequenceStorageNode.execute(frame, array.getSequenceStorage()), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
+        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
             return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
         }
 
         // from PMemoryView
         @Specialization
-        public Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, boolean signed) {
+        Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, boolean signed) {
             return compute(cl, getToBytesNode().execute(frame, view), byteorder, signed);
         }
 
         @Specialization
-        public Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
+        Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
             return fromPMemoryView(frame, cl, view, byteorder, false);
         }
 
         // from PList, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(list))", limit = "3")
-        public Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, boolean signed,
+        Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, boolean signed,
                         @SuppressWarnings("unused") @CachedLibrary("list") PythonObjectLibrary lib) {
             return compute(cl, getFromSequenceNode().execute(frame, list), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(list))", limit = "3")
-        public Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed,
+        Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @SuppressWarnings("unused") @CachedLibrary("list") PythonObjectLibrary lib) {
             return fromPList(frame, cl, list, byteorder, false, lib);
         }
 
         // from PTuple, only if it is not extended
         @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(tuple))", limit = "3")
-        public Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, boolean signed,
+        Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, boolean signed,
                         @SuppressWarnings("unused") @CachedLibrary("tuple") PythonObjectLibrary lib) {
             return compute(cl, getFromSequenceNode().execute(frame, tuple), byteorder, signed);
         }
 
         @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(tuple))", limit = "3")
-        public Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed,
+        Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @SuppressWarnings("unused") @CachedLibrary("tuple") PythonObjectLibrary lib) {
             return fromPTuple(frame, cl, tuple, byteorder, false, lib);
         }
 
         // rest objects
-        @Specialization
-        public Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
+        @Specialization(limit = "1")
+        Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
             return fromObject(frame, cl, object, byteorder, false, ctxRef, dataModelLibrary);
         }
 
-        @Specialization
-        public Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, boolean signed,
+        @Specialization(limit = "1")
+        Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, boolean signed,
                         @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
@@ -2450,14 +2440,14 @@ public class IntBuiltins extends PythonBuiltins {
                 return createIntObject(cl, bi);
             }
             if (PythonObjectLibrary.checkIsIterable(dataModelLibrary, ctxRef, frame, object, this)) {
-                byte[] bytes = getFromIteratorNode().execute(frame, getGetIteratorNode().executeWith(frame, object));
+                byte[] bytes = getFromIteratorNode().execute(frame, dataModelLibrary.getIteratorWithState(object, PArguments.getThreadState(frame)));
                 return compute(cl, bytes, byteorder, signed);
             }
             return general(cl, object, byteorder, signed);
         }
 
         @Fallback
-        public Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
+        Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
             throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_S_OBJ_TO_BYTES, object);
         }
     }

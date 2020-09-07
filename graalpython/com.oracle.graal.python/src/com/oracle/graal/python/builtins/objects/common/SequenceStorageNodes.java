@@ -115,7 +115,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.GetNextNode.GetNextWithoutFrameNode;
 import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFrameNodeGen;
@@ -2344,15 +2343,14 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(lib.getLazyPythonClass(iterable))")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached LenNode lenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached AppendNode appendNode) {
             SequenceStorage currentStore = left;
             int lenLeft = lenNode.execute(currentStore);
-            Object it = getIteratorNode.executeWith(frame, iterable);
+            Object it = lib.getIteratorWithFrame(iterable, frame);
             if (len > 0) {
                 ensureCapacityNode.execute(left, lengthResult(lenLeft, len));
             }

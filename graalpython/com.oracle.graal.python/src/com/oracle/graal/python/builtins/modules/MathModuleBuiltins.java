@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -72,6 +71,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1236,19 +1236,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "fsum", minNumOfPositionalArgs = 1)
-    @ImportStatic(PGuards.class)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        @SuppressWarnings("try")
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         double doIt(VirtualFrame frame, Object iterable,
-                        @Cached GetIteratorNode getIterator,
-                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @CachedLibrary("iterable") PythonObjectLibrary iterableLib,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode callNextNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile stopProfile) {
-            Object iterator = getIterator.executeWith(frame, iterable);
-            return fsum(frame, iterator, next, lib, stopProfile);
+            Object iterator = iterableLib.getIteratorWithFrame(iterable, frame);
+            return fsum(frame, iterator, callNextNode, lib, stopProfile);
         }
 
         /*
@@ -2654,25 +2652,26 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProdNode extends PythonBuiltinNode {
 
-        @Child private GetIteratorNode iter = GetIteratorNode.create();
-        @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
+        @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(__NEXT__);
         @Child private LookupAndCallBinaryNode mul = BinaryArithmetic.Mul.create();
         @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @Specialization
         @SuppressWarnings("unused")
-        public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start) {
-            return doGeneric(frame, iterable, 1);
+        public Object doGenericNoStart(VirtualFrame frame, Object iterable, PNone start,
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            return doGeneric(frame, iterable, 1, lib);
         }
 
         @Specialization(guards = "!isNoValue(start)")
-        public Object doGeneric(VirtualFrame frame, Object iterable, Object start) {
-            Object iterator = iter.executeWith(frame, iterable);
+        public Object doGeneric(VirtualFrame frame, Object iterable, Object start,
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            Object iterator = lib.getIteratorWithState(iterable, PArguments.getThreadState(frame));
             Object value = start;
             while (true) {
                 Object nextValue;
                 try {
-                    nextValue = next.executeObject(frame, iterator);
+                    nextValue = callNextNode.executeObject(frame, iterator);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return value;

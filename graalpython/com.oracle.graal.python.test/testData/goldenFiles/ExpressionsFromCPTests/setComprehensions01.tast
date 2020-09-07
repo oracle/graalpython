@@ -60,7 +60,6 @@ ModuleRootNode Name: <module 'setComprehensions01'> SourceSection: [0,16]`{x for
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [12,15]`seq`
-          GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [12,15]`seq`
             Identifier: seq
             IsBuiltinClassProfile SourceSection: None

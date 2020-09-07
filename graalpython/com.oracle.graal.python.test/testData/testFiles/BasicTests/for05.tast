@@ -85,7 +85,6 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                       Frame: [0,x,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [21,29]`range(3)`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [21,29]`range(3)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21,26]`range`

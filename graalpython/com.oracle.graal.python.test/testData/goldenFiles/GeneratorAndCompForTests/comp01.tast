@@ -121,7 +121,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [30,31]`t`
-                                    GetIteratorNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [30,31]`t`
                                       Frame: [1,t,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -134,7 +133,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                             Frame: [0,i,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [92,93]`t`
-                          GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [92,93]`t`
                             Frame: [1,t,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -164,7 +162,6 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None
               GetIteratorExpressionNodeGen SourceSection: [73,82]`something`
-                GetIteratorNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [73,82]`something`
                   Identifier: something
                   IsBuiltinClassProfile SourceSection: None

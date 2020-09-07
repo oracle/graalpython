@@ -60,7 +60,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [13,29]`a for a in (1,2)`
-          GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [13,29]`a for a in (1,2)`
             CallUnaryMethodNodeGen SourceSection: None
             ReadGlobalOrBuiltinNodeGen SourceSection: None
@@ -116,7 +115,6 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None
               GetIteratorExpressionNodeGen SourceSection: [24,29]`(1,2)`
-                GetIteratorNodeGen SourceSection: None
                 TupleLiteralNode SourceSection: [24,29]`(1,2)`
                   IntegerLiteralNode SourceSection: [25,26]`1`
                     Value: 1

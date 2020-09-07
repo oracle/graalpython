@@ -68,7 +68,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                       Frame: [0,y,Illegal]
                   GetIteratorExpressionNodeGen SourceSection: [28,32]`seq2`
-                    GetIteratorNodeGen SourceSection: None
                     ReadGlobalOrBuiltinNodeGen SourceSection: [28,32]`seq2`
                       Identifier: seq2
                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -98,7 +97,6 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [14,18]`seq1`
-          GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14,18]`seq1`
             Identifier: seq1
             IsBuiltinClassProfile SourceSection: None

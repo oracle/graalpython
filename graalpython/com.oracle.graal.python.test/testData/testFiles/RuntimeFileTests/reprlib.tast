@@ -981,7 +981,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [2192,2210]`islice(x, maxiter)`
-                                                GetIteratorNodeGen SourceSection: None
                                                 PythonCallBinary SourceSection: [2192,2210]`islice(x, maxiter)`
                                                   CallBinaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [2192,2198]`islice`
@@ -1879,7 +1878,6 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     PythonObjectFactoryNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3590,3631]`islice(_possibly_sor...`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [3590,3631]`islice(_possibly_sor...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [3590,3596]`islice`

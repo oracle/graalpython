@@ -416,7 +416,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 FunctionBodyNode SourceSection: [2511,2545]`yield from reversed(...`
                                   ExpressionStatementNode SourceSection: [2511,2545]`yield from reversed(...`
                                     YieldFromNode SourceSection: [2511,2545]`yield from reversed(...`
-                                      GetIteratorNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                       GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
@@ -576,7 +576,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [2652,2675]`reversed(self._mappi...`
-                                        GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2652,2675]`reversed(self._mappi...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2652,2660]`reversed`
@@ -722,7 +721,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [2829,2852]`reversed(self._mappi...`
-                                        GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2829,2852]`reversed(self._mappi...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2829,2837]`reversed`
@@ -3261,7 +3259,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [10015,10019]`None`
                                         GetIteratorExpressionNodeGen SourceSection: [9965,9984]`vars(OrderedDict())`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [9965,9984]`vars(OrderedDict())`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9965,9969]`vars`
@@ -3458,7 +3455,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [10408,10416]`iterable`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10408,10416]`iterable`
                                               Frame: [1,iterable,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3904,7 +3900,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                       Frame: [8,name,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [12476,12498]`enumerate(field_name...`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [12476,12498]`enumerate(field_name...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12476,12485]`enumerate`
@@ -4018,7 +4013,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                 NoValueNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [12743,12767]`[typename] + field_n...`
-                          GetIteratorNodeGen SourceSection: None
                           BinaryArithmeticExpression SourceSection: [12743,12767]`[typename] + field_n...`
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __add__
@@ -4143,7 +4137,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Frame: [8,name,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [13226,13237]`field_names`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [13226,13237]`field_names`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,field_names,Illegal]
@@ -4400,7 +4393,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [14131,14142]`field_names`
-                                GetIteratorNodeGen SourceSection: None
                                 ReadLocalCellNodeGen SourceSection: [14131,14142]`field_names`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [1,field_names,Illegal]
@@ -5041,7 +5033,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                     Frame: [23,method,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [15918,16007]`(__new__, _make.__fu...`
-                          GetIteratorNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [15918,16007]`(__new__, _make.__fu...`
                             ReadLocalVariableNode SourceSection: [15919,15926]`__new__`
                               Frame: [17,__new__,Illegal]
@@ -5269,7 +5260,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                   Identifier: property
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [16575,16597]`enumerate(field_name...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [16575,16597]`enumerate(field_name...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16575,16584]`enumerate`
@@ -5465,7 +5455,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                               IntegerLiteralNode SourceSection: [17924,17925]`1`
                                 Value: 1
                         GetIteratorExpressionNodeGen SourceSection: [17867,17875]`iterable`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [17867,17875]`iterable`
                             Frame: [1,iterable,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6254,7 +6243,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                         IntegerLiteralNode SourceSection: [24471,24472]`0`
                                                           Value: 0
                                                 GetIteratorExpressionNodeGen SourceSection: [24393,24409]`iterable.items()`
-                                                  GetIteratorNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [24393,24409]`iterable.items()`
                                                     CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
@@ -6553,7 +6541,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                       Frame: [6,count,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [25929,25945]`iterable.items()`
-                                                GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [25929,25945]`iterable.items()`
                                                   CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -6592,7 +6579,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                     IntegerLiteralNode SourceSection: [26115,26116]`1`
                                                       Value: 1
                                               GetIteratorExpressionNodeGen SourceSection: [26052,26060]`iterable`
-                                                GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [26052,26060]`iterable`
                                                   Frame: [3,iterable,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -7136,7 +7122,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [27559,27571]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [27559,27571]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7214,7 +7199,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [27712,27725]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [27712,27725]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7378,7 +7362,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [28162,28174]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [28162,28174]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7461,7 +7444,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [28315,28328]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [28315,28328]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7642,7 +7624,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [28776,28788]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [28776,28788]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7720,7 +7701,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [28993,29006]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [28993,29006]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -7901,7 +7881,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [29426,29438]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [29426,29438]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8015,7 +7994,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [29796,29808]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [29796,29808]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8134,7 +8112,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [30111,30123]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [30111,30123]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8283,7 +8260,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [30370,30382]`self.items()`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [30370,30382]`self.items()`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -8307,7 +8283,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               Frame: [2,elem,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [30421,30432]`nonpositive`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [30421,30432]`nonpositive`
                                             Frame: [1,nonpositive,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -8412,7 +8387,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [3,count,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [30749,30762]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [30749,30762]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8523,7 +8497,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [3,count,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [31101,31114]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [31101,31114]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8652,7 +8625,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [31453,31466]`other.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [31453,31466]`other.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -8781,7 +8753,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [31862,31874]`self.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [31862,31874]`self.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -9057,7 +9028,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [33073,33082]`self.maps`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [33073,33082]`self.maps`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maps
@@ -9301,7 +9271,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [2,mapping,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [33605,33624]`reversed(self.maps)`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [33605,33624]`reversed(self.maps)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [33605,33613]`reversed`
@@ -9450,7 +9419,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [33808,33817]`self.maps`
-                                              GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [33808,33817]`self.maps`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: maps
@@ -11435,7 +11403,6 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [37943,37951]`iterable`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [37943,37951]`iterable`
                                               Frame: [1,iterable,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None

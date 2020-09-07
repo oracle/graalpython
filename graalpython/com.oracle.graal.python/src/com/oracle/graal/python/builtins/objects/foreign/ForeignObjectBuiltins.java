@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
@@ -534,34 +533,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "lib.hasArrayElements(iterable)")
-        Object doForeignArray(Object iterable,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                long size = lib.getArraySize(iterable);
-                if (size < Integer.MAX_VALUE) {
-                    return factory().createForeignArrayIterator(iterable);
-                }
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
-        }
-
-        @Specialization(guards = "lib.isString(iterable)")
-        Object doBoxedString(Object iterable,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return factory().createStringIterator(lib.asString(iterable));
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
-        }
-
-        @Fallback
-        PNone doGeneric(@SuppressWarnings("unused") Object o) {
-            throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static Object doForeignArray(Object iterable,
+                        @CachedLibrary("iterable") PythonObjectLibrary lib) {
+            return lib.getIterator(iterable);
         }
     }
 

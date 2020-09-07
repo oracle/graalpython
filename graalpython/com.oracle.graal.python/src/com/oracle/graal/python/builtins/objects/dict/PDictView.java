@@ -40,14 +40,22 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PDictView extends PythonBuiltinObject {
@@ -63,6 +71,10 @@ public abstract class PDictView extends PythonBuiltinObject {
 
     public final PHashingCollection getWrappedDict() {
         return dict;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public abstract static class PBaseDictIterator<T> extends PHashingStorageIterator<T> {
@@ -98,10 +110,22 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictKeysView extends PDictView {
 
         public PDictKeysView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_keys", dict);
+        }
+
+        /* this is correct because it cannot be subclassed in Python */
+        @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
+        Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
+                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictKeyIterator(lib.keys(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -116,10 +140,22 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictValuesView extends PDictView {
 
         public PDictValuesView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_values", dict);
+        }
+
+        /* this is correct because it cannot be subclassed in Python */
+        @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
+        Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
+                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictValueIterator(lib.values(storage).iterator(), storage, lib.length(storage));
         }
     }
 
@@ -133,7 +169,7 @@ public abstract class PDictView extends PythonBuiltinObject {
             super(clazz, instanceShape, iterator, hashingStorage, initialSize);
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private DictEntry nextVal() {
             return (DictEntry) super.next();
         }
@@ -145,15 +181,22 @@ public abstract class PDictView extends PythonBuiltinObject {
         }
     }
 
+    @ExportLibrary(PythonObjectLibrary.class)
     public static final class PDictItemsView extends PDictView {
 
         public PDictItemsView(Object clazz, Shape instanceShape, PHashingCollection dict) {
             super(clazz, instanceShape, "dict_items", dict);
         }
-    }
 
-    public String getName() {
-        return name;
+        /* this is correct because it cannot be subclassed in Python */
+        @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
+        @SuppressWarnings("static-method")
+        Object getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                        @Cached @SuppressWarnings("unused") HashingCollectionNodes.GetDictStorageNode getStore,
+                        @Bind("getStore.execute(this.getWrappedDict())") HashingStorage storage,
+                        @CachedLibrary("storage") HashingStorageLibrary lib,
+                        @Cached PythonObjectFactory factory) {
+            return factory.createDictItemIterator(lib.entries(storage).iterator(), storage, lib.length(storage));
+        }
     }
-
 }

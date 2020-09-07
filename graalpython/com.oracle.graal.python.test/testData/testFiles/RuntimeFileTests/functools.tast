@@ -231,7 +231,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     Frame: [4,value,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2071,2079]`assigned`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2071,2079]`assigned`
                             Frame: [2,assigned,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -273,7 +272,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 DictLiteralNodeGen SourceSection: [2327,2329]`{}`
                                   PythonObjectFactoryNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2257,2264]`updated`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2257,2264]`updated`
                             Frame: [3,updated,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1840,7 +1838,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [7470,7478]`_convert`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7470,7478]`_convert`
                               Identifier: _convert
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1944,7 +1941,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7740,7754]`_convert[root]`
-                          GetIteratorNodeGen SourceSection: None
                           GetItemNodeGen SourceSection: [7740,7754]`_convert[root]`
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: _convert
@@ -3240,7 +3236,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [10465,10474]`self.args`
-                                              GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [10465,10474]`self.args`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: args
@@ -3348,7 +3343,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [10523,10544]`self.keywords.items(...`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [10523,10544]`self.keywords.items(...`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -4377,7 +4371,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [13173,13194]`self.keywords.items(...`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [13173,13194]`self.keywords.items(...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -5400,7 +5393,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     Frame: [9,item,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [16561,16573]`kwds.items()`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [16561,16573]`kwds.items()`
                                 CallNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
@@ -5487,7 +5479,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [16651,16655]`args`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [16651,16655]`args`
                                     Frame: [0,args,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -5569,7 +5560,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [16716,16729]`kwds.values()`
-                                    GetIteratorNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [16716,16729]`kwds.values()`
                                       CallNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -7346,7 +7336,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [23756,23765]`sequences`
-                                    GetIteratorNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [23756,23765]`sequences`
                                       Frame: [0,sequences,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7426,13 +7415,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               BreakNode SourceSection: [24081,24086]`break`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [23973,23982]`sequences`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [23973,23982]`sequences`
                                             Frame: [0,sequences,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BreakNode SourceSection: [24170,24175]`break`
                                 GetIteratorExpressionNodeGen SourceSection: [23868,23877]`sequences`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [23868,23877]`sequences`
                                     Frame: [0,sequences,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -7497,7 +7484,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Value: 0
                                     BlockNode SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [24353,24362]`sequences`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [24353,24362]`sequences`
                                     Frame: [0,sequences,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -7621,7 +7607,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               BreakNode SourceSection: [25529,25534]`break`
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [25386,25420]`enumerate(reversed(c...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [25386,25420]`enumerate(reversed(c...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [25386,25395]`enumerate`
@@ -7832,7 +7817,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             GeneratorAccessNode SourceSection: None
                                             PRaiseNodeGen SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [25902,25915]`cls.__bases__`
-                                        GetIteratorNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [25902,25915]`cls.__bases__`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: __bases__
@@ -7862,7 +7846,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadFromCellNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [25805,25809]`abcs`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [25805,25809]`abcs`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,abcs,Illegal]
@@ -7893,7 +7876,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 ReadFromCellNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [26119,26133]`abstract_bases`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [26119,26133]`abstract_bases`
                             Frame: [6,abstract_bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -7972,7 +7954,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26222,26236]`explicit_bases`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26222,26236]`explicit_bases`
                               Frame: [5,explicit_bases,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8051,7 +8032,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26299,26313]`abstract_bases`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26299,26313]`abstract_bases`
                               Frame: [6,abstract_bases,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8130,7 +8110,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [26373,26384]`other_bases`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [26373,26384]`other_bases`
                               Frame: [7,other_bases,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8428,7 +8407,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [27089,27094]`types`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [27089,27094]`types`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,types,Illegal]
@@ -8523,7 +8501,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               BooleanLiteralNode SourceSection: [27351,27355]`True`
                                           BlockNode SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [27267,27272]`types`
-                                        GetIteratorNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [27267,27272]`types`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [2,types,Illegal]
@@ -8618,7 +8595,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [27401,27406]`types`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalCellNodeGen SourceSection: [27401,27406]`types`
                               ReadLocalVariableNode SourceSection: None
                                 Frame: [1,types,Illegal]
@@ -8790,7 +8766,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     GeneratorAccessNode SourceSection: None
                                                     PRaiseNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [27774,27785]`sub.__mro__`
-                                                GetIteratorNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [27774,27785]`sub.__mro__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
@@ -8805,7 +8780,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               PythonObjectFactoryNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [27653,27673]`typ.__subclasses__()...`
-                                    GetIteratorNodeGen SourceSection: None
                                     PythonCallNodeGen SourceSection: [27653,27673]`typ.__subclasses__()...`
                                       CallNodeGen SourceSection: None
                                       GetCallAttributeNodeGen SourceSection: None
@@ -8894,19 +8868,16 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [28037,28040]`sub`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [28037,28040]`sub`
                                             Frame: [8,sub,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                       BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [28004,28009]`found`
-                                    GetIteratorNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [28004,28009]`found`
                                       Frame: [7,found,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                 BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [27608,27613]`types`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalCellNodeGen SourceSection: [27608,27613]`types`
                             ReadLocalVariableNode SourceSection: None
                               Frame: [1,types,Illegal]
@@ -9154,7 +9125,6 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [28621,28624]`mro`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [28621,28624]`mro`
                             Frame: [2,mro,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

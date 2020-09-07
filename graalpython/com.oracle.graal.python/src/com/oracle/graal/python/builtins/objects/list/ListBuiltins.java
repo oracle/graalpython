@@ -88,7 +88,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -193,7 +192,7 @@ public class ListBuiltins extends PythonBuiltins {
         public abstract PNone execute(VirtualFrame frame, PList list, Object source);
 
         @Specialization
-        public PNone init(PList list, String value,
+        static PNone init(PList list, String value,
                         @Cached("create()") AppendNode appendNode) {
             clearStorage(list);
             char[] chars = value.toCharArray();
@@ -204,13 +203,13 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        PNone init(PList list, @SuppressWarnings("unused") PNone none) {
+        static PNone init(PList list, @SuppressWarnings("unused") PNone none) {
             clearStorage(list);
             return PNone.NONE;
         }
 
         @Specialization(guards = "range.getIntStep() > 0")
-        PNone listRange(PList list, PIntRange range) {
+        static PNone listRange(PList list, PIntRange range) {
             clearStorage(list);
             int start = range.getIntStart();
             int stop = range.getIntStop();
@@ -226,14 +225,14 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class)
-        PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
-                        @Cached GetIteratorNode getIteratorNode,
+        @Specialization(guards = "iterable.isPRangeIterator()", rewriteOn = UnexpectedResultException.class, limit = "1")
+        static PNone listPGenerator(VirtualFrame frame, PList list, PGenerator iterable,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @CachedLibrary("iterable") PythonObjectLibrary lib,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) throws UnexpectedResultException {
             clearStorage(list);
-            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
             SequenceStorage storage = EmptySequenceStorage.INSTANCE;
 
             PIntRangeIterator range = (PIntRangeIterator) iterable.getIterator();
@@ -270,14 +269,14 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
-        PNone listIterable(VirtualFrame frame, PList list, Object iterable,
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Cached IteratorNodes.GetLength lenNode,
-                        @Cached GetIteratorNode getIteratorNode,
+                        @CachedLibrary("iterable") PythonObjectLibrary lib,
                         @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorage(list);
             int len = lenNode.execute(frame, iterable);
-            Object iterObj = getIteratorNode.executeWith(frame, iterable);
+            Object iterObj = lib.getIteratorWithFrame(iterable, frame);
             list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
             return PNone.NONE;
         }
@@ -1163,27 +1162,27 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
-        public PIntegerSequenceIterator doPListInt(PList primary) {
+        PIntegerSequenceIterator doPListInt(PList primary) {
             return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isLongStorage(primary)"})
-        public PLongSequenceIterator doPListLong(PList primary) {
+        PLongSequenceIterator doPListLong(PList primary) {
             return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"isDoubleStorage(primary)"})
-        public PDoubleSequenceIterator doPListDouble(PList primary) {
+        PDoubleSequenceIterator doPListDouble(PList primary) {
             return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
         }
 
         @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
-        public PSequenceIterator doPList(PList primary) {
+        PSequenceIterator doPList(PList primary) {
             return factory().createSequenceIterator(primary);
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        static Object doGeneric(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }

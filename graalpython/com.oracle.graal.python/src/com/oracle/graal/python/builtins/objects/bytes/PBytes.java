@@ -147,5 +147,4 @@ public final class PBytes extends PBytesLike {
     public static boolean isArrayElementRemovable(PBytes self, long index) {
         return false;
     }
-
 }

@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -114,5 +118,12 @@ public final class PIntRange extends PRange {
     @ExportMessage
     public boolean isTrue() {
         return length != 0;
+    }
+
+    /* this is correct because it cannot be subclassed in Python */
+    @ExportMessage
+    PIntRangeIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createIntRangeIterator(this);
     }
 }

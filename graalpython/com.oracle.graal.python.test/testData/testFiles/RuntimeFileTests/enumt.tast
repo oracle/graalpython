@@ -1545,7 +1545,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ObjectLiteralNode SourceSection: [4961,4965]`None`
                                         GetIteratorExpressionNodeGen SourceSection: [4922,4928]`ignore`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [4922,4928]`ignore`
                                             Frame: [4,ignore,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1706,7 +1705,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [5329,5352]`classdict._member_na...`
-                                            GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [5329,5352]`classdict._member_na...`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names
@@ -1739,7 +1737,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               Frame: [12,name,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [5374,5397]`classdict._member_na...`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [5374,5397]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
@@ -1935,7 +1932,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                         Frame: [0,a,Illegal]
                                                     GetIteratorExpressionNodeGen SourceSection: [6414,6424]`b.__dict__`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [6414,6424]`b.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
@@ -1973,7 +1969,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [6388,6404]`enum_class.mro()`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [6388,6404]`enum_class.mro()`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -2106,7 +2101,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GeneratorAccessNode SourceSection: None
                                                         PRaiseNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [7446,7453]`methods`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [7446,7453]`methods`
                                                       Frame: [17,methods,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -2419,7 +2413,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       BreakNode SourceSection: [9146,9151]`break`
                                                     BlockNode SourceSection: None
                                                 GetIteratorExpressionNodeGen SourceSection: [8974,9005]`enum_class._member_m...`
-                                                  GetIteratorNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [8974,9005]`enum_class._member_m...`
                                                     CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
@@ -2530,7 +2523,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [7788,7811]`classdict._member_na...`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [7788,7811]`classdict._member_na...`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _member_names
@@ -2643,7 +2635,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [10084,10138]`('__repr__', '__str_...`
-                                          GetIteratorNodeGen SourceSection: None
                                           TupleLiteralNode SourceSection: [10084,10138]`('__repr__', '__str_...`
                                             StringLiteralNode SourceSection: [10085,10095]`'__repr__'`
                                             StringLiteralNode SourceSection: [10097,10106]`'__str__'`
@@ -3557,7 +3548,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [14253,14271]`cls._member_names_`
-                                            GetIteratorNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [14253,14271]`cls._member_names_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _member_names_
@@ -3867,7 +3857,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [14769,14797]`reversed(cls._member...`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [14769,14797]`reversed(cls._member...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [14769,14777]`reversed`
@@ -4380,7 +4369,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [16330,16355]`enumerate(original_n...`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [16330,16355]`enumerate(original_n...`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [16330,16339]`enumerate`
@@ -4487,7 +4475,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 Frame: [19,member_value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [16632,16637]`names`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [16632,16637]`names`
                                             Frame: [2,names,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4768,7 +4755,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 NoValueNode SourceSection: None
                                               BlockNode SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [18016,18021]`bases`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [18016,18021]`bases`
                                               Frame: [0,bases,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -4894,7 +4880,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [18728,18744]`bases[0].__mro__`
-                                              GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [18728,18744]`bases[0].__mro__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
@@ -5112,7 +5097,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             BreakNode SourceSection: [20561,20566]`break`
                                                           BlockNode SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [20176,20201]`(member_type, first_...`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       TupleLiteralNode SourceSection: [20176,20201]`(member_type, first_...`
                                                         ReadLocalVariableNode SourceSection: [20177,20188]`member_type`
                                                           Frame: [1,member_type,Illegal]
@@ -5134,7 +5118,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   BreakNode SourceSection: [20627,20632]`break`
                                                   BlockNode SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [20113,20142]`('__new_member__', '...`
-                                              GetIteratorNodeGen SourceSection: None
                                               TupleLiteralNode SourceSection: [20113,20142]`('__new_member__', '...`
                                                 StringLiteralNode SourceSection: [20114,20130]`'__new_member__'`
                                                 StringLiteralNode SourceSection: [20132,20141]`'__new__'`
@@ -5414,7 +5397,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                   BlockNode SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [21848,21873]`cls._member_map_.val...`
-                                                GetIteratorNodeGen SourceSection: None
                                                 PythonCallNodeGen SourceSection: [21848,21873]`cls._member_map_.val...`
                                                   CallNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -5539,7 +5521,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [22128,22149]`reversed(last_values...`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [22128,22149]`reversed(last_values...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [22128,22136]`reversed`
@@ -5938,7 +5919,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                         Frame: [0,m,Illegal]
                                                     GetIteratorExpressionNodeGen SourceSection: [22774,22786]`cls.__dict__`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [22774,22786]`cls.__dict__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __dict__
@@ -5976,7 +5956,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [22728,22748]`self.__class__.mro()...`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [22728,22748]`self.__class__.mro()...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -6632,7 +6611,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [25264,25277]`source.keys()`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [25264,25277]`source.keys()`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -7137,7 +7115,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [26365,26386]`reversed(last_values...`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [26365,26386]`reversed(last_values...`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [26365,26373]`reversed`
@@ -7920,7 +7897,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         GeneratorAccessNode SourceSection: None
                                                         PRaiseNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [28526,28533]`members`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     ReadLocalVariableNode SourceSection: [28526,28533]`members`
                                                       Frame: [2,members,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -8264,7 +8240,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           GeneratorAccessNode SourceSection: None
                                                           PRaiseNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [29059,29066]`members`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [29059,29066]`members`
                                                         Frame: [2,members,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -8845,7 +8820,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [29826,29840]`self.__class__`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [29826,29840]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
@@ -9364,7 +9338,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Frame: [2,pseudo_member,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [31141,31165]`reversed(need_to_cre...`
-                                                GetIteratorNodeGen SourceSection: None
                                                 PythonCallUnary SourceSection: [31141,31165]`reversed(need_to_cre...`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [31141,31149]`reversed`
@@ -10052,7 +10025,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   PythonObjectFactoryNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [32659,32690]`enumeration.__member...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [32659,32690]`enumeration.__member...`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -10167,7 +10139,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [32894,32904]`duplicates`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [32894,32904]`duplicates`
                                     Frame: [1,duplicates,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -10374,7 +10345,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [33548,33585]`list(flag._value2mem...`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [33548,33585]`list(flag._value2mem...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [33548,33552]`list`
@@ -10512,7 +10482,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [33786,33823]`list(flag._value2mem...`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [33786,33823]`list(flag._value2mem...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [33786,33790]`list`
@@ -10619,7 +10588,6 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [33949,33963]`flags_to_check`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [33949,33963]`flags_to_check`
                             Frame: [4,flags_to_check,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

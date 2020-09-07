@@ -33,10 +33,13 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PTuple extends PSequence {
 
     private SequenceStorage store;
@@ -152,5 +155,4 @@ public final class PTuple extends PSequence {
     public static boolean isArrayElementRemovable(PTuple self, long index) {
         return false;
     }
-
 }

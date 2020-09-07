@@ -52,7 +52,7 @@ public final class PZip extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public boolean isIterable() {
+    boolean isIterable() {
         return true;
     }
 }

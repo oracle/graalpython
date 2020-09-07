@@ -78,7 +78,7 @@ public class PZipBuiltins extends PythonBuiltins {
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object __iter__(PZip self) {
+        static Object doPZip(PZip self) {
             return self;
         }
     }

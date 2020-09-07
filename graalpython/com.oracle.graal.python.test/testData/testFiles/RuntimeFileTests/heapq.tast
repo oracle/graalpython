@@ -469,7 +469,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [7970,7991]`reversed(range(n//2)...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [7970,7991]`reversed(range(n//2)...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7970,7978]`reversed`
@@ -738,7 +737,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [2,i,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [8660,8681]`reversed(range(n//2)...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [8660,8681]`reversed(range(n//2)...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [8660,8668]`reversed`
@@ -1726,7 +1724,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [14312,14343]`enumerate(map(iter, ...`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [14312,14343]`enumerate(map(iter, ...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14312,14321]`enumerate`
@@ -1944,7 +1941,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GeneratorAccessNode SourceSection: None
                             ExpressionStatementNode SourceSection: [15086,15110]`yield from next.__se...`
                               YieldFromNode SourceSection: [15086,15110]`yield from next.__se...`
-                                GetIteratorNodeGen SourceSection: None
+                                CachedDispatchFirst SourceSection: None
                                 GetNextNode SourceSection: None
                                   LookupAndCallUnaryNodeGen SourceSection: None
                                     Op: __next__
@@ -2070,7 +2067,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [15148,15179]`enumerate(map(iter, ...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [15148,15179]`enumerate(map(iter, ...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [15148,15157]`enumerate`
@@ -2331,7 +2327,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             GeneratorAccessNode SourceSection: None
                         ExpressionStatementNode SourceSection: [15792,15816]`yield from next.__se...`
                           YieldFromNode SourceSection: [15792,15816]`yield from next.__se...`
-                            GetIteratorNodeGen SourceSection: None
+                            CachedDispatchFirst SourceSection: None
                             GetNextNode SourceSection: None
                               LookupAndCallUnaryNodeGen SourceSection: None
                                 Op: __next__
@@ -2730,7 +2726,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [19887,19904]`zip(range(n), it)`
-                                GetIteratorNodeGen SourceSection: None
                                 PythonCallBinary SourceSection: [19887,19904]`zip(range(n), it)`
                                   CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [19887,19890]`zip`
@@ -2880,7 +2875,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Value: 1
                                 BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20089,20091]`it`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20089,20091]`it`
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -2971,7 +2965,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [20303,20309]`result`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [20303,20309]`result`
                                     Frame: [5,result,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -3082,7 +3075,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [20421,20438]`zip(range(n), it)`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallBinary SourceSection: [20421,20438]`zip(range(n), it)`
                               CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20421,20424]`zip`
@@ -3261,7 +3253,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Value: 1
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [20595,20597]`it`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [20595,20597]`it`
                             Frame: [3,it,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3363,7 +3354,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20817,20823]`result`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [20817,20823]`result`
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3714,7 +3704,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
-                                GetIteratorNodeGen SourceSection: None
                                 PythonCallBinary SourceSection: [21667,21692]`zip(range(0, -n, -1)...`
                                   CallBinaryMethodNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21667,21670]`zip`
@@ -3874,7 +3863,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Value: 1
                                 BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [21868,21870]`it`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [21868,21870]`it`
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3971,7 +3959,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [22094,22100]`result`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [22094,22100]`result`
                                     Frame: [5,result,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -4082,7 +4069,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
-                            GetIteratorNodeGen SourceSection: None
                             PythonCallBinary SourceSection: [22212,22237]`zip(range(0, -n, -1)...`
                               CallBinaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [22212,22215]`zip`
@@ -4271,7 +4257,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Value: 1
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [22385,22387]`it`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [22385,22387]`it`
                             Frame: [3,it,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4379,7 +4364,6 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [22619,22625]`result`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [22619,22625]`result`
                                 Frame: [5,result,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

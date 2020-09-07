@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNodeFactory.AppendToSetNodeGen;
@@ -122,7 +121,7 @@ public final class StarredExpressionNode extends LiteralNode {
         public abstract HashingStorage execute(VirtualFrame frame, HashingStorage storage, HashingStorageLibrary storageLib, Object values, ThreadState state);
 
         @Specialization(guards = "cannotBeOverridden(plib.getLazyPythonClass(values))")
-        HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
+        static HashingStorage doSetPSequence(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, PSequence values, ThreadState state,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
@@ -137,12 +136,11 @@ public final class StarredExpressionNode extends LiteralNode {
         }
 
         @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(plib.getLazyPythonClass(values))")
-        HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, Object values, ThreadState state,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
+        static HashingStorage doSetIterable(VirtualFrame frame, HashingStorage storageIn, HashingStorageLibrary storageLib, Object values, ThreadState state,
+                        @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = getIterator.executeWith(frame, values);
+                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
+            Object iterator = plib.getIteratorWithFrame(values, frame);
             HashingStorage storage = storageIn;
             while (true) {
                 try {
@@ -170,12 +168,11 @@ public final class StarredExpressionNode extends LiteralNode {
 
         @Specialization(guards = "!isPSequence(values) || !cannotBeOverridden(plib.getLazyPythonClass(values))")
         SequenceStorage doIterable(VirtualFrame frame, SequenceStorage storageIn, Object values,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
+                        @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
-            Object iterator = getIterator.executeWith(frame, values);
+                        @CachedLibrary(limit = "2") PythonObjectLibrary plib) {
+            Object iterator = plib.getIteratorWithFrame(values, frame);
             SequenceStorage storage = storageIn;
             while (true) {
                 try {

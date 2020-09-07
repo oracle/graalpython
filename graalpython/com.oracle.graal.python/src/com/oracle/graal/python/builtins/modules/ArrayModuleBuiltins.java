@@ -39,9 +39,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -49,12 +49,14 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "array")
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -126,21 +128,21 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return typeCode.charAt(0) == 'd';
         }
 
-        @Specialization(guards = "isByteArray(typeCode)")
+        @Specialization(guards = "isByteArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
         PArray arrayByteInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("createCast()") CastToByteNode castToByteNode,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
-            Object iter = getIterator.executeWith(frame, initializer);
+                        @CachedLibrary("initializer") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            Object iter = lib.getIteratorWithFrame(initializer, frame);
             int i = 0;
             byte[] byteArray = new byte[lenNode.execute(initializer)];
 
             while (true) {
                 Object nextValue;
                 try {
-                    nextValue = next.execute(frame, iter);
+                    nextValue = nextNode.execute(frame, iter);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -159,13 +161,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, byteArray);
         }
 
-        @Specialization(guards = "isIntArray(typeCode)")
+        @Specialization(guards = "isIntArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
         PArray arrayIntInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
-            Object iter = getIterator.executeWith(frame, initializer);
+                        @CachedLibrary("initializer") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            Object iter = lib.getIteratorWithFrame(initializer, frame);
             int i = 0;
 
             int[] intArray = new int[lenNode.execute(initializer)];
@@ -173,7 +175,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             while (true) {
                 Object nextValue;
                 try {
-                    nextValue = next.execute(frame, iter);
+                    nextValue = nextNode.execute(frame, iter);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -188,13 +190,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, intArray);
         }
 
-        @Specialization(guards = "isLongArray(typeCode)")
+        @Specialization(guards = "isLongArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
         PArray arrayLongInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
-            Object iter = getIterator.executeWith(frame, initializer);
+                        @CachedLibrary("initializer") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            Object iter = lib.getIteratorWithFrame(initializer, frame);
             int i = 0;
 
             long[] longArray = new long[lenNode.execute(initializer)];
@@ -202,7 +204,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             while (true) {
                 Object nextValue;
                 try {
-                    nextValue = next.execute(frame, iter);
+                    nextValue = nextNode.execute(frame, iter);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -217,13 +219,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, longArray);
         }
 
-        @Specialization(guards = "isDoubleArray(typeCode)")
+        @Specialization(guards = "isDoubleArray(typeCode)", limit = "getCallSiteInlineCacheMaxDepth()")
         PArray arrayDoubleInitializer(VirtualFrame frame, Object cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
-                        @Cached("create()") SequenceNodes.LenNode lenNode) {
-            Object iter = getIterator.executeWith(frame, initializer);
+                        @CachedLibrary("initializer") PythonObjectLibrary lib,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached SequenceNodes.LenNode lenNode) {
+            Object iter = lib.getIteratorWithFrame(initializer, frame);
             int i = 0;
 
             double[] doubleArray = new double[lenNode.execute(initializer)];
@@ -231,7 +233,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             while (true) {
                 Object nextValue;
                 try {
-                    nextValue = next.execute(frame, iter);
+                    nextValue = nextNode.execute(frame, iter);
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     break;
@@ -249,8 +251,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode) || isCharArray(typeCode))) {
                 // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
                 throw raise(ValueError, ErrorMessages.BAD_TYPECODE);

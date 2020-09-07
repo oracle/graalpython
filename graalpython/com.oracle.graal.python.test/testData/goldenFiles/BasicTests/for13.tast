@@ -121,14 +121,12 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                           IntegerLiteralNode SourceSection: [185,186]`1`
                                             Value: 1
                                       GetIteratorExpressionNodeGen SourceSection: [158,159]`a`
-                                        GetIteratorNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [158,159]`a`
                                           Identifier: a
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                   BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [35,39]`self`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [35,39]`self`
                               Frame: [0,self,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

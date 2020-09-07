@@ -1367,7 +1367,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [11487,11520]`b'()[]{}?*+-|^$\\.&~...`
-              GetIteratorNodeGen SourceSection: None
               BytesLiteralNode SourceSection: [11487,11520]`b'()[]{}?*+-|^$\\.&~...`
                 PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -2508,7 +2507,6 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                       IntegerLiteralNode SourceSection: [14498,14500]`-1`
                                                         Value: -1
                                             GetIteratorExpressionNodeGen SourceSection: [14283,14290]`lexicon`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [14283,14290]`lexicon`
                                                 Frame: [1,lexicon,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None

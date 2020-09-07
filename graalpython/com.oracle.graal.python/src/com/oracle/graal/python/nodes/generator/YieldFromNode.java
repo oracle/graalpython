@@ -44,23 +44,24 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class YieldFromNode extends AbstractYieldNode implements GeneratorControlNode {
-    @Child private GetIteratorNode iter = GetIteratorNode.create();
+    @Child private PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth());
     @Child private GetNextNode next = GetNextNode.create();
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
@@ -106,7 +107,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             // ........_y = next(_i)
             // ....except StopIteration as _e:
             // ........_r = _e.value
-            _i = iter.executeWith(frame, right.execute(frame));
+            _i = lib.getIteratorWithState(right.execute(frame), PArguments.getThreadState(frame));
             try {
                 _y = next.execute(frame, _i);
             } catch (PException e) {
