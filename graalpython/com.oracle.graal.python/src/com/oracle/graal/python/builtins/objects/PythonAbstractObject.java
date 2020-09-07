@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -134,6 +135,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -166,6 +169,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
 
 @ImportStatic(SpecialMethodNames.class)
@@ -2075,5 +2079,37 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         } else {
             return TriState.UNDEFINED;
         }
+    }
+
+    /**
+     * Unfortunately, this must be defined on the abstract type and we can only have special
+     * implementations on types that cannot be subclassed. This is because we don't do inheritance
+     * in the same way as CPython. They just install function {@code typeobject.c:slot_tp_iter} to
+     * {@code tp_iter} for every user class.
+     */
+    @ExportMessage
+    public Object getIteratorWithState(ThreadState state,
+                    @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
+                    @Cached PythonObjectFactory factory,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+        Object v = plib.getDelegatedValue(this);
+        Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(this, __ITER__));
+        if (iterMethod != PNone.NONE) {
+            if (iterMethod != PNone.NO_VALUE) {
+                Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                    return iterObj;
+                }
+            } else {
+                Object getItemAttrObj = plib.lookupAttributeOnType(this, __GETITEM__);
+                if (getItemAttrObj != PNone.NO_VALUE) {
+                    return factory.createSequenceIterator(v);
+                }
+            }
+        }
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 }

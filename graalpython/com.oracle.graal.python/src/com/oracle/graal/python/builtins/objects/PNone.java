@@ -28,7 +28,10 @@ package com.oracle.graal.python.builtins.objects;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -78,5 +81,11 @@ public final class PNone extends PythonAbstractObject {
     @SuppressWarnings("static-method")
     boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {
         return false;
+    }
+
+    @ExportMessage
+    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_ITERABLE, this);
     }
 }

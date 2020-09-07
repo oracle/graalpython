@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,16 +32,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes.IsIteratorObjectNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -57,7 +48,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
@@ -192,38 +182,6 @@ public class PythonObject extends PythonAbstractObject {
     public final void setDict(PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         dylib.put(this, DICT, dict);
-    }
-
-    /**
-     * Unfortunately, this must be defined on the abstract type and we can only have special
-     * implementations on types that cannot be subclassed. This is because we don't do inheritance
-     * in the same way as CPython. They just install function {@code typeobject.c:slot_tp_iter} to
-     * {@code tp_iter} for every user class.
-     */
-    @ExportMessage
-    public Object getIteratorWithState(ThreadState state,
-                    @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached IsIteratorObjectNode isIteratorObjectNode,
-                    @Cached PythonObjectFactory factory,
-                    @Cached PRaiseNode raiseNode) {
-        Object v = plib.getDelegatedValue(this);
-        Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(this, __ITER__));
-        if (iterMethod != PNone.NONE) {
-            if (iterMethod != PNone.NO_VALUE) {
-                Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
-                if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                    return iterObj;
-                }
-            } else {
-                Object getItemAttrObj = plib.lookupAttributeOnType(this, __GETITEM__);
-                if (getItemAttrObj != PNone.NO_VALUE) {
-                    return factory.createSequenceIterator(v);
-                }
-            }
-        }
-        throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 
     /* needed for some guards in exported messages of subclasses */
