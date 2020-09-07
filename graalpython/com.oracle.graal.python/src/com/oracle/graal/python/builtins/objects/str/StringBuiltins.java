@@ -254,6 +254,9 @@ public final class StringBuiltins extends PythonBuiltins {
                             str.append("\\'");
                         }
                         break;
+                    case '\\':
+                        str.append("\\\\");
+                        break;
                     default:
                         if (StringUtils.isPrintable(codepoint)) {
                             str.appendCodePoint(codepoint);
