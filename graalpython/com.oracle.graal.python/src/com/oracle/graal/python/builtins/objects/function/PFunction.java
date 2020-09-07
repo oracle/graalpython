@@ -164,6 +164,7 @@ public class PFunction extends PythonObject {
         return defaultValues;
     }
 
+    @TruffleBoundary
     public void setDefaults(Object[] defaults) {
         this.defaultsStableAssumption.invalidate("defaults changed for function " + getName());
         this.defaultValues = defaults;
@@ -173,6 +174,7 @@ public class PFunction extends PythonObject {
         return kwDefaultValues;
     }
 
+    @TruffleBoundary
     public void setKwDefaults(PKeyword[] defaults) {
         this.defaultsStableAssumption.invalidate("kw defaults changed for function " + getName());
         this.kwDefaultValues = defaults;

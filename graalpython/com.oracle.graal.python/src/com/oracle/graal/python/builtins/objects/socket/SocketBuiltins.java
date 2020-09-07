@@ -399,7 +399,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
             int bufferLen = lib.asSizeWithState(callLen.executeObject(frame, buffer), PArguments.getThreadState(frame));
             byte[] targetBuffer = new byte[bufferLen];
-            ByteBuffer byteBuffer = ByteBuffer.wrap(targetBuffer);
+            ByteBuffer byteBuffer = wrap(targetBuffer);
             int length;
             try {
                 length = fillBuffer(socket, byteBuffer);
@@ -436,7 +436,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 }
             } else {
                 byte[] targetBuffer = new byte[bufferLen];
-                ByteBuffer byteBuffer = ByteBuffer.wrap(targetBuffer);
+                ByteBuffer byteBuffer = wrap(targetBuffer);
                 int length;
                 try {
                     length = fillBuffer(socket, byteBuffer);
@@ -457,6 +457,11 @@ public class SocketBuiltins extends PythonBuiltins {
         private static int fillBuffer(PSocket socket, ByteBuffer byteBuffer) throws IOException {
             SocketChannel nativeSocket = socket.getSocket();
             return nativeSocket.read(byteBuffer);
+        }
+
+        @TruffleBoundary
+        private static ByteBuffer wrap(byte[] data) {
+            return ByteBuffer.wrap(data);
         }
     }
 

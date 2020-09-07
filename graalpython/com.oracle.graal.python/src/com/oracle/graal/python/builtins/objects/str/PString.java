@@ -301,6 +301,11 @@ public final class PString extends PSequence {
         return Character.isWhitespace(codePoint);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public static int codePointCount(String str, int beginIndex, int endIndex) {
+        return str.codePointCount(beginIndex, endIndex);
+    }
+
     @Ignore
     @TruffleBoundary
     public static boolean equals(String left, String other) {
@@ -314,6 +319,11 @@ public final class PString extends PSequence {
             sb.append(arg);
         }
         return sb.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static boolean startsWith(String left, String prefix) {
+        return left.startsWith(prefix);
     }
 
     @Override

@@ -2501,7 +2501,7 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static String doNativeVoidPtr(PythonNativeVoidPtr self,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
-            return Long.toString(lib.hash(self));
+            return doL(lib.hash(self));
         }
     }
 

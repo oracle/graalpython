@@ -231,7 +231,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
             long hash = self.getHashWithState(key, lib, state, gotState);
-            Iterator<Object> keys = self.store.getShape().getKeys().iterator();
+            Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
                 Object currentKey = getNext(keys);
                 if (currentKey instanceof String) {
@@ -250,6 +250,11 @@ public final class DynamicObjectStorage extends HashingStorage {
                 }
             }
             return null;
+        }
+
+        @TruffleBoundary
+        private static Iterator<Object> getKeysIterator(Shape shape) {
+            return shape.getKeys().iterator();
         }
 
         @TruffleBoundary
