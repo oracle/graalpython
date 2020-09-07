@@ -214,7 +214,6 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                           ExpressionStatementNode SourceSection: [255,259]`pass`
                                                             EmptyNode SourceSection: [255,259]`pass`
                                                         GetIteratorExpressionNodeGen SourceSection: [231,237]`fields`
-                                                          GetIteratorNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [231,237]`fields`
                                                             ReadLocalVariableNode SourceSection: None
                                                               Frame: [4,fields,Illegal]

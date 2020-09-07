@@ -201,7 +201,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [369,376]`entries`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [369,376]`entries`
                               Frame: [3,entries,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -283,7 +282,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                     Frame: [8,dist,Illegal]
                                 GetIteratorExpressionNodeGen SourceSection: [650,667]`factory(fullpath)`
-                                  GetIteratorNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [650,667]`factory(fullpath)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNode SourceSection: [650,657]`factory`
@@ -305,7 +303,6 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             WriteGeneraterFrameSlotNodeGen SourceSection: None
                               Frame: [9,entry,Illegal]
                           GetIteratorExpressionNodeGen SourceSection: [506,523]`path_item_entries`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGeneratorFrameVariableNode SourceSection: [506,523]`path_item_entries`
                               Frame: [5,path_item_entries,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

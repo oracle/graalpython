@@ -209,7 +209,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [2,<>temp2,Illegal]
                                         YieldFromNode SourceSection: [194,213]`yield from MyIter()`
-                                          GetIteratorNodeGen SourceSection: None
+                                          CachedDispatchFirst SourceSection: None
                                           GetNextNode SourceSection: None
                                             LookupAndCallUnaryNodeGen SourceSection: None
                                               Op: __next__

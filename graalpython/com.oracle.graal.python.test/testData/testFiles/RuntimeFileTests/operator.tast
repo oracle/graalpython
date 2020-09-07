@@ -1855,7 +1855,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   Value: 1
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3319,3320]`a`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3319,3320]`a`
                             Frame: [0,a,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -2066,7 +2065,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3570,3582]`enumerate(a)`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [3570,3582]`enumerate(a)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [3570,3579]`enumerate`
@@ -2649,7 +2647,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                   Frame: [1,name,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                           GetIteratorExpressionNodeGen SourceSection: [5639,5644]`names`
-                                                            GetIteratorNodeGen SourceSection: None
                                                             ReadLocalCellNodeGen SourceSection: [5639,5644]`names`
                                                               ReadLocalVariableNode SourceSection: None
                                                                 Frame: [2,names,Illegal]
@@ -2823,7 +2820,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                     GeneratorAccessNode SourceSection: None
                                                                     PRaiseNodeGen SourceSection: None
                                                               GetIteratorExpressionNodeGen SourceSection: [5944,5951]`getters`
-                                                                GetIteratorNodeGen SourceSection: None
                                                                 ReadLocalCellNodeGen SourceSection: [5944,5951]`getters`
                                                                   ReadLocalVariableNode SourceSection: None
                                                                     Frame: [1,getters,Illegal]
@@ -3407,7 +3403,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                     GeneratorAccessNode SourceSection: None
                                                                     PRaiseNodeGen SourceSection: None
                                                               GetIteratorExpressionNodeGen SourceSection: [6923,6928]`items`
-                                                                GetIteratorNodeGen SourceSection: None
                                                                 ReadLocalCellNodeGen SourceSection: [6923,6928]`items`
                                                                   ReadLocalVariableNode SourceSection: None
                                                                     Frame: [1,items,Illegal]
@@ -4144,7 +4139,6 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [8256,8276]`self._kwargs.items()...`
-                                            GetIteratorNodeGen SourceSection: None
                                             PythonCallNodeGen SourceSection: [8256,8276]`self._kwargs.items()...`
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None

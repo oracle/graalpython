@@ -246,7 +246,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1043,1052]`self.maps`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1043,1052]`self.maps`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: maps
@@ -490,7 +489,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Frame: [2,mapping,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1575,1594]`reversed(self.maps)`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [1575,1594]`reversed(self.maps)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [1575,1583]`reversed`
@@ -639,7 +637,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [1778,1787]`self.maps`
-                                              GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [1778,1787]`self.maps`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: maps
@@ -2624,7 +2621,6 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [5913,5921]`iterable`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [5913,5921]`iterable`
                                               Frame: [1,iterable,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None

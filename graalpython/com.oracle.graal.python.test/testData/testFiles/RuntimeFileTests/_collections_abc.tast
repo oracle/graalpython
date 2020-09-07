@@ -670,7 +670,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     BreakNode SourceSection: [2575,2580]`break`
                                   BlockNode SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [2428,2431]`mro`
-                                GetIteratorNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [2428,2431]`mro`
                                   Frame: [2,mro,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -683,7 +682,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                   Identifier: NotImplemented
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2402,2409]`methods`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [2402,2409]`methods`
                             Frame: [1,methods,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4718,7 +4716,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 BooleanLiteralNode SourceSection: [11168,11173]`False`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [11105,11109]`self`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [11105,11109]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5075,7 +5072,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 BooleanLiteralNode SourceSection: [11768,11773]`False`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [11705,11710]`other`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [11705,11710]`other`
                                             Frame: [1,other,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5417,7 +5413,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [12399,12404]`other`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [12399,12404]`other`
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -5514,7 +5509,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 BooleanLiteralNode SourceSection: [12622,12627]`False`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [12562,12567]`other`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [12562,12567]`other`
                                             Frame: [1,other,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5635,7 +5629,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                       Frame: [0,e,Illegal]
                                                   GetIteratorExpressionNodeGen SourceSection: [12807,12808]`s`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     ReadGeneratorFrameVariableNode SourceSection: [12807,12808]`s`
                                                       Frame: [1,s,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -5665,7 +5658,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               GeneratorAccessNode SourceSection: None
                                               PRaiseNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [12784,12797]`(self, other)`
-                                          GetIteratorNodeGen SourceSection: None
                                           TupleLiteralNode SourceSection: [12784,12797]`(self, other)`
                                             ReadLocalVariableNode SourceSection: [12785,12789]`self`
                                               Frame: [0,self,Illegal]
@@ -5895,7 +5887,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [13131,13135]`self`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13131,13135]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6089,7 +6080,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [13452,13457]`other`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13452,13457]`other`
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -6409,7 +6399,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [2,MASK,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [14524,14528]`self`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [14524,14528]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6994,7 +6983,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [16240,16242]`it`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [16240,16242]`it`
                                             Frame: [1,it,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -7072,7 +7060,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,value,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [16343,16352]`self - it`
-                                          GetIteratorNodeGen SourceSection: None
                                           BinaryArithmeticExpression SourceSection: [16343,16352]`self - it`
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __sub__
@@ -7230,7 +7217,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Frame: [2,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [16608,16610]`it`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [16608,16610]`it`
                                                 Frame: [1,it,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -7326,7 +7312,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   Frame: [2,value,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [16880,16882]`it`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [16880,16882]`it`
                                               Frame: [1,it,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -8334,7 +8319,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                 FunctionBodyNode SourceSection: [18776,18800]`yield from self._map...`
                                   ExpressionStatementNode SourceSection: [18776,18800]`yield from self._map...`
                                     YieldFromNode SourceSection: [18776,18800]`yield from self._map...`
-                                      GetIteratorNodeGen SourceSection: None
+                                      CachedDispatchFirst SourceSection: None
                                       GetNextNode SourceSection: None
                                         LookupAndCallUnaryNodeGen SourceSection: None
                                           Op: __next__
@@ -8702,7 +8687,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19224,19237]`self._mapping`
-                                        GetIteratorNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [19224,19237]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
@@ -8903,7 +8887,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   BooleanLiteralNode SourceSection: [19549,19553]`True`
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [19435,19448]`self._mapping`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [19435,19448]`self._mapping`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _mapping
@@ -8983,7 +8966,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,key,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [19619,19632]`self._mapping`
-                                        GetIteratorNodeGen SourceSection: None
                                         GetAttributeNodeGen SourceSection: [19619,19632]`self._mapping`
                                           GetFixedAttributeNodeGen SourceSection: None
                                             Key: _mapping
@@ -9695,7 +9677,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Frame: [4,key,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [21995,22000]`other`
-                                                GetIteratorNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [21995,22000]`other`
                                                   Frame: [3,other,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -9736,7 +9717,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         Frame: [4,key,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetIteratorExpressionNodeGen SourceSection: [22113,22125]`other.keys()`
-                                                  GetIteratorNodeGen SourceSection: None
                                                   PythonCallNodeGen SourceSection: [22113,22125]`other.keys()`
                                                     CallNodeGen SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
@@ -9782,7 +9762,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Frame: [5,value,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 GetIteratorExpressionNodeGen SourceSection: [22222,22227]`other`
-                                                  GetIteratorNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [22222,22227]`other`
                                                     Frame: [3,other,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -9826,7 +9805,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               Frame: [5,value,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [22293,22305]`kwds.items()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [22293,22305]`kwds.items()`
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
@@ -10242,7 +10220,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 BooleanLiteralNode SourceSection: [23243,23247]`True`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [23173,23177]`self`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [23173,23177]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -10306,7 +10283,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                                           Frame: [1,i,Illegal]
                                       GetIteratorExpressionNodeGen SourceSection: [23315,23341]`reversed(range(len(s...`
-                                        GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [23315,23341]`reversed(range(len(s...`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23315,23323]`reversed`
@@ -10732,7 +10708,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [24236,24240]`self`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [24236,24240]`self`
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -11375,7 +11350,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [4,<>temp4,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [25554,25565]`range(n//2)`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [25554,25565]`range(n//2)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [25554,25559]`range`
@@ -11455,7 +11429,6 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [2,v,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [25759,25765]`values`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [25759,25765]`values`
                                             Frame: [1,values,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None

@@ -362,7 +362,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                     BlockNode SourceSection: None
                                 BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [1578,1580]`fp`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [1578,1580]`fp`
                                 Frame: [6,fp,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

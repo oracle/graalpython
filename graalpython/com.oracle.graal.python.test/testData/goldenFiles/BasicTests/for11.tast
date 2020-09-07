@@ -35,7 +35,6 @@ ModuleRootNode Name: <module 'for11'> SourceSection: [0,20]`for i, b in (): pass
               ExpressionStatementNode SourceSection: [16,20]`pass`
                 EmptyNode SourceSection: [16,20]`pass`
             GetIteratorExpressionNodeGen SourceSection: [12,14]`()`
-              GetIteratorNodeGen SourceSection: None
               TupleLiteralNode SourceSection: [12,14]`()`
                 PythonObjectFactoryNodeGen SourceSection: None
           BlockNode SourceSection: None

@@ -1079,7 +1079,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         IntegerLiteralNode SourceSection: [2619,2620]`1`
                                           Value: 1
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [2191,2207]`enumerate(bases)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2191,2200]`enumerate`
@@ -1463,7 +1462,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   StringLiteralNode SourceSection: [4106,4309]`"metaclass conflict:...`
                                 NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3871,3876]`bases`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3871,3876]`bases`
                             Frame: [1,bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3943,7 +3941,6 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None
                 GetIteratorExpressionNodeGen SourceSection: [9891,9900]`globals()`
-                  GetIteratorNodeGen SourceSection: None
                   PythonCallNodeGen SourceSection: [9891,9900]`globals()`
                     CallNodeGen SourceSection: None
                     ReadNameNodeGen SourceSection: [9891,9898]`globals`

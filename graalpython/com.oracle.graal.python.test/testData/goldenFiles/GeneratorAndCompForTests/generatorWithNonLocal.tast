@@ -134,7 +134,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                               WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                 Frame: [1,C,Illegal]
                                             GetIteratorExpressionNodeGen SourceSection: [169,170]`Y`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [169,170]`Y`
                                                 ReadGeneratorFrameVariableNode SourceSection: None
                                                   Frame: [4,Y,Illegal]
@@ -152,7 +151,6 @@ ModuleRootNode Name: <module 'generatorWithNonLocal'> SourceSection: [0,247]`def
                                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                                             Frame: [2,A,Illegal]
                                         GetIteratorExpressionNodeGen SourceSection: [146,152]`doit()`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [146,152]`doit()`
                                             CallNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNode SourceSection: [146,150]`doit`

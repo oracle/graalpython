@@ -374,7 +374,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                               StringLiteralNode SourceSection: [2521,2525]`", "`
                                                       GetIteratorExpressionNodeGen SourceSection: [2377,2383]`fields`
-                                                        GetIteratorNodeGen SourceSection: None
                                                         ReadLocalCellNodeGen SourceSection: [2377,2383]`fields`
                                                           ReadLocalVariableNode SourceSection: None
                                                             Frame: [4,fields,Illegal]
@@ -611,7 +610,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   Identifier: descriptor
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [2669,2686]`enumerate(fields)`
-                                        GetIteratorNodeGen SourceSection: None
                                         PythonCallUnary SourceSection: [2669,2686]`enumerate(fields)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2669,2678]`enumerate`
@@ -1048,7 +1046,6 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       PythonObjectFactoryNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [3501,3511]`ns.items()`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [3501,3511]`ns.items()`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None

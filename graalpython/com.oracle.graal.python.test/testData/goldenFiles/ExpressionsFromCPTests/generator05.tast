@@ -80,7 +80,6 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [19,28]`range(20)`
-          GetIteratorNodeGen SourceSection: None
           PythonCallUnary SourceSection: [19,28]`range(20)`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [19,24]`range`

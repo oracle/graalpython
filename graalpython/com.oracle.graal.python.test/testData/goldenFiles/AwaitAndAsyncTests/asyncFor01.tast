@@ -45,7 +45,6 @@ ModuleRootNode Name: <module 'asyncFor01'> SourceSection: [0,39]`async def f():â
                             ExpressionStatementNode SourceSection: [35,39]`pass`
                               EmptyNode SourceSection: [35,39]`pass`
                           GetIteratorExpressionNodeGen SourceSection: [31,33]`()`
-                            GetIteratorNodeGen SourceSection: None
                             TupleLiteralNode SourceSection: [31,33]`()`
                               PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None

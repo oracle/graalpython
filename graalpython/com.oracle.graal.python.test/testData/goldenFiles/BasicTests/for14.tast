@@ -83,13 +83,11 @@ ModuleRootNode Name: <module 'for14'> SourceSection: [0,165]`def merge(sequences
                                     BreakNode SourceSection: [128,133]`break`
                                     BlockNode SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [65,74]`sequences`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadLocalVariableNode SourceSection: [65,74]`sequences`
                                     Frame: [0,sequences,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BreakNode SourceSection: [160,165]`break`
                           GetIteratorExpressionNodeGen SourceSection: [36,45]`sequences`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [36,45]`sequences`
                               Frame: [0,sequences,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

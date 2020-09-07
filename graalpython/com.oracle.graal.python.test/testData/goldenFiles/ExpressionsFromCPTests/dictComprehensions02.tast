@@ -87,7 +87,6 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
         GetIteratorExpressionNodeGen SourceSection: [20,23]`seq`
-          GetIteratorNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [20,23]`seq`
             Identifier: seq
             IsBuiltinClassProfile SourceSection: None

@@ -44,7 +44,6 @@ ModuleRootNode Name: <module 'starExpr08'> SourceSection: [0,52]`for a, *b in [(
                     IsBuiltinClassProfile SourceSection: None
                       CachedDispatchFirst SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
-              GetIteratorNodeGen SourceSection: None
               ListLiteralNode SourceSection: [13,38]`[(1, 2, 3), (4, 5, 6...`
                 TupleLiteralNode SourceSection: [14,23]`(1, 2, 3)`
                   IntegerLiteralNode SourceSection: [15,16]`1`

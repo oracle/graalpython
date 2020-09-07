@@ -328,7 +328,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
                                 GetIteratorExpressionNodeGen SourceSection: [2204,2205]`t`
-                                  GetIteratorNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNode SourceSection: [2204,2205]`t`
                                     Frame: [1,t,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
@@ -341,7 +340,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Frame: [0,i,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                       GetIteratorExpressionNodeGen SourceSection: [2270,2271]`t`
-                        GetIteratorNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNode SourceSection: [2270,2271]`t`
                           Frame: [1,t,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -371,7 +369,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [2247,2260]`_equivalences`
-              GetIteratorNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [2247,2260]`_equivalences`
                 Identifier: _equivalences
                 IsBuiltinClassProfile SourceSection: None
@@ -1040,7 +1037,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [14,k,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [3988,4005]`(lo,) + fixes[lo]`
-                                                GetIteratorNodeGen SourceSection: None
                                                 BinaryArithmeticExpression SourceSection: [3988,4005]`(lo,) + fixes[lo]`
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __add__
@@ -2350,7 +2346,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               Frame: [13,skip,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [7350,7355]`av[1]`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       GetItemNodeGen SourceSection: [7350,7355]`av[1]`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [22,av,Illegal]
@@ -2397,7 +2392,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [23,tail,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [7679,7683]`tail`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [7679,7683]`tail`
                                                         Frame: [23,tail,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -2816,7 +2810,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                       NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3164,3171]`pattern`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [3164,3171]`pattern`
                             Frame: [1,pattern,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3150,7 +3143,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 PythonObjectFactoryNodeGen SourceSection: None
                                           NoValueNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [9030,9037]`charset`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [9030,9037]`charset`
                             Frame: [0,charset,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -3371,7 +3363,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         IntegerLiteralNode SourceSection: [10267,10268]`1`
                                                           Value: 1
                                                     GetIteratorExpressionNodeGen SourceSection: [10211,10220]`fixes[lo]`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       GetItemNodeGen SourceSection: [10211,10220]`fixes[lo]`
                                                         ReadLocalVariableNode SourceSection: None
                                                           Frame: [3,fixes,Illegal]
@@ -3523,7 +3514,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       IntegerLiteralNode SourceSection: [10834,10835]`1`
                                                                         Value: 1
                                                                   GetIteratorExpressionNodeGen SourceSection: [10771,10779]`fixes[i]`
-                                                                    GetIteratorNodeGen SourceSection: None
                                                                     GetItemNodeGen SourceSection: [10771,10779]`fixes[i]`
                                                                       ReadLocalVariableNode SourceSection: None
                                                                         Frame: [3,fixes,Illegal]
@@ -3534,7 +3524,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 BlockNode SourceSection: None
                                                               BlockNode SourceSection: None
                                                         GetIteratorExpressionNodeGen SourceSection: [10617,10630]`map(fixup, r)`
-                                                          GetIteratorNodeGen SourceSection: None
                                                           PythonCallBinary SourceSection: [10617,10630]`map(fixup, r)`
                                                             CallBinaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10617,10620]`map`
@@ -3565,7 +3554,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             IntegerLiteralNode SourceSection: [10963,10964]`1`
                                                               Value: 1
                                                         GetIteratorExpressionNodeGen SourceSection: [10903,10916]`map(fixup, r)`
-                                                          GetIteratorNodeGen SourceSection: None
                                                           PythonCallBinary SourceSection: [10903,10916]`map(fixup, r)`
                                                             CallBinaryMethodNodeGen SourceSection: None
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10903,10906]`map`
@@ -3624,7 +3612,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         IntegerLiteralNode SourceSection: [11169,11170]`1`
                                                           Value: 1
                                                     GetIteratorExpressionNodeGen SourceSection: [11125,11126]`r`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadLocalVariableNode SourceSection: [11125,11126]`r`
                                                         Frame: [10,r,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -3762,7 +3749,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     BreakNode SourceSection: [12005,12010]`break`
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [9935,9942]`charset`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [9935,9942]`charset`
                             Frame: [0,charset,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4003,7 +3989,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         PythonObjectFactoryNodeGen SourceSection: None
                                       PythonObjectFactoryNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [12428,12432]`runs`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [12428,12432]`runs`
                                 Frame: [14,runs,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4313,7 +4298,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       Frame: [21,chunk,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [14262,14282]`range(0, 65536, 256)...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallTernary SourceSection: [14262,14282]`range(0, 65536, 256)...`
                             CallTernaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [14262,14267]`range`
@@ -4623,7 +4607,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [14914,14942]`range(len(s), 0, -_C...`
-                              GetIteratorNodeGen SourceSection: None
                               PythonCallTernary SourceSection: [14914,14942]`range(len(s), 0, -_C...`
                                 CallTernaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14914,14919]`range`
@@ -5082,7 +5065,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   IntegerLiteralNode SourceSection: [16074,16075]`1`
                                     Value: 1
                         GetIteratorExpressionNodeGen SourceSection: [15832,15853]`range(1, len(prefix)...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallBinary SourceSection: [15832,15853]`range(1, len(prefix)...`
                             CallBinaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [15832,15837]`range`
@@ -5603,7 +5585,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                               BreakNode SourceSection: [17307,17312]`break`
                         GetIteratorExpressionNodeGen SourceSection: [16521,16533]`pattern.data`
-                          GetIteratorNodeGen SourceSection: None
                           GetAttributeNodeGen SourceSection: [16521,16533]`pattern.data`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: data
@@ -6070,7 +6051,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           Frame: [11,<return_val>,Illegal]
                                         ObjectLiteralNode SourceSection: [18270,18274]`None`
                               GetIteratorExpressionNodeGen SourceSection: [18042,18047]`av[1]`
-                                GetIteratorNodeGen SourceSection: None
                                 GetItemNodeGen SourceSection: [18042,18047]`av[1]`
                                   ReadLocalVariableNode SourceSection: None
                                     Frame: [3,av,Illegal]
@@ -6251,7 +6231,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             BlockNode SourceSection: None
                                         BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [18384,18391]`charset`
-                                    GetIteratorNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [18384,18391]`charset`
                                       Frame: [8,charset,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -7188,7 +7167,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [20982,20986]`code`
-                                GetIteratorNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [20982,20986]`code`
                                   Frame: [0,code,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8398,7 +8376,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           GeneratorAccessNode SourceSection: None
                                                                           PRaiseNodeGen SourceSection: None
                                                                     GetIteratorExpressionNodeGen SourceSection: [23386,23417]`code[i: i + 256//_sr...`
-                                                                      GetIteratorNodeGen SourceSection: None
                                                                       GetItemNodeGen SourceSection: [23386,23417]`code[i: i + 256//_sr...`
                                                                         ReadLocalCellNodeGen SourceSection: None
                                                                           ReadLocalVariableNode SourceSection: None
@@ -8549,7 +8526,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             Identifier: _CODEBITS
                                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                 GetIteratorExpressionNodeGen SourceSection: [23553,23563]`range(arg)`
-                                                                  GetIteratorNodeGen SourceSection: None
                                                                   PythonCallUnary SourceSection: [23553,23563]`range(arg)`
                                                                     CallUnaryMethodNodeGen SourceSection: None
                                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [23553,23558]`range`
@@ -9590,7 +9566,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                               GeneratorAccessNode SourceSection: None
                                                                                               PRaiseNodeGen SourceSection: None
                                                                                         GetIteratorExpressionNodeGen SourceSection: [25738,25744]`prefix`
-                                                                                          GetIteratorNodeGen SourceSection: None
                                                                                           ReadLocalVariableNode SourceSection: [25738,25744]`prefix`
                                                                                             Frame: [17,prefix,Illegal]
                                                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -10024,7 +9999,6 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Frame: [6,k,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [26685,26703]`groupindex.items()`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [26685,26703]`groupindex.items()`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None

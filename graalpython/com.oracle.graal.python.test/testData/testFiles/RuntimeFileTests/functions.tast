@@ -153,7 +153,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   BooleanLiteralNode SourceSection: [2225,2229]`True`
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2182,2190]`iterable`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2182,2190]`iterable`
                               Frame: [0,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -229,7 +228,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   BooleanLiteralNode SourceSection: [2353,2358]`False`
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2306,2314]`iterable`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2306,2314]`iterable`
                               Frame: [0,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -385,7 +383,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                     ReadVariableFromFrameNodeGen SourceSection: None
                               BlockNode SourceSection: None
                           GetIteratorExpressionNodeGen SourceSection: [2517,2525]`iterable`
-                            GetIteratorNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [2517,2525]`iterable`
                               Frame: [1,iterable,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -703,7 +700,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Frame: [5,i,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3202,3206]`args`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [3202,3206]`args`
                                             Frame: [3,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -784,7 +780,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   Frame: [2,it,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3344,3360]`self.__iterators`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [3344,3360]`self.__iterators`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __iterators
@@ -934,7 +929,6 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                 BooleanLiteralNode SourceSection: [3607,3611]`True`
                                             BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
-                                          GetIteratorNodeGen SourceSection: None
                                           PythonCallNodeGen SourceSection: [3524,3559]`map(self.__func, *se...`
                                             CallNodeGen SourceSection: None
                                             PositionalArgumentsNode SourceSection: None

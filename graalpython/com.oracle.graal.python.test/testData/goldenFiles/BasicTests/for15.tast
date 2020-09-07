@@ -64,7 +64,6 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                             ExpressionStatementNode SourceSection: [65,69]`pass`
                               EmptyNode SourceSection: [65,69]`pass`
                           GetIteratorExpressionNodeGen SourceSection: [42,51]`something`
-                            GetIteratorNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [42,51]`something`
                               Identifier: something
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

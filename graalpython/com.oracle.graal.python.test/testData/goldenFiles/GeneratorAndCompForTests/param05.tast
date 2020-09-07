@@ -52,7 +52,6 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [1,p,Illegal]
                         GetIteratorExpressionNodeGen SourceSection: [26,29]`arg`
-                          GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [26,29]`arg`
                             Frame: [0,arg,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None

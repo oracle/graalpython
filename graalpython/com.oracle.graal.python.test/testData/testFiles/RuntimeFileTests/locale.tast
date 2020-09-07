@@ -656,7 +656,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteGeneraterFrameSlotNodeGen SourceSection: None
                             Frame: [2,interval,Illegal]
                         GetIteratorExpressionNodeGen SourceSection: [3530,3538]`grouping`
-                          GetIteratorNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNode SourceSection: [3530,3538]`grouping`
                             Frame: [0,grouping,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -954,7 +953,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [4397,4426]`_grouping_intervals(...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [4397,4426]`_grouping_intervals(...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [4397,4416]`_grouping_intervals`
@@ -1770,7 +1768,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         Frame: [3,monetary,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [6716,6724]`percents`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [6716,6724]`percents`
                                 Frame: [4,percents,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1941,7 +1938,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                           Frame: [9,starcount,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [7026,7034]`percents`
-                              GetIteratorNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [7026,7034]`percents`
                                 Frame: [4,percents,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -4821,7 +4817,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 BreakNode SourceSection: [18741,18746]`break`
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [18561,18568]`envvars`
-                          GetIteratorNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [18561,18568]`envvars`
                             Frame: [0,envvars,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -5678,7 +5673,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     IsBuiltinClassProfile SourceSection: None
                       CachedDispatchFirst SourceSection: None
           GetIteratorExpressionNodeGen SourceSection: [25095,25132]`sorted(locale_encodi...`
-            GetIteratorNodeGen SourceSection: None
             PythonCallUnary SourceSection: [25095,25132]`sorted(locale_encodi...`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [25095,25101]`sorted`
@@ -7626,7 +7620,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                           BlockNode SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [76196,76213]`globals().items()`
-                                        GetIteratorNodeGen SourceSection: None
                                         PythonCallNodeGen SourceSection: [76196,76213]`globals().items()`
                                           CallNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
@@ -7858,7 +7851,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [76642,76660]`categories.items()`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [76642,76660]`categories.items()`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -8003,7 +7995,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Identifier: print
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [76984,77002]`categories.items()`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [76984,77002]`categories.items()`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -8178,7 +8169,6 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GetIteratorExpressionNodeGen SourceSection: [77547,77565]`categories.items()`
-                                GetIteratorNodeGen SourceSection: None
                                 PythonCallNodeGen SourceSection: [77547,77565]`categories.items()`
                                   CallNodeGen SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None

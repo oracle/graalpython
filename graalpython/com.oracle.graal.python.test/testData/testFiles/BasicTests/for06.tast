@@ -81,7 +81,6 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                                     Frame: [0,x,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [27,35]`range(3)`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [27,35]`range(3)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [27,32]`range`

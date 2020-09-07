@@ -145,7 +145,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [801,848]`StackSummary.from_li...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [801,848]`StackSummary.from_li...`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -565,7 +564,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3745,3833]`TracebackException(↵...`
-                          GetIteratorNodeGen SourceSection: None
                           PythonCallNodeGen SourceSection: [3745,3833]`TracebackException(↵...`
                             CallNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
@@ -1964,7 +1962,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [9431,9445]`locals.items()`
-                                              GetIteratorNodeGen SourceSection: None
                                               PythonCallNodeGen SourceSection: [9431,9445]`locals.items()`
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -3293,7 +3290,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Identifier: FrameSummary
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [12351,12360]`frame_gen`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12351,12360]`frame_gen`
                                               Frame: [1,frame_gen,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3317,7 +3313,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Frame: [9,filename,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [12876,12882]`fnames`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12876,12882]`fnames`
                                               Frame: [7,fnames,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3350,7 +3345,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [12,f,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [13037,13043]`result`
-                                              GetIteratorNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [13037,13043]`result`
                                                 Frame: [6,result,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -3542,7 +3536,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         Identifier: FrameSummary
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [13684,13690]`a_list`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13684,13690]`a_list`
                                               Frame: [1,a_list,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -3996,7 +3989,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               StringLiteralNode SourceSection: [15578,15602]`'    {name} = {value...`
                                                     GetIteratorExpressionNodeGen SourceSection: [15517,15545]`sorted(frame.locals....`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       PythonCallUnary SourceSection: [15517,15545]`sorted(frame.locals....`
                                                         CallUnaryMethodNodeGen SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [15517,15523]`sorted`
@@ -4033,7 +4025,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [6,row,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [14633,14637]`self`
-                                          GetIteratorNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [14633,14637]`self`
                                             Frame: [0,self,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -4945,7 +4936,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [1,frame,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [19928,19938]`self.stack`
-                                              GetIteratorNodeGen SourceSection: None
                                               GetAttributeNodeGen SourceSection: [19928,19938]`self.stack`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: stack
@@ -5609,7 +5599,6 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           GeneratorAccessNode SourceSection: None
                                                           PRaiseNodeGen SourceSection: None
                                                     GetIteratorExpressionNodeGen SourceSection: [21882,21892]`caretspace`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadGeneratorFrameVariableNode SourceSection: [21882,21892]`caretspace`
                                                         Frame: [7,caretspace,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -5746,7 +5735,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             GeneratorBlockNode SourceSection: None
                                               ExpressionStatementNode SourceSection: [22624,22669]`yield from self.__ca...`
                                                 YieldFromNode SourceSection: [22624,22669]`yield from self.__ca...`
-                                                  GetIteratorNodeGen SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
                                                   GetNextNode SourceSection: None
                                                     LookupAndCallUnaryNodeGen SourceSection: None
                                                       Op: __next__
@@ -5835,7 +5824,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               GeneratorBlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [22822,22869]`yield from self.__co...`
                                                   YieldFromNode SourceSection: [22822,22869]`yield from self.__co...`
-                                                    GetIteratorNodeGen SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
                                                     GetNextNode SourceSection: None
                                                       LookupAndCallUnaryNodeGen SourceSection: None
                                                         Op: __next__
@@ -5910,7 +5899,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           BlockNode SourceSection: None
                                         ExpressionStatementNode SourceSection: [23017,23047]`yield from self.stac...`
                                           YieldFromNode SourceSection: [23017,23047]`yield from self.stac...`
-                                            GetIteratorNodeGen SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                             GetNextNode SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__
@@ -5943,7 +5932,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                         ExpressionStatementNode SourceSection: [23056,23095]`yield from self.form...`
                                           YieldFromNode SourceSection: [23056,23095]`yield from self.form...`
-                                            GetIteratorNodeGen SourceSection: None
+                                            CachedDispatchFirst SourceSection: None
                                             GetNextNode SourceSection: None
                                               LookupAndCallUnaryNodeGen SourceSection: None
                                                 Op: __next__

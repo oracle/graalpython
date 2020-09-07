@@ -490,7 +490,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                         Frame: [0,filename,Illegal]
                                                     GetIteratorExpressionNodeGen SourceSection: [1237,1242]`files`
-                                                      GetIteratorNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [1237,1242]`files`
                                                         ReadGeneratorFrameVariableNode SourceSection: None
                                                           Frame: [2,files,Illegal]
@@ -522,7 +521,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 GeneratorAccessNode SourceSection: None
                                                 PRaiseNodeGen SourceSection: None
                                           GetIteratorExpressionNodeGen SourceSection: [1188,1192]`dirs`
-                                            GetIteratorNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [1188,1192]`dirs`
                                               Frame: [4,dirs,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -645,7 +643,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               BlockNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [1356,1372]`self.__filenames`
-                                          GetIteratorNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [1356,1372]`self.__filenames`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __filenames
@@ -936,7 +933,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             Frame: [3,i,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                   GetIteratorExpressionNodeGen SourceSection: [2104,2141]`range(lineno, lineno...`
-                                                    GetIteratorNodeGen SourceSection: None
                                                     PythonCallBinary SourceSection: [2104,2141]`range(lineno, lineno...`
                                                       CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [2104,2109]`range`
