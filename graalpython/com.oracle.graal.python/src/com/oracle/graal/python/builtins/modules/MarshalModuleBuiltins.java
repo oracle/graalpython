@@ -433,22 +433,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            writeInt(c.getArgcount(), version, buffer);
-            writeInt(c.getPositionalOnlyArgCount(), version, buffer);
-            writeInt(c.getKwonlyargcount(), version, buffer);
+            writeString(getSourceCode(c), version, buffer);
             writeInt(c.getNlocals(), version, buffer);
             writeInt(c.getStacksize(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
-            writeInt(c.getFirstLineNo(), version, buffer);
-            writeString(c.getFilename(), version, buffer);
-            writeString(c.getName(), version, buffer);
             writeBytes(c.getCodestring(), version, buffer);
-            writeBytes(c.getLnotab(), version, buffer);
             writeArray(frame, c.getConstants(), version, buffer);
             writeArray(frame, c.getNames(), version, buffer);
             writeArray(frame, c.getVarnames(), version, buffer);
             writeArray(frame, c.getFreeVars(), version, buffer);
             writeArray(frame, c.getCellVars(), version, buffer);
+            writeString(c.getFilename(), version, buffer);
+            writeString(c.getName(), version, buffer);
+            writeInt(c.getFirstLineNo(), version, buffer);
+            writeBytes(c.getLnotab(), version, buffer);
         }
 
         @TruffleBoundary
@@ -609,9 +607,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private byte[] readBytes() {
             int len = readInt();
-            byte[] bytes = Arrays.copyOfRange(data, index, index + len);
-            index += len;
-            return bytes;
+            if (len > 0) {
+                byte[] bytes = Arrays.copyOfRange(data, index, index + len);
+                index += len;
+                return bytes;
+            } else {
+                return new byte[0];
+            }
         }
 
         private Object[] readArray(int depth, HashingStorageLibrary lib) {
@@ -636,25 +638,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode(int depth, HashingStorageLibrary lib) {
-            int argCount = readInt();
-            int posOnlyArgCount = readInt();
-            int kwOnlyArgCount = readInt();
+            String sourceCode = readString();
             int nLocals = readInt();
             int stackSize = readInt();
             int flags = readInt();
-            int firstLineNo = readInt();
-            String fileName = readString();
-            String name = readString();
             byte[] codeString = readBytes();
-            byte[] lnoTab = readBytes();
             Object[] constants = readArray(depth, lib);
             Object[] names = readArray(depth, lib);
             Object[] varNames = readArray(depth, lib);
             Object[] freeVars = readArray(depth, lib);
             Object[] cellVars = readArray(depth, lib);
+            String fileName = readString();
+            String name = readString();
+            int firstLineNo = readInt();
+            byte[] lnoTab = readBytes();
 
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, posOnlyArgCount,
-                            argCount, kwOnlyArgCount,
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, sourceCode,
                             nLocals, stackSize, flags,
                             codeString, constants, names,
                             varNames, freeVars, cellVars,
