@@ -510,7 +510,7 @@ class FileIO(_RawIOBase):
         builder = []
         while True:
             newsize = 512 * 1024
-            chunk = _os.read(self.__fd__, newsize - total)
+            chunk = _os.read(self.__fd__, newsize)
             if len(chunk) == 0:
                 break
             builder.append(chunk)
