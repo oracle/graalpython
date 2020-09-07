@@ -310,16 +310,20 @@ public abstract class StringNodes {
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
                         @Cached CastToJavaStringNode castStrNode) {
-
+            Object iterator;
             try {
-                Object iterator = lib.getIteratorWithFrame(iterable, frame);
+                iterator = lib.getIteratorWithFrame(iterable, frame);
+            } catch (PException e) {
+                e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
+            }
+            try {
                 StringBuilder str = new StringBuilder();
                 try {
                     append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
-
                 }
                 int i = 1;
                 while (true) {
@@ -333,9 +337,6 @@ public abstract class StringNodes {
                     append(str, string);
                     append(str, checkItem(value, i++, castStrNode, raise));
                 }
-            } catch (PException e) {
-                e.expect(PythonBuiltinClassType.TypeError, errorProfile0);
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
             }
