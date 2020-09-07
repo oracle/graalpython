@@ -366,8 +366,13 @@ public abstract class StringNodes {
 
         @Specialization
         @TruffleBoundary(allowInlining = true)
-        static void doInt(StringBuilder sb, int translated) {
-            sb.appendCodePoint(translated);
+        static void doInt(StringBuilder sb, int translated,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            if (Character.isValidCodePoint(translated)) {
+                sb.appendCodePoint(translated);
+            } else {
+                throw raise.raise(ValueError, "invalid unicode code poiont");
+            }
         }
 
         @Specialization
@@ -375,7 +380,7 @@ public abstract class StringNodes {
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("overflow") @Cached BranchProfile ovf) {
             try {
-                doInt(sb, PInt.intValueExact(translated));
+                doInt(sb, PInt.intValueExact(translated), raise);
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);
@@ -387,7 +392,7 @@ public abstract class StringNodes {
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("overflow") @Cached BranchProfile ovf) {
             try {
-                doInt(sb, translated.intValueExact());
+                doInt(sb, translated.intValueExact(), raise);
             } catch (OverflowException e) {
                 ovf.enter();
                 throw raiseError(raise);

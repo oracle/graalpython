@@ -561,4 +561,6 @@ public abstract class ErrorMessages {
     public static final String UNMAPPABLE_CHARACTER = "unmappable character";
     public static final String MALFORMED_INPUT = "malformed input";
     public static final String SHOULD_HAVE_RETURNED_EXCEPTION = "calling %N should have returned an instance of BaseException, not %p";
+    public static final String STRING_KEYS_MUST_BE_LENGHT_1 = "string keys in translate table must be of length 1";
+    public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
 }

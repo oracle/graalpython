@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -773,50 +774,80 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // static str.maketrans()
+    // str.maketrans()
     @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = "!isNoValue(to)")
         @SuppressWarnings("unused")
-        PDict doString(VirtualFrame frame, Object cls, Object from, Object to, Object z,
+        PDict doString(Object cls, Object from, Object to, Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
+                        @Cached CastToJavaStringCheckedNode castZNode,
+                        @Cached ConditionProfile hasZProfile,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
-            if (fromStr.length() != toStr.length()) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
+            boolean hasZ = hasZProfile.profile(z != PNone.NO_VALUE);
+            String zString = null;
+            if (hasZ) {
+                zString = castZNode.cast(z, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "maketrans()", 3, "str", z);
             }
 
             HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
-            PDict translation = factory().createDict(storage);
-            for (int i = 0; i < fromStr.length(); i++) {
-                int key = fromStr.charAt(i);
-                int value = toStr.charAt(i);
+            int i, j;
+            for (i = 0, j = 0; i < fromStr.length() && j < toStr.length();) {
+                int key = PString.codePointAt(fromStr, i);
+                int value = PString.codePointAt(toStr, j);
                 storage = lib.setItem(storage, key, value);
+                i += PString.charCount(key);
+                j += PString.charCount(value);
             }
-            translation.setDictStorage(storage);
+            if (i < fromStr.length() || j < toStr.length()) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
+            }
+            if (hasZ) {
+                for (i = 0; i < zString.length();) {
+                    int key = PString.codePointAt(zString, i);
+                    storage = lib.setItem(storage, key, PNone.NONE);
+                    i += PString.charCount(key);
+                }
+            }
 
-            // TODO implement character deletion specified with 'z'
-
-            return translation;
+            return factory().createDict(storage);
         }
 
-        @Specialization(guards = "isNoValue(to)")
+        @Specialization(guards = {"isNoValue(to)", "isNoValue(z)"})
         @SuppressWarnings("unused")
-        static PDict doDict(PDict from, Object cls, Object to, Object z) {
-            // TODO implement dict case; see CPython 'unicodeobject.c' function
-            // 'unicode_maketrans_impl'
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("not yet implemented");
+        PDict doDict(VirtualFrame frame, Object cls, PDict from, Object to, Object z,
+                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached CastToJavaStringCheckedNode cast,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+            HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
+            HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
+            for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
+                if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
+                    hlib.setItem(destStorage, entry.key, entry.value);
+                } else {
+                    String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
+                    if (strKey.isEmpty()) {
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                    }
+                    int codePoint = PString.codePointAt(strKey, 0);
+                    if (strKey.length() != PString.charCount(codePoint)) {
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                    }
+                    hlib.setItem(destStorage, codePoint, entry.value);
+                }
+            }
+            return factory().createDict(destStorage);
         }
 
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
-        PDict doFail(Object from, Object cls, Object to, Object z) {
+        PDict doFail(Object cls, Object from, Object to, Object z) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
         }
     }

@@ -62,6 +62,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_literals
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_ljust
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_lower
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_maketrans_translate
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_mul
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_none_arguments
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_partition
