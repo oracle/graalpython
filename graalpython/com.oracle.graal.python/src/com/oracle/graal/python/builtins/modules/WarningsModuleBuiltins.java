@@ -866,7 +866,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "warn_explicit", minNumOfPositionalArgs = 5, parameterNames = {"$mod", "message", "category", "filename", "lineno", "module", "registry", "module_globals",
                     "source"}, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    static abstract class WarnExplicitBuiltinNode extends PythonBuiltinNode {
+    abstract static class WarnExplicitBuiltinNode extends PythonBuiltinNode {
         @Specialization
         Object doWarn(VirtualFrame frame, PythonModule mod, Object message, Object category, Object flname,
                         Object ln, Object module, Object registry, Object globals, Object source,
@@ -906,7 +906,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_filters_mutated", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    static abstract class FiltersMutated extends PythonBuiltinNode {
+    abstract static class FiltersMutated extends PythonBuiltinNode {
         @Specialization(limit = "1")
         static PNone mutate(PythonModule self,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
@@ -924,7 +924,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     /**
      * Our replacement for PyErr_WarnFormat, warn_unicode and related functions.
      */
-    public static abstract class WarnNode extends Node {
+    public abstract static class WarnNode extends Node {
         private static final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
         private static final WarnNode UNCACHED = new WarnNodeUncached();
 
