@@ -40,32 +40,26 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class FormatNodeBase extends PythonBinaryBuiltinNode {
-    @Child private LookupAndCallUnaryNode strCall;
-
-    protected LookupAndCallUnaryNode ensureStrCallNode() {
-        if (strCall == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            strCall = insert(LookupAndCallUnaryNode.create(__STR__));
-        }
-        return strCall;
+public abstract class FormatNodeBase extends PythonBinaryClinicBuiltinNode {
+    @Override
+    protected ArgumentClinicProvider getArgumentClinic() {
+        // must be implemented here, because DSL creates a generated node for this class
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw new AbstractMethodError();
     }
 
-    protected String castFormatString(Object obj, CastToJavaStringNode castNode) {
-        try {
-            return castNode.execute(obj);
-        } catch (CannotCastException ex) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "format()", 2, "str", obj);
-        }
+    // applies to all types: empty format string => use __str__
+    @Specialization(guards = "formatString.isEmpty()")
+    public static Object formatEmptyString(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
+                    @Cached("create(__STR__)") LookupAndCallUnaryNode lookupAndCallNode) {
+        return lookupAndCallNode.executeObject(frame, self);
     }
 }
