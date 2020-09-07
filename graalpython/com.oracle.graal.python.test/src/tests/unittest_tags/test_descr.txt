@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_abstractmethods
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_altmro
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_assign_slice
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_basic_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_binary_operator_override
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bound_method_repr
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_bpo25750
@@ -50,6 +51,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_newslots
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_not_implemented
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_class
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_class_assignment_between_heaptypes_and_nonheaptypes
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_new
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_object_new_and_init_with_parameters
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_overloading
@@ -76,6 +78,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_staticmethods
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_staticmethods_in_c
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_of_str_subclass
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_operations
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_subclass_as_dict_key
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_subclass_propagation
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_testcapi_no_segfault
