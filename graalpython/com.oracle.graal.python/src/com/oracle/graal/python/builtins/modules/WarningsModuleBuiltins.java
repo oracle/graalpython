@@ -831,7 +831,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     @NodeInfo(shortName = "warnings_warn_impl", description = "implements warnings_warn_impl and the clinic wrapper")
     @Builtin(name = "warn", minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
     @GenerateNodeFactory
-    static abstract class WarnBuiltinNode extends PythonBuiltinNode {
+    abstract static class WarnBuiltinNode extends PythonBuiltinNode {
         @Specialization(limit = "2")
         Object doWarn(VirtualFrame frame, PythonModule mod, Object msg, Object cat, Object lvl, Object src,
                         @Cached IsSubtypeNode isFloatSubtype,
