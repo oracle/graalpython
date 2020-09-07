@@ -127,10 +127,15 @@ public final class PDict extends PHashingCollection {
         }, limit = "1")
         static int doBuiltin(PDict self, ThreadState state,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary storageLib,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Cached LookupAttributeInMRONode.Dynamic lookupDict) {
-            return storageLib.lengthWithState(self.dictStorage, state);
+            if (gotState.profile(state == null)) {
+                return storageLib.length(self.dictStorage);
+            } else {
+                return storageLib.lengthWithState(self.dictStorage, state);
+            }
         }
 
         @Specialization(replaces = "doBuiltin")
