@@ -2416,17 +2416,17 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         // rest objects
-        @Specialization
+        @Specialization(limit = "1")
         Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
                         @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
             return fromObject(frame, cl, object, byteorder, false, ctxRef, dataModelLibrary);
         }
 
-        @Specialization
+        @Specialization(limit = "1")
         Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, boolean signed,
                         @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary dataModelLibrary) {
+                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
