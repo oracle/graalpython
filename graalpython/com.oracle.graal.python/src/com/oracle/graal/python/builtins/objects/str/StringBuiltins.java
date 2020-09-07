@@ -1795,7 +1795,8 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsNumericNode extends IsCategoryBaseNode {
         @Override
         protected boolean isCategory(int codePoint) {
-            return UCharacter.hasBinaryProperty(codePoint, UProperty.NUMERIC_TYPE);
+            int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+            return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT || numericType == UCharacter.NumericType.NUMERIC;
         }
 
         @Override
