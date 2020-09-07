@@ -1292,17 +1292,38 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static String doReplace(String self, String old, String with, int maxCount) {
-            StringBuilder sb = new StringBuilder(self);
-            int prevIdx = 0;
-            for (int i = 0; i < maxCount; i++) {
-                int idx = sb.indexOf(old, prevIdx);
-                if (idx == -1) {
-                    // done
-                    break;
+            if (maxCount < 0) {
+                return doReplace(self, old, with, PNone.NO_VALUE);
+            }
+            StringBuilder sb;
+            if (old.isEmpty()) {
+                sb = new StringBuilder(self.length() + with.length() * Math.min(maxCount, self.length() + 1));
+                int replacements, i;
+                for (replacements = 0, i = 0; replacements < maxCount && i < self.length(); replacements++) {
+                    sb.append(with);
+                    int codePoint = self.codePointAt(i);
+                    sb.appendCodePoint(codePoint);
+                    i += Character.charCount(codePoint);
                 }
+                if (replacements < maxCount) {
+                    sb.append(with);
+                }
+                if (i < self.length()) {
+                    sb.append(self.substring(i));
+                }
+            } else {
+                sb = new StringBuilder(self);
+                int prevIdx = 0;
+                for (int i = 0; i < maxCount; i++) {
+                    int idx = sb.indexOf(old, prevIdx);
+                    if (idx == -1) {
+                        // done
+                        break;
+                    }
 
-                sb.replace(idx, idx + old.length(), with);
-                prevIdx = idx + with.length();
+                    sb.replace(idx, idx + old.length(), with);
+                    prevIdx = idx + with.length();
+                }
             }
             return sb.toString();
         }

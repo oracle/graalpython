@@ -64,6 +64,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_partition
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printing
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_id
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_resize
@@ -73,6 +74,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_rpartition
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_rsplit
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_slice
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_split
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_splitlines
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_startswith
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_startswith_endswith_errors
