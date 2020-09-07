@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -33,14 +35,23 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
@@ -100,16 +111,40 @@ public final class PDict extends PHashingCollection {
         return dictStorage;
     }
 
-    @ExportMessage(limit = "1")
-    public int lengthWithState(PArguments.ThreadState state,
-                    @CachedLibrary("this.dictStorage") HashingStorageLibrary lib) {
-        return lib.lengthWithState(dictStorage, state);
-    }
+    @ExportMessage
+    static class LengthWithState {
 
-    @ExportMessage(limit = "1")
-    public int length(
-                    @CachedLibrary("this.dictStorage") HashingStorageLibrary lib) {
-        return lib.length(dictStorage);
+        static boolean isBuiltin(PDict self, IsBuiltinClassProfile p) {
+            return p.profileIsAnyBuiltinObject(self);
+        }
+
+        static boolean hasBuiltinLen(PDict self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupDict) {
+            return lookupSelf.execute(self, __LEN__) == lookupDict.execute(PythonBuiltinClassType.PDict, __LEN__);
+        }
+
+        @Specialization(guards = {
+                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupDict)"
+        }, limit = "1")
+        static int doBuiltin(PDict self, ThreadState state,
+                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary storageLib,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
+                        @SuppressWarnings("unused") @Cached LookupAttributeInMRONode.Dynamic lookupDict) {
+            return storageLib.lengthWithState(self.dictStorage, state);
+        }
+
+        @Specialization(replaces = "doBuiltin")
+        static int doSubclassed(PDict self, ThreadState state,
+                        @CachedLibrary("self") PythonObjectLibrary plib,
+                        @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile hasLen,
+                        @Exclusive @Cached ConditionProfile ltZero,
+                        @Shared("raise") @Cached PRaiseNode raiseNode,
+                        @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            // call the generic implementation in the superclass
+            return self.lengthWithState(state, plib, methodLib, gotState, hasLen, ltZero, raiseNode, lib);
+        }
     }
 
     @Override
