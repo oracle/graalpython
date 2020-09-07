@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -138,14 +139,22 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class GetModuleNode extends PythonBuiltinNode {
+    abstract static class GetModuleNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(none)", limit = "2")
         Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary(limit = "3") PythonObjectLibrary pylib,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
-            if (module == PNone.NO_VALUE) { // specialization of pylib acts as a branch profile
-                return pylib.lookupAttribute(self.getSelf(), frame, __NAME__);
+            if (module == PNone.NO_VALUE) {
+                // getContext() acts as a branch profile. This indirect call is done to easily
+                // support calls to this builtin with and without virtual frame, and because we
+                // don't care much about the performance here anyway
+                Object state = IndirectCallContext.enter(frame, getContext(), this);
+                try {
+                    return pylib.lookupAttribute(self.getSelf(), null, __NAME__);
+                } finally {
+                    IndirectCallContext.exit(frame, getContext(), state);
+                }
             } else {
                 return module;
             }
