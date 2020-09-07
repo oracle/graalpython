@@ -1851,7 +1851,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         private static boolean isPrintableChar(int i) {
-            return UCharacter.isPrintable(i);
+            return StringUtils.isPrintable(i);
         }
 
         @Specialization

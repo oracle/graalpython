@@ -45,6 +45,7 @@ import java.util.Locale;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UCharacterCategory;
 import com.ibm.icu.lang.UProperty;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -242,7 +243,22 @@ public final class StringUtils {
 
     @TruffleBoundary
     private static boolean isPrintableICU(int codepoint) {
-        return UCharacter.isPrintable(codepoint);
+        // ICU's definition of printability is different from CPython, so we cannot use
+        // UCharacter.isPrintable
+        int category = UCharacter.getType(codepoint);
+        switch (category) {
+            case UCharacterCategory.CONTROL:
+            case UCharacterCategory.FORMAT:
+            case UCharacterCategory.SURROGATE:
+            case UCharacterCategory.PRIVATE_USE:
+            case UCharacterCategory.UNASSIGNED:
+            case UCharacterCategory.LINE_SEPARATOR:
+            case UCharacterCategory.PARAGRAPH_SEPARATOR:
+                return false;
+            case UCharacterCategory.SPACE_SEPARATOR:
+                return codepoint == ' ';
+        }
+        return true;
     }
 
     @TruffleBoundary
