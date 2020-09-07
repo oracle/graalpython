@@ -132,8 +132,6 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
 
-        private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
-
         @Specialization(guards = "isNoValue(value)")
         Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
@@ -142,12 +140,12 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Specialization(guards = "isNativeClass(klass)")
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Specialization(guards = "isPythonClass(value)")
@@ -157,12 +155,12 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached("create()") BranchProfile errorSelfBranch) {
             if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
             Object lazyClass = lib1.getLazyPythonClass(self);
             if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
             getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
@@ -173,7 +171,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isPythonClass(value)", "!isPythonObject(self)"})
         Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Fallback
