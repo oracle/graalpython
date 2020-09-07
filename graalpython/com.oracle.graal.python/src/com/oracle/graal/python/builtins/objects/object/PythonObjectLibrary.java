@@ -1137,7 +1137,7 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public Object getIteratorWithState(Object receiver, ThreadState state) {
         if (state == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_ITERABLE, receiver);
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
         }
         return getIterator(receiver);
     }

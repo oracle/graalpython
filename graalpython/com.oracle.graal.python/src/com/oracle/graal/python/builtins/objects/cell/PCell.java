@@ -129,6 +129,6 @@ public final class PCell extends PythonAbstractObject {
     @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_ITERABLE, this);
+        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
     }
 }

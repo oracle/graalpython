@@ -310,7 +310,6 @@ public abstract class ErrorMessages {
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
-    public static final String IS_NOT_ITERABLE = "%s is not iterable";
     public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
