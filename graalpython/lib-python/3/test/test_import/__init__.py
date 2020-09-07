@@ -665,6 +665,7 @@ func_filename = func.__code__.co_filename
         self.assertEqual(mod.code_filename, target)
         self.assertEqual(mod.func_filename, target)
 
+    @impl_detail("GR-26007: code changes do not yet permeate to the AST", graalvm=False)
     def test_foreign_code(self):
         py_compile.compile(self.file_name)
         with open(self.compiled_name, "rb") as f:
