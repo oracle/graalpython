@@ -65,6 +65,7 @@ import java.util.regex.Pattern;
 
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
+import com.ibm.icu.text.CaseMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -136,6 +137,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -920,19 +922,34 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CapitalizeNode extends PythonUnaryBuiltinNode {
 
+        @CompilationFinal private static CaseMap.Title titlecaser;
+
+        @Specialization
+        static String capitalize(String self) {
+            if (self.isEmpty()) {
+                return "";
+            } else {
+                return capitalizeImpl(self);
+            }
+        }
+
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
             return capitalize(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "capitalize", self));
         }
 
-        @TruffleBoundary
-        private static String capitalize(String self) {
-            if (self.isEmpty()) {
-                return "";
-            } else {
-                return self.substring(0, 1).toUpperCase() + self.substring(1).toLowerCase();
+        private static String capitalizeImpl(String str) {
+            if (titlecaser == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                titlecaser = CaseMap.toTitle().wholeString().noBreakAdjustment();
             }
+            return apply(str);
+        }
+
+        @TruffleBoundary
+        private static String apply(String str) {
+            return titlecaser.apply(Locale.ROOT, null, str);
         }
     }
 

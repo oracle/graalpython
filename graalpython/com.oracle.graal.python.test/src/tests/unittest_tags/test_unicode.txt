@@ -12,6 +12,8 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_additional_split
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_ascii
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_bytes_comparison
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_capitalize
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_capitalize_nonascii
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_case_operation_overflow
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_center
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs
