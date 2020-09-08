@@ -267,7 +267,13 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLong(
-                    @Cached CastToJavaLongLossyNode castToLong) {
+                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
+        return castToLong.execute(this);
+    }
+
+    @ExportMessage
+    public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
         return castToLong.execute(this);
     }
 

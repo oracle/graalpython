@@ -1717,6 +1717,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             secureRandom.nextBytes(bytes);
             return factory().createBytes(bytes);
         }
+
+        @Fallback
+        Object urandomError(Object size) {
+            throw raise(TypeError, ErrorMessages.ARG_EXPECTED_GOT, "integer", size);
+        }
     }
 
     @Builtin(name = "uname", minNumOfPositionalArgs = 0)

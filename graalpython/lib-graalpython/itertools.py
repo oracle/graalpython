@@ -29,6 +29,8 @@ class repeat():
     def __init__(self, obj, times=None):
         self.obj = obj
         self.times = times
+        if times is not None and not isinstance(times, int):
+            raise TypeError(f"integer argument expected, got {times.__class__.__name__}")
         self.count = times if times and times > 0 else 0
 
     @__graalpython__.builtin_method

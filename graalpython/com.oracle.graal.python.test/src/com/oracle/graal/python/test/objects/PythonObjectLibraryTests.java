@@ -40,13 +40,16 @@
  */
 package com.oracle.graal.python.test.objects;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
+import java.math.BigInteger;
 import java.util.concurrent.Callable;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
@@ -97,6 +100,17 @@ public class PythonObjectLibraryTests extends PythonTests {
         lookupAttr(() -> "abc", noSuchMethod, true);
     }
 
+    @Test
+    public void testPIntAsJavaLong() {
+        execInContext(() -> {
+            PInt p = PythonObjectFactory.getUncached().createInt(BigInteger.valueOf(123));
+            PythonObjectLibrary lib = PythonObjectLibrary.getFactory().getUncached();
+            assertEquals(123, lib.asJavaLong(p));
+            assertEquals(123, lib.asJavaLong(p, null));
+            return null;
+        });
+    }
+
     private void lookupAttr(Callable<Object> createValue, String attrName, boolean expectNoValue) {
         PythonObjectLibrary lib = PythonObjectLibrary.getFactory().getUncached();
         execInContext(() -> {
@@ -132,5 +146,4 @@ public class PythonObjectLibraryTests extends PythonTests {
         });
         context.getPolyglotBindings().getMember("testSymbol").execute();
     }
-
 }
