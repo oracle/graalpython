@@ -2278,4 +2278,68 @@ public final class StringBuiltins extends PythonBuiltins {
             return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "casefold", self));
         }
     }
+
+    @Builtin(name = "swapcase", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class SwapCaseNode extends PythonUnaryBuiltinNode {
+
+        private static final int CAPITAL_SIGMA = 0x3A3;
+
+        @Specialization
+        @TruffleBoundary
+        static String doString(String self) {
+            StringBuilder sb = new StringBuilder(self.length());
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                int charCount = Character.charCount(codePoint);
+                String substr = self.substring(i, i + charCount);
+                if (UCharacter.isUUppercase(codePoint)) {
+                    // Special case for capital sigma, needed because ICU4J doesn't have the context
+                    // of the whole string
+                    if (codePoint == CAPITAL_SIGMA) {
+                        handleCapitalSigma(self, sb, i, codePoint);
+                    } else {
+                        sb.append(UCharacter.toLowerCase(Locale.ROOT, substr));
+                    }
+                } else if (UCharacter.isULowercase(codePoint)) {
+                    sb.append(UCharacter.toUpperCase(Locale.ROOT, substr));
+                } else {
+                    sb.append(substr);
+                }
+                i += charCount;
+            }
+            return sb.toString();
+        }
+
+        // Adapted from unicodeobject.c:handle_capital_sigma
+        private static void handleCapitalSigma(String self, StringBuilder sb, int i, int codePoint) {
+            int j;
+            for (j = i - 1; j >= 0; j--) {
+                if (!Character.isHighSurrogate(self.charAt(j))) {
+                    int ch = self.codePointAt(j);
+                    if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
+                        break;
+                    }
+                }
+            }
+            boolean finalSigma = j >= 0 && UCharacter.hasBinaryProperty(codePoint, UProperty.CASED);
+            if (finalSigma) {
+                for (j = i + 1; j < self.length();) {
+                    int ch = self.codePointAt(j);
+                    if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
+                        break;
+                    }
+                    j += Character.charCount(ch);
+                }
+                finalSigma = j == self.length() || !UCharacter.hasBinaryProperty(codePoint, UProperty.CASED);
+            }
+            sb.appendCodePoint(finalSigma ? 0x3C2 : 0x3C3);
+        }
+
+        @Specialization(replaces = "doString")
+        static String doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "swapcase", self));
+        }
+    }
 }
