@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_not_an_index_issue15559
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_octet_length
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_octet_limit
+*graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v4.test_weakref
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_bad_address_split_v6_leading_colon
@@ -32,6 +33,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_negative_ints_rejected
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_network_passed_as_address
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_not_an_index_issue15559
+*graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_part_length
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.AddressTestCase_v6.test_weakref
@@ -59,6 +61,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_netmask_in_tuple_errors
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_no_mask
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_not_an_index_issue15559
+*graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_split_netmask
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v4.test_valid_netmask
@@ -74,6 +77,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_netmask_in_tuple_errors
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_no_mask
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_not_an_index_issue15559
+*graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_split_netmask
 *graalpython.lib-python.3.test.test_ipaddress.InterfaceTestCase_v6.test_valid_netmask
@@ -159,6 +163,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_netmask_in_tuple_errors
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_no_mask
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_not_an_index_issue15559
+*graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_split_netmask
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v4.test_subnet_of
@@ -177,6 +182,7 @@
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_netmask_in_tuple_errors
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_no_mask
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_not_an_index_issue15559
+*graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_packed
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_pickle
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_split_netmask
 *graalpython.lib-python.3.test.test_ipaddress.NetworkTestCase_v6.test_subnet_of

@@ -70,6 +70,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_rmul
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_and_no_get
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_class
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_dict
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slices
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_descriptor
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
@@ -81,6 +82,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_operations
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_str_subclass_as_dict_key
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_subclass_propagation
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_subclassing_does_not_duplicate_dict_descriptors
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_testcapi_no_segfault
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_type___getattribute__
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_uninitialized_modules
