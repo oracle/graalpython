@@ -67,6 +67,7 @@ public abstract class ErrorMessages {
     public static final String ARRAY_SIZE_TOO_LARGE = "array size too large";
     public static final String ATTEMP_TO_RELEASE_RECURSIVE_LOCK = "attempt to release recursive lock not owned by thread";
     public static final String ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE = "attempt to assign sequence of size %d to extended slice of size %d";
+    public static final String KEY_IN_S_MUST_BE_STRING = "Key in %s.%s must be str, not %p";
     public static final String ITEM_IN_S_MUST_BE_STRING = "Item in %s.%s must be str, not %p";
     public static final String ATTR_NAME_MUST_BE_STRING = "attribute name must be string, not '%p'";
     public static final String ATTR_S_OF_S_IS_NOT_READABLE = "attribute %s of %s objects is not readable";
