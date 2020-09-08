@@ -35,7 +35,7 @@ from .support import HPyTest
 class TestParseItem(HPyTest):
     def make_parse_item(self, fmt, type, hpy_converter):
         mod = self.make_module("""
-            HPy_DEF_METH_VARARGS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {{
@@ -44,7 +44,7 @@ class TestParseItem(HPyTest):
                     return HPy_NULL;
                 return {hpy_converter}(ctx, a);
             }}
-            @EXPORT f HPy_METH_VARARGS
+            @EXPORT(f)
             @INIT
         """.format(fmt=fmt, type=type, hpy_converter=hpy_converter))
         return mod
@@ -59,6 +59,14 @@ class TestParseItem(HPyTest):
         assert mod.f(1) == 1
         assert mod.f(-2) == -2
 
+    def test_d(self):
+        import pytest
+        mod = self.make_parse_item("d", "double", "HPyFloat_FromDouble")
+        assert mod.f(1.) == 1.
+        assert mod.f(-2) == -2.
+        with pytest.raises(TypeError):
+            mod.f("x")
+
     def test_O(self):
         mod = self.make_parse_item("O", "HPy", "HPy_Dup")
         assert mod.f("a") == "a"
@@ -68,7 +76,7 @@ class TestParseItem(HPyTest):
 class TestArgParse(HPyTest):
     def make_two_arg_add(self, fmt="OO"):
         mod = self.make_module("""
-            HPy_DEF_METH_VARARGS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {{
@@ -82,18 +90,18 @@ class TestArgParse(HPyTest):
                 }} else {{
                     b = HPy_Dup(ctx, b);
                 }}
-                res = HPyNumber_Add(ctx, a, b);
+                res = HPy_Add(ctx, a, b);
                 HPy_Close(ctx, b);
                 return res;
             }}
-            @EXPORT f HPy_METH_VARARGS
+            @EXPORT(f)
             @INIT
         """.format(fmt=fmt))
         return mod
 
     def test_many_int_arguments(self):
         mod = self.make_module("""
-            HPy_DEF_METH_VARARGS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
@@ -104,23 +112,23 @@ class TestArgParse(HPyTest):
                 return HPyLong_FromLong(ctx,
                     10000*a + 1000*b + 100*c + 10*d + e);
             }
-            @EXPORT f HPy_METH_VARARGS
+            @EXPORT(f)
             @INIT
         """)
         assert mod.f(4, 5, 6, 7, 8) == 45678
 
     def test_many_handle_arguments(self):
         mod = self.make_module("""
-            HPy_DEF_METH_VARARGS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs)
             {
                 HPy a, b;
                 if (!HPyArg_Parse(ctx, args, nargs, "OO", &a, &b))
                     return HPy_NULL;
-                return HPyNumber_Add(ctx, a, b);
+                return HPy_Add(ctx, a, b);
             }
-            @EXPORT f HPy_METH_VARARGS
+            @EXPORT(f)
             @INIT
         """)
         assert mod.f("a", "b") == "ab"
@@ -162,7 +170,7 @@ class TestArgParse(HPyTest):
 class TestArgParseKeywords(HPyTest):
     def make_two_arg_add(self, fmt="OO"):
         mod = self.make_module("""
-            HPy_DEF_METH_KEYWORDS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_KEYWORDS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs, HPy kw)
             {{
@@ -171,9 +179,9 @@ class TestArgParseKeywords(HPyTest):
                 if (!HPyArg_ParseKeywords(ctx, args, nargs, kw, "{fmt}",
                                           kwlist, &a, &b))
                     return HPy_NULL;
-                return HPyNumber_Add(ctx, a, b);
+                return HPy_Add(ctx, a, b);
             }}
-            @EXPORT f HPy_METH_KEYWORDS
+            @EXPORT(f)
             @INIT
         """.format(fmt=fmt))
         return mod
@@ -184,7 +192,7 @@ class TestArgParseKeywords(HPyTest):
 
     def test_handle_reordered_arguments(self):
         mod = self.make_module("""
-            HPy_DEF_METH_KEYWORDS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_KEYWORDS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs, HPy kw)
             {
@@ -192,16 +200,16 @@ class TestArgParseKeywords(HPyTest):
                 static const char *kwlist[] = { "a", "b", NULL };
                 if (!HPyArg_ParseKeywords(ctx, args, nargs, kw, "OO", kwlist, &a, &b))
                     return HPy_NULL;
-                return HPyNumber_Add(ctx, a, b);
+                return HPy_Add(ctx, a, b);
             }
-            @EXPORT f HPy_METH_KEYWORDS
+            @EXPORT(f)
             @INIT
         """)
         assert mod.f(b="y", a="x") == "xy"
 
     def test_handle_optional_arguments(self):
         mod = self.make_module("""
-            HPy_DEF_METH_KEYWORDS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_KEYWORDS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs, HPy kw)
             {
@@ -216,11 +224,11 @@ class TestArgParseKeywords(HPyTest):
                 }} else {{
                     b = HPy_Dup(ctx, b);
                 }}
-                res = HPyNumber_Add(ctx, a, b);
+                res = HPy_Add(ctx, a, b);
                 HPy_Close(ctx, b);
                 return res;
             }
-            @EXPORT f HPy_METH_KEYWORDS
+            @EXPORT(f)
             @INIT
         """)
         assert mod.f(a=3, b=2) == 5
@@ -259,7 +267,7 @@ class TestArgParseKeywords(HPyTest):
     def test_blank_keyword_argument_exception(self):
         import pytest
         mod = self.make_module("""
-            HPy_DEF_METH_KEYWORDS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_KEYWORDS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs, HPy kw)
             {
@@ -270,7 +278,7 @@ class TestArgParseKeywords(HPyTest):
                     return HPy_NULL;
                 return HPy_Dup(ctx, ctx->h_None);
             }
-            @EXPORT f HPy_METH_KEYWORDS
+            @EXPORT(f)
             @INIT
         """)
         with pytest.raises(TypeError) as exc:
@@ -280,7 +288,7 @@ class TestArgParseKeywords(HPyTest):
     def test_positional_only_argument(self):
         import pytest
         mod = self.make_module("""
-            HPy_DEF_METH_KEYWORDS(f)
+            HPyDef_METH(f, "f", f_impl, HPyFunc_KEYWORDS)
             static HPy f_impl(HPyContext ctx, HPy self,
                               HPy *args, HPy_ssize_t nargs, HPy kw)
             {
@@ -295,11 +303,11 @@ class TestArgParseKeywords(HPyTest):
                 } else {
                     b = HPy_Dup(ctx, b);
                 }
-                res = HPyNumber_Add(ctx, a, b);
+                res = HPy_Add(ctx, a, b);
                 HPy_Close(ctx, b);
                 return res;
             }
-            @EXPORT f HPy_METH_KEYWORDS
+            @EXPORT(f)
             @INIT
         """)
         assert mod.f(1, b=2) == 3
