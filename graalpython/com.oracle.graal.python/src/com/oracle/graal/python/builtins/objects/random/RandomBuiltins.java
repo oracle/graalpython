@@ -187,6 +187,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
 
         @Fallback
+        @SuppressWarnings("unused")
         Object setstate(Object random, Object state) {
             throw raise(TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
         }
@@ -202,7 +203,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object[] encodeState(PRandom random) {
+        private static Object[] encodeState(PRandom random) {
             int[] state = random.getState();
             Object[] encodedState = new Object[PRandom.N + 1];
             for (int i = 0; i < PRandom.N; ++i) {
@@ -252,7 +253,7 @@ public class RandomBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "k == 32")
         @TruffleBoundary
-        long gen32Bits(PRandom random, int k) {
+        long gen32Bits(PRandom random, @SuppressWarnings("unused") int k) {
             return random.nextInt() & 0xFFFFFFFFL;
         }
 

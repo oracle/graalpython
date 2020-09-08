@@ -142,9 +142,10 @@ public class PRandom extends PythonBuiltinObject {
         return index;
     }
 
-    void restore(int[] state, int index) {
-        assert state.length == N;
-        this.state = state;
-        this.index = index;
+    void restore(int[] new_state, int new_index) {
+        assert new_state.length == N;
+        assert new_index >= 0 && new_index <= N;
+        state = new_state;
+        index = new_index;
     }
 }
