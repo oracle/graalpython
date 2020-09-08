@@ -252,3 +252,48 @@ def test_flags():
         (MyDict({"1":1, "2": 2}), TPFLAGS_DICT_SUBCLASS),
     ]:
         assert type(x).__flags__ & flag, "masked __flags__ = {}, expected {}".format(type(x).__flags__ & flag, flag)
+
+def test_dict():
+    def dict_element_raises(o, err):
+        raised = False
+        try:
+            o['__dict__']
+        except err:
+            raised = True
+        assert raised        
+        
+    class Base:
+        pass
+    
+    class Sub(Base):
+        pass
+    
+    str(type(Base.__dict__['__dict__'])) == "<class 'get_set_desc'>"
+    dict_element_raises(Sub.__dict__, KeyError)    
+    Base().__dict__ == {}    
+    Sub().__dict__ == {}            
+
+    class BaseSlots:
+        __slots__ = ['a']
+        
+    dict_element_raises(BaseSlots.__dict__, KeyError)        
+    raised = False
+    try:
+        BaseSlots().__dict__
+    except AttributeError:
+        raised = True
+    assert raised
+    
+    class SubSlots(BaseSlots):
+        pass
+
+    str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
+    assert SubSlots().__dict__ == {}
+    
+    class SubSlots(BaseSlots, Base):
+        pass
+    
+    str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
+    assert SubSlots().__dict__ == {}
+        
+

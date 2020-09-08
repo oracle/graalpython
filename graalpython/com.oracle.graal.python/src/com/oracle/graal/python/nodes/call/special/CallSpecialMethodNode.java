@@ -95,7 +95,7 @@ abstract class CallSpecialMethodNode extends Node {
         if (builtinNodeFactory == null) {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
-        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0;
+        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
         if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
             return null;
         }

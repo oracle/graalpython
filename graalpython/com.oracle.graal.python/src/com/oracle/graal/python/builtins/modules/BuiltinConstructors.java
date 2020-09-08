@@ -138,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenKeyDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -149,6 +150,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -191,6 +193,8 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -220,6 +224,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -2080,7 +2085,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode,
-                        @Cached GetBestBaseClassNode getBestBaseNode) {
+                        @Cached GetBestBaseClassNode getBestBaseNode,
+                        @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2095,7 +2101,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getBestBaseNode);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getBestBaseNode);
 
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2180,7 +2186,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib,
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode,
                         GetBestBaseClassNode getBestBaseNode) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
@@ -2237,6 +2243,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass);
+                addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
                 // TODO: tfel - also deal with weaklistoffset
             } else {
                 // have slots
@@ -2276,6 +2283,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             throw raise(TypeError, ErrorMessages.SLOT_DISALLOWED_WE_GOT_ONE, "__dict__");
                         }
                         addDict = true;
+                        addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
@@ -2307,6 +2315,41 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             return pythonClass;
+        }
+
+        private void addDictDescrAttribute(PythonAbstractClass[] basesArray, LookupAttributeInMRONode getDictAttrNode, PythonClass pythonClass) {
+            if ((!hasPythonClassBases(basesArray) && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
+                BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
+                RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(rootNode);
+                PBuiltinFunction function = getCore().factory().createBuiltinFunction(__DICT__, pythonClass, 1, callTarget);
+                GetSetDescriptor desc = factory().createGetSetDescriptor(function, function, __DICT__, pythonClass, true);
+                pythonClass.setAttribute(__DICT__, desc);
+            }
+        }
+
+        private static boolean basesHaveSlots(PythonAbstractClass[] basesArray) {
+            // this is merely based on empirical observation
+            // see also test_type.py#test_dict()
+            for (PythonAbstractClass c : basesArray) {
+                // TODO: what about native?
+                if (c instanceof PythonClass) {
+                    if (((PythonClass) c).getAttribute(__SLOTS__) != PNone.NO_VALUE) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static boolean hasPythonClassBases(PythonAbstractClass[] basesArray) {
+            for (PythonAbstractClass c : basesArray) {
+                if (c instanceof PythonClass) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary nslib, Object[] slots, boolean[] qualnameSet) {
