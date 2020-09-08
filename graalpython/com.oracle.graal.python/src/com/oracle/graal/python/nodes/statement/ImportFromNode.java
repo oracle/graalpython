@@ -98,13 +98,9 @@ public class ImportFromNode extends AbstractImportNode {
                 writeNode.doWrite(frame, getAttributeNode.executeObject(frame, importedModule, attr));
             } catch (PException pe) {
                 pe.expectAttributeError(getAttrErrorProfile);
-                if (getName == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getName = insert(GetAttributeNode.create(__NAME__, null));
-                }
                 Object moduleName = "<unknown module name>";
                 try {
-                    moduleName = getName.executeObject(frame, importedModule);
+                    moduleName = ensureGetNameNode().executeObject(frame, importedModule);
                     String pkgname;
                     if (moduleName instanceof PString) {
                         pkgname = ((PString) moduleName).getValue();
@@ -114,33 +110,61 @@ public class ImportFromNode extends AbstractImportNode {
                         throw pe;
                     }
                     String fullname = PString.cat(pkgname, ".", attr);
-                    if (readModules == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getItem = insert(GetItemNode.create());
-                        readModules = insert(ReadAttributeFromObjectNode.create());
-                    }
-                    Object sysModules = readModules.execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
-                    writeNode.doWrite(frame, getItem.execute(frame, sysModules, fullname));
+                    Object sysModules = ensureReadModulesNode().execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
+                    writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
                 } catch (PException e2) {
-                    if (raiseNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseImportErrorNode.create());
-                        if (getPath == null) {
-                            getPath = insert(GetAttributeNode.create(__FILE__));
-                        }
-                    }
-
                     Object modulePath = "unknown location";
                     if (!getAttrErrorProfile.profileException(e2, PythonBuiltinClassType.AttributeError)) {
                         try {
-                            modulePath = getPath.executeObject(frame, importedModule);
+                            modulePath = ensureGetPathNode().executeObject(frame, importedModule);
                         } catch (PException e3) {
                             e3.expectAttributeError(getFileErrorProfile);
                         }
                     }
-                    throw raiseNode.raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
+                    throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                 }
             }
         }
+    }
+
+    private GetAttributeNode ensureGetNameNode() {
+        if (getName == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getName = insert(GetAttributeNode.create(__NAME__));
+        }
+        return getName;
+    }
+
+    private GetAttributeNode ensureGetPathNode() {
+        if (getPath == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getPath = insert(GetAttributeNode.create(__FILE__));
+        }
+        return getPath;
+    }
+
+    private PRaiseImportErrorNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseImportErrorNode.create());
+        }
+        return raiseNode;
+    }
+
+    private ReadAttributeFromObjectNode ensureReadModulesNode() {
+        if (readModules == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItem = insert(GetItemNode.create());
+            readModules = insert(ReadAttributeFromObjectNode.create());
+        }
+        return readModules;
+    }
+
+    private GetItemNode ensureGetItemNode() {
+        if (getItem == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItem = insert(GetItemNode.create());
+        }
+        return getItem;
     }
 }
