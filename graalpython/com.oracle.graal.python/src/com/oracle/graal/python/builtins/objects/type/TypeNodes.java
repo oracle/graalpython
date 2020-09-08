@@ -117,7 +117,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -691,7 +690,7 @@ public abstract class TypeNodes {
 
     @ImportStatic(SpecialMethodNames.class)
     @GenerateUncached
-    abstract static class GetBestBaseClassNode extends PNodeWithContext {
+    public abstract static class GetBestBaseClassNode extends PNodeWithContext {
 
         static GetBestBaseClassNode create() {
             return TypeNodesFactory.GetBestBaseClassNodeGen.create();
@@ -750,7 +749,7 @@ public abstract class TypeNodes {
                     winner = candidate;
                     base = basei;
                 } else {
-                    throw raiseNode.raise(SystemError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
+                    throw raiseNode.raise(TypeError, ErrorMessages.MULTIPLE_BASES_LAYOUT_CONFLICT);
                 }
             }
             return base;
@@ -763,7 +762,6 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupSlotsNode;
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private GetDictStorageNode getDictStorageNode;
-        @Child private LookupAndCallBinaryNode getDictNode;
         @Child private HashingStorageLibrary hashingStorageLib;
         @Child private PythonObjectLibrary objectLibrary;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -1012,23 +1010,22 @@ public abstract class TypeNodes {
                         @Cached CallBinaryMethodNode callGetAttr,
                         @Cached GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary objectLibrary) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary);
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary);
         }
 
         private Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, GetObjectArrayNode getObjectArrayNode,
+                        CallBinaryMethodNode callGetAttr, GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary,
                         PythonObjectLibrary objectLibrary) {
             Object base = getBaseClassNode.execute(type);
 
             if (base != null) {
-                base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary);
+                base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary);
             } else {
                 base = context.getCore().lookupType(PythonBuiltinClassType.PythonObject);
             }
 
-            if (extraivars(type, base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, getObjectArrayNode, objectLibrary)) {
+            if (type != base && extraivars(type, base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary)) {
                 return type;
             } else {
                 return base;
@@ -1036,11 +1033,12 @@ public abstract class TypeNodes {
         }
 
         private boolean extraivars(Object type, Object base, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
-                        GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, GetObjectArrayNode getObjectArrayNode, PythonObjectLibrary objectLibrary) {
+                        GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, PythonObjectLibrary objectLibrary) {
             Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
             Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
 
-            if (typeSlots == null ^ baseSlots == null) {
+            if (typeSlots == null && baseSlots != null && objectLibrary.length(baseSlots) != 0 ||
+                            baseSlots == null && typeSlots != null && objectLibrary.length(typeSlots) != 0) {
                 return true;
             }
 
@@ -1048,10 +1046,6 @@ public abstract class TypeNodes {
             Object baseNewMethod = LookupAttributeInMRONode.lookupSlow(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
             if (typeNewMethod != baseNewMethod) {
                 return true;
-            }
-
-            if (typeSlots != null && baseSlots != null) {
-                return compareSortedSlots(typeSlots, baseSlots, getObjectArrayNode);
             }
             return hasDict(base, objectLibrary) != hasDict(type, objectLibrary);
         }
