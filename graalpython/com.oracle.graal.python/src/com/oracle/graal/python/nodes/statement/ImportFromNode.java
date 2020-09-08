@@ -27,9 +27,11 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
@@ -40,6 +42,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -55,6 +58,7 @@ public class ImportFromNode extends AbstractImportNode {
     @Child private ReadAttributeFromObjectNode readModules;
     @Child private GetAnyAttributeNode getAttributeNode = GetAnyAttributeNodeGen.create();
     @Child private PRaiseImportErrorNode raiseNode;
+    @Child private PythonObjectLibrary pythonLibrary;
 
     private final String importee;
     private final int level;
@@ -121,10 +125,30 @@ public class ImportFromNode extends AbstractImportNode {
                             e3.expectAttributeError(getFileErrorProfile);
                         }
                     }
-                    throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
+
+                    PythonObjectLibrary pol = ensurePythonLibrary();
+                    if (isModuleInitialising(frame, pol, importedModule)) {
+                        throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
+                    } else {
+                        throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
+                    }
                 }
             }
         }
+    }
+
+    private boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
+        Object spec = pol.lookupAttribute(importedModule, frame, __SPEC__);
+        Object initializing = pol.lookupAttribute(spec, frame, "_initializing");
+        return pol.isTrue(initializing);
+    }
+
+    private PythonObjectLibrary ensurePythonLibrary() {
+        if (pythonLibrary == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
+        }
+        return pythonLibrary;
     }
 
     private GetAttributeNode ensureGetNameNode() {

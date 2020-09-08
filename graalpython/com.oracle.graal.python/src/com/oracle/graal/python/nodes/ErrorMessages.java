@@ -128,6 +128,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s' from '%s' (%s)";
+    public static final String CANNOT_IMPORT_NAME_CIRCULAR = "cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)";
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
