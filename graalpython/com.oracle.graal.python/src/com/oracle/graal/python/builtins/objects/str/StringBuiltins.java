@@ -111,7 +111,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -1124,23 +1123,17 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // str.split
-    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"}, needsFrame = true)
+    // str.rsplit
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "maxsplit"}, needsFrame = true)
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "sep", conversion = ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "maxsplit", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class RSplitNode extends PythonTernaryBuiltinNode {
+    public abstract static class RSplitNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization
-        PList doStringWhitespace(VirtualFrame frame, String self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
-            return rsplitfields(frame, self, -1, appendNode, reverseNode);
-        }
-
-        @Specialization
-        PList doStringSep(VirtualFrame frame, String self, String sep, @SuppressWarnings("unused") PNone maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
-            return doStringSepMaxsplit(frame, self, sep, Integer.MAX_VALUE, appendNode, reverseNode);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RSplitNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -1149,6 +1142,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
             if (sep.length() == 0) {
                 throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+            }
+            if (maxsplit < 0) {
+                maxsplit = Integer.MAX_VALUE;
             }
             PList list = factory().createList();
             int splits = 0;
@@ -1180,24 +1176,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return rsplitfields(frame, self, maxsplit, appendNode, reverseNode);
         }
 
-        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object doGeneric(VirtualFrame frame, Object self, Object sep, Object maxsplit,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @CachedLibrary("maxsplit") PythonObjectLibrary lib,
-                        @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Cached AppendNode appendNode,
-                        @Cached ListReverseNode reverseNode) {
-            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rsplit", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
-            if (PGuards.isPNone(sep)) {
-                return rsplitfields(frame, selfStr, imaxsplit, appendNode, reverseNode);
-            } else {
-                String sepStr = castSepNode.cast(sep, "Can't convert %p object to str implicitly", sep);
-                return doStringSepMaxsplit(frame, selfStr, sepStr, imaxsplit, appendNode, reverseNode);
-            }
-        }
-
-        // See {@link PyString}
         private PList rsplitfields(VirtualFrame frame, String s, int maxsplit, AppendNode appendNode, ListReverseNode reverseNode) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1205,9 +1183,6 @@ public final class StringBuiltins extends PythonBuiltins {
              */
             PList list = factory().createList();
             int length = s.length();
-            int end = length - 1;
-            int splits = 0;
-            int index;
 
             int maxsplit2 = maxsplit;
             if (maxsplit2 < 0) {
@@ -1215,43 +1190,34 @@ public final class StringBuiltins extends PythonBuiltins {
                 maxsplit2 = length;
             }
 
-            // start is always the first character not consumed into a piece on the list
-            while (end > 0) {
+            // 2 state machine - we're either reading whitespace or non-whitespace, segments are
+            // emitted in ws->non-ws transition and at the end
+            boolean hasSegment = false;
+            int start = 0, end = length, splits = 0;
 
-                // Find the next occurrence of non-whitespace
-                while (end >= 0) {
-                    if (!PString.isWhitespace(s.codePointAt(end))) {
-                        // Break leaving start pointing at non-whitespace
-                        break;
-                    }
-                    end--;
-                }
-
-                if (end == 0) {
-                    // Only found whitespace so there is no next segment
-                    break;
-
-                } else if (splits >= maxsplit2) {
-                    // The next segment is the last and contains all characters up to the end
-                    index = 0;
-
-                } else {
-                    // The next segment runs up to the next next whitespace or end
-                    for (index = end; index >= 0; index--) {
-                        if (PString.isWhitespace(s.codePointAt(index))) {
-                            // Break leaving index pointing after the found whitespace
-                            index++;
+            for (int i = length - 1; i >= 0; i--) {
+                if (!PString.isHighSurrogate(s.charAt(i))) {
+                    if (StringUtils.isSpace(PString.codePointAt(s, i))) {
+                        if (hasSegment) {
+                            appendNode.execute(list, s.substring(start, end));
+                            hasSegment = false;
+                            splits++;
+                        }
+                        end = i;
+                        if (PString.isLowSurrogate(s.charAt(i))) {
+                            end++;
+                        }
+                    } else {
+                        hasSegment = true;
+                        if (splits >= maxsplit2) {
                             break;
                         }
+                        start = i;
                     }
                 }
-
-                // Make a piece from start up to index
-                appendNode.execute(list, s.substring(index, end + 1));
-                splits++;
-
-                // Start next segment search at the whitespace
-                end = index - 1;
+            }
+            if (hasSegment) {
+                appendNode.execute(list, s.substring(0, end));
             }
 
             reverseNode.call(frame, list);

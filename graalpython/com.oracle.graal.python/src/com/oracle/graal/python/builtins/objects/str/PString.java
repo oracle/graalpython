@@ -282,6 +282,16 @@ public final class PString extends PSequence {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static boolean isHighSurrogate(char ch) {
+        return Character.isHighSurrogate(ch);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static boolean isLowSurrogate(char ch) {
+        return Character.isLowSurrogate(ch);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int indexOf(String s, String sub, int fromIndex) {
         return s.indexOf(sub, fromIndex);
     }
