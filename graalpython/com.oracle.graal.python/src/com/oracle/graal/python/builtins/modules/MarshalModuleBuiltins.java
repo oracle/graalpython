@@ -434,6 +434,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         void handlePCode(@SuppressWarnings("unused") VirtualFrame frame, PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
             writeString(getSourceCode(c), version, buffer);
+            writeString(c.getFilename(), version, buffer);
+            writeString(c.getName(), version, buffer);
             writeInt(c.getNlocals(), version, buffer);
             writeInt(c.getStacksize(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
@@ -443,8 +445,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeArray(frame, c.getVarnames(), version, buffer);
             writeArray(frame, c.getFreeVars(), version, buffer);
             writeArray(frame, c.getCellVars(), version, buffer);
-            writeString(c.getFilename(), version, buffer);
-            writeString(c.getName(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab(), version, buffer);
         }
@@ -637,8 +637,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
+        private PComplex readPComplex() {
+            double real = readDouble();
+            double imag = readDouble();
+            return factory().createComplex(real, imag);
+        }
+
         private PCode readCode(int depth, HashingStorageLibrary lib) {
             String sourceCode = readString();
+            String fileName = readString();
+            String name = readString();
             int nLocals = readInt();
             int stackSize = readInt();
             int flags = readInt();
@@ -648,8 +656,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             Object[] varNames = readArray(depth, lib);
             Object[] freeVars = readArray(depth, lib);
             Object[] cellVars = readArray(depth, lib);
-            String fileName = readString();
-            String name = readString();
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
 
@@ -768,6 +774,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
                     return readCode(depth, lib);
+                case TYPE_COMPLEX:
+                    return readPComplex();
                 default:
                     throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
