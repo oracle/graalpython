@@ -46,9 +46,17 @@
 
 #define SRC_CS "utf-8"
 
+typedef HPyDef* HPyDefPtr;
+
 POLYGLOT_DECLARE_TYPE(HPy);
 POLYGLOT_DECLARE_STRUCT(_HPyContext_s);
-POLYGLOT_DECLARE_TYPE(HPyMethodDef);
+POLYGLOT_DECLARE_TYPE(HPyDef);
+POLYGLOT_DECLARE_TYPE(HPyDefPtr);
+POLYGLOT_DECLARE_TYPE(HPySlot);
+POLYGLOT_DECLARE_TYPE(HPyMeth);
+POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef);
+POLYGLOT_DECLARE_TYPE(HPyMember_FieldType);
+POLYGLOT_DECLARE_TYPE(HPyMember);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
 POLYGLOT_DECLARE_TYPE(wchar_t);
 
@@ -83,8 +91,8 @@ wchar_t* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
 	return polyglot_from_wchar_t_array(arr, len);
 }
 
-void* graal_hpy_from_HPyMethodDef(void *ptr) {
-	return polyglot_from_HPyMethodDef(ptr);
+void* graal_hpy_from_HPyMeth(void *ptr) {
+	return polyglot_from_HPyMeth(ptr);
 }
 
 void* graal_hpy_from_HPyModuleDef(void *ptr) {
@@ -103,20 +111,38 @@ void* graal_hpy_get_m_doc(HPyModuleDef *moduleDef) {
 	return polyglot_from_string("", SRC_CS);
 }
 
-void* graal_hpy_get_ml_name(HPyMethodDef *methodDef) {
-	return polyglot_from_string(methodDef->ml_name, SRC_CS);
+/* getters for HPyMeth */
+
+void* graal_hpy_get_ml_name(HPyMeth *methodDef) {
+	return polyglot_from_string(methodDef->name, SRC_CS);
 }
 
-void* graal_hpy_get_ml_doc(HPyMethodDef *methodDef) {
-	return polyglot_from_string(methodDef->ml_doc, SRC_CS);
+void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
+	return polyglot_from_string(methodDef->doc, SRC_CS);
 }
 
-void* graal_hpy_get_m_methods(HPyModuleDef *moduleDef) {
+/* getters for HPyDef */
+
+int graal_hpy_def_get_kind(HPyDef *def) {
+	return def->kind;
+}
+
+/* getters for HPyModuleDef */
+
+void* graal_hpy_module_get_legacy_methods(HPyModuleDef *moduleDef) {
 	uint64_t len=0;
-	while ((moduleDef->m_methods[len]).ml_name != NULL) {
+	while ((moduleDef->legacy_methods[len]).ml_name != NULL) {
 		len++;
 	}
-	return polyglot_from_HPyMethodDef_array(moduleDef->m_methods, len);
+	return polyglot_from_cpy_PyMethodDef_array(moduleDef->legacy_methods, len);
+}
+
+void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
+	uint64_t len=0;
+	while (moduleDef->defines[len] != NULL) {
+		len++;
+	}
+	return polyglot_from_HPyDefPtr_array(moduleDef->defines, len);
 }
 
 void* graal_hpy_from_string(const char *ptr) {

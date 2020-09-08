@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_GET_M_NAME = "graal_hpy_get_m_name";
     public static final String GRAAL_HPY_GET_M_DOC = "graal_hpy_get_m_doc";
-    public static final String GRAAL_HPY_GET_M_METHODS = "graal_hpy_get_m_methods";
     public static final String GRAAL_HPY_GET_ML_NAME = "graal_hpy_get_ml_name";
     public static final String GRAAL_HPY_GET_ML_DOC = "graal_hpy_get_ml_doc";
     public static final String GRAAL_HPY_FROM_HPY_ARRAY = "graal_hpy_from_HPy_array";
@@ -59,4 +58,7 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_LONG_ARRAY_TO_NATIVE = "graal_hpy_long_array_to_native";
     public static final String GRAAL_HPY_DOUBLE_ARRAY_TO_NATIVE = "graal_hpy_double_array_to_native";
     public static final String GRAAL_HPY_POINTER_ARRAY_TO_NATIVE = "graal_hpy_pointer_array_to_native";
+    public static final String GRAAL_HPY_FROM_HPY_MODULE_DEF = "graal_hpy_from_HPyModuleDef";
+    public static final String GRAAL_HPY_MODULE_GET_DEFINES = "graal_hpy_module_get_defines";
+    public static final String GRAAL_HPY_MODULE_GET_LEGACY_METHODS = "graal_hpy_module_get_legacy_methods";
 }

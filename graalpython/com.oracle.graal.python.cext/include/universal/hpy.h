@@ -107,7 +107,7 @@ static inline HPy _HPy_New(HPyContext ctx, HPy h_type, void **data) {
        See https://github.com/pyhandle/hpy/pull/22#pullrequestreview-413365845
     */
     void *data_result;
-    HPy h = ctx->ctx_New(ctx, h_type, &data_result);
+    HPy h = HPy_FromVoidP(ctx->ctx_New(ctx, HPy_AsVoidP(h_type), &data_result));
     *data = data_result;
     return h;
 }
