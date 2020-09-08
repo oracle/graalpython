@@ -25,19 +25,17 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PATH__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetAnyAttributeNodeGen;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -52,13 +50,10 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
-    @Child private GetAttributeNode getName;
-    @Child private GetAttributeNode getPath;
+    @Child private PythonObjectLibrary pythonLibrary;
     @Child private GetItemNode getItem;
     @Child private ReadAttributeFromObjectNode readModules;
-    @Child private GetAnyAttributeNode getAttributeNode = GetAnyAttributeNodeGen.create();
     @Child private PRaiseImportErrorNode raiseNode;
-    @Child private PythonObjectLibrary pythonLibrary;
 
     private final String importee;
     private final int level;
@@ -95,16 +90,18 @@ public class ImportFromNode extends AbstractImportNode {
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(frame, importee, globals, fromlist, level);
+        PythonObjectLibrary pol = ensurePythonLibrary();
+
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, getAttributeNode.executeObject(frame, importedModule, attr));
+                writeNode.doWrite(frame, pol.lookupAttributeStrict(importedModule, frame, attr));
             } catch (PException pe) {
                 pe.expectAttributeError(getAttrErrorProfile);
                 Object moduleName = "<unknown module name>";
                 try {
-                    moduleName = ensureGetNameNode().executeObject(frame, importedModule);
+                    moduleName = pol.lookupAttributeStrict(importedModule, frame, __NAME__);
                     String pkgname;
                     if (moduleName instanceof PString) {
                         pkgname = ((PString) moduleName).getValue();
@@ -120,13 +117,12 @@ public class ImportFromNode extends AbstractImportNode {
                     Object modulePath = "unknown location";
                     if (!getAttrErrorProfile.profileException(e2, PythonBuiltinClassType.AttributeError)) {
                         try {
-                            modulePath = ensureGetPathNode().executeObject(frame, importedModule);
+                            modulePath = pol.lookupAttributeStrict(importedModule, frame, __PATH__);
                         } catch (PException e3) {
                             e3.expectAttributeError(getFileErrorProfile);
                         }
                     }
 
-                    PythonObjectLibrary pol = ensurePythonLibrary();
                     if (isModuleInitialising(frame, pol, importedModule)) {
                         throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
                     } else {
@@ -139,8 +135,11 @@ public class ImportFromNode extends AbstractImportNode {
 
     private boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
         Object spec = pol.lookupAttribute(importedModule, frame, __SPEC__);
-        Object initializing = pol.lookupAttribute(spec, frame, "_initializing");
-        return pol.isTrue(initializing);
+        if (spec != PNone.NO_VALUE) {
+            Object initializing = pol.lookupAttribute(spec, frame, "_initializing");
+            return pol.isTrue(initializing);
+        }
+        return false;
     }
 
     private PythonObjectLibrary ensurePythonLibrary() {
@@ -149,22 +148,6 @@ public class ImportFromNode extends AbstractImportNode {
             pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
         }
         return pythonLibrary;
-    }
-
-    private GetAttributeNode ensureGetNameNode() {
-        if (getName == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getName = insert(GetAttributeNode.create(__NAME__));
-        }
-        return getName;
-    }
-
-    private GetAttributeNode ensureGetPathNode() {
-        if (getPath == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getPath = insert(GetAttributeNode.create(__FILE__));
-        }
-        return getPath;
     }
 
     private PRaiseImportErrorNode ensureRaiseNode() {
