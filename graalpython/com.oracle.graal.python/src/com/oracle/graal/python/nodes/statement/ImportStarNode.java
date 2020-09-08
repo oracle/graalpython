@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ALL__;
 import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -37,7 +38,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -130,7 +130,7 @@ public class ImportStarNode extends AbstractImportNode {
             }
         } else {
             try {
-                Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
+                Object attrAll = readAttribute(frame, importedModule, __ALL__);
                 int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
                     Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
@@ -140,7 +140,7 @@ public class ImportStarNode extends AbstractImportNode {
                     } catch (CannotCastException e) {
                         // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
                         // but that needs some refactoring first.
-                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrNameObj);
+                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ITEM_IN_S_MUST_BE_STRING, moduleName, __ALL__, attrNameObj);
                     }
                     Object attr = readAttribute(frame, importedModule, attrName);
                     writeAttribute(frame, locals, attrName, attr);
@@ -193,12 +193,12 @@ public class ImportStarNode extends AbstractImportNode {
         return isAttributeErrorProfile;
     }
 
-    private PException raise(PythonBuiltinClassType errType, String format, Object arg) {
+    private PException raise(PythonBuiltinClassType errType, String format, Object... args) {
         if (raiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             raiseNode = insert(PRaiseNode.create());
         }
-        throw raiseNode.raise(errType, format, arg);
+        throw raiseNode.raise(errType, format, args);
     }
 
     @TruffleBoundary
