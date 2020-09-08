@@ -137,6 +137,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
@@ -302,7 +303,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PTuple createEmptyTuple() {
-        return createTuple(new Object[0]);
+        return createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     public final PTuple createEmptyTuple(Object cls) {
@@ -466,7 +467,7 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PList createList() {
-        return createList(new Object[0]);
+        return createList(PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     public PList createList(SequenceStorage storage) {
@@ -482,7 +483,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PList createList(Object cls) {
-        return createList(cls, new Object[0]);
+        return createList(cls, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     public PList createList(Object[] array) {

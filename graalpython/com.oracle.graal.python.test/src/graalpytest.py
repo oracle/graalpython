@@ -630,6 +630,8 @@ class TestRunner(object):
         eval_scope("session")
 
         for module in self.test_modules():
+            if module is None:
+                continue
             # eval module scope
             eval_scope("module")
 

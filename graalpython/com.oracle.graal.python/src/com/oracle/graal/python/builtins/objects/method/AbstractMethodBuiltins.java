@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
@@ -41,22 +40,20 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -121,20 +118,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FUNC__, minNumOfPositionalArgs = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class FuncNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self) {
-            return self.getFunction();
-        }
-
-        @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getFunction();
-        }
-    }
-
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -156,24 +139,25 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class GetModuleNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(none)")
+    abstract static class GetModuleNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(none)", limit = "2")
         Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") ReadAttributeFromObjectNode readObject,
-                        @Cached("create()") GetAttrNode getAttr,
-                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
-            Object module = readObject.execute(self, __MODULE__);
+                        @CachedLibrary(limit = "3") PythonObjectLibrary pylib,
+                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
+            Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
             if (module == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreter();
-                Object globals = self.getSelf();
-                if (globals instanceof PythonModule) {
-                    module = ((PythonModule) globals).getAttribute(__NAME__);
-                } else {
-                    module = getAttr.call(frame, globals, __MODULE__, PNone.NONE);
+                // getContext() acts as a branch profile. This indirect call is done to easily
+                // support calls to this builtin with and without virtual frame, and because we
+                // don't care much about the performance here anyway
+                Object state = IndirectCallContext.enter(frame, getContext(), this);
+                try {
+                    return pylib.lookupAttribute(self.getSelf(), null, __NAME__);
+                } finally {
+                    IndirectCallContext.exit(frame, getContext(), state);
                 }
-                writeObject.execute(self, __MODULE__, module);
+            } else {
+                return module;
             }
-            return module;
         }
 
         @Specialization(guards = "!isNoValue(value)", limit = "2")

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,7 +78,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raise(PythonBuiltinClassType type, Exception e) {
-        throw execute(type, PNone.NO_VALUE, getMessage(e), new Object[0]);
+        throw execute(type, PNone.NO_VALUE, getMessage(e), PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     /**
@@ -97,7 +98,11 @@ public abstract class PRaiseNode extends Node {
     }
 
     public final PException raise(Object exceptionType) {
-        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, new Object[0]);
+        throw execute(exceptionType, PNone.NO_VALUE, PNone.NO_VALUE, PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public final PException raise(Object exceptionType, Object message) {
+        throw execute(exceptionType, PNone.NO_VALUE, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {

@@ -91,11 +91,6 @@ public class MethodBuiltins extends PythonBuiltins {
         protected Object doIt(PMethod self) {
             return self.getFunction();
         }
-
-        @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getFunction();
-        }
     }
 
     @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, isGetter = true)

@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
@@ -89,8 +90,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  */
 //@formatter:on
 public final class PArguments {
-    public static final Object[] EMPTY_VARARGS = new Object[0];
-
     private static final FrameDescriptor EMTPY_FD = new FrameDescriptor();
 
     private static final int INDEX_VARIABLE_ARGUMENTS = 0;
@@ -133,7 +132,7 @@ public final class PArguments {
 
     public static Object[] create(int userArgumentLength) {
         Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
-        initialArguments[INDEX_VARIABLE_ARGUMENTS] = EMPTY_VARARGS;
+        initialArguments[INDEX_VARIABLE_ARGUMENTS] = PythonUtils.EMPTY_OBJECT_ARRAY;
         initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
         return initialArguments;
     }

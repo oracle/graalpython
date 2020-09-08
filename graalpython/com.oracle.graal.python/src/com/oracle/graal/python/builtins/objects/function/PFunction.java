@@ -35,6 +35,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -55,7 +56,6 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public class PFunction extends PythonObject {
-    private static final Object[] EMPTY_DEFAULTS = new Object[0];
     private String name;
     private String qualname;
     private final String enclosingClassName;
@@ -68,7 +68,7 @@ public class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
     public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        this(name, qualname, enclosingClassName, code, globals, EMPTY_DEFAULTS, PKeyword.EMPTY_KEYWORDS, closure);
+        this(name, qualname, enclosingClassName, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
     public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
@@ -85,7 +85,7 @@ public class PFunction extends PythonObject {
         this.code = code;
         this.enclosingClassName = enclosingClassName;
         this.globals = globals;
-        this.defaultValues = defaultValues == null ? EMPTY_DEFAULTS : defaultValues;
+        this.defaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
         this.closure = closure;
         this.codeStableAssumption = codeStableAssumption;

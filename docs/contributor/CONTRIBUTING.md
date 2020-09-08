@@ -180,10 +180,14 @@ A tag file can be regenerated with
 
 There's also multiple other gates that may fail with changes. One of these is
 our *style* gate, which checks formatting rules and copyrights. To auto-fix most
-issues, run the following command. Anything that's reported as error after this
-command you have to fix manually.
+issues, run the following commands. Anything that's reported as error after this
+command you have to fix manually. Note that to really match what's in the gate,
+you have to set the `JDT` environment variable to the path to an Eclipse
+compiler Jar file, and the `ECLIPSE_EXE` environment variable to the path of an
+eclipse executable.
 
     mx python-style --fix
+    mx python-gate --tags style
 
 Another important gate is the gate that checks if you broke the native image
 building. To test if building a native image still works, you can use the
@@ -225,3 +229,63 @@ For additional arguments to the Python launcher, you can separate them by
 another double-dash:
 
     mx benchmark meso:nbody3 -- --python-vm=graalpython -- --python.EmulateJython -Dgraal.Dump= -Dgraal.MethodFilter=*measure*
+
+#### A note on terminology
+
+Note that there may be a little confusion about the configuration names of
+benchmarks.
+
+##### GraalVM Community and GraalVM Enterprise configurations
+
+We have benchmarks for GraalVM Community and Enterprise. For historical reasons,
+these are sometimes referred to in some config files as *CE* and *EE*; *core*
+and *enterprise*; *graalvm_ce* and *graalvm_ee*; or *graalpython_core* and
+*graalpython_enterprise*, respectively.
+
+##### Different GraalVM Python configurations
+
+There are also different options for how the Python interpreter is run, passed
+via the `--python-vm-config` parameter:
+ * `default` - run using the standard options
+ * `default-multi` - run using a shared engine, which is the mode that is
+   recommended to embedders that want to spawn multiple isolated Python contexts
+ * `native` - same as `default`, its name is due to the fact that it runs C
+   extensions using a mixture of LLVM bitcode interpreted and compiled via
+   GraalVM and real native libraries
+ * `sandboxed` - this name is historical - this configuration requires a GraalVM
+   Enterprise and runs all C extensions purely as LLVM bitcode on the GraalVM,
+   without any access to the native OS libraries, i.e., using the
+   `--llvm.managed` option for GraalVM.
+
+##### Configuration of the underlying GraalVM runtime
+
+Finally, there are the `--jvm` and `--jvm-config` configuration options for `mx
+benchmark`. By default, the commands presented above will run on the JVM in
+*server* mode, using the Graal compiler in what we call *hosted* mode. This is
+almost the same but not quite the `--jvm` mode you will get when running the
+`graalpython` executable from a full GraalVM, and usually good enough if you
+want to look at the compiler graphs or peak performance numbers. In our CI,
+however, we always build a full GraalVM and benchmark using that, since that is
+what we ship. There, we have two different configurations corresponding to the
+launcher flags available for the GraalVM `graalpython` executable: *jvm* and
+*native*. The first runs on top of Hotspot using the Graal compiler, the second
+runs the AOT compiled GraalVM native image of Python.
+
+Building a GraalVM Python configuration can be achieved for the CE version like
+so:
+
+    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm graalvm-show
+    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm build
+
+The first command will print some information about the GraalVM configuration
+that is about to be built, and the second will build it. **IMPORTANT:** The
+first command should tell you that the `Config name` is `ce_python`, otherwise
+the next commands will not work.
+
+To run the JVM configuration:
+
+    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=jvm --python-vm-config=default --
+
+To run the Native Image configuration:
+
+    mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=native --python-vm-config=default --

@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -106,10 +107,10 @@ public interface PythonParser {
         RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments);
 
         default RuntimeException raiseInvalidSyntax(Source source, SourceSection section) {
-            return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, new Object[0]);
+            return raiseInvalidSyntax(source, section, ErrorMessages.INVALID_SYNTAX, PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
-        void warn(Object type, String format, Object... args);
+        void warn(PythonBuiltinClassType type, String format, Object... args);
 
         PythonLanguage getLanguage();
     }
@@ -118,7 +119,7 @@ public interface PythonParser {
      * Parses the given {@link Source} object according to the requested {@link ParserMode}. Also
      * according the TruffleLanguage.ParsingRequest can be influence the result of parsing if there
      * are provided argumentsNames.
-     * 
+     *
      * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
     Node parse(ParserMode mode, ParserErrorCallback errors, Source source, Frame currentFrame, String[] arguments);

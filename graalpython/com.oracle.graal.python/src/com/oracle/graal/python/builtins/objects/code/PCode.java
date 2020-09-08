@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -84,7 +85,6 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    static final String[] EMPTY_STRINGS = new String[0];
     static final long FLAG_VAR_ARGS = 0x4;
     static final long FLAG_VAR_KW_ARGS = 0x8;
     static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
@@ -177,7 +177,7 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof PClosureRootNode) {
             return ((PClosureRootNode) rootNode).getFreeVars();
         } else {
-            return EMPTY_STRINGS;
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
@@ -185,12 +185,12 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof PClosureFunctionRootNode) {
             return ((PClosureFunctionRootNode) rootNode).getCellVars();
         } else {
-            return EMPTY_STRINGS;
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
     @TruffleBoundary
-    private static String extractFileName(RootNode rootNode) {
+    public static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {
@@ -524,7 +524,7 @@ public final class PCode extends PythonBuiltinObject {
     public PTuple co_consts(PythonObjectFactory factory) {
         Object[] codeConstants = this.getConstants();
         if (codeConstants == null) {
-            codeConstants = new Object[0];
+            codeConstants = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         return factory.createTuple(codeConstants);
     }
@@ -532,7 +532,7 @@ public final class PCode extends PythonBuiltinObject {
     public PTuple co_names(PythonObjectFactory factory) {
         Object[] codeNames = this.getNames();
         if (codeNames == null) {
-            codeNames = new Object[0];
+            codeNames = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         return factory.createTuple(codeNames);
     }

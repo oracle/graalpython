@@ -138,6 +138,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -557,7 +558,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             }
         }
 
-        return new Keys(keys.toArray(new String[0]));
+        return new Keys(keys.toArray(PythonUtils.EMPTY_STRING_ARRAY));
     }
 
     @ExportMessage

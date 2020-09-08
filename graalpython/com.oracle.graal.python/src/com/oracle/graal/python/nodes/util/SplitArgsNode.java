@@ -54,7 +54,7 @@ public abstract class SplitArgsNode extends Node {
 
     @Specialization(guards = "varargsWithSelf.length == 1")
     Object[] doEmpty(@SuppressWarnings("unused") Object[] varargsWithSelf) {
-        return new Object[0];
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Specialization(guards = {"varargsWithSelf.length == cachedLen", "varargsWithSelf.length < 32"})

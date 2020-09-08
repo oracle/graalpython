@@ -552,6 +552,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public boolean isCallable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object callObjectWithState(ThreadState state, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.callObjectWithState(ctx.getCore().lookupType(this), state, arguments);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public boolean isLazyPythonClass() {
         return true;
     }
@@ -586,5 +599,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
             }
         }
         return false;
+    }
+
+    /**
+     * Must be kept in sync with
+     * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.ReprNode
+     * TypeBuiltins.ReprNode}
+     */
+    @ExportMessage
+    String asPString() {
+        return getQualifiedName();
+    }
+
+    @ExportMessage
+    String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
+        return asPString();
     }
 }

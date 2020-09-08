@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class EmptySequenceStorage extends SequenceStorage {
@@ -63,7 +64,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
         } else if (value instanceof PTuple) {
             generalized = new TupleSequenceStorage();
         } else {
-            generalized = new ObjectSequenceStorage(new Object[0]);
+            generalized = new ObjectSequenceStorage(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
 
         return generalized;

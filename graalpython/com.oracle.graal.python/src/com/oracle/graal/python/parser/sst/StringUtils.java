@@ -191,7 +191,7 @@ public class StringUtils {
     }
 
     public static void warnInvalidEscapeSequence(ParserErrorCallback errorCallback, char nextChar) {
-        errorCallback.warn("DeprecationWarning", "invalid escape sequence '\\%c'", nextChar);
+        errorCallback.warn(PythonBuiltinClassType.DeprecationWarning, "invalid escape sequence '\\%c'", nextChar);
     }
 
     private static final String UNICODE_ERROR = "'unicodeescape' codec can't decode bytes in position %d-%d:";

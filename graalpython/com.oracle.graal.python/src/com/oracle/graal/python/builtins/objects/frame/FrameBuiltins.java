@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -181,7 +182,8 @@ public final class FrameBuiltins extends PythonBuiltins {
             }
             // TODO: frames: this just shouldn't happen anymore
             assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0],
+            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
+                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
                             "<internal>",
                             "<internal>", -1, new byte[0]);
         }

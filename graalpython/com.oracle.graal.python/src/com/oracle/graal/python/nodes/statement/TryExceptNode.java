@@ -43,6 +43,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleException;
@@ -205,7 +206,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                         literalCatches.add("BaseException");
                     }
                 }
-                catchesFunction = new CatchesFunction(literalCatches.toArray(new String[0]));
+                catchesFunction = new CatchesFunction(literalCatches.toArray(PythonUtils.EMPTY_STRING_ARRAY));
             }
             return catchesFunction;
         } else {

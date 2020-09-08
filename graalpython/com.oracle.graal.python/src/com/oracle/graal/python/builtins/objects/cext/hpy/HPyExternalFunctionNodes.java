@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -252,7 +253,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable, HPyAllAsHandleNodeGen.create());
@@ -270,7 +271,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -298,7 +299,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -328,7 +329,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -355,7 +356,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object getKwargs(VirtualFrame frame) {
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
+                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(PythonUtils.EMPTY_STRING_ARRAY));
             }
             return readKwargsNode.execute(frame);
         }

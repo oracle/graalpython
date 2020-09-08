@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,20 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function;
+package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class ClassBodyRootNode extends FunctionRootNode {
-    private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"namespace"}, PythonUtils.EMPTY_STRING_ARRAY);
+/**
+ * Substitutes a default value if no argument was given.
+ */
+public final class DefaultValueNode extends ArgumentCastNode {
+    private final Object defaultValue;
+    private final boolean useDefaultForNone;
 
-    public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
-        super(language, sourceSection, functionName, false, false, frameDescriptor, body, executionCellSlots, SIGNATURE);
+    private final ConditionProfile profileArg = ConditionProfile.createBinaryProfile();
+
+    public static DefaultValueNode create(Object defaultValue, boolean useDefaultForNone) {
+        return new DefaultValueNode(defaultValue, useDefaultForNone);
+    }
+
+    protected DefaultValueNode(Object defaultValue, boolean useDefaultForNone) {
+        this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame, Object value) {
+        if (profileArg.profile(isHandledPNone(useDefaultForNone, value))) {
+            return defaultValue;
+        } else {
+            return value;
+        }
     }
 }

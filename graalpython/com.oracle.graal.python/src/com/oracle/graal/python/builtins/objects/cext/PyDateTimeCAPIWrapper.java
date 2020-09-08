@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNod
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -131,7 +132,7 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     Object getMembers(boolean includeInternal) {
-        return new InteropArray(new String[0]);
+        return new InteropArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
     @ExportMessage

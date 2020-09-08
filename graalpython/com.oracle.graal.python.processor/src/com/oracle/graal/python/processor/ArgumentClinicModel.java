@@ -74,6 +74,7 @@ public class ArgumentClinicModel {
                 case Index:
                     return format("IndexConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
                 case None:
+                    return format("DefaultValueNode.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
                 default:
                     throw new IllegalArgumentException(annotation.conversion().toString());
             }
@@ -87,7 +88,7 @@ public class ArgumentClinicModel {
             if (annotation.defaultValue().startsWith("PNone.")) {
                 imports.add("com.oracle.graal.python.builtins.objects.PNone");
             }
-            if (annotation.conversion() != ClinicConversion.None) {
+            if (annotation.conversion() != ClinicConversion.None || (annotation.customConversion().isEmpty() && !annotation.defaultValue().isEmpty())) {
                 imports.add(CLINIC_PACKAGE + '.' + getConvertorImport(annotation));
             }
         }
@@ -103,6 +104,7 @@ public class ArgumentClinicModel {
                 case Index:
                     return "IndexConversionNodeGen";
                 case None:
+                    return "DefaultValueNode";
                 default:
                     throw new IllegalArgumentException(annotation.conversion().toString());
             }
@@ -118,6 +120,7 @@ public class ArgumentClinicModel {
                 case Index:
                     return new PrimitiveType[]{PrimitiveType.Int};
                 case None:
+                    return new PrimitiveType[]{PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double};
                 default:
                     throw new IllegalArgumentException(annotation.conversion().toString());
             }
@@ -195,7 +198,7 @@ public class ArgumentClinicModel {
             PrimitiveType[] acceptedPrimitives = new PrimitiveType[0];
             String castNodeFactory;
             if (annotation.customConversion().isEmpty()) {
-                if (annotation.conversion() == ClinicConversion.None) {
+                if (annotation.conversion() == ClinicConversion.None && annotation.defaultValue().isEmpty()) {
                     throw new ProcessingError(type, "ArgumentClinic annotation must declare either builtin conversion or custom conversion.");
                 }
                 castNodeFactory = BuiltinConvertor.getCodeSnippet(annotation, builtinAnnotation);

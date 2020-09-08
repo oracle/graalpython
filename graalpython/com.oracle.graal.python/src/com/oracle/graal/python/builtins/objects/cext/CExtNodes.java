@@ -136,6 +136,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -449,6 +450,21 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, getNameNode.execute(object));
         }
 
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
+                        @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonType")
+        static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), getNameNode.execute(object));
+        }
+
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
@@ -485,10 +501,14 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        }
+
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
             return !(object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double ||
-                            object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE || object instanceof PythonAbstractObject) &&
-                            !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
+                            object instanceof PythonBuiltinClassType || object instanceof PythonNativeNull || object == DescriptorDeleteMarker.INSTANCE ||
+                            object instanceof PythonAbstractObject) && !(lib.isForeignObject(object) && !CApiGuards.isNativeWrapper(object));
         }
 
         protected static boolean isNaN(double d) {
@@ -687,6 +707,22 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
+                        @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+            wrapper.increaseRefCount();
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonType")
+        static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrapNewRef(ctx.getCore().lookupType(object), getNameNode.execute(object));
+        }
+
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
@@ -719,6 +755,10 @@ public abstract class CExtNodes {
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
+        }
+
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
         }
 
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
@@ -850,6 +890,22 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrapNewRef(object, getNameNode.execute(object));
         }
 
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
+        static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
+                        @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached("wrapNativeClass(ctx, object)") PythonClassNativeWrapper wrapper) {
+            wrapper.increaseRefCount();
+            return wrapper;
+        }
+
+        @Specialization(replaces = "doPythonType")
+        static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached TypeNodes.GetNameNode getNameNode) {
+            return PythonClassNativeWrapper.wrapNewRef(ctx.getCore().lookupType(object), getNameNode.execute(object));
+        }
+
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
@@ -882,6 +938,10 @@ public abstract class CExtNodes {
 
         protected static PythonClassNativeWrapper wrapNativeClass(PythonManagedClass object) {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
+        }
+
+        protected static PythonClassNativeWrapper wrapNativeClass(PythonContext ctx, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(ctx.getCore().lookupType(object), GetNameNode.doSlowPath(object));
         }
 
         static boolean isFallback(Object object, PythonObjectLibrary lib) {
@@ -1633,7 +1693,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 1")
         Object upcall0(VirtualFrame frame, Object[] args,
                         @Cached("create()") CallNode callNode) {
-            return callNode.execute(frame, args[0], new Object[0], new PKeyword[0]);
+            return callNode.execute(frame, args[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 2")
@@ -1815,7 +1875,7 @@ public abstract class CExtNodes {
                         @Shared("getAttrNode") @Cached ReadAttributeFromObjectNode getAttrNode) {
             assert args[0] instanceof String;
             Object callable = getAttrNode.execute(cextModule, args[0]);
-            return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 2")
@@ -1888,7 +1948,7 @@ public abstract class CExtNodes {
             Object receiver = receiverToJavaNode.execute(args[0]);
             assert PGuards.isString(args[1]);
             Object callable = getAttrNode.call(frame, receiver, args[1], PNone.NO_VALUE);
-            return callNode.execute(frame, callable, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
         @Specialization(guards = "args.length == 3")

@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -225,7 +226,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @Cached("create()") CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
-            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
         }

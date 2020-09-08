@@ -56,8 +56,10 @@ import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -106,7 +108,7 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected Object importModule(VirtualFrame frame, String name) {
-        return importModule(frame, name, PNone.NONE, new String[0], 0);
+        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }
 
     CallNode getCallNode() {
@@ -125,39 +127,50 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
+    @TruffleBoundary
+    public static Object importModule(String name) {
+        PythonContext ctx = PythonLanguage.getContext();
+        CallNode callNode = CallNode.getUncached();
+        GetDictNode getDictNode = GetDictNode.getUncached();
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        return __import__(null, ctx, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0, callNode, getDictNode, factory);
+    }
+
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
-        if (!getContext().getCore().isInitialized()) {
-            PythonModule builtinModule = getContext().getCore().lookupBuiltinModule(name);
+        PythonContext context = getContext();
+        if (!context.getCore().isInitialized()) {
+            PythonModule builtinModule = context.getCore().lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
         }
         if (emulateJython()) {
             if (fromList.length > 0) {
-                getContext().pushCurrentImport(PString.cat(name, ".", fromList[0]));
+                context.pushCurrentImport(PString.cat(name, ".", fromList[0]));
             } else {
-                getContext().pushCurrentImport(name);
+                context.pushCurrentImport(name);
             }
         }
         try {
-            return __import__(frame, name, globals, fromList, level);
+            return __import__(frame, context, name, globals, fromList, level, getCallNode(), getGetDictNode(), factory());
         } finally {
             if (emulateJython()) {
-                getContext().popCurrentImport();
+                context.popCurrentImport();
             }
         }
     }
 
-    Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
+    private static Object __import__(VirtualFrame frame, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode, GetDictNode getDictNode,
+                    PythonObjectFactory factory) {
+        PMethod builtinImport = (PMethod) ctx.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return getCallNode().execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
-                        new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
+        return callNode.execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
+                        new PKeyword(GLOBALS, getDictNode.execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None
-                        new PKeyword("fromlist", factory().createTuple(fromList)),
+                        new PKeyword("fromlist", factory.createTuple(fromList)),
                         new PKeyword("level", level)
         });
     }
