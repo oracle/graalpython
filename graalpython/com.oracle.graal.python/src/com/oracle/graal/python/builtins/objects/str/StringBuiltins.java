@@ -2269,9 +2269,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static String doString(String self) {
-            // TODO(fa) implement properly using 'unicodedata_db' (see 'unicodeobject.c' function
-            // 'unicode_casefold_impl')
-            return self.toLowerCase();
+            return UCharacter.foldCase(self, true);
         }
 
         @Specialization(replaces = "doString")
