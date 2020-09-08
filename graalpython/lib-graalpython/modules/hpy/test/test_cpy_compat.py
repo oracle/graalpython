@@ -202,3 +202,200 @@ class TestCPythonCompatibility(HPyTest):
         assert mod.g(45) == 90
         assert mod.h(4, 5, 6) == 456
         assert mod.k(c=6, b=5, a=4) == 456
+
+    def test_legacy_slots_repr(self):
+        mod = self.make_module("""
+            #include <Python.h>
+
+            static PyObject *Dummy_repr(PyObject *self)
+            {
+                return PyUnicode_FromString("myrepr");
+            }
+
+            HPyDef_SLOT(Dummy_abs, Dummy_abs_impl, HPy_nb_absolute);
+            static HPy Dummy_abs_impl(HPyContext ctx, HPy self)
+            {
+                return HPyLong_FromLong(ctx, 1234);
+            }
+
+            static HPyDef *Dummy_defines[] = {
+                &Dummy_abs,
+                NULL
+            };
+            static PyType_Slot Dummy_type_slots[] = {
+                {Py_tp_repr, Dummy_repr},
+                {0, 0},
+            };
+            static HPyType_Spec Dummy_spec = {
+                .name = "mytest.Dummy",
+                .legacy_slots = Dummy_type_slots,
+                .defines = Dummy_defines
+            };
+
+            @EXPORT_TYPE("Dummy", Dummy_spec)
+            @INIT
+        """)
+        d = mod.Dummy()
+        assert repr(d) == 'myrepr'
+        assert abs(d) == 1234
+
+    def test_legacy_slots_methods(self):
+        mod = self.make_module("""
+            #include <Python.h>
+
+            static PyObject *Dummy_foo(PyObject *self, PyObject *arg)
+            {
+                Py_INCREF(arg);
+                return arg;
+            }
+
+            HPyDef_METH(Dummy_bar, "bar", Dummy_bar_impl, HPyFunc_NOARGS)
+            static HPy Dummy_bar_impl(HPyContext ctx, HPy self)
+            {
+                return HPyLong_FromLong(ctx, 1234);
+            }
+
+            static PyMethodDef dummy_methods[] = {
+               {"foo", Dummy_foo, METH_O},
+               {NULL, NULL}         /* Sentinel */
+            };
+
+            static PyType_Slot dummy_type_slots[] = {
+                {Py_tp_methods, dummy_methods},
+                {0, 0},
+            };
+
+            static HPyDef *dummy_type_defines[] = {
+                    &Dummy_bar,
+                    NULL
+            };
+
+            static HPyType_Spec dummy_type_spec = {
+                .name = "mytest.Dummy",
+                .legacy_slots = dummy_type_slots,
+                .defines = dummy_type_defines
+            };
+
+            @EXPORT_TYPE("Dummy", dummy_type_spec)
+            @INIT
+        """)
+        d = mod.Dummy()
+        assert d.foo(21) == 21
+        assert d.bar() == 1234
+
+    def test_legacy_slots_members(self):
+        mod = self.make_module("""
+            #include <Python.h>
+            #include "structmember.h"
+
+            typedef struct {
+                HPyObject_HEAD
+                long x;
+                long y;
+            } PointObject;
+
+            HPyDef_SLOT(Point_new, Point_new_impl, HPy_tp_new)
+            static HPy Point_new_impl(HPyContext ctx, HPy cls, HPy *args,
+                                      HPy_ssize_t nargs, HPy kw)
+            {
+                PointObject *point;
+                HPy h_point = HPy_New(ctx, cls, &point);
+                if (HPy_IsNull(h_point))
+                    return HPy_NULL;
+                point->x = 7;
+                point->y = 3;
+                return h_point;
+            }
+
+            HPyDef_MEMBER(Point_x, "x", HPyMember_LONG, offsetof(PointObject, x))
+
+            // legacy members
+            static PyMemberDef legacy_members[] = {
+                {"y", T_LONG, offsetof(PointObject, y), 0},
+                {NULL}
+            };
+
+            static PyType_Slot legacy_slots[] = {
+                {Py_tp_members, legacy_members},
+                {0, NULL}
+            };
+
+            static HPyDef *Point_defines[] = {
+                &Point_new,
+                &Point_x,
+                NULL
+            };
+            static HPyType_Spec Point_spec = {
+                .name = "mytest.Point",
+                .basicsize = sizeof(PointObject),
+                .defines = Point_defines,
+                .legacy_slots = legacy_slots
+            };
+
+            @EXPORT_TYPE("Point", Point_spec)
+            @INIT
+        """)
+        p = mod.Point()
+        assert p.x == 7
+        assert p.y == 3
+        p.x = 123
+        p.y = 456
+        assert p.x == 123
+        assert p.y == 456
+
+    def test_legacy_slots_getsets(self):
+        mod = self.make_module("""
+            #include <Python.h>
+
+            typedef struct {
+                HPyObject_HEAD
+                long x;
+                long y;
+            } PointObject;
+
+            HPyDef_SLOT(Point_new, Point_new_impl, HPy_tp_new)
+            static HPy Point_new_impl(HPyContext ctx, HPy cls, HPy *args,
+                                      HPy_ssize_t nargs, HPy kw)
+            {
+                PointObject *point;
+                HPy h_point = HPy_New(ctx, cls, &point);
+                if (HPy_IsNull(h_point))
+                    return HPy_NULL;
+                point->x = 7;
+                point->y = 3;
+                return h_point;
+            }
+
+            static PyObject *z_get(PointObject *point, void *closure)
+            {
+                long z = point->x*10 + point->y + (long)closure;
+                return PyLong_FromLong(z);
+            }
+
+            // legacy getsets
+            static PyGetSetDef legacy_getsets[] = {
+                {"z", (getter)z_get, NULL, NULL, (void *)2000},
+                {NULL}
+            };
+
+            static PyType_Slot legacy_slots[] = {
+                {Py_tp_getset, legacy_getsets},
+                {0, NULL}
+            };
+
+            static HPyDef *Point_defines[] = {
+                &Point_new,
+                NULL
+            };
+            static HPyType_Spec Point_spec = {
+                .name = "mytest.Point",
+                .basicsize = sizeof(PointObject),
+                .defines = Point_defines,
+                .legacy_slots = legacy_slots
+            };
+
+            @EXPORT_TYPE("Point", Point_spec)
+            @INIT
+        """)
+        p = mod.Point()
+        assert p.z == 2073
