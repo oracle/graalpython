@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -2257,7 +2258,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass);
                 addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
-                // TODO: tfel - also deal with weaklistoffset
+                addWeakrefDescrAttribute(pythonClass);
             } else {
                 // have slots
 
@@ -2335,11 +2336,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
                 BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
-                RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(rootNode);
-                PBuiltinFunction function = getCore().factory().createBuiltinFunction(__DICT__, pythonClass, 1, callTarget);
-                GetSetDescriptor desc = factory().createGetSetDescriptor(function, function, __DICT__, pythonClass, true);
-                pythonClass.setAttribute(__DICT__, desc);
+                setAttribute(__DICT__, rootNode, pythonClass);
             }
+        }
+
+        private void addWeakrefDescrAttribute(PythonClass pythonClass) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
+            BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(getCore().getLanguage(), builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true);
+            setAttribute(__WEAKREF__, rootNode, pythonClass);
+        }
+
+        private void setAttribute(String name, BuiltinFunctionRootNode rootNode, PythonClass pythonClass) {
+            RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(rootNode);
+            PBuiltinFunction function = getCore().factory().createBuiltinFunction(name, pythonClass, 1, callTarget);
+            GetSetDescriptor desc = factory().createGetSetDescriptor(function, function, name, pythonClass, true);
+            pythonClass.setAttribute(name, desc);
         }
 
         private static boolean basesHaveSlots(PythonAbstractClass[] basesArray) {
