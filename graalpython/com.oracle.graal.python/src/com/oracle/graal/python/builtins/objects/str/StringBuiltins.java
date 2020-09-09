@@ -92,12 +92,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.CastToJavaStringCheckedNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -172,20 +172,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FormatNode extends FormatNodeBase {
-        @Child CastToJavaStringCheckedNode castSelfToStringNode;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
+        }
 
-        @Specialization
-        Object format(VirtualFrame frame, Object self, Object formatStringObj,
-                        @Cached CastToJavaStringNode castFmtToStringNode) {
-            String formatString = castFormatString(formatStringObj, castFmtToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            String str = ensureCastSelfToStringNode().cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self);
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object format(Object self, String formatString,
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+            // We cannot cast self via argument clinic, because we need to keep it as-is for the
+            // empty format string case, which should call __str__, which may be overridden
+            String str = castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self);
             return formatString(getCore(), getAndValidateSpec(formatString), str);
         }
 
@@ -208,14 +210,6 @@ public final class StringBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
             }
             return spec;
-        }
-
-        private CastToJavaStringCheckedNode ensureCastSelfToStringNode() {
-            if (castSelfToStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castSelfToStringNode = insert(CastToJavaStringCheckedNodeGen.create());
-            }
-            return castSelfToStringNode;
         }
     }
 

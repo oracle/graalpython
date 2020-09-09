@@ -86,17 +86,16 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -743,16 +742,10 @@ public class ComplexBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class FormatNode extends FormatNodeBase {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return FormatNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = "formatString.isEmpty()")
-        Object format(VirtualFrame frame, PComplex self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode lookupAndCallNode) {
-            return lookupAndCallNode.executeObject(frame, self);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")

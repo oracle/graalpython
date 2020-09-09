@@ -71,6 +71,8 @@ import java.nio.ByteOrder;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -81,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -94,9 +97,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -168,26 +171,18 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
-        @Specialization
-        Object formatPF(VirtualFrame frame, PFloat self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            return doFormat(self.getValue(), formatString, getCore());
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        Object formatD(VirtualFrame frame, double self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatPF(double self, String formatString) {
             return doFormat(self, formatString, getCore());
         }
 

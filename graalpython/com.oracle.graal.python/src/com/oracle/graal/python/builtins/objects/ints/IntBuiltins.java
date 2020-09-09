@@ -51,6 +51,8 @@ import java.math.RoundingMode;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -88,9 +91,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -2542,34 +2545,26 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
         @Child private BuiltinConstructors.FloatNode floatNode;
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
+        }
+
         // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
-        // boolean's __str__ and not int's __str__
-        @Specialization
-        Object formatB(VirtualFrame frame, boolean self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            return doFormatInt(self ? 1 : 0, formatString);
+        // boolean's __str__ and not int's __str__ (that specialization is inherited)
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatB(boolean self, String formatString) {
+            return formatI(self ? 1 : 0, formatString);
         }
 
-        @Specialization
-        Object formatI(VirtualFrame frame, int self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            return doFormatInt(self, formatString);
-        }
-
-        private String doFormatInt(int self, String formatString) {
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatI(int self, String formatString) {
             PythonCore core = getCore();
             Spec spec = getSpec(formatString, core);
             if (isDoubleSpec(spec)) {
@@ -2579,23 +2574,19 @@ public class IntBuiltins extends PythonBuiltins {
             return formatInt(self, core, spec);
         }
 
-        @Specialization
-        Object formatL(VirtualFrame frame, long self, Object formatString,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            return formatPI(frame, factory().createInt(self), formatString, castToStringNode);
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatL(VirtualFrame frame, long self, String formatString) {
+            return formatPI(frame, factory().createInt(self), formatString);
         }
 
-        @Specialization
-        Object formatPI(VirtualFrame frame, PInt self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatPI(VirtualFrame frame, PInt self, String formatString) {
             PythonCore core = getCore();
             Spec spec = getSpec(formatString, core);
             if (isDoubleSpec(spec)) {
-                return formatDouble(core, spec, asDouble(frame, self));
+                // lazy init of floatNode serves as branch profile
+                double doubleVal = asDouble(frame, self);
+                return formatDouble(core, spec, doubleVal);
             }
             validateIntegerSpec(core, spec);
             return formatPInt(self, core, spec);
