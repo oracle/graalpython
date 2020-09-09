@@ -831,7 +831,7 @@ public final class StringBuiltins extends PythonBuiltins {
             HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
             for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
                 if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
-                    hlib.setItem(destStorage, entry.key, entry.value);
+                    destStorage = hlib.setItem(destStorage, entry.key, entry.value);
                 } else {
                     String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (strKey.isEmpty()) {
@@ -841,7 +841,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     if (strKey.length() != PString.charCount(codePoint)) {
                         throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
                     }
-                    hlib.setItem(destStorage, codePoint, entry.value);
+                    destStorage = hlib.setItem(destStorage, codePoint, entry.value);
                 }
             }
             return factory().createDict(destStorage);
