@@ -57,8 +57,3 @@ east_asian_width = lambda arg: __get_c_unicodedata().east_asian_width(arg)
 @__graalpython__.builtin
 def lookup(name):
     return __get_c_unicodedata().lookup(name)
-
-
-@__graalpython__.builtin
-def category(char):
-    return __get_c_unicodedata().category(char)

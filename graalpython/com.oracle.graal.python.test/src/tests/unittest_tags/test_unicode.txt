@@ -68,6 +68,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isnumeric
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isprintable
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isspace
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_isspace_invariant
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue18183
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue28598_strsubclass_rhs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_issue8271

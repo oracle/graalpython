@@ -280,4 +280,21 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return UnicodeDataModuleBuiltinsClinicProviders.BidirectionalNodeClinicProviderGen.INSTANCE;
         }
     }
+
+    // unicodedata.category(char)
+    @Builtin(name = "category", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class CategoryNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static String category(int chr) {
+            return UCharacter.getPropertyValueName(UProperty.GENERAL_CATEGORY, UCharacter.getType(chr), UProperty.NameChoice.SHORT);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.CategoryNodeClinicProviderGen.INSTANCE;
+        }
+    }
 }
