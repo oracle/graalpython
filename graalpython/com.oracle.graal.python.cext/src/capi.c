@@ -300,6 +300,11 @@ PyObject* get_tp_dict(PyTypeObject* obj) {
 	return native_to_java(obj->tp_dict);
 }
 
+/** to be used from Java code only; reads native 'tp_base' field */
+PyObject* get_tp_base(PyTypeObject* obj) {
+	return native_to_java(obj->tp_base);
+}
+
 /** to be used from Java code only; reads native 'tp_bases' field */
 PyObject* get_tp_bases(PyTypeObject* obj) {
 	return native_to_java(obj->tp_bases);

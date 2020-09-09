@@ -165,6 +165,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
@@ -2076,7 +2077,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CastToJavaStringNode castStr,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
-                        @Cached CallNode callNewFuncNode) {
+                        @Cached CallNode callNewFuncNode,
+                        @Cached GetBestBaseClassNode getBestBaseNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2091,7 +2093,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             try {
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getBestBaseNode);
 
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2176,8 +2178,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib) {
-
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib,
+                        GetBestBaseClassNode getBestBaseNode) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2195,6 +2197,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 }
             }
+            // check for possible layout conflicts
+            getBestBaseNode.execute(basesArray);
+
             assert metaclass != null;
 
             if (name.indexOf('\0') != -1) {
