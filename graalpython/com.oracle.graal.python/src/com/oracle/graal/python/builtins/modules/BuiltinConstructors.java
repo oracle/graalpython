@@ -154,6 +154,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -213,6 +214,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -701,7 +703,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             int lstart = range.getIntStart();
             int lstop = range.getIntStop();
             int lstep = range.getIntStep();
-            int ulen = lenOfRangeNode.len(lstart, lstop, lstep);
+            int ulen = lenOfRangeNode.executeInt(lstart, lstop, lstep);
             int new_stop = lstart - lstep;
             int new_start = new_stop + ulen * lstep;
 
@@ -715,7 +717,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             BigInteger lstart = range.getBigIntegerStart();
             BigInteger lstop = range.getBigIntegerStop();
             BigInteger lstep = range.getBigIntegerStep();
-            BigInteger ulen = (BigInteger) lenOfRangeNode.execute(lstart, lstop, lstep);
+            BigInteger ulen = lenOfRangeNode.execute(lstart, lstop, lstep);
 
             BigInteger new_stop = lstart.subtract(lstep);
             BigInteger new_start = new_stop.add(ulen.multiply(lstep));
@@ -1649,9 +1651,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doIntStop(Object cls, int stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
-            return doInt(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
+            return doInt(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
         }
 
         @Specialization(guards = "isStop(start, stop, step)")
@@ -1665,11 +1667,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doGenericStop(Object cls, Object stop, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode, pol, lib);
+            return doGeneric(cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, pol, lib);
         }
 
         // start stop
@@ -1677,9 +1679,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doIntStartStop(Object cls, int start, int stop, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
-            return doInt(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
+            return doInt(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
         }
 
         @Specialization(guards = "isStartStop(start, stop, step)")
@@ -1693,11 +1695,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doGenericStartStop(Object cls, Object start, Object stop, @SuppressWarnings("unused") PNone step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode, pol, lib);
+            return doGeneric(cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, pol, lib);
         }
 
         // start stop step
@@ -1705,15 +1707,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doInt(@SuppressWarnings("unused") Object cls, int start, int stop, int step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNode,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode) {
             if (stepZeroProfile.profile(step == 0)) {
                 throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
             try {
-                int len = lenOfRangeNode.len(start, stop, step);
+                int len = lenOfRangeNode.executeInt(start, stop, step);
                 return factory().createIntRange(start, stop, step, len);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 exceptionProfile.enter();
                 return createBigRangeNode.execute(start, stop, step, factory());
             }
@@ -1726,7 +1728,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (stepZeroProfile.profile(step.isZero())) {
                 throw raise(ValueError, ARG_MUST_NOT_BE_ZERO, "range()", 3);
             }
-            BigInteger len = (BigInteger) lenOfRangeNode.execute(start, stop, step);
+            BigInteger len = lenOfRangeNode.execute(start.getValue(), stop.getValue(), step.getValue());
             return factory().createBigRange(start, stop, step, factory().createInt(len));
         }
 
@@ -1734,12 +1736,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object doGeneric(@SuppressWarnings("unused") Object cls, Object start, Object stop, Object step,
                         @Shared("stepZeroProfile") @Cached ConditionProfile stepZeroProfile,
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
-                        @Shared("lenOfRangeNode") @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
                         @Shared("polGeneric") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
                         @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
             if (canBeInt(start, stop, step, lib)) {
-                return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
+                return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
             } else if (canBePint(start, stop, step, pol)) {
                 return createBigRangeNode.execute(start, stop, step, factory());
             } else {
@@ -1748,7 +1750,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object lstep = pol.asIndex(step);
 
                 if (canBeInt(start, stop, step, lib)) {
-                    return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNode, createBigRangeNode);
+                    return doInt(cls, pol.asSize(start), pol.asSize(stop), pol.asSize(step), stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
                 } else {
                     return createBigRangeNode.execute(lstart, lstop, lstep, factory());
                 }

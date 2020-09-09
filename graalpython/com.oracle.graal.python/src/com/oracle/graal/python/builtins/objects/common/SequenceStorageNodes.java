@@ -125,10 +125,10 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
+import com.oracle.graal.python.nodes.util.ExactMath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -2301,8 +2301,8 @@ public abstract class SequenceStorageNodes {
 
         private static int lengthResult(int current, int ext) {
             try {
-                return Math.addExact(current, ext);
-            } catch (ArithmeticException e) {
+                return ExactMath.addExact(current, ext);
+            } catch (OverflowException e) {
                 // (mq) There is no need to ensure capacity as we either
                 // run out of memory or dealing with a fake length.
                 return current;
@@ -2314,9 +2314,7 @@ public abstract class SequenceStorageNodes {
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached LenNode lenNode,
-                        @Cached PRaiseNode raiseNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached BranchProfile overflowErrorProfile,
                         @Cached ConcatBaseNode concatStoragesNode) {
             SequenceStorage right = getStorageNode.execute(seq);
             int lenLeft = lenNode.execute(left);
@@ -2328,15 +2326,13 @@ public abstract class SequenceStorageNodes {
             }
             SequenceStorage dest = null;
             try {
+                // EnsureCapacityNode handles the overflow and raises an error
                 dest = ensureCapacityNode.execute(left, lenResult);
                 return concatStoragesNode.execute(dest, left, right);
             } catch (SequenceStoreException e) {
                 dest = generalizeStore(dest, e.getIndicationValue());
                 dest = ensureCapacityNode.execute(dest, lenResult);
                 return concatStoragesNode.execute(dest, left, right);
-            } catch (ArithmeticException e) {
-                overflowErrorProfile.enter();
-                throw raiseNode.raise(PythonErrorType.OverflowError);
             }
         }
 
