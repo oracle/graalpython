@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_copycharacters
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_encode_decimal
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_findchar
+*graalpython.lib-python.3.test.test_unicode.CAPITest.test_from_format
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_pep393_utf8_caching_bug
 *graalpython.lib-python.3.test.test_unicode.CAPITest.test_transform_decimal
 *graalpython.lib-python.3.test.test_unicode.StringModuleTest.test_formatter_field_name_split
