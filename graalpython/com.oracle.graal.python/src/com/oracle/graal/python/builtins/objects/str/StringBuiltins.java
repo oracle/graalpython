@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -228,7 +229,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self));
+            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __REPR__, self));
         }
 
         @TruffleBoundary
@@ -279,6 +280,22 @@ public final class StringBuiltins extends PythonBuiltins {
             return str.toString();
         }
 
+    }
+
+    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple doString(String self) {
+            // CPython requires the string to be a copy for some reason
+            return factory().createTuple(new Object[]{new String(self)});
+        }
+
+        @Specialization
+        PTuple doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode cast) {
+            return doString(cast.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __GETNEWARGS__, self));
+        }
     }
 
     abstract static class BinaryStringOpNode extends PythonBinaryBuiltinNode {
