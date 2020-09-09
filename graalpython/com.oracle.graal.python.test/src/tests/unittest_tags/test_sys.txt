@@ -23,6 +23,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_ioencoding_nonascii
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_no_duplicates_in_meta_path
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_executable
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_getwindowsversion_no_instantiation
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook

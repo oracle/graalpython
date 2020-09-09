@@ -148,16 +148,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (!argStrings.isEmpty()) {
-                if (argStrings.get(0).equals(context.getOption(PythonOptions.Executable))) {
-                    String[] executableList = PythonOptions.getExecutableList(context);
-                    argStrings.remove(0);
-                    for (int i = executableList.length - 1; i >= 0; i--) {
-                        argStrings.add(0, executableList[i]);
-                    }
-                }
-            }
-
             File cwdFile;
             try {
                 if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
@@ -211,13 +201,29 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
                 byte[] bytes = checkNullBytes(toBytes.execute(null, item));
                 String path = new String(bytes, StandardCharsets.US_ASCII);
-                argStrings.set(0, path);
+                int executableListLen = 0;
+                if (path.equals(context.getOption(PythonOptions.Executable))) {
+                    // In case someone passed to us sys.executable that happens to be java command
+                    // invocation with additional options like classpath, we split it to the
+                    // individual arguments
+                    String[] executableList = PythonOptions.getExecutableList(context);
+                    argStrings.remove(0);
+                    executableListLen = executableList.length;
+                    for (int j = executableListLen - 1; j >= 0; j--) {
+                        argStrings.add(0, executableList[j]);
+                    }
+                } else {
+                    argStrings.set(0, path);
+                }
                 try {
                     return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
                 } catch (IOException ex) {
                     if (firstError == null) {
                         firstError = ex;
                     }
+                }
+                for (int j = 0; j < executableListLen - 1; j++) {
+                    argStrings.remove(j + 1);
                 }
             }
             assert firstError != null;
