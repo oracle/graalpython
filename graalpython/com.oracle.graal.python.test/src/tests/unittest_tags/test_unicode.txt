@@ -42,6 +42,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_item_number
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_precision
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_width
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_map
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_subclass
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_formatting_c_limits
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_formatting_huge_precision

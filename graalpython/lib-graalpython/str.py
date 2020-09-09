@@ -329,12 +329,19 @@ class TemplateFormatter(object):
         return iter(self.parser_list)
 
 
-def strformat(___self, *___args, **___kwargs):
-    template = TemplateFormatter(___self)
-    return template.build(___args, ___kwargs)
+def strformat(self, *args, **kwargs):
+    template = TemplateFormatter(self)
+    return template.build(args, kwargs)
 
 
+def format_map(self, mapping):
+    template = TemplateFormatter(self)
+    return template.build(None, mapping)
+
+
+strformat.__name__ = 'format'
 str.format = strformat
+str.format_map = format_map
 
 
 def count(self, sub, start=None, end=None):
