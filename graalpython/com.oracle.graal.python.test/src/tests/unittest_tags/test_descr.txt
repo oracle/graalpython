@@ -72,7 +72,10 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_class
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_set_dict
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slices
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slot_shadows_class_variable
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_descriptor
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_multiple_inheritance
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_special2
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_special_unbound_method_types
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_specials
@@ -92,6 +95,9 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_wrapper_segfault
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_wrong_class_slot_wrapper
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_dict_type_with_metaclass
+*graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_items
+*graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_keys
+*graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_values
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_repr
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_extend
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_set_bases_on_self
