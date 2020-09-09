@@ -38,7 +38,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -47,6 +46,9 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,68 +59,66 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 public class CastToJavaUnsignedLongNodeTests {
+    private static PythonObjectFactory factory = PythonObjectFactory.getUncached();
 
     @Before
     public void setUp() {
         PythonTests.enterContext();
     }
 
-    private static CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.getUncached();
-    private static PythonObjectFactory factory = PythonObjectFactory.getUncached();
-
     @Test
     public void positiveInt() {
-        Assert.assertEquals(0, castNode.execute(0));
-        Assert.assertEquals(16, castNode.execute(16));
-        Assert.assertEquals(Integer.MAX_VALUE, castNode.execute(Integer.MAX_VALUE));
-        Assert.assertEquals(42, castNode.execute(Integer.valueOf(42)));
+        Assert.assertEquals(0, castInt(0));
+        Assert.assertEquals(16, castInt(16));
+        Assert.assertEquals(Integer.MAX_VALUE, castInt(Integer.MAX_VALUE));
+        Assert.assertEquals(42, castObject(42));
     }
 
     @Test
     public void negativeInt() {
-        expect(OverflowError, () -> castNode.execute(-1));
-        expect(OverflowError, () -> castNode.execute(Integer.MIN_VALUE));
+        expect(OverflowError, () -> castInt(-1));
+        expect(OverflowError, () -> castInt(Integer.MIN_VALUE));
     }
 
     @Test
     public void positiveLong() {
-        Assert.assertEquals(0, castNode.execute(0L));
-        Assert.assertEquals(0x80000000L, castNode.execute(0x80000000L));
-        Assert.assertEquals(Long.MAX_VALUE, castNode.execute(Long.MAX_VALUE));
-        Assert.assertEquals(1234567890123L, castNode.execute(Long.valueOf(1234567890123L)));
+        Assert.assertEquals(0, castLong(0L));
+        Assert.assertEquals(0x80000000L, castLong(0x80000000L));
+        Assert.assertEquals(Long.MAX_VALUE, castLong(Long.MAX_VALUE));
+        Assert.assertEquals(1234567890123L, castLong(1234567890123L));
     }
 
     @Test
     public void negativeLong() {
-        expect(OverflowError, () -> castNode.execute(-1L));
-        expect(OverflowError, () -> castNode.execute(Long.MIN_VALUE));
+        expect(OverflowError, () -> castLong(-1L));
+        expect(OverflowError, () -> castLong(Long.MIN_VALUE));
     }
 
     @Test
     public void positiveBigInt() {
-        Assert.assertEquals(0, castNode.execute(makePInt(0)));
-        Assert.assertEquals(1234567890123L, castNode.execute(makePInt(1234567890123L)));
-        Assert.assertEquals(Long.MAX_VALUE, castNode.execute(makePInt(Long.MAX_VALUE)));
-        Assert.assertEquals(0x8000000000000000L, castNode.execute(makePInt("8000000000000000")));
-        Assert.assertEquals(0xFFFFFFFFFFFFFFFFL, castNode.execute(makePInt("FFFFFFFFFFFFFFFF")));
+        Assert.assertEquals(0, castObject(makePInt(0)));
+        Assert.assertEquals(1234567890123L, castObject(makePInt(1234567890123L)));
+        Assert.assertEquals(Long.MAX_VALUE, castObject(makePInt(Long.MAX_VALUE)));
+        Assert.assertEquals(0x8000000000000000L, castObject(makePInt("8000000000000000")));
+        Assert.assertEquals(0xFFFFFFFFFFFFFFFFL, castObject(makePInt("FFFFFFFFFFFFFFFF")));
     }
 
     @Test
     public void negativeBigInt() {
-        expect(OverflowError, () -> castNode.execute(makePInt(-1)));
-        expect(OverflowError, () -> castNode.execute(makePInt("-10000000000000000")));
+        expect(OverflowError, () -> castObject(makePInt(-1)));
+        expect(OverflowError, () -> castObject(makePInt("-10000000000000000")));
     }
 
     @Test
     public void largeBigInt() {
-        expect(OverflowError, () -> castNode.execute(makePInt("10000000000000000")));
-        expect(OverflowError, () -> castNode.execute(makePInt("10000000000000001")));
+        expect(OverflowError, () -> castObject(makePInt("10000000000000000")));
+        expect(OverflowError, () -> castObject(makePInt("10000000000000001")));
     }
 
     @Test
     public void nonInteger() {
-        expect(TypeError, () -> castNode.execute("123"));
-        expect(TypeError, () -> castNode.execute(2.7));
+        expect(TypeError, () -> castObject("123"));
+        expect(TypeError, () -> castObject(2.7));
     }
 
     private static PInt makePInt(long l) {
@@ -136,5 +136,38 @@ public class CastToJavaUnsignedLongNodeTests {
         } catch (PException e) {
             e.expect(errorType, IsBuiltinClassProfile.getUncached());
         }
+    }
+
+    private static long castInt(int arg) {
+        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+            @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                return castNode.execute(arg);
+            }
+        }).call();
+    }
+
+    private static long castLong(long arg) {
+        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+            @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                return castNode.execute(arg);
+            }
+        }).call();
+    }
+
+    private static long castObject(Object arg) {
+        return (Long) Truffle.getRuntime().createCallTarget(new RootNode(null) {
+            @Child private CastToJavaUnsignedLongNode castNode = CastToJavaUnsignedLongNode.create();
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                return castNode.execute(arg);
+            }
+        }).call();
     }
 }
