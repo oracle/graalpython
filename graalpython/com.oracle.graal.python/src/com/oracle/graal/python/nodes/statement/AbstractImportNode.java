@@ -166,8 +166,8 @@ public abstract class AbstractImportNode extends StatementNode {
         assert globals != null;
         // the locals argument is ignored so it can always be None
         return callNode.execute(frame, builtinImport, new Object[]{name,
-                getDictNode.execute(globals), PNone.NONE, factory.createTuple(fromList), level},
-                PKeyword.EMPTY_KEYWORDS);
+                        getDictNode.execute(globals), PNone.NONE, factory.createTuple(fromList), level},
+                        PKeyword.EMPTY_KEYWORDS);
     }
 
     protected boolean emulateJython() {

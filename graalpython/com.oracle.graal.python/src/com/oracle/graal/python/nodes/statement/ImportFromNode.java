@@ -32,11 +32,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -52,7 +52,6 @@ public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
     @Child private PythonObjectLibrary pythonLibrary;
     @Child private GetItemNode getItem;
-    @Child private ReadAttributeFromObjectNode readModules;
     @Child private PRaiseImportErrorNode raiseNode;
 
     private final String importee;
@@ -111,7 +110,9 @@ public class ImportFromNode extends AbstractImportNode {
                         throw pe;
                     }
                     String fullname = PString.cat(pkgname, ".", attr);
-                    Object sysModules = ensureReadModulesNode().execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
+                    PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+                    Object sysModules = pol.lookupAttribute(sys, frame, "modules");
+                    assert sysModules != PNone.NO_VALUE : "ImportFromNode: sys.modules was not found!";
                     writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
                 } catch (PException e2) {
                     Object modulePath = "unknown location";
@@ -156,15 +157,6 @@ public class ImportFromNode extends AbstractImportNode {
             raiseNode = insert(PRaiseImportErrorNode.create());
         }
         return raiseNode;
-    }
-
-    private ReadAttributeFromObjectNode ensureReadModulesNode() {
-        if (readModules == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getItem = insert(GetItemNode.create());
-            readModules = insert(ReadAttributeFromObjectNode.create());
-        }
-        return readModules;
     }
 
     private GetItemNode ensureGetItemNode() {
