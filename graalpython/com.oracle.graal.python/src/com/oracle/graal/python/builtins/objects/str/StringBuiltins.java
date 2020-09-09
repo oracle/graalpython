@@ -373,9 +373,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) < 0;
+            return StringUtils.compareToUnicodeAware(self, other) < 0;
         }
     }
 
@@ -383,9 +382,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) <= 0;
+            return StringUtils.compareToUnicodeAware(self, other) <= 0;
         }
     }
 
@@ -393,9 +391,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) > 0;
+            return StringUtils.compareToUnicodeAware(self, other) > 0;
         }
     }
 
@@ -403,9 +400,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) >= 0;
+            return StringUtils.compareToUnicodeAware(self, other) >= 0;
         }
     }
 

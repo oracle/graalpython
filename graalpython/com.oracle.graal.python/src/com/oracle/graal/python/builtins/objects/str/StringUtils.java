@@ -322,4 +322,20 @@ public final class StringUtils {
     public static String toString(StringBuilder sb) {
         return sb.toString();
     }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int compareToUnicodeAware(String a, String b) {
+        int len1 = a.length();
+        int len2 = b.length();
+        int lim = Math.min(len1, len2);
+        for (int i = 0; i < lim;) {
+            int c1 = a.codePointAt(i);
+            int c2 = b.codePointAt(i);
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            i += Character.charCount(c1);
+        }
+        return len1 - len2;
+    }
 }
