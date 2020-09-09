@@ -1140,13 +1140,14 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PList doStringSepMaxsplit(VirtualFrame frame, String self, String sep, int maxsplit,
+        PList doStringSepMaxsplit(VirtualFrame frame, String self, String sep, int maxsplitInput,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
             if (sep.length() == 0) {
                 throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
-            if (maxsplit < 0) {
+            int maxsplit = maxsplitInput;
+            if (maxsplitInput < 0) {
                 maxsplit = Integer.MAX_VALUE;
             }
             PList list = factory().createList();
