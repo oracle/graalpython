@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,7 +77,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -165,20 +165,17 @@ public class RandomBuiltins extends PythonBuiltins {
         @Specialization
         PNone setstate(PRandom random, PTuple tuple,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @Cached CastToJavaUnsignedLongNode castNode) {
             Object[] arr = getObjectArrayNode.execute(tuple);
             if (arr.length != PRandom.N + 1) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
-                long l = lib.asJavaLong(arr[i]);
-                if (l < 0 || l > 0xFFFFFFFFL) {
-                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C unsigned long");
-                }
+                long l = castNode.execute(arr[i]);
                 state[i] = (int) l;
             }
-            long index = lib.asJavaLong(arr[PRandom.N]);
+            long index = castNode.execute(arr[PRandom.N]);
             if (index < 0 || index > PRandom.N) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
