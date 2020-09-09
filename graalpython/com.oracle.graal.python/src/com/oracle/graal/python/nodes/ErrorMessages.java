@@ -467,6 +467,7 @@ public abstract class ErrorMessages {
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
     public static final String SLOT_DISALLOWED_WE_GOT_ONE = "%s slot disallowed: we already got one";
     public static final String STAR_WANTS_INT = "* wants int";
+    public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
