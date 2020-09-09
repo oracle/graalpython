@@ -45,6 +45,8 @@ import java.util.Locale;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UCharacterCategory;
+import com.ibm.icu.lang.UProperty;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class StringUtils {
@@ -54,7 +56,9 @@ public final class StringUtils {
         BOTH
     }
 
-    /** corresponds to {@code unicodeobject.c:_Py_ascii_whitespace} */
+    /**
+     * corresponds to {@code unicodeobject.c:_Py_ascii_whitespace}
+     */
     private static final int[] ASCII_WHITESPACE = {
                     0, 0, 0, 0, 0, 0, 0, 0,
                     /* case 0x0009: * CHARACTER TABULATION */
@@ -241,7 +245,22 @@ public final class StringUtils {
 
     @TruffleBoundary
     private static boolean isPrintableICU(int codepoint) {
-        return UCharacter.isPrintable(codepoint);
+        // ICU's definition of printability is different from CPython, so we cannot use
+        // UCharacter.isPrintable
+        int category = UCharacter.getType(codepoint);
+        switch (category) {
+            case UCharacterCategory.CONTROL:
+            case UCharacterCategory.FORMAT:
+            case UCharacterCategory.SURROGATE:
+            case UCharacterCategory.PRIVATE_USE:
+            case UCharacterCategory.UNASSIGNED:
+            case UCharacterCategory.LINE_SEPARATOR:
+            case UCharacterCategory.PARAGRAPH_SEPARATOR:
+                return false;
+            case UCharacterCategory.SPACE_SEPARATOR:
+                return codepoint == ' ';
+        }
+        return true;
     }
 
     @TruffleBoundary
@@ -258,15 +277,44 @@ public final class StringUtils {
     }
 
     @TruffleBoundary
-    public static boolean isLetterOrDigit(int codePoint) {
+    public static boolean isAlnum(int codePoint) {
         if (ImageInfo.inImageBuildtimeCode()) {
             // Avoid initializing ICU4J in image build
             return Character.isLetterOrDigit(codePoint);
         }
-        return isLetterOrDigitICU(codePoint);
+        return isAlnumICU(codePoint);
     }
 
-    private static boolean isLetterOrDigitICU(int codePoint) {
-        return UCharacter.isLetterOrDigit(codePoint);
+    private static boolean isAlnumICU(int codePoint) {
+        if (UCharacter.isLetter(codePoint) || UCharacter.isDigit(codePoint) || UCharacter.hasBinaryProperty(codePoint, UProperty.NUMERIC_TYPE)) {
+            return true;
+        }
+        int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+        return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT || numericType == UCharacter.NumericType.NUMERIC;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder() {
+        return new StringBuilder();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder(int initialCapacity) {
+        return new StringBuilder(initialCapacity);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static void appendCodePoint(StringBuilder sb, int codePoint) {
+        sb.appendCodePoint(codePoint);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static void append(StringBuilder sb, String str) {
+        sb.append(str);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String toString(StringBuilder sb) {
+        return sb.toString();
     }
 }

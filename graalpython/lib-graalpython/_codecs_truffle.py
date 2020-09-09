@@ -50,7 +50,7 @@ class TruffleCodec(codecs.Codec):
         return _codecs.__truffle_encode(input, self.encoding, errors)
 
     def decode(self, input, errors='strict'):
-        return _codecs.__truffle_decode(input, self.encoding, errors)
+        return _codecs.__truffle_decode(input, self.encoding, errors, True)
 
 
 # TODO - the incremental codec and reader/writer won't work well with stateful encodings, like some of the CJK encodings

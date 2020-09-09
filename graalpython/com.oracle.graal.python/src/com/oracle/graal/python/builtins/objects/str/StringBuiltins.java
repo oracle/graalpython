@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
@@ -65,6 +64,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
+import com.ibm.icu.text.CaseMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
@@ -135,6 +137,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -252,6 +255,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         } else {
                             str.append("\\'");
                         }
+                        break;
+                    case '\\':
+                        str.append("\\\\");
                         break;
                     default:
                         if (StringUtils.isPrintable(codepoint)) {
@@ -383,7 +389,6 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -771,50 +776,80 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // static str.maketrans()
+    // str.maketrans()
     @Builtin(name = "maketrans", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, isClassmethod = true)
     @GenerateNodeFactory
     public abstract static class MakeTransNode extends PythonQuaternaryBuiltinNode {
 
         @Specialization(guards = "!isNoValue(to)")
         @SuppressWarnings("unused")
-        PDict doString(VirtualFrame frame, Object cls, Object from, Object to, Object z,
+        PDict doString(Object cls, Object from, Object to, Object z,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
+                        @Cached CastToJavaStringCheckedNode castZNode,
+                        @Cached ConditionProfile hasZProfile,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
 
             String toStr = castToNode.cast(to, "argument 2 must be str, not %p", to);
             String fromStr = castFromNode.cast(from, "first maketrans argument must be a string if there is a second argument");
-            if (fromStr.length() != toStr.length()) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
+            boolean hasZ = hasZProfile.profile(z != PNone.NO_VALUE);
+            String zString = null;
+            if (hasZ) {
+                zString = castZNode.cast(z, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "maketrans()", 3, "str", z);
             }
 
             HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
-            PDict translation = factory().createDict(storage);
-            for (int i = 0; i < fromStr.length(); i++) {
-                int key = fromStr.charAt(i);
-                int value = toStr.charAt(i);
+            int i, j;
+            for (i = 0, j = 0; i < fromStr.length() && j < toStr.length();) {
+                int key = PString.codePointAt(fromStr, i);
+                int value = PString.codePointAt(toStr, j);
                 storage = lib.setItem(storage, key, value);
+                i += PString.charCount(key);
+                j += PString.charCount(value);
             }
-            translation.setDictStorage(storage);
+            if (i < fromStr.length() || j < toStr.length()) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.FIRST_TWO_MAKETRANS_ARGS_MUST_HAVE_EQ_LENGTH);
+            }
+            if (hasZ) {
+                for (i = 0; i < zString.length();) {
+                    int key = PString.codePointAt(zString, i);
+                    storage = lib.setItem(storage, key, PNone.NONE);
+                    i += PString.charCount(key);
+                }
+            }
 
-            // TODO implement character deletion specified with 'z'
-
-            return translation;
+            return factory().createDict(storage);
         }
 
-        @Specialization(guards = "isNoValue(to)")
+        @Specialization(guards = {"isNoValue(to)", "isNoValue(z)"})
         @SuppressWarnings("unused")
-        static PDict doDict(PDict from, Object cls, Object to, Object z) {
-            // TODO implement dict case; see CPython 'unicodeobject.c' function
-            // 'unicode_maketrans_impl'
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("not yet implemented");
+        PDict doDict(VirtualFrame frame, Object cls, PDict from, Object to, Object z,
+                        @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
+                        @Cached CastToJavaStringCheckedNode cast,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
+            HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
+            HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
+            for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
+                if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
+                    destStorage = hlib.setItem(destStorage, entry.key, entry.value);
+                } else {
+                    String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
+                    if (strKey.isEmpty()) {
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                    }
+                    int codePoint = PString.codePointAt(strKey, 0);
+                    if (strKey.length() != PString.charCount(codePoint)) {
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                    }
+                    destStorage = hlib.setItem(destStorage, codePoint, entry.value);
+                }
+            }
+            return factory().createDict(destStorage);
         }
 
         @Specialization(guards = {"!isDict(from)", "isNoValue(to)"})
         @SuppressWarnings("unused")
-        PDict doFail(Object from, Object cls, Object to, Object z) {
+        PDict doFail(Object cls, Object from, Object to, Object z) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT);
         }
     }
@@ -845,31 +880,27 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached SpliceNode spliceNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
 
-            char[] translatedChars = new char[selfStr.length()];
+            StringBuilder sb = StringUtils.newStringBuilder(selfStr.length());
 
-            int offset = 0;
-            for (int i = 0; i < selfStr.length(); i++) {
-                char original = selfStr.charAt(i);
+            for (int i = 0; i < selfStr.length();) {
+                int original = PString.codePointAt(selfStr, i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.execute(frame, table, (int) original);
+                    translated = getItemNode.execute(frame, table, original);
                 } catch (PException e) {
                     if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }
-                if (PGuards.isNone(translated)) {
-                    // untranslatable
-                } else if (translated != null) {
-                    int oldlen = translatedChars.length;
-                    translatedChars = spliceNode.execute(translatedChars, i + offset, translated);
-                    offset += translatedChars.length - oldlen;
+                if (translated != null) {
+                    spliceNode.execute(sb, translated);
                 } else {
-                    translatedChars[i + offset] = original;
+                    StringUtils.appendCodePoint(sb, original);
                 }
+                i += PString.charCount(original);
             }
 
-            return new String(translatedChars);
+            return StringUtils.toString(sb);
         }
     }
 
@@ -891,19 +922,34 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CapitalizeNode extends PythonUnaryBuiltinNode {
 
+        @CompilationFinal private static CaseMap.Title titlecaser;
+
+        @Specialization
+        static String capitalize(String self) {
+            if (self.isEmpty()) {
+                return "";
+            } else {
+                return capitalizeImpl(self);
+            }
+        }
+
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
             return capitalize(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "capitalize", self));
         }
 
-        @TruffleBoundary
-        private static String capitalize(String self) {
-            if (self.isEmpty()) {
-                return "";
-            } else {
-                return self.substring(0, 1).toUpperCase() + self.substring(1).toLowerCase();
+        private static String capitalizeImpl(String str) {
+            if (titlecaser == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                titlecaser = CaseMap.toTitle().wholeString().noBreakAdjustment();
             }
+            return apply(str);
+        }
+
+        @TruffleBoundary
+        private static String apply(String str) {
+            return titlecaser.apply(Locale.ROOT, null, str);
         }
     }
 
@@ -1291,17 +1337,38 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static String doReplace(String self, String old, String with, int maxCount) {
-            StringBuilder sb = new StringBuilder(self);
-            int prevIdx = 0;
-            for (int i = 0; i < maxCount; i++) {
-                int idx = sb.indexOf(old, prevIdx);
-                if (idx == -1) {
-                    // done
-                    break;
+            if (maxCount < 0) {
+                return doReplace(self, old, with, PNone.NO_VALUE);
+            }
+            StringBuilder sb;
+            if (old.isEmpty()) {
+                sb = new StringBuilder(self.length() + with.length() * Math.min(maxCount, self.length() + 1));
+                int replacements, i;
+                for (replacements = 0, i = 0; replacements < maxCount && i < self.length(); replacements++) {
+                    sb.append(with);
+                    int codePoint = self.codePointAt(i);
+                    sb.appendCodePoint(codePoint);
+                    i += Character.charCount(codePoint);
                 }
+                if (replacements < maxCount) {
+                    sb.append(with);
+                }
+                if (i < self.length()) {
+                    sb.append(self.substring(i));
+                }
+            } else {
+                sb = new StringBuilder(self);
+                int prevIdx = 0;
+                for (int i = 0; i < maxCount; i++) {
+                    int idx = sb.indexOf(old, prevIdx);
+                    if (idx == -1) {
+                        // done
+                        break;
+                    }
 
-                sb.replace(idx, idx + old.length(), with);
-                prevIdx = idx + with.length();
+                    sb.replace(idx, idx + old.length(), with);
+                    prevIdx = idx + with.length();
+                }
             }
             return sb.toString();
         }
@@ -1673,18 +1740,16 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isalnum", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class IsAlnumNode extends PythonUnaryBuiltinNode {
+    abstract static class IsCategoryBaseNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static boolean doString(String self) {
+        boolean doString(String self) {
             if (self.length() == 0) {
                 return false;
             }
             for (int i = 0; i < self.length();) {
                 int codePoint = self.codePointAt(i);
-                if (!StringUtils.isLetterOrDigit(codePoint)) {
+                if (!isCategory(codePoint)) {
                     return false;
                 }
                 i += Character.charCount(codePoint);
@@ -1693,72 +1758,93 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
+        boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalnum", self));
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, getName(), self));
+        }
+
+        @SuppressWarnings("unused")
+        protected boolean isCategory(int codePoint) {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new IllegalStateException("should not be reached");
+        }
+
+        protected String getName() {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new IllegalStateException("should not be reached");
+        }
+    }
+
+    @Builtin(name = "isalnum", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsAlnumNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return StringUtils.isAlnum(codePoint);
+        }
+
+        @Override
+        protected String getName() {
+            return "isalnum";
         }
     }
 
     @Builtin(name = "isalpha", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsAlphaNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static boolean doString(String self) {
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length();) {
-                int codePoint = self.codePointAt(i);
-                if (!UCharacter.isLetter(codePoint)) {
-                    return false;
-                }
-                i += Character.charCount(codePoint);
-            }
-            return true;
+    abstract static class IsAlphaNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return UCharacter.isLetter(codePoint);
         }
 
-        @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isalpha", self));
+        @Override
+        protected String getName() {
+            return "isalpha";
         }
     }
 
     @Builtin(name = "isdecimal", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsDecimalNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static boolean doString(String self) {
-            if (self.length() == 0) {
-                return false;
-            }
-            for (int i = 0; i < self.length();) {
-                int codePoint = self.codePointAt(i);
-                if (!UCharacter.isDigit(codePoint)) {
-                    return false;
-                }
-                i += Character.charCount(codePoint);
-            }
-            return true;
+    abstract static class IsDecimalNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            return UCharacter.isDigit(codePoint);
         }
 
-        @Specialization(replaces = "doString")
-        static boolean doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isdecimal", self));
+        @Override
+        protected String getName() {
+            return "isdecimal";
         }
     }
 
     @Builtin(name = "isdigit", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsDigitNode extends IsDecimalNode {
+    abstract static class IsDigitNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+            return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT;
+        }
+
+        @Override
+        protected String getName() {
+            return "isdigit";
+        }
     }
 
     @Builtin(name = "isnumeric", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsNumericNode extends IsDecimalNode {
+    abstract static class IsNumericNode extends IsCategoryBaseNode {
+        @Override
+        protected boolean isCategory(int codePoint) {
+            int numericType = UCharacter.getIntPropertyValue(codePoint, UProperty.NUMERIC_TYPE);
+            return numericType == UCharacter.NumericType.DECIMAL || numericType == UCharacter.NumericType.DIGIT || numericType == UCharacter.NumericType.NUMERIC;
+        }
+
+        @Override
+        protected String getName() {
+            return "isnumeric";
+        }
     }
 
     @Builtin(name = "isidentifier", minNumOfPositionalArgs = 1)
@@ -1808,7 +1894,7 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         private static boolean isPrintableChar(int i) {
-            return UCharacter.isPrintable(i);
+            return StringUtils.isPrintable(i);
         }
 
         @Specialization
@@ -2183,15 +2269,77 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static String doString(String self) {
-            // TODO(fa) implement properly using 'unicodedata_db' (see 'unicodeobject.c' function
-            // 'unicode_casefold_impl')
-            return self.toLowerCase();
+            return UCharacter.foldCase(self, true);
         }
 
         @Specialization(replaces = "doString")
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "casefold", self));
+        }
+    }
+
+    @Builtin(name = "swapcase", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class SwapCaseNode extends PythonUnaryBuiltinNode {
+
+        private static final int CAPITAL_SIGMA = 0x3A3;
+
+        @Specialization
+        @TruffleBoundary
+        static String doString(String self) {
+            StringBuilder sb = new StringBuilder(self.length());
+            for (int i = 0; i < self.length();) {
+                int codePoint = self.codePointAt(i);
+                int charCount = Character.charCount(codePoint);
+                String substr = self.substring(i, i + charCount);
+                if (UCharacter.isUUppercase(codePoint)) {
+                    // Special case for capital sigma, needed because ICU4J doesn't have the context
+                    // of the whole string
+                    if (codePoint == CAPITAL_SIGMA) {
+                        handleCapitalSigma(self, sb, i, codePoint);
+                    } else {
+                        sb.append(UCharacter.toLowerCase(Locale.ROOT, substr));
+                    }
+                } else if (UCharacter.isULowercase(codePoint)) {
+                    sb.append(UCharacter.toUpperCase(Locale.ROOT, substr));
+                } else {
+                    sb.append(substr);
+                }
+                i += charCount;
+            }
+            return sb.toString();
+        }
+
+        // Adapted from unicodeobject.c:handle_capital_sigma
+        private static void handleCapitalSigma(String self, StringBuilder sb, int i, int codePoint) {
+            int j;
+            for (j = i - 1; j >= 0; j--) {
+                if (!Character.isHighSurrogate(self.charAt(j))) {
+                    int ch = self.codePointAt(j);
+                    if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
+                        break;
+                    }
+                }
+            }
+            boolean finalSigma = j >= 0 && UCharacter.hasBinaryProperty(codePoint, UProperty.CASED);
+            if (finalSigma) {
+                for (j = i + 1; j < self.length();) {
+                    int ch = self.codePointAt(j);
+                    if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
+                        break;
+                    }
+                    j += Character.charCount(ch);
+                }
+                finalSigma = j == self.length() || !UCharacter.hasBinaryProperty(codePoint, UProperty.CASED);
+            }
+            sb.appendCodePoint(finalSigma ? 0x3C2 : 0x3C3);
+        }
+
+        @Specialization(replaces = "doString")
+        static String doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castSelfNode) {
+            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "swapcase", self));
         }
     }
 }

@@ -336,7 +336,7 @@ def strformat(___self, *___args, **___kwargs):
 str.format = strformat
 
 
-def strcount(self, sub, start=None, end=None):
+def count(self, sub, start=None, end=None):
     selfLeng = len(self)
     subLeng = len(sub)
     if start == None:
@@ -365,7 +365,7 @@ def strcount(self, sub, start=None, end=None):
     return cnt
 
 
-str.count = strcount
+str.count = count
 
 
 def encode(self, encoding="utf-8", errors="strict"):

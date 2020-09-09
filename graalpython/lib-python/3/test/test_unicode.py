@@ -1644,8 +1644,8 @@ class UnicodeTest(string_tests.CommonTest,
         for c in set_o:
             self.assertEqual(c.encode('ascii').decode('utf7'), c)
 
-        with self.assertRaisesRegex(UnicodeDecodeError,
-                                    'ill-formed sequence'):
+        # XXX Truffle change: relax error message requirement
+        with self.assertRaises(UnicodeDecodeError):
             b'+@'.decode('utf-7')
 
     def test_codecs_utf8(self):
@@ -1848,7 +1848,8 @@ class UnicodeTest(string_tests.CommonTest,
             seq.decode('utf-8')
         exc = cm.exception
 
-        self.assertIn(err, str(exc))
+        # XXX Truffle change: relax message requirement
+        # self.assertIn(err, str(exc))
         self.assertEqual(seq.decode('utf-8', 'replace'), res)
         self.assertEqual((b'aaaa' + seq + b'bbbb').decode('utf-8', 'replace'),
                          'aaaa' + res + 'bbbb')
@@ -2446,6 +2447,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.assertTrue(astral >= bmp2)
         self.assertFalse(astral >= astral2)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, str)
         support.check_free_after_iterating(self, reversed, str)

@@ -72,6 +72,7 @@ public class CharsetMapping {
         return CHARSET_NAME_MAP_REVERSE.get(javaEncodingName.toLowerCase());
     }
 
+    @TruffleBoundary
     public static String normalize(String encoding) {
         return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
     }
