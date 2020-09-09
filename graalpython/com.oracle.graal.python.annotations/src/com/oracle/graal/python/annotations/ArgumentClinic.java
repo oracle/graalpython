@@ -127,5 +127,10 @@ public @interface ArgumentClinic {
          * and {@link #useDefaultForNone()}.
          */
         Index,
+        /**
+         * Corresponds to CPython's {@code int(accept={str})} convertor. Supports
+         * {@link #defaultValue()}, and {@link #useDefaultForNone()}.
+         */
+        CodePoint,
     }
 }
