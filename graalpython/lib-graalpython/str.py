@@ -25,19 +25,6 @@ import _codecs
 import sys
 
 
-def expandtabs(self, tabsize=8):
-    """
-    S.expandtabs(tabsize=8) -> str
-
-    Return a copy of S where all tab characters are expanded using spaces.
-    If tabsize is not given, a tab size of 8 characters is assumed.
-    """
-    return self.replace("\t", " " * tabsize)
-
-
-str.expandtabs = expandtabs
-
-
 # Auto number state
 ANS_INIT = 1
 ANS_AUTO = 2

@@ -111,6 +111,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -2327,6 +2328,42 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "swapcase", self));
+        }
+    }
+
+    @Builtin(name = "expandtabs", minNumOfPositionalArgs = 1, parameterNames = {"$self", "tabsize"})
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "tabsize", conversion = ClinicConversion.Int, defaultValue = "8", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class ExpandTabsNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static String doString(String self, int tabsize) {
+            StringBuilder sb = StringUtils.newStringBuilder(self.length());
+            int linePos = 0;
+            // It's ok to iterate with charAt, we just pass surrogates through
+            for (int i = 0; i < self.length(); i++) {
+                char ch = PString.charAt(self, i);
+                if (ch == '\t') {
+                    int incr = tabsize - (linePos % tabsize);
+                    for (int j = 0; j < incr; j++) {
+                        StringUtils.append(sb, ' ');
+                    }
+                    linePos += incr;
+                } else {
+                    if (ch == '\n' || ch == '\r') {
+                        linePos = 0;
+                    } else {
+                        linePos++;
+                    }
+                    StringUtils.append(sb, ch);
+                }
+            }
+            return StringUtils.toString(sb);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.ExpandTabsNodeClinicProviderGen.INSTANCE;
         }
     }
 }

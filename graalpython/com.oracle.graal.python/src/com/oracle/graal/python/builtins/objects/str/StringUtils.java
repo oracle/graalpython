@@ -314,6 +314,11 @@ public final class StringUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static void append(StringBuilder sb, char ch) {
+        sb.append(ch);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String toString(StringBuilder sb) {
         return sb.toString();
     }
