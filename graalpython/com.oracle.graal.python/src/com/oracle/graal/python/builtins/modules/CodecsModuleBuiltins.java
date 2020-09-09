@@ -128,6 +128,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
             } else {
+                // Shouldn't happen unless the user manually replaces the method, which is really
+                // unexpected and shouldn't be permitted at all, but currently it is
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, exception);
             }
         }
@@ -153,6 +156,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
             } else {
+                // Shouldn't happen unless the user manually replaces the method, which is really
+                // unexpected and shouldn't be permitted at all, but currently it is
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, exception);
             }
         }
