@@ -22,6 +22,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import _codecs
+import sys
 
 
 def expandtabs(self, tabsize=8):
@@ -190,16 +191,14 @@ class TemplateFormatter(object):
         if index == -1:
             kwarg = name[:i]
             arg = self.kwargs[kwarg]
+        elif index > sys.maxsize:
+            raise ValueError("Too many decimal digits in format string")
         else:
             if self.args is None:
                 raise ValueError("Format string contains positional fields")
-            try:
-                arg = self.args[index]
-            except IndexError:
-                raise IndexError(
-                            "out of range: index %d but only %d argument%s",
-                            index, len(self.args),
-                            "s" if len(self.args) != 1 else "")
+            if index >= len(self.args):
+                raise IndexError("Replacement index %d out of range for positional args tuple" % index)
+            arg = self.args[index]
         return self._resolve_lookups(arg, name, i, end)
 
     def _resolve_lookups(self, obj, name, start, end):
@@ -239,6 +238,8 @@ class TemplateFormatter(object):
                 except ValueError:
                     item = name[start:i]
                 else:
+                    if index > sys.maxsize:
+                        raise ValueError("Too many decimal digits in format string")
                     item = index
                 i += 1 # Skip "]"
                 if obj is not None:

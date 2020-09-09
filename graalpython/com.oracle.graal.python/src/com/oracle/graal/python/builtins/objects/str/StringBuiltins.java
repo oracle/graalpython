@@ -206,6 +206,9 @@ public final class StringBuiltins extends PythonBuiltins {
             if (Spec.specified(spec.align) && spec.align == '=') {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
             }
+            if (Spec.specified(spec.sign)) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
+            }
             return spec;
         }
 

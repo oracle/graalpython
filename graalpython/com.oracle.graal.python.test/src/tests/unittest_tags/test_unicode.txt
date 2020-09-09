@@ -35,8 +35,10 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_find_etc_raise_correct_error_messages
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_fixtype
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_floatformatting
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_auto_numbering
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_float
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_item_number
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_precision
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_huge_width
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_format_subclass

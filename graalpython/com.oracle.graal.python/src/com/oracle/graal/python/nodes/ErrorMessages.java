@@ -544,6 +544,7 @@ public abstract class ErrorMessages {
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
     public static final String EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = "'=' alignment not allowed in string format specifier";
+    public static final String SIGN_NOT_ALLOWED_FOR_STRING_FMT = "Sign not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
