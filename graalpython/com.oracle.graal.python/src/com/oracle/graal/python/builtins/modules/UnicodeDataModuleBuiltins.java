@@ -46,6 +46,7 @@ import java.text.Normalizer;
 import java.util.List;
 
 import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -259,6 +261,23 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return UnicodeDataModuleBuiltinsClinicProviders.NameNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    // unicodedata.bidirectional(char)
+    @Builtin(name = "bidirectional", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class BidirectionalNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static String bidirectional(int chr) {
+            return UCharacter.getPropertyValueName(UProperty.BIDI_CLASS, UCharacter.getDirection(chr), UProperty.NameChoice.SHORT);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.BidirectionalNodeClinicProviderGen.INSTANCE;
         }
     }
 }
