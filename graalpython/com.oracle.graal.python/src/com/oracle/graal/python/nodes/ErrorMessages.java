@@ -560,4 +560,6 @@ public abstract class ErrorMessages {
     public static final String ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED = "only single target (not %s) can be annotated";
     public static final String ILLEGAL_TARGET_FOR_ANNOTATION = "illegal target for annotation";
     public static final String SLICE_INDICES_TYPE_ERROR = "slice indices must be integers or have an __index__ method";
+    public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
+    public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
 }

@@ -47,7 +47,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -77,6 +79,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -121,7 +124,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private synchronized int forkExec(PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
+        private synchronized int forkExec(PList args, PList execList, @SuppressWarnings("unused") boolean closeFds,
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
@@ -155,7 +158,81 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
+            File cwdFile;
+            try {
+                if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
+                    cwdFile = new File(cwd);
+                } else {
+                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
+                }
+            } catch (SecurityException e) {
+                throw raise(PythonBuiltinClassType.OSError, e);
+            }
+
+            HashMap<String, String> envMap = new HashMap<>(env.getSequenceStorage().length());
+            for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
+                if (keyValue instanceof PBytes) {
+                    // NOTE: passing 'null' frame means we took care of the global state in the
+                    // callers
+                    byte[] bytes = checkNullBytes(toBytes.execute(null, keyValue));
+                    String[] string = new String(bytes, StandardCharsets.US_ASCII).split("=", 2);
+                    if (string.length == 2) {
+                        envMap.put(string[0], string[1]);
+                    }
+                }
+            }
+
+            // The execList argument contains a list of paths to executables. They should be tried
+            // one-by-one until we find one that can be executed. Unless passed explicitly as an
+            // argument by the user, the list is constructed by the Python wrapper code, which
+            // creates an entry for each directory in $PATH joined with the executable name
+
+            // CPython iterates the executable list trying to call execve for each item until it
+            // finds one whose execution succeeds. We do the same to be as compatible as possible.
+
+            // Moreover, execve allows to set program arguments (argv) including argv[0] to anything
+            // and independently of that choose the executable. There is nothing like that in the
+            // ProcessBuilder API, so we have to replace the first argument with the right
+            // executable path taken from execList
+
+            if (argStrings.isEmpty()) {
+                // CPython fails on OS level and does not raise any python level error, just the
+                // message is print to stderr by the subprocess
+                throw raise(PythonBuiltinClassType.OSError, "A NULL argv[0] was passed through an exec system call");
+            }
+
             LOGGER.fine(() -> "_posixsubprocess.fork_exec: " + String.join(" ", argStrings));
+            IOException firstError = null;
+            SequenceStorage execListStorage = execList.getSequenceStorage();
+            for (int i = 0; i < execListStorage.length(); i++) {
+                Object item = execListStorage.getItemNormalized(i);
+                if (!(item instanceof PBytes)) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, item);
+                }
+                byte[] bytes = checkNullBytes(toBytes.execute(null, item));
+                String path = new String(bytes, StandardCharsets.US_ASCII);
+                argStrings.set(0, path);
+                try {
+                    return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
+                } catch (IOException ex) {
+                    if (firstError == null) {
+                        firstError = ex;
+                    }
+                }
+            }
+            assert firstError != null;
+            if (errpipe_write != -1) {
+                handleIOError(errpipe_write, resources, firstError);
+            }
+            return -1;
+        }
+
+        // Tries executing given arguments, throws IOException if the executable cannot be executed,
+        // any other error is handled here
+        private int exec(ArrayList<String> argStrings, File cwd, Map<String, String> env,
+                        int p2cwrite, int p2cread, int c2pwrite, int c2pread,
+                        int errwrite, int errpipe_write, PosixResources resources, int errread) throws IOException {
+            LOGGER.finest(() -> "_posixsubprocess.fork_exec trying to exec: " + String.join(" ", argStrings));
             ProcessBuilder pb = new ProcessBuilder(argStrings);
             if (p2cread != -1 && p2cwrite != -1) {
                 pb.redirectInput(Redirect.PIPE);
@@ -179,30 +256,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 pb.redirectErrorStream(true);
             }
 
-            try {
-                if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
-                    pb.directory(new File(cwd));
-                } else {
-                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
-                }
-            } catch (SecurityException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
-            }
+            pb.directory(cwd);
+            pb.environment().putAll(env);
 
-            Map<String, String> environment = pb.environment();
-            for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
-                if (keyValue instanceof PBytes) {
-                    // NOTE: passing 'null' frame means we took care of the global state in the
-                    // callers
-                    String[] string = new String(toBytes.execute(null, keyValue)).split("=", 2);
-                    if (string.length == 2) {
-                        environment.put(string[0], string[1]);
-                    }
-                }
-            }
-
+            Process process = pb.start();
             try {
-                Process process = pb.start();
                 if (p2cwrite != -1) {
                     // user code is expected to close the unused ends of the pipes
                     resources.getFileChannel(p2cwrite).close();
@@ -216,20 +274,30 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     resources.getFileChannel(errread).close();
                     resources.fdopen(errread, Channels.newChannel(process.getErrorStream()));
                 }
-
-                return resources.registerChild(process);
-            } catch (IOException e) {
+            } catch (IOException ex) {
+                // We only want to rethrow the IOException that may come out of pb.start()
                 if (errpipe_write != -1) {
-                    // write exec error information here. Data format: "exception name:hex
-                    // errno:description"
-                    handleIOError(errpipe_write, resources, e);
+                    handleIOError(errpipe_write, resources, ex);
                 }
                 return -1;
             }
+
+            return resources.registerChild(process);
+        }
+
+        private byte[] checkNullBytes(byte[] bytes) {
+            for (byte b : bytes) {
+                if (b == 0) {
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
+                }
+            }
+            return bytes;
         }
 
         @TruffleBoundary(allowInlining = true)
         private void handleIOError(int errpipe_write, PosixResources resources, IOException e) {
+            // write exec error information here. Data format: "exception name:hex
+            // errno:description"
             Channel err = resources.getFileChannel(errpipe_write);
             if (!(err instanceof WritableByteChannel)) {
                 throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);

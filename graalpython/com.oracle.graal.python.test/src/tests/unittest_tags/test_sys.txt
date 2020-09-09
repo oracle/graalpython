@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_sys.DisplayHookTest.test_custom_displayhook
 *graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_excepthook_bytes_filename
 *graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_original_excepthook
+*graalpython.lib-python.3.test.test_sys.ExceptHookTest.test_excepthook
 *graalpython.lib-python.3.test.test_sys.SizeofTest.test_asyncgen_hooks
 *graalpython.lib-python.3.test.test_sys.SizeofTest.test_default
 *graalpython.lib-python.3.test.test_sys.SizeofTest.test_errors
