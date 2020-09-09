@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetO
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -177,6 +178,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -2074,7 +2076,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isString(wName)")
-        Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespace, PKeyword[] kwds,
+        Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary nslib,
                         @Cached BranchProfile updatedStorage,
@@ -2085,8 +2087,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode,
+                        @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
-                        @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode) {
+                        @Cached DictBuiltins.CopyNode copyDict) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
             Object metaclass = calculate_metaclass(frame, cls, bases, lib);
@@ -2096,11 +2099,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
                     // Pass it to the winner
-                    callNewFuncNode.execute(frame, newFunc, new Object[]{metaclass, name, bases, namespace}, kwds);
+                    callNewFuncNode.execute(frame, newFunc, new Object[]{metaclass, name, bases, namespaceOrig}, kwds);
                 }
             }
 
             try {
+                PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
                 PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getBestBaseNode);
 
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
@@ -2129,6 +2133,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
+                    }
+                }
+
+                // delete __qualname__ from namespace
+                if (nslib.hasKey(namespace.getDictStorage(), __QUALNAME__)) {
+                    HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __QUALNAME__);
+                    if (newStore != namespace.getDictStorage()) {
+                        updatedStorage.enter();
+                        namespace.setDictStorage(newStore);
                     }
                 }
 
@@ -2434,7 +2447,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 setSlotItemNode().execute(newSlots, slotName, NoGeneralizationNode.DEFAULT);
                 // Passing 'null' frame is fine because the caller already transfers the exception
                 // state to the context.
-                if (nslib.hasKey(namespace.getDictStorage(), slotName)) {
+                if (!slotName.equals(__CLASSCELL__) && !slotName.equals(__QUALNAME__) && nslib.hasKey(namespace.getDictStorage(), slotName)) {
+                    // __qualname__ and __classcell__ will be deleted later
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_S_CONFLICTS_WITH_CLASS_VARIABLE, slotName, "__slots__");
                 }
                 j++;
