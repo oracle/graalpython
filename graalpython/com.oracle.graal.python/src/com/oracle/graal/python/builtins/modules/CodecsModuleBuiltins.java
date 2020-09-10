@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeE
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -59,7 +58,6 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -73,9 +71,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
@@ -105,8 +101,6 @@ import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
-    private static final Charset UTF32 = Charset.forName("utf-32");
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodecsModuleBuiltinsFactory.getFactories();
@@ -327,81 +321,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // Encoder for raw_unicode_escape
-    @Builtin(name = "__truffle_raw_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
-    @GenerateNodeFactory
-    public abstract static class RawEncodeNode extends EncodeBaseNode {
-        @Specialization
-        PTuple doStringNone(String self, @SuppressWarnings("unused") PNone none) {
-            return doStringString(self, "strict");
-        }
-
-        @Specialization
-        PTuple doStringString(String self, String errors) {
-            return factory().createTuple(encodeString(self, errors));
-        }
-
-        @Specialization(replaces = {"doStringNone", "doStringString"})
-        PTuple doGeneric(Object selfObj, Object errorsObj,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-
-            String errors;
-            if (PGuards.isPNone(errorsObj)) {
-                errors = "strict";
-            } else {
-                try {
-                    errors = castToJavaStringNode.execute(errorsObj);
-                } catch (CannotCastException e) {
-                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "'errors'", "str", errorsObj);
-                }
-            }
-
-            try {
-                return factory().createTuple(encodeString(castToJavaStringNode.execute(selfObj), errors));
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "str", selfObj);
-            }
-        }
-
-        @TruffleBoundary
-        private Object[] encodeString(String self, String errors) {
-            CodingErrorAction errorAction = convertCodingErrorAction(errors);
-
-            ByteBuffer encoded;
-            CharBuffer input = CharBuffer.wrap(self);
-            try {
-                encoded = UTF32.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(input);
-            } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError);
-            }
-            int n = encoded.remaining();
-            // Worst case is 6 bytes ("\\uXXXX") for every java char
-            ByteBuffer buf = ByteBuffer.allocate(self.length() * 6);
-            assert n % Integer.BYTES == 0;
-            int codePoints = n / Integer.BYTES;
-
-            while (encoded.hasRemaining()) {
-                int codePoint = encoded.getInt();
-                if (codePoint <= 0xFF) {
-                    buf.put((byte) codePoint);
-                } else {
-                    String hexString = String.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
-                    for (int i = 0; i < hexString.length(); i++) {
-                        assert hexString.charAt(i) < 128;
-                        buf.put((byte) hexString.charAt(i));
-                    }
-                }
-            }
-            buf.flip();
-            n = buf.remaining();
-            byte[] data = new byte[n];
-            buf.get(data);
-            // TODO(fa): bytes object creation should not be behind a TruffleBoundary
-            return new Object[]{factory().createBytes(data), codePoints};
-        }
-
-    }
-
     // _codecs.decode(obj, encoding='utf-8', errors='strict', final=False)
     @Builtin(name = "__truffle_decode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
     @GenerateNodeFactory
@@ -489,77 +408,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 handleDecodingErrorNode = insert(HandleDecodingErrorNode.create());
             }
             return handleDecodingErrorNode.execute(encoder, errorAction, input);
-        }
-    }
-
-    // Decoder for raw_escape_unicode
-    @Builtin(name = "__truffle_raw_decode", minNumOfPositionalArgs = 1, parameterNames = {"bytes", "errors"})
-    @GenerateNodeFactory
-    abstract static class RawDecodeNode extends EncodeBaseNode {
-        @Child private GetInternalByteArrayNode toByteArrayNode;
-
-        @Specialization
-        Object decode(PBytesLike bytes, @SuppressWarnings("unused") PNone errors) {
-            String string = decodeBytes(getBytes(bytes), "strict");
-            return factory().createTuple(new Object[]{string, string.length()});
-        }
-
-        @Specialization(guards = {"isString(errors)"})
-        Object decode(PBytesLike bytes, Object errors,
-                        @Cached CastToJavaStringNode castStr) {
-            String profiledErrors;
-            try {
-                profiledErrors = castStr.execute(errors);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-            String string = decodeBytes(getBytes(bytes), profiledErrors);
-            return factory().createTuple(new Object[]{string, string.length()});
-        }
-
-        private byte[] getBytes(PBytesLike bytesLike) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
-            }
-            return toByteArrayNode.execute(bytesLike.getSequenceStorage());
-        }
-
-        @TruffleBoundary
-        String decodeBytes(byte[] bytes, String errors) {
-            CodingErrorAction errorAction = convertCodingErrorAction(errors);
-            ByteBuffer buf = ByteBuffer.allocate(bytes.length * Integer.BYTES);
-            int i = 0;
-            while (i < bytes.length) {
-                byte b = bytes[i];
-                if (b == (byte) '\\' && i + 1 < bytes.length) {
-                    byte b1 = bytes[i + 1];
-                    int numIndex = i + 2;
-                    if (b1 == (byte) 'u' || b1 == (byte) 'U') {
-                        boolean shortForm = b1 == (byte) 'u';
-                        int count = shortForm ? 4 : 8;
-                        try {
-                            buf.putInt(Integer.parseInt(new String(bytes, numIndex, count), 16));
-                        } catch (NumberFormatException | IndexOutOfBoundsException e) {
-                            throw raise(UnicodeDecodeError, e);
-                        }
-                        i = numIndex + count;
-                        continue;
-                    }
-                }
-                // Bytes that are not an escape sequence are latin-1, which maps to unicode
-                // codepoints directly
-                buf.putInt(b & 0xFF);
-                i++;
-            }
-            buf.flip();
-            try {
-                CharBuffer decoded = UTF32.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(buf);
-                return String.valueOf(decoded);
-            } catch (CharacterCodingException e) {
-                throw raise(UnicodeDecodeError, e);
-            }
         }
     }
 

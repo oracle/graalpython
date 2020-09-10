@@ -108,6 +108,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_surrogates
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_swapcase
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_title
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_ucs4
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_unexpected_end_of_data
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_unicode_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_upper

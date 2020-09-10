@@ -48,6 +48,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import com.ibm.icu.charset.CharsetICU;
+import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -121,6 +122,10 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
         JAVA_CHARSETS.put("UTF-16", StandardCharsets.UTF_16);
+
+        // Add our custom charsets
+        addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
+        JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
 
         addMapping("ascii", "US-ASCII");
         addMapping("big5hkscs", "Big5-HKSCS");
