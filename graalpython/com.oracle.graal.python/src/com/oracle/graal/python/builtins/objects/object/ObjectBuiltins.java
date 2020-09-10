@@ -100,10 +100,12 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -132,48 +134,59 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
 
-        private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
-
         @Specialization(guards = "isNoValue(value)")
         Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
 
-        @Specialization
-        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
-        }
-
         @Specialization(guards = "isNativeClass(klass)")
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
-        @Specialization(guards = "isPythonClass(value)")
+        @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
                         @Cached("create()") BranchProfile errorValueBranch,
-                        @Cached("create()") BranchProfile errorSelfBranch) {
-            if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
+                        @Cached("create()") BranchProfile errorSelfBranch,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
             Object lazyClass = lib1.getLazyPythonClass(self);
-            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
+            if (isBuiltinClassNotModule(lazyClass) || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
-            getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
-
-            lib1.setLazyPythonClass(self, value);
+            setClass(frame, self, lazyClass, value, ctx, lib1);
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isPythonClass(value)", "!isPythonObject(self)"})
+        private void setClass(VirtualFrame frame, PythonObject self, Object lazyClass, Object value, PythonContext ctx, PythonObjectLibrary lib1) {
+            if (lazyClass instanceof PythonBuiltinClassType) {
+                getCheckCompatibleForAssigmentNode().execute(frame, ctx.getCore().lookupType((PythonBuiltinClassType) lazyClass), value);
+            } else {
+                getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
+            }
+
+            lib1.setLazyPythonClass(self, value);
+        }
+
+        private static boolean isBuiltinClassNotModule(Object lazyClass) {
+            if (lazyClass instanceof PythonBuiltinClass) {
+                return ((PythonBuiltinClass) lazyClass).getType() != PythonBuiltinClassType.PythonModule;
+            } else if (lazyClass instanceof PythonBuiltinClassType) {
+                return ((PythonBuiltinClassType) lazyClass) != PythonBuiltinClassType.PythonModule;
+            }
+            return false;
+        }
+
+        @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
         Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Fallback

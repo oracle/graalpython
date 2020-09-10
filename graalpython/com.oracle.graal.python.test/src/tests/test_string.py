@@ -1155,3 +1155,21 @@ def test_replace_count():
     s = "1 2 3 1 2 3 1 2 3 1 2 3"
     s = s.replace("1", "1 _", s.count("1"))
     assert s == "1 _ 2 3 1 _ 2 3 1 _ 2 3 1 _ 2 3"
+
+def test_str_add_result_type():
+    class S(str): pass
+
+    assert (S('') + S('a')).__class__ == str
+    assert (S('a') + S('')).__class__ == str
+    assert (S('') + S('')).__class__ == str
+    assert (S('a') + S('a')).__class__ == str
+
+    assert ('' + S('')).__class__ == str
+    assert ('a' + S('')).__class__ == str
+    assert (S('') + '').__class__ == str
+    assert (S('') + 'a').__class__ == str
+
+    assert ('' + '').__class__ == str
+    assert ('' + 'a').__class__ == str
+    assert ('a' + '').__class__ == str
+    assert ('a' + 'a').__class__ == str

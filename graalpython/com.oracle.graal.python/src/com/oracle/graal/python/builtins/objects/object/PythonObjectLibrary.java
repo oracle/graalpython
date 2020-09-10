@@ -146,7 +146,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, Object cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES, receiver);
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
     }
 
     /**

@@ -99,9 +99,11 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaString
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -420,28 +422,58 @@ public final class StringBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self, other.getCharSequence())")
-        Object doSSSimple(String self, PString other) {
+        @Specialization(guards = "!concatGuard(self, other.getCharSequence())", limit = "1")
+        Object doSSSimple(String self, PString other,
+                        @Cached StringMaterializeNode materializeNode,
+                        @Cached IsSameTypeNode isSameType,
+                        @Cached BranchProfile isSameBranch,
+                        @CachedLibrary("other") PythonObjectLibrary lib) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
-                return other;
+                // result type has to be str
+                if (isSameType.execute(lib.getLazyPythonClass(other), PythonBuiltinClassType.PString)) {
+                    isSameBranch.enter();
+                    return other;
+                }
+                return materializeNode.execute(other);
             }
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)")
-        Object doSSSimple(PString self, String other) {
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)", limit = "1")
+        Object doSSSimple(PString self, String other,
+                        @Cached StringMaterializeNode materializeNode,
+                        @Cached IsSameTypeNode isSameType,
+                        @Cached BranchProfile isSameBranch,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
             }
-            return self;
+            // result type has to be str
+            if (isSameType.execute(lib.getLazyPythonClass(self), PythonBuiltinClassType.PString)) {
+                isSameBranch.enter();
+                return self;
+            }
+            return materializeNode.execute(self);
         }
 
         @Specialization(guards = "!concatGuard(self.getCharSequence(), other.getCharSequence())")
-        PString doSSSimple(PString self, PString other) {
+        Object doSSSimple(PString self, PString other,
+                        @Cached StringMaterializeNode materializeNode,
+                        @Cached IsSameTypeNode isSameType,
+                        @Cached BranchProfile isSameBranch,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
-                return other;
+                if (isSameType.execute(lib.getLazyPythonClass(other), PythonBuiltinClassType.PString)) {
+                    isSameBranch.enter();
+                    return other;
+                }
+                return materializeNode.execute(other);
             }
-            return self;
+            if (isSameType.execute(lib.getLazyPythonClass(self), PythonBuiltinClassType.PString)) {
+                isSameBranch.enter();
+                return self;
+            }
+            return materializeNode.execute(self);
         }
 
         @Specialization(guards = "concatGuard(self.getCharSequence(), other)")
