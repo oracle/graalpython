@@ -148,7 +148,11 @@ abstract class FormatProcessor<T> {
                     // empty
                 }
                 index -= 1;
-                return parseNumber(numStart, index);
+                try {
+                    return parseNumber(numStart, index);
+                } catch (NumberFormatException e) {
+                    throw core.raise(ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+                }
             }
             index -= 1;
             return 0;

@@ -40,31 +40,29 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.ibm.icu.lang.UCharacter;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.text.Normalizer;
 import java.util.List;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -72,7 +70,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(defineModule = "unicodedata")
 public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeDataModuleBuiltinsFactory.getFactories();
     }
 
@@ -175,9 +173,11 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     }
 
     // unicodedata.normalize(form, unistr)
-    @Builtin(name = "normalize", minNumOfPositionalArgs = 2)
+    @Builtin(name = "normalize", minNumOfPositionalArgs = 2, parameterNames = {"form", "unistr"})
+    @ArgumentClinic(name = "form", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "unistr", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class NormalizeNode extends PythonBuiltinNode {
+    public abstract static class NormalizeNode extends PythonBinaryClinicBuiltinNode {
         @TruffleBoundary
         protected Normalizer.Form getForm(String form) {
             try {
@@ -198,25 +198,18 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return Normalizer.normalize(unistr, cachedNormForm);
         }
 
-        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
-        public String normalize(String form, PString unistr,
-                        @Cached("form") String cachedForm,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
-            try {
-                return normalize(form, castToJavaStringNode.execute(unistr), cachedForm, cachedNormForm);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.NormalizeNodeClinicProviderGen.INSTANCE;
         }
-
     }
 
     // unicodedata.is_normalized(form, unistr)
-    @Builtin(name = "is_normalized", minNumOfPositionalArgs = 2)
+    @Builtin(name = "is_normalized", minNumOfPositionalArgs = 2, parameterNames = {"form", "unistr"})
+    @ArgumentClinic(name = "form", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "unistr", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class IsNormalizedNode extends PythonBuiltinNode {
+    public abstract static class IsNormalizedNode extends PythonBinaryClinicBuiltinNode {
         @TruffleBoundary
         protected Normalizer.Form getForm(String form) {
             try {
@@ -237,36 +230,25 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return Normalizer.isNormalized(unistr, cachedNormForm);
         }
 
-        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
-        public boolean normalize(String form, PString unistr,
-                        @Cached("form") String cachedForm,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
-            try {
-                return isNormalized(form, castToJavaStringNode.execute(unistr), cachedForm, cachedNormForm);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.IsNormalizedNodeClinicProviderGen.INSTANCE;
         }
     }
 
-    // unicodedata.name(char, defaultValue)
-    @Builtin(name = "name", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    // unicodedata.name(chr, default)
+    @Builtin(name = "name", minNumOfPositionalArgs = 1, parameterNames = {"chr", "default"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NameNode extends PythonBuiltinNode {
+    public abstract static class NameNode extends PythonBinaryClinicBuiltinNode {
 
-        @TruffleBoundary
-        protected Object getName(String chr, Object defaultValue) {
-            if (chr.codePointCount(0, chr.length()) != 1) {
-                throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "name()", 1, chr);
-            }
-            int cp = Character.codePointAt(chr, 0);
+        @Specialization
+        public Object name(int cp, Object defaultValue) {
             if ((0xe000 <= cp && cp <= 0xf8ff) || (0xF0000 <= cp && cp <= 0xFFFFD) || (0x100000 <= cp && cp <= 0x10FFFD)) {
                 // do not populate names from private use areas
                 throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
             }
-            String result = UCharacter.getName(cp);
+            String result = getName(cp);
             if (result == null) {
                 if (defaultValue == PNone.NO_VALUE) {
                     throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
@@ -276,26 +258,48 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization
-        public Object name(String chr, Object defaultValue) {
-            return getName(chr, defaultValue);
+        @TruffleBoundary
+        private static String getName(int cp) {
+            return UCharacter.getName(cp);
         }
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.NameNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    // unicodedata.bidirectional(char)
+    @Builtin(name = "bidirectional", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class BidirectionalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        public Object name(PString pchr, Object defaultValue,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            String chr;
-            try {
-                chr = castToJavaStringNode.execute(pchr);
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-            return getName(chr, defaultValue);
+        @TruffleBoundary
+        static String bidirectional(int chr) {
+            return UCharacter.getPropertyValueName(UProperty.BIDI_CLASS, UCharacter.getDirection(chr), UProperty.NameChoice.SHORT);
         }
 
-        @Fallback
-        public Object name(Object chr, @SuppressWarnings("unused") Object defaultValue) {
-            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_UNICODE, "name()", 1, chr);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.BidirectionalNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    // unicodedata.category(char)
+    @Builtin(name = "category", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"chr"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class CategoryNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static String category(int chr) {
+            return UCharacter.getPropertyValueName(UProperty.GENERAL_CATEGORY, UCharacter.getType(chr), UProperty.NameChoice.SHORT);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.CategoryNodeClinicProviderGen.INSTANCE;
         }
     }
 }

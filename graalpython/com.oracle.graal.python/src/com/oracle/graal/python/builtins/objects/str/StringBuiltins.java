@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -110,8 +111,8 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -209,6 +210,9 @@ public final class StringBuiltins extends PythonBuiltins {
             if (Spec.specified(spec.align) && spec.align == '=') {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT);
             }
+            if (Spec.specified(spec.sign)) {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
+            }
             return spec;
         }
     }
@@ -220,7 +224,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self));
+            return repr(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __REPR__, self));
         }
 
         @TruffleBoundary
@@ -271,6 +275,22 @@ public final class StringBuiltins extends PythonBuiltins {
             return str.toString();
         }
 
+    }
+
+    @Builtin(name = __GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PTuple doString(String self) {
+            // CPython requires the string to be a copy for some reason
+            return factory().createTuple(new Object[]{new String(self)});
+        }
+
+        @Specialization
+        PTuple doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode cast) {
+            return doString(cast.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __GETNEWARGS__, self));
+        }
     }
 
     abstract static class BinaryStringOpNode extends PythonBinaryBuiltinNode {
@@ -347,9 +367,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LtNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) < 0;
+            return StringUtils.compareToUnicodeAware(self, other) < 0;
         }
     }
 
@@ -357,9 +376,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LeNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) <= 0;
+            return StringUtils.compareToUnicodeAware(self, other) <= 0;
         }
     }
 
@@ -367,9 +385,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GtNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) > 0;
+            return StringUtils.compareToUnicodeAware(self, other) > 0;
         }
     }
 
@@ -377,9 +394,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GeNode extends BinaryStringOpNode {
         @Override
-        @TruffleBoundary
         boolean operator(String self, String other) {
-            return self.compareTo(other) >= 0;
+            return StringUtils.compareToUnicodeAware(self, other) >= 0;
         }
     }
 
@@ -1118,31 +1134,29 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // str.split
-    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"}, needsFrame = true)
+    // str.rsplit
+    @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "maxsplit"}, needsFrame = true)
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "sep", conversion = ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "maxsplit", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class RSplitNode extends PythonTernaryBuiltinNode {
+    public abstract static class RSplitNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization
-        PList doStringWhitespace(VirtualFrame frame, String self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
-            return rsplitfields(frame, self, -1, appendNode, reverseNode);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RSplitNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        PList doStringSep(VirtualFrame frame, String self, String sep, @SuppressWarnings("unused") PNone maxsplit,
-                        @Shared("appendNode") @Cached AppendNode appendNode,
-                        @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
-            return doStringSepMaxsplit(frame, self, sep, Integer.MAX_VALUE, appendNode, reverseNode);
-        }
-
-        @Specialization
-        PList doStringSepMaxsplit(VirtualFrame frame, String self, String sep, int maxsplit,
+        PList doStringSepMaxsplit(VirtualFrame frame, String self, String sep, int maxsplitInput,
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("reverseNode") @Cached ListReverseNode reverseNode) {
             if (sep.length() == 0) {
                 throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+            }
+            int maxsplit = maxsplitInput;
+            if (maxsplitInput < 0) {
+                maxsplit = Integer.MAX_VALUE;
             }
             PList list = factory().createList();
             int splits = 0;
@@ -1174,24 +1188,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return rsplitfields(frame, self, maxsplit, appendNode, reverseNode);
         }
 
-        @Specialization(replaces = {"doStringWhitespace", "doStringSep", "doStringSepMaxsplit", "doStringMaxsplit"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        Object doGeneric(VirtualFrame frame, Object self, Object sep, Object maxsplit,
-                        @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @CachedLibrary("maxsplit") PythonObjectLibrary lib,
-                        @Cached CastToJavaStringCheckedNode castSepNode,
-                        @Cached AppendNode appendNode,
-                        @Cached ListReverseNode reverseNode) {
-            String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rsplit", self);
-            int imaxsplit = PGuards.isPNone(maxsplit) ? -1 : lib.asSizeWithState(maxsplit, PArguments.getThreadState(frame));
-            if (PGuards.isPNone(sep)) {
-                return rsplitfields(frame, selfStr, imaxsplit, appendNode, reverseNode);
-            } else {
-                String sepStr = castSepNode.cast(sep, "Can't convert %p object to str implicitly", sep);
-                return doStringSepMaxsplit(frame, selfStr, sepStr, imaxsplit, appendNode, reverseNode);
-            }
-        }
-
-        // See {@link PyString}
         private PList rsplitfields(VirtualFrame frame, String s, int maxsplit, AppendNode appendNode, ListReverseNode reverseNode) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1199,9 +1195,6 @@ public final class StringBuiltins extends PythonBuiltins {
              */
             PList list = factory().createList();
             int length = s.length();
-            int end = length - 1;
-            int splits = 0;
-            int index;
 
             int maxsplit2 = maxsplit;
             if (maxsplit2 < 0) {
@@ -1209,43 +1202,34 @@ public final class StringBuiltins extends PythonBuiltins {
                 maxsplit2 = length;
             }
 
-            // start is always the first character not consumed into a piece on the list
-            while (end > 0) {
+            // 2 state machine - we're either reading whitespace or non-whitespace, segments are
+            // emitted in ws->non-ws transition and at the end
+            boolean hasSegment = false;
+            int start = 0, end = length, splits = 0;
 
-                // Find the next occurrence of non-whitespace
-                while (end >= 0) {
-                    if (!PString.isWhitespace(s.codePointAt(end))) {
-                        // Break leaving start pointing at non-whitespace
-                        break;
-                    }
-                    end--;
-                }
-
-                if (end == 0) {
-                    // Only found whitespace so there is no next segment
-                    break;
-
-                } else if (splits >= maxsplit2) {
-                    // The next segment is the last and contains all characters up to the end
-                    index = 0;
-
-                } else {
-                    // The next segment runs up to the next next whitespace or end
-                    for (index = end; index >= 0; index--) {
-                        if (PString.isWhitespace(s.codePointAt(index))) {
-                            // Break leaving index pointing after the found whitespace
-                            index++;
+            for (int i = length - 1; i >= 0; i--) {
+                if (!PString.isLowSurrogate(s.charAt(i))) {
+                    if (StringUtils.isSpace(PString.codePointAt(s, i))) {
+                        if (hasSegment) {
+                            appendNode.execute(list, s.substring(start, end));
+                            hasSegment = false;
+                            splits++;
+                        }
+                        end = i;
+                        if (PString.isHighSurrogate(s.charAt(i))) {
+                            end++;
+                        }
+                    } else {
+                        hasSegment = true;
+                        if (splits >= maxsplit2) {
                             break;
                         }
+                        start = i;
                     }
                 }
-
-                // Make a piece from start up to index
-                appendNode.execute(list, s.substring(index, end + 1));
-                splits++;
-
-                // Start next segment search at the whitespace
-                end = index - 1;
+            }
+            if (hasSegment) {
+                appendNode.execute(list, s.substring(0, end));
             }
 
             reverseNode.call(frame, list);
@@ -2309,7 +2293,7 @@ public final class StringBuiltins extends PythonBuiltins {
         private static void handleCapitalSigma(String self, StringBuilder sb, int i, int codePoint) {
             int j;
             for (j = i - 1; j >= 0; j--) {
-                if (!Character.isHighSurrogate(self.charAt(j))) {
+                if (!Character.isLowSurrogate(self.charAt(j))) {
                     int ch = self.codePointAt(j);
                     if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
                         break;
@@ -2334,6 +2318,42 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
             return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "swapcase", self));
+        }
+    }
+
+    @Builtin(name = "expandtabs", minNumOfPositionalArgs = 1, parameterNames = {"$self", "tabsize"})
+    @ArgumentClinic(name = "$self", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "tabsize", conversion = ClinicConversion.Int, defaultValue = "8", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class ExpandTabsNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static String doString(String self, int tabsize) {
+            StringBuilder sb = StringUtils.newStringBuilder(self.length());
+            int linePos = 0;
+            // It's ok to iterate with charAt, we just pass surrogates through
+            for (int i = 0; i < self.length(); i++) {
+                char ch = PString.charAt(self, i);
+                if (ch == '\t') {
+                    int incr = tabsize - (linePos % tabsize);
+                    for (int j = 0; j < incr; j++) {
+                        StringUtils.append(sb, ' ');
+                    }
+                    linePos += incr;
+                } else {
+                    if (ch == '\n' || ch == '\r') {
+                        linePos = 0;
+                    } else {
+                        linePos++;
+                    }
+                    StringUtils.append(sb, ch);
+                }
+            }
+            return StringUtils.toString(sb);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.ExpandTabsNodeClinicProviderGen.INSTANCE;
         }
     }
 }

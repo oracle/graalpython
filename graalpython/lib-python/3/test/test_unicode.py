@@ -2456,6 +2456,7 @@ class UnicodeTest(string_tests.CommonTest,
 class CAPITest(unittest.TestCase):
 
     # Test PyUnicode_FromFormat()
+    @support.impl_detail("ctypes", graalvm=False)
     def test_from_format(self):
         support.import_module('ctypes')
         from ctypes import (
