@@ -1214,7 +1214,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int start = 0, end = length, splits = 0;
 
             for (int i = length - 1; i >= 0; i--) {
-                if (!PString.isHighSurrogate(s.charAt(i))) {
+                if (!PString.isLowSurrogate(s.charAt(i))) {
                     if (StringUtils.isSpace(PString.codePointAt(s, i))) {
                         if (hasSegment) {
                             appendNode.execute(list, s.substring(start, end));
@@ -1222,7 +1222,7 @@ public final class StringBuiltins extends PythonBuiltins {
                             splits++;
                         }
                         end = i;
-                        if (PString.isLowSurrogate(s.charAt(i))) {
+                        if (PString.isHighSurrogate(s.charAt(i))) {
                             end++;
                         }
                     } else {
@@ -2299,7 +2299,7 @@ public final class StringBuiltins extends PythonBuiltins {
         private static void handleCapitalSigma(String self, StringBuilder sb, int i, int codePoint) {
             int j;
             for (j = i - 1; j >= 0; j--) {
-                if (!Character.isHighSurrogate(self.charAt(j))) {
+                if (!Character.isLowSurrogate(self.charAt(j))) {
                     int ch = self.codePointAt(j);
                     if (!UCharacter.hasBinaryProperty(ch, UProperty.CASE_IGNORABLE)) {
                         break;
