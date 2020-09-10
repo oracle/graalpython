@@ -843,7 +843,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     if (!decoder.decodingStep(true)) {
                         try {
                             handleDecodingErrorNode.execute(decoder, "strict", source);
-                            throw new IllegalStateException("should be unreachable");
+                            throw CompilerDirectives.shouldNotReachHere();
                         } catch (PException e) {
                             throw raiseInvalidSyntax(filename, "(unicode error) %s", pyLib.asPString(e.getEscapedException()));
                         }
