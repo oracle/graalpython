@@ -1141,6 +1141,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ImportError should have been raised")
         self.assert_traceback(tb, [__file__])
 
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
     def test_nonexistent_module_nested(self):
         self.create_module("foo", "import nonexistent_xyzzy")
         try:
@@ -1161,6 +1162,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ZeroDivisionError should have been raised")
         self.assert_traceback(tb, [__file__, 'foo.py'])
 
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
     def test_exec_failure_nested(self):
         self.create_module("foo", "import bar")
         self.create_module("bar", "1/0")
