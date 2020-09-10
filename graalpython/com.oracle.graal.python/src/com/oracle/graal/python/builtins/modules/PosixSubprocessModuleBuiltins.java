@@ -47,7 +47,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -164,10 +163,10 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 if (keyValue instanceof PBytes) {
                     // NOTE: passing 'null' frame means we took care of the global state in the
                     // callers
-                    byte[] bytes = checkNullBytes(toBytes.execute(null, keyValue));
-                    String[] string = new String(bytes, StandardCharsets.US_ASCII).split("=", 2);
-                    if (string.length == 2) {
-                        envMap.put(string[0], string[1]);
+                    String str = checkNullBytesAndEncode(toBytes.execute(null, keyValue));
+                    String[] strings = str.split("=", 2);
+                    if (strings.length == 2) {
+                        envMap.put(strings[0], strings[1]);
                     }
                 }
             }
@@ -199,8 +198,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 if (!(item instanceof PBytes)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, item);
                 }
-                byte[] bytes = checkNullBytes(toBytes.execute(null, item));
-                String path = new String(bytes, StandardCharsets.US_ASCII);
+                String path = checkNullBytesAndEncode(toBytes.execute(null, item));
                 int executableListLen = 0;
                 if (path.equals(context.getOption(PythonOptions.Executable))) {
                     // In case someone passed to us sys.executable that happens to be java command
@@ -222,8 +220,8 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         firstError = ex;
                     }
                 }
-                for (int j = 0; j < executableListLen - 1; j++) {
-                    argStrings.remove(j + 1);
+                for (int j = 1; j < executableListLen; j++) {
+                    argStrings.remove(1);
                 }
             }
             assert firstError != null;
@@ -291,13 +289,17 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return resources.registerChild(process);
         }
 
-        private byte[] checkNullBytes(byte[] bytes) {
+        private String checkNullBytesAndEncode(byte[] bytes) {
             for (byte b : bytes) {
                 if (b == 0) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
             }
-            return bytes;
+            // Note: we use intentionally the default encoding for the bytes. We're most likely
+            // getting bytes that the Python wrapper encoded from strings passed to it by the user
+            // and we should support non-ascii characters supported by the current FS. See
+            // test_warnings.test_nonascii
+            return new String(bytes);
         }
 
         @TruffleBoundary(allowInlining = true)
