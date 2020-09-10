@@ -248,7 +248,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
                 // do not populate names from private use areas
                 throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
             }
-            String result = UCharacter.getName(cp);
+            String result = getName(cp);
             if (result == null) {
                 if (defaultValue == PNone.NO_VALUE) {
                     throw raise(ValueError, ErrorMessages.NO_SUCH_NAME);
@@ -256,6 +256,11 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
                 return defaultValue;
             }
             return result;
+        }
+
+        @TruffleBoundary
+        private static String getName(int cp) {
+            return UCharacter.getName(cp);
         }
 
         @Override
