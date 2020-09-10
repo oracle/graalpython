@@ -316,13 +316,13 @@ class TemplateFormatter(object):
         return iter(self.parser_list)
 
 
-def strformat(self, *args, **kwargs):
-    template = TemplateFormatter(self)
+def strformat(___self, *args, **kwargs):
+    template = TemplateFormatter(___self)
     return template.build(args, kwargs)
 
 
-def format_map(self, mapping):
-    template = TemplateFormatter(self)
+def format_map(___self, mapping):
+    template = TemplateFormatter(___self)
     return template.build(None, mapping)
 
 
