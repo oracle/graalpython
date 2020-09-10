@@ -160,6 +160,9 @@ public final class PythonSSTNodeFactory {
                 // The slot is created by assignment or declaration
                 throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_ASSIGNED_BEFORE_GLOBAL, name);
             }
+            if (scopeInfo.getSeenVars() != null && scopeInfo.getSeenVars().contains(name)) {
+                throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), ErrorMessages.NAME_IS_USED_BEFORE_GLOBAL, name);
+            }
             scopeInfo.addExplicitGlobalVariable(name);
             // place the global variable into global space, see test_global_statemnt.py
             globalScope.addExplicitGlobalVariable(name);

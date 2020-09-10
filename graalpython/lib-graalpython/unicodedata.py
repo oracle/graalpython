@@ -44,9 +44,9 @@ c_unicodedata_module = None
 
 @__graalpython__.builtin
 def __get_c_unicodedata():
+    global c_unicodedata_module
     if c_unicodedata_module is None:
         import _cpython_unicodedata
-        global c_unicodedata_module
         c_unicodedata_module = _cpython_unicodedata
     return c_unicodedata_module
 
