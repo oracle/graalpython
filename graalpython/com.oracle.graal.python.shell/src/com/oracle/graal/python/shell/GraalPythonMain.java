@@ -344,7 +344,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             String javaOptions = System.getenv("_JAVA_OPTIONS");
             String javaToolOptions = System.getenv("JAVA_TOOL_OPTIONS");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
-                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                if (arg.matches("(-Xrunjdwp:|-agentlib:jdwp=).*suspend=y.*")) {
                     arg = arg.replace("suspend=y", "suspend=n");
                 }
                 if ((javaOptions != null && javaOptions.contains(arg)) || (javaToolOptions != null && javaToolOptions.contains(arg))) {
