@@ -130,7 +130,7 @@ public class ImportFromNode extends AbstractImportNode {
         }
     }
 
-    private boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
+    private static boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
         Object spec = pol.lookupAttribute(importedModule, frame, __SPEC__);
         if (spec != PNone.NO_VALUE) {
             Object initializing = pol.lookupAttribute(spec, frame, "_initializing");

@@ -534,7 +534,7 @@ public final class PCode extends PythonBuiltinObject {
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
 
-    private PTuple createTuple(Object[] array, PythonObjectFactory factory) {
+    private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
         Object[] data = array;
         if (data == null) {
             data = new Object[0];
@@ -542,7 +542,7 @@ public final class PCode extends PythonBuiltinObject {
         return factory.createTuple(data);
     }
 
-    private PBytes createBytes(byte[] array, PythonObjectFactory factory) {
+    private static PBytes createBytes(byte[] array, PythonObjectFactory factory) {
         byte[] bytes = array;
         if (bytes == null) {
             bytes = new byte[0];
@@ -557,9 +557,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public String co_filename() {
-        String filename = this.getFilename();
-        assert filename != null : "PCode.co_filename cannot be null";
-        return filename;
+        String fName = this.getFilename();
+        assert fName != null : "PCode.co_filename cannot be null";
+        return fName;
     }
 
     public PBytes co_code(PythonObjectFactory factory) {
