@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ALL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -38,7 +37,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -47,7 +45,6 @@ import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -65,10 +62,8 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
     @Child private GetItemNode getItemNode;
-    @Child private PythonObjectLibrary pythonLibrary;
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetNextNode nextNode;
-    @Child private PRaiseNode raiseNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
     @Child private IsBuiltinClassProfile isStopIterationProfile;
@@ -160,14 +155,6 @@ public class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private PythonObjectLibrary ensurePythonLibrary() {
-        if (pythonLibrary == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-        }
-        return pythonLibrary;
-    }
-
     private GetItemNode ensureGetItemNode() {
         if (getItemNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -198,14 +185,6 @@ public class ImportStarNode extends AbstractImportNode {
             isStopIterationProfile = insert(IsBuiltinClassProfile.create());
         }
         return isStopIterationProfile;
-    }
-
-    private PException raiseTypeError(String format, Object... args) {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, format, args);
     }
 
     private GetNextNode ensureGetNextNode() {

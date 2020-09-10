@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PATH__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -36,11 +36,9 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -50,9 +48,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
-    @Child private PythonObjectLibrary pythonLibrary;
     @Child private GetItemNode getItem;
-    @Child private PRaiseImportErrorNode raiseNode;
 
     private final String importee;
     private final int level;
@@ -118,16 +114,16 @@ public class ImportFromNode extends AbstractImportNode {
                     Object modulePath = "unknown location";
                     if (!getAttrErrorProfile.profileException(e2, PythonBuiltinClassType.AttributeError)) {
                         try {
-                            modulePath = pol.lookupAttributeStrict(importedModule, frame, __PATH__);
+                            modulePath = pol.lookupAttributeStrict(importedModule, frame, __FILE__);
                         } catch (PException e3) {
                             e3.expectAttributeError(getFileErrorProfile);
                         }
                     }
 
                     if (isModuleInitialising(frame, pol, importedModule)) {
-                        throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
+                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
                     } else {
-                        throw ensureRaiseNode().raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
+                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                     }
                 }
             }
@@ -141,22 +137,6 @@ public class ImportFromNode extends AbstractImportNode {
             return pol.isTrue(initializing);
         }
         return false;
-    }
-
-    private PythonObjectLibrary ensurePythonLibrary() {
-        if (pythonLibrary == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-        }
-        return pythonLibrary;
-    }
-
-    private PRaiseImportErrorNode ensureRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseImportErrorNode.create());
-        }
-        return raiseNode;
     }
 
     private GetItemNode ensureGetItemNode() {
