@@ -39,17 +39,18 @@
  * SOFTWARE.
  */
 
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.test.objects.ints;
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.theories.Theory;
 
 import com.oracle.graal.python.util.OverflowException;
 
-public class BigIntegerUtilsTests {
+public class PIntBigIntUtilsTests {
     @Test
     public void smallInts() {
         checkInt(-2);
@@ -107,7 +108,7 @@ public class BigIntegerUtilsTests {
 
     private static void checkInt(int value) {
         try {
-            Assert.assertEquals(value, BigIntegerUtils.intValueExact(BigInteger.valueOf(value)));
+            Assert.assertEquals(value, PInt.intValueExact(BigInteger.valueOf(value)));
         } catch (OverflowException e) {
             Assert.fail("intValueExact: unexpected overflow");
         }
@@ -115,7 +116,7 @@ public class BigIntegerUtilsTests {
 
     private static void checkIntOverflow(long value) {
         try {
-            BigIntegerUtils.intValueExact(BigInteger.valueOf(value));
+            PInt.intValueExact(BigInteger.valueOf(value));
             Assert.fail("intValueExact should overflow for " + value);
         } catch (OverflowException e) {
             // nop
@@ -124,7 +125,7 @@ public class BigIntegerUtilsTests {
 
     private static void checkLong(long value) {
         try {
-            Assert.assertEquals(value, BigIntegerUtils.longValueExact(BigInteger.valueOf(value)));
+            Assert.assertEquals(value, PInt.longValueExact(BigInteger.valueOf(value)));
         } catch (OverflowException e) {
             Assert.fail("intValueExact: unexpected overflow");
         }
@@ -133,7 +134,7 @@ public class BigIntegerUtilsTests {
     private static void checkLongOverflow(long value1, long value2) {
         try {
             BigInteger value = BigInteger.valueOf(value1).add(BigInteger.valueOf(value2));
-            BigIntegerUtils.longValueExact(value);
+            PInt.longValueExact(value);
             Assert.fail("intValueExact should overflow for " + value);
         } catch (OverflowException e) {
             // nop

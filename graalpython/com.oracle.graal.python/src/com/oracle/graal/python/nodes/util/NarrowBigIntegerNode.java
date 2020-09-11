@@ -40,47 +40,37 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.nodes.util.BigIntegerUtils.getMag;
-
 import java.math.BigInteger;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @GenerateUncached
 public abstract class NarrowBigIntegerNode extends PNodeWithContext {
 
     public abstract Object execute(BigInteger x);
 
-    @Specialization
+    @Specialization(guards = "x.signum() == 0")
+    Object narrowBigInteger0(@SuppressWarnings("unused") BigInteger x) {
+        return 0;
+    }
+
+    @Specialization(guards = "x.signum() != 0")
     Object narrowBigInteger(BigInteger x,
-                    @Cached PythonObjectFactory factory,
-                    @Cached BranchProfile neddsPIntProfile) {
-        int signum = x.signum();
-        if (signum == 0) {
-            return 0;
+                    @Cached ConditionProfile fitsIntProfile,
+                    @Cached ConditionProfile fitsLongProfile,
+                    @Cached PythonObjectFactory factory) {
+        if (fitsIntProfile.profile(PInt.fitsIn(x, PInt.MIN_INT, PInt.MAX_INT))) {
+            return PInt.intValue(x);
         }
-        int[] mag = getMag(x);
-        if (mag.length == 1) {
-            if (mag[0] > 0 || (mag[0] == 0x80000000 && signum < 0)) {
-                return signum * mag[0];
-            } else {
-                long mag0 = mag[0] & 0xFFFFFFFFL;
-                return signum * mag0;
-            }
+        if (fitsLongProfile.profile(PInt.fitsIn(x, PInt.MIN_LONG, PInt.MAX_LONG))) {
+            return PInt.longValue(x);
         }
-        if (mag.length == 2) {
-            if (mag[0] > 0 || (mag[0] == 0x80000000 && signum < 0 && mag[1] == 0)) {
-                long mag0 = mag[0] & 0xFFFFFFFFL;
-                long mag1 = mag[1] & 0xFFFFFFFFL;
-                return signum * ((mag0 << 32) | mag1);
-            }
-        }
-        neddsPIntProfile.enter();
         return factory.createInt(x);
     }
 }
