@@ -5,23 +5,15 @@ Ruby, and LLVM. GraalVM provides a Python API to interact with other languages
 available on the GraalVM. In fact, GraalVM uses this API internally to
 execute Python C extensions using the LLVM implementation in GraalVM.
 
-You can import the `polyglot` module to interact with other languages.
+You can import the `polyglot` module to interact with other languages. In order
+to use the polyglot functionality, you need to specify `--jvm --polyglot`
+arguments to the `graalpython` executable.
 
 ```python
 import polyglot
 ```
 
-You can import a global value from the entire polyglot scope:
-```python
-imported_polyglot_global = polyglot.import_value("global_name")
-```
-
-This global should then work as expected; accessing attributes assumes it reads
-from the `members` namespace; accessing items is supported both with strings and
-numbers; calling methods on the result tries to do a straight invoke and falls
-back to reading the member and trying to execute it.
-
-You can evaluate some code in another language:
+## Evaluating code in other languages
 ```python
 polyglot.eval(string="1 + 1", language="ruby")
 ```
@@ -36,6 +28,7 @@ If you pass a file, you can also try to rely on the file-based language detectio
 polyglot.eval(path="./my_ruby_file.rb")
 ```
 
+## Exporting and importing values
 To export something from Python to other Polyglot languages so they can import
 it:
 ```python
@@ -51,6 +44,19 @@ def python_method():
     return "Hello from Python!"
 ```
 
+You can import a global value from the entire polyglot scope (exported from
+another language):
+```python
+imported_polyglot_global = polyglot.import_value("global_name")
+```
+
+This global should then work as expected; accessing attributes assumes it reads
+from the `members` namespace; accessing items is supported both with strings and
+numbers; calling methods on the result tries to do a straight invoke and falls
+back to reading the member and trying to execute it.
+
+
+## Examples
 Here is an example of how to use JavaScript regular expression engine to
 match Python strings. Save this code to the `polyglot_example.py` file:
 
@@ -135,7 +141,7 @@ the `java` module:
 ```python
 import java
 BigInteger = java.type("java.math.BigInteger")
-myBigInt = BigInteger(42)
+myBigInt = BigInteger.valueOf(42)
 myBigInt.shiftLeft(128)            # public Java methods can just be called
 myBigInt["not"]()                  # Java method names that are keywords in
                                    # Python can be accessed using "[]"
@@ -144,7 +150,8 @@ print(list(byteArray))             # Java arrays can act like Python lists
 ```
 
 For packages under the `java` package, you can also use the normal Python import
-syntax:
+syntax. This syntax is limited to importing concrete classes, it doesn't work
+on packages, unless in [Jython Compatibility](Jython.md) mode.
 ```python
 import java.util.ArrayList
 from java.util import ArrayList
@@ -179,5 +186,5 @@ print(java.is_function(my_list.add))# prints True, the add method of ArrayList
 print(java.instanceof(my_list, ArrayList)) # prints True
 ```
 
-See the [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) reference
+See the [Polyglot Programming](https://www.graalvm.org/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) reference
 for more information about interoperability with other programming languages.
