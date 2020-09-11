@@ -89,6 +89,7 @@ public class ImportFromNode extends AbstractImportNode {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(frame, importee, globals, fromlist, level);
         PythonObjectLibrary pol = ensurePythonLibrary();
+        Object sysModules = getSysModules(frame, pol);
 
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
@@ -100,17 +101,13 @@ public class ImportFromNode extends AbstractImportNode {
                 Object moduleName = "<unknown module name>";
                 try {
                     moduleName = pol.lookupAttributeStrict(importedModule, frame, __NAME__);
-                    String pkgname;
                     try {
-                        pkgname = ensureCastToStringNode().execute(moduleName);
-                    } catch (CannotCastException castException){
+                        String pkgname = ensureCastToStringNode().execute(moduleName);
+                        String fullname = PString.cat(pkgname, ".", attr);
+                        writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
+                    } catch (CannotCastException cce){
                         throw pe;
                     }
-                    String fullname = PString.cat(pkgname, ".", attr);
-                    PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
-                    Object sysModules = pol.lookupAttribute(sys, frame, "modules");
-                    assert sysModules != PNone.NO_VALUE : "ImportFromNode: sys.modules was not found!";
-                    writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
                 } catch (PException pe2) {
                     Object modulePath = "unknown location";
                     if (!getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
@@ -129,6 +126,16 @@ public class ImportFromNode extends AbstractImportNode {
                 }
             }
         }
+    }
+
+    private Object getSysModules(VirtualFrame frame, PythonObjectLibrary pol) {
+        Object sysModules = getContext().getSysModules();
+        if (sysModules == null) {
+            PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+            sysModules = pol.lookupAttribute(sys, frame, "modules");
+        }
+        assert sysModules != PNone.NO_VALUE : "ImportFromNode: sys.modules was not found!";
+        return sysModules;
     }
 
     private static boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
