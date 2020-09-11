@@ -53,6 +53,7 @@ import mx_unittest
 import mx_sdk
 import mx_subst
 import mx_urlrewrites
+import mx_graalpython_bisect
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
@@ -1985,4 +1986,5 @@ mx.update_commands(SUITE, {
     'graalpytest': [graalpytest, '[-h] [-v] [--python PYTHON] [-k TEST_PATTERN] [TESTS]'],
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
+    'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
 })
