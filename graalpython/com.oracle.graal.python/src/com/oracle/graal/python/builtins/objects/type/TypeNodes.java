@@ -1010,7 +1010,7 @@ public abstract class TypeNodes {
                         @Cached CallBinaryMethodNode callGetAttr,
                         @Cached GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary objectLibrary) {
+                        @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary) {
             return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary, objectLibrary);
         }
 
@@ -1034,8 +1034,8 @@ public abstract class TypeNodes {
 
         private boolean extraivars(Object type, Object base, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
                         GetDictStorageNode getDictStorageNode, HashingStorageLibrary storageLibrary, PythonObjectLibrary objectLibrary) {
-            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
-            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, storageLibrary);
+            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
+            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getDictStorageNode, objectLibrary, storageLibrary);
 
             if (typeSlots == null && baseSlots != null && objectLibrary.length(baseSlots) != 0 ||
                             baseSlots == null && typeSlots != null && objectLibrary.length(typeSlots) != 0) {
@@ -1051,8 +1051,8 @@ public abstract class TypeNodes {
         }
 
         protected Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
-                        GetDictStorageNode getDictStorageNode, HashingStorageLibrary lib) {
-            Object getAttr = lookupGetAttribute.execute(type, __GETATTRIBUTE__, type, false);
+                        GetDictStorageNode getDictStorageNode, PythonObjectLibrary objectLibrary, HashingStorageLibrary lib) {
+            Object getAttr = lookupGetAttribute.execute(objectLibrary.getLazyPythonClass(type), __GETATTRIBUTE__, type, false);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 if (dict instanceof PMappingproxy) {
