@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -612,7 +613,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 index += len;
                 return bytes;
             } else {
-                return new byte[0];
+                return PythonUtils.EMPTY_BYTE_ARRAY;
             }
         }
 

@@ -353,7 +353,7 @@ public final class PCode extends PythonBuiltinObject {
             return serializer.serialize(rootNode);
         }
         // no code for non-user functions
-        return new byte[0];
+        return PythonUtils.EMPTY_BYTE_ARRAY;
     }
 
     public RootNode getRootNode() {
@@ -537,7 +537,7 @@ public final class PCode extends PythonBuiltinObject {
     private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
         Object[] data = array;
         if (data == null) {
-            data = new Object[0];
+            data = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         return factory.createTuple(data);
     }
@@ -545,7 +545,7 @@ public final class PCode extends PythonBuiltinObject {
     private static PBytes createBytes(byte[] array, PythonObjectFactory factory) {
         byte[] bytes = array;
         if (bytes == null) {
-            bytes = new byte[0];
+            bytes = PythonUtils.EMPTY_BYTE_ARRAY;
         }
         return factory.createBytes(bytes);
     }

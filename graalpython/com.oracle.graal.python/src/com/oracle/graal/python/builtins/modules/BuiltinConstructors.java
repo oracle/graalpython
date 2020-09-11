@@ -276,7 +276,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public Object createByteArray(Object cls, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             // data filled in subsequent __init__ call - see BytesBuiltins.InitNode
-            return factory().createByteArray(cls, new byte[0]);
+            return factory().createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
     }
 
