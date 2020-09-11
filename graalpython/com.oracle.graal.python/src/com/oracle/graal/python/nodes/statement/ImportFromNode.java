@@ -39,6 +39,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -49,6 +51,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
     @Child private GetItemNode getItem;
+    @Child private CastToJavaStringNode castToJavaStringNode;
 
     private final String importee;
     private final int level;
@@ -98,11 +101,9 @@ public class ImportFromNode extends AbstractImportNode {
                 try {
                     moduleName = pol.lookupAttributeStrict(importedModule, frame, __NAME__);
                     String pkgname;
-                    if (moduleName instanceof PString) {
-                        pkgname = ((PString) moduleName).getValue();
-                    } else if (moduleName instanceof String) {
-                        pkgname = (String) moduleName;
-                    } else {
+                    try {
+                        pkgname = ensureCastToStringNode().execute(moduleName);
+                    } catch (CannotCastException castException){
                         throw pe;
                     }
                     String fullname = PString.cat(pkgname, ".", attr);
@@ -110,13 +111,13 @@ public class ImportFromNode extends AbstractImportNode {
                     Object sysModules = pol.lookupAttribute(sys, frame, "modules");
                     assert sysModules != PNone.NO_VALUE : "ImportFromNode: sys.modules was not found!";
                     writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
-                } catch (PException e2) {
+                } catch (PException pe2) {
                     Object modulePath = "unknown location";
-                    if (!getAttrErrorProfile.profileException(e2, PythonBuiltinClassType.AttributeError)) {
+                    if (!getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
                         try {
                             modulePath = pol.lookupAttributeStrict(importedModule, frame, __FILE__);
-                        } catch (PException e3) {
-                            e3.expectAttributeError(getFileErrorProfile);
+                        } catch (PException pe3) {
+                            pe3.expectAttributeError(getFileErrorProfile);
                         }
                     }
 
@@ -145,5 +146,13 @@ public class ImportFromNode extends AbstractImportNode {
             getItem = insert(GetItemNode.create());
         }
         return getItem;
+    }
+
+    private CastToJavaStringNode ensureCastToStringNode() {
+        if (castToJavaStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castToJavaStringNode = insert(CastToJavaStringNode.create());
+        }
+        return castToJavaStringNode;
     }
 }
