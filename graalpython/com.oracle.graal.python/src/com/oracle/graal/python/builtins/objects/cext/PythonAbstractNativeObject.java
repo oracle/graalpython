@@ -170,6 +170,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void deleteDict() throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
     public Object asIndexWithState(ThreadState threadState,
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Exclusive @Cached IsSubtypeNode isSubtypeNode,

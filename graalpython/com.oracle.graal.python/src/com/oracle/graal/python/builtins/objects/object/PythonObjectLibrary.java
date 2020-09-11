@@ -122,6 +122,14 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Delete the {@code __dict__} attribute of the object
+     */
+    @Abstract(ifExported = "hasDict")
+    public void deleteDict(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    /**
      * @return the Python type of the receiver
      */
     @Abstract
