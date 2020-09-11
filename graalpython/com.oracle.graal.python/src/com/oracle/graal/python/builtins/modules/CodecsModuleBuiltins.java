@@ -52,7 +52,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -60,8 +59,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -77,12 +74,9 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -94,7 +88,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -184,48 +177,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     break;
             }
             return errorAction;
-        }
-    }
-
-    @Builtin(name = "unicode_escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class UnicodeEscapeEncode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        Object encode(String str, @SuppressWarnings("unused") Object errors) {
-            return factory().createTuple(new Object[]{factory().createBytes(BytesUtils.unicodeEscape(str)), str.length()});
-        }
-
-        @Fallback
-        Object encode(Object str, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "unicode_escape_encode()", 1, "str", str);
-        }
-    }
-
-    @Builtin(name = "unicode_escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"str", "errors"})
-    @GenerateNodeFactory
-    abstract static class UnicodeEscapeDecode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object encode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") PNone errors,
-                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
-            return encode(frame, bytes, "", toBytes);
-        }
-
-        @Specialization
-        Object encode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") String errors,
-                        @Shared("toBytes") @Cached("create()") BytesNodes.ToBytesNode toBytes) {
-            // for now we'll just parse this as a String, ignoring any error strategies
-            PythonCore core = getCore();
-            byte[] byteArray = toBytes.execute(frame, bytes);
-            String string = strFromBytes(byteArray);
-            String unescapedString = core.getParser().unescapeJavaString(core, string);
-            return factory().createTuple(new Object[]{unescapedString, byteArray.length});
-        }
-
-        @TruffleBoundary
-        private static String strFromBytes(byte[] execute) {
-            return new String(execute, StandardCharsets.ISO_8859_1);
         }
     }
 

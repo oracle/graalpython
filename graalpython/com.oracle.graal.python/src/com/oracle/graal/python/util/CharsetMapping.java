@@ -49,6 +49,7 @@ import java.util.Map;
 
 import com.ibm.icu.charset.CharsetICU;
 import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
+import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -125,7 +126,9 @@ public class CharsetMapping {
 
         // Add our custom charsets
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
+        addMapping("unicode-escape", "x-python-unicode-escape");
         JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
+        JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
 
         addMapping("ascii", "US-ASCII");
         addMapping("big5hkscs", "Big5-HKSCS");

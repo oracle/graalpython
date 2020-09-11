@@ -43,18 +43,19 @@ package com.oracle.graal.python.charset;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
-public class PythonRawUnicodeEscapeCharsetDecoder extends CharsetDecoder {
-    private boolean seenBackslash = false;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 
-    protected PythonRawUnicodeEscapeCharsetDecoder(Charset cs) {
-        super(cs, 1, 1);
+public class PythonUnicodeEscapeCharsetEncoder extends CharsetEncoder {
+    protected PythonUnicodeEscapeCharsetEncoder(Charset cs) {
+        super(cs, 2, 10, new byte[]{(byte) '?'});
     }
 
     @Override
-    protected CoderResult decodeLoop(ByteBuffer source, CharBuffer target) {
+    protected CoderResult encodeLoop(CharBuffer source, ByteBuffer target) {
+        byte[] tmpBuf = new byte[10];
         while (true) {
             if (!source.hasRemaining()) {
                 return CoderResult.UNDERFLOW;
@@ -63,44 +64,29 @@ public class PythonRawUnicodeEscapeCharsetDecoder extends CharsetDecoder {
                 return CoderResult.OVERFLOW;
             }
             int initialPosition = source.position();
-            byte b = source.get();
-            if (seenBackslash) {
-                // Report error from the backslash included
-                initialPosition--;
-                if (b == (byte) 'u' || b == (byte) 'U') {
-                    CoderResult result = PythonUnicodeEscapeCharsetDecoder.decodeHexUnicodeEscape(source, target, b, initialPosition);
-                    if (result != null) {
-                        return result;
-                    }
-                    seenBackslash = false;
-                } else {
-                    target.put('\\');
-                    seenBackslash = false;
+            char ch = source.get();
+            int codePoint = ch;
+            if (Character.isHighSurrogate(ch)) {
+                if (!source.hasRemaining()) {
+                    source.position(initialPosition);
+                    return CoderResult.UNDERFLOW;
                 }
-            } else if (b == (byte) '\\') {
-                seenBackslash = true;
-            } else {
-                // Bytes that are not an escape sequence are latin-1, which maps to unicode
-                // codepoints directly
-                target.put((char) (b & 0xFF));
+                char low = source.get();
+                if (Character.isLowSurrogate(low)) {
+                    codePoint = Character.toCodePoint(ch, low);
+                } else {
+                    // Unpaired surrogate, this shouldn't happen in any sanely constructed Java
+                    // String
+                    source.position(source.position() - 2);
+                    return CoderResult.malformedForLength(2);
+                }
             }
-        }
-    }
-
-    @Override
-    protected CoderResult implFlush(CharBuffer target) {
-        if (seenBackslash) {
-            if (!target.hasRemaining()) {
+            int len = BytesUtils.unicodeEscape(codePoint, 0, tmpBuf);
+            if (target.remaining() < len) {
+                source.position(initialPosition);
                 return CoderResult.OVERFLOW;
             }
-            target.put('\\');
-            seenBackslash = false;
+            target.put(tmpBuf, 0, len);
         }
-        return CoderResult.UNDERFLOW;
-    }
-
-    @Override
-    protected void implReset() {
-        seenBackslash = false;
     }
 }

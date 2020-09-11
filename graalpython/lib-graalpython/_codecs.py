@@ -270,6 +270,16 @@ def raw_unicode_escape_decode(string, errors=None):
 
 
 @__graalpython__.builtin
+def unicode_escape_encode(string, errors=None):
+    return __truffle_encode("unicode_escape", string, errors)
+
+
+@__graalpython__.builtin
+def unicode_escape_decode(string, errors=None):
+    return __truffle_decode("unicode_escape", string, errors)
+
+
+@__graalpython__.builtin
 def latin_1_encode(string, errors=None):
     return __truffle_encode(string, "latin-1", errors)
 

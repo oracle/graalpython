@@ -40,67 +40,27 @@
  */
 package com.oracle.graal.python.charset;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CoderResult;
+import java.nio.charset.CharsetEncoder;
 
-public class PythonRawUnicodeEscapeCharsetDecoder extends CharsetDecoder {
-    private boolean seenBackslash = false;
-
-    protected PythonRawUnicodeEscapeCharsetDecoder(Charset cs) {
-        super(cs, 1, 1);
+public class PythonUnicodeEscapeCharset extends Charset {
+    public PythonUnicodeEscapeCharset() {
+        super("x-python-unicode-escape", new String[0]);
     }
 
     @Override
-    protected CoderResult decodeLoop(ByteBuffer source, CharBuffer target) {
-        while (true) {
-            if (!source.hasRemaining()) {
-                return CoderResult.UNDERFLOW;
-            }
-            if (!target.hasRemaining()) {
-                return CoderResult.OVERFLOW;
-            }
-            int initialPosition = source.position();
-            byte b = source.get();
-            if (seenBackslash) {
-                // Report error from the backslash included
-                initialPosition--;
-                if (b == (byte) 'u' || b == (byte) 'U') {
-                    CoderResult result = PythonUnicodeEscapeCharsetDecoder.decodeHexUnicodeEscape(source, target, b, initialPosition);
-                    if (result != null) {
-                        return result;
-                    }
-                    seenBackslash = false;
-                } else {
-                    target.put('\\');
-                    seenBackslash = false;
-                }
-            } else if (b == (byte) '\\') {
-                seenBackslash = true;
-            } else {
-                // Bytes that are not an escape sequence are latin-1, which maps to unicode
-                // codepoints directly
-                target.put((char) (b & 0xFF));
-            }
-        }
+    public boolean contains(Charset charset) {
+        return false;
     }
 
     @Override
-    protected CoderResult implFlush(CharBuffer target) {
-        if (seenBackslash) {
-            if (!target.hasRemaining()) {
-                return CoderResult.OVERFLOW;
-            }
-            target.put('\\');
-            seenBackslash = false;
-        }
-        return CoderResult.UNDERFLOW;
+    public CharsetDecoder newDecoder() {
+        return new PythonUnicodeEscapeCharsetDecoder(this);
     }
 
     @Override
-    protected void implReset() {
-        seenBackslash = false;
+    public CharsetEncoder newEncoder() {
+        return new PythonUnicodeEscapeCharsetEncoder(this);
     }
 }
