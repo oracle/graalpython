@@ -182,7 +182,7 @@ public class ModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ModuleDictNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"}, limit = "1")
@@ -204,18 +204,6 @@ public class ModuleBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(limit = "1")
-        Object dict(PythonModule self, PDict dict,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            try {
-                lib.setDict(self, dict);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-            return PNone.NONE;
-        }
-
         @Specialization(guards = "isNoValue(none)", limit = "1")
         Object dict(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
@@ -224,11 +212,6 @@ public class ModuleBuiltins extends PythonBuiltins {
                 raise(self, none);
             }
             return dict;
-        }
-
-        @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
-        Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
-            throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
         }
 
         @Fallback
