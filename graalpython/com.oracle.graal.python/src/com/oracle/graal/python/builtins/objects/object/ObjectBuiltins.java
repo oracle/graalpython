@@ -69,9 +69,14 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrDeleteNode;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrGetNode;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrSetNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -582,10 +587,22 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"})
-        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        Object dict(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrGetNode getNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_getdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return getNode.execute(frame, func, self);
+            }
+
             PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -599,10 +616,22 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self, PDict dict,
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
+        Object dict(VirtualFrame frame, PythonObject self, PDict dict,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrSetNode setNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_setdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return setNode.execute(frame, func, self, dict);
+            }
+
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
@@ -620,6 +649,48 @@ public class ObjectBuiltins extends PythonBuiltins {
                 raise(self, none);
             }
             return dict;
+        }
+
+        @Specialization(limit = "1")
+        Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrDeleteNode deleteNode,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_setdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return deleteNode.execute(frame, func, self);
+            }
+            try {
+                lib.deleteDict(self);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+            return PNone.NONE;
+        }
+
+        /**
+         * see typeobject.c#get_builtin_base_with_dict()
+         */
+        private static Object getDescrFromBuiltinBase(Object type, GetBaseClassNode getBaseNode, LookupAttributeInMRONode getDescrNode) {
+            Object t = type;
+            Object base = getBaseNode.execute(t);
+            while (base != null) {
+                if (t instanceof PythonBuiltinClass) {
+                    Object func = getDescrNode.execute(t);
+                    if (func != PNone.NO_VALUE) {
+                        return func;
+                    }
+                }
+                t = base;
+                base = getBaseNode.execute(t);
+            }
+            return null;
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
