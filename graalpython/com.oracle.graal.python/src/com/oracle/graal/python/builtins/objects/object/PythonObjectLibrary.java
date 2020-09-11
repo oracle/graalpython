@@ -526,7 +526,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
+    public final Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return asIndexWithState(receiver, PArguments.getThreadState(frame));
         } else {
@@ -1017,7 +1017,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public int lengthWithFrame(Object receiver, VirtualFrame frame) {
+    public final int lengthWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return lengthWithState(receiver, PArguments.getThreadState(frame));
         } else {
@@ -1152,7 +1152,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #getIteratorWithState
      */
-    public Object getIteratorWithFrame(Object receiver, VirtualFrame frame) {
+    public final Object getIteratorWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return getIteratorWithState(receiver, PArguments.getThreadState(frame));
         } else {
