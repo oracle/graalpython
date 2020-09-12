@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -94,6 +95,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -533,8 +535,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object run(PCode code, PString path) {
-            code.setFilename(path.getValue());
+        public Object run(PCode code, PString path,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            code.setFilename(castToJavaStringNode.execute(path));
             return PNone.NONE;
         }
 

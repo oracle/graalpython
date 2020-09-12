@@ -646,7 +646,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PCode readCode(int depth, HashingStorageLibrary lib) {
             String sourceCode = readString();
-            String fileName = readString();
+            String fileName = readInternedString();
             String name = readString();
             int nLocals = readInt();
             int stackSize = readInt();
