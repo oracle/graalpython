@@ -105,7 +105,7 @@ public class ImportFromNode extends AbstractImportNode {
                         String pkgname = ensureCastToStringNode().execute(moduleName);
                         String fullname = PString.cat(pkgname, ".", attr);
                         writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
-                    } catch (CannotCastException cce){
+                    } catch (CannotCastException cce) {
                         throw pe;
                     }
                 } catch (PException pe2) {

@@ -53,8 +53,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.PRaiseImportErrorNode;
-import com.oracle.graal.python.nodes.PRaiseImportErrorNodeGen;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
@@ -80,7 +79,7 @@ public abstract class AbstractImportNode extends StatementNode {
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
     @Child private PRaiseNode raiseNode;
-    @Child private PRaiseImportErrorNode raiseImportErrorNode;
+    @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
@@ -145,20 +144,16 @@ public abstract class AbstractImportNode extends StatementNode {
         throw ensureRaiseNode().raise(type, format, args);
     }
 
-    private PRaiseImportErrorNode ensureRaiseImportErrorNode() {
-        if (raiseImportErrorNode == null) {
+    private PConstructAndRaiseNode ensureConstructAndRaiseNode() {
+        if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseImportErrorNode = insert(PRaiseImportErrorNode.create());
+            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
         }
-        return raiseImportErrorNode;
-    }
-
-    protected PException raiseImportError(Frame frame, String format, Object... formatArgs) {
-        throw raiseImportError(frame, PNone.NO_VALUE, PNone.NO_VALUE, format, formatArgs);
+        return constructAndRaiseNode;
     }
 
     protected PException raiseImportError(Frame frame, Object name, Object path, String format, Object... formatArgs) {
-        throw ensureRaiseImportErrorNode().raiseImportError(frame, name, path, format, formatArgs);
+        throw ensureConstructAndRaiseNode().raiseImportError(frame, name, path, format, formatArgs);
     }
 
     CallNode getCallNode() {
@@ -183,7 +178,7 @@ public abstract class AbstractImportNode extends StatementNode {
         CallNode callNode = CallNode.getUncached();
         GetDictNode getDictNode = GetDictNode.getUncached();
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        PRaiseImportErrorNode raiseNode = PRaiseImportErrorNodeGen.getUncached();
+        PConstructAndRaiseNode raiseNode = PConstructAndRaiseNode.getUncached();
         return __import__(null, raiseNode, ctx, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0, callNode, getDictNode, factory);
     }
 
@@ -204,7 +199,7 @@ public abstract class AbstractImportNode extends StatementNode {
             }
         }
         try {
-            return __import__(frame, ensureRaiseImportErrorNode(), context, name, globals, fromList, level, getCallNode(), getGetDictNode(), factory());
+            return __import__(frame, ensureConstructAndRaiseNode(), context, name, globals, fromList, level, getCallNode(), getGetDictNode(), factory());
         } finally {
             if (emulateJython()) {
                 context.popCurrentImport();
@@ -212,7 +207,7 @@ public abstract class AbstractImportNode extends StatementNode {
         }
     }
 
-    private static Object __import__(VirtualFrame frame, PRaiseImportErrorNode raiseNode, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode,
+    private static Object __import__(VirtualFrame frame, PConstructAndRaiseNode raiseNode, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode,
                     GetDictNode getDictNode,
                     PythonObjectFactory factory) {
         Object builtinImport = ctx.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
