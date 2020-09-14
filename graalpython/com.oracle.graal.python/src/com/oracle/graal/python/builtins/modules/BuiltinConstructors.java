@@ -221,7 +221,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
-import com.oracle.graal.python.runtime.ExecutionContextFactory;
 import com.oracle.graal.python.runtime.ExecutionContextFactory.ForeignCallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
