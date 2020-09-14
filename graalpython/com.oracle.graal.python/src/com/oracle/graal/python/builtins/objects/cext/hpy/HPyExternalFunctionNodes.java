@@ -121,6 +121,7 @@ public abstract class HPyExternalFunctionNodes {
         Object doIt(VirtualFrame frame, String name, Object callable, Object[] frameArgs,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached ForeignCallContext foreignCallContext,
                         @Cached HPyEnsureHandleNode ensureHandleNode,
                         @Cached HPyCheckFunctionResultNode checkFunctionResultNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
@@ -134,7 +135,7 @@ public abstract class HPyExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
+            Object state = foreignCallContext.enter(frame, ctx, this);
 
             try {
                 GraalHPyHandle resultHandle = ensureHandleNode.execute(hPyContext, lib.execute(callable, arguments));
@@ -147,7 +148,7 @@ public abstract class HPyExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
+                foreignCallContext.exit(frame, ctx, state);
             }
         }
 

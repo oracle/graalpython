@@ -41,10 +41,12 @@
 
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -52,11 +54,16 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -377,7 +384,28 @@ public abstract class ExecutionContext {
         }
     }
 
-    public abstract static class ForeignCallContext {
+    public abstract static class ForeignCallContext extends PNodeWithContext {
+
+        /**
+         * Return {@code true} if we need to acquire/release the interop lock.
+         */
+        protected abstract boolean execute(PythonContext context);
+
+        @Specialization(assumptions = "singleThreadedAssumption()")
+        static boolean doEnterSingleThreaded(@SuppressWarnings("unused") PythonContext context) {
+            return false;
+        }
+
+        @Specialization(guards = "singleThreadedAssumption == context.getSingleThreadedAssumption()", limit = "3", replaces = "doEnterSingleThreaded")
+        static boolean doEnterMultiContextCached(@SuppressWarnings("unused") PythonContext context,
+                        @Cached("context.getSingleThreadedAssumption()") Assumption singleThreadedAssumption) {
+            return !singleThreadedAssumption.isValid();
+        }
+
+        @Specialization(replaces = "doEnterMultiContextCached")
+        static boolean doEnterMultiContextMultiThreaded(@SuppressWarnings("unused") PythonContext context) {
+            return true;
+        }
 
         /**
          * Prepare a call from a Python frame to foreign callable. This will also call
@@ -409,11 +437,11 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
+        public final Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
             if (context == null) {
                 return null;
             }
-            if (!context.getSingleThreadedAssumption().isValid()) {
+            if (execute(context)) {
                 context.acquireInteropLock();
             }
             return IndirectCallContext.enter(frame, context, callNode);
@@ -422,13 +450,17 @@ public abstract class ExecutionContext {
         /**
          * Cleanup after an interop call. For more details, see {@link #enter}.
          */
-        public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
+        public final void exit(VirtualFrame frame, PythonContext context, Object savedState) {
             if (context != null) {
                 IndirectCallContext.exit(frame, context, savedState);
-                if (!context.getSingleThreadedAssumption().isValid()) {
+                if (execute(context)) {
                     context.releaseInteropLock();
                 }
             }
+        }
+
+        static Assumption singleThreadedAssumption() {
+            return PythonLanguage.getCurrent().singleThreadedAssumption;
         }
     }
 
