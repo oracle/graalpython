@@ -450,7 +450,7 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
-    public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "%s in %s conflicts with class variable";
+    public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
