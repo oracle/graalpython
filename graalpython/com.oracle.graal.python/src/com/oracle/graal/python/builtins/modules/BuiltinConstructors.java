@@ -2089,6 +2089,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callInitSubclassNode,
                         @Cached CallNode callNewFuncNode,
                         @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
+                        @Cached("create(__WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached DictBuiltins.CopyNode copyDict) {
             // Determine the proper metatype to deal with this
@@ -2106,7 +2107,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getBestBaseNode);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode);
 
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2200,8 +2201,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass, HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode,
-                        GetBestBaseClassNode getBestBaseNode) {
+        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
+                        HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode, LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2220,7 +2221,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
             // check for possible layout conflicts
-            getBestBaseNode.execute(basesArray);
+            Object base = getBestBaseNode.execute(basesArray);
 
             assert metaclass != null;
 
@@ -2254,6 +2255,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
 
             boolean addDict = false;
+            boolean addWeakRef = false;
+            // may_add_dict = base->tp_dictoffset == 0
+            boolean mayAddDict = getDictAttrNode.execute(base) == PNone.NO_VALUE;
+            // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
+            // TODO: maybe also slots size as equivalent of tp_itemsize?
+            boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE;
+
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
                 addDictIfNative(frame, pythonClass);
@@ -2292,12 +2300,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (__DICT__.equals(slotName)) {
-                        // check that the native base does not already have tp_dictoffset
-                        if (addDictIfNative(frame, pythonClass)) {
-                            throw raise(TypeError, ErrorMessages.SLOT_DISALLOWED_WE_GOT_ONE, "__dict__");
+                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass)) {
+                            throw raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
                         addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
+                    } else if (__WEAKREF__.equals(slotName)) {
+                        if (!mayAddWeakRef || addWeakRef) {
+                            throw raise(TypeError, ErrorMessages.WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE);
+                        }
+                        addWeakRef = true;
+                        addWeakrefDescrAttribute(pythonClass);
                     } else {
                         // TODO: check for __weakref__
                         // TODO avoid if native slots are inherited
@@ -2317,7 +2330,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
 
                     // checks for some name errors too
-                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, false, namespace, nslib);
+                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, nslib);
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
@@ -2558,6 +2571,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return castToList;
         }
 
+        /**
+         * check that the native base does not already have tp_dictoffset
+         */
         private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {

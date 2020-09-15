@@ -467,7 +467,8 @@ public abstract class ErrorMessages {
     public static final String SIZE_MUST_BE_D_OR_S = "size must be %d or %s";
     public static final String SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = "slice indices must be integers or None or have an __index__ method";
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
-    public static final String SLOT_DISALLOWED_WE_GOT_ONE = "%s slot disallowed: we already got one";
+    public static final String DICT_SLOT_DISALLOWED_WE_GOT_ONE = "__dict__ slot disallowed: we already got one";
+    public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";

@@ -94,6 +94,62 @@ class TestSlots(unittest.TestCase):
             except ValueError:
                 raised = True
             assert raised
+
+    def test_bases_have_class_layout_conflict(self):    
+        class A: __slots__ = ["a"]
+        class B: __slots__ = ["b"]
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): pass
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a"]
+        class B: __slots__ = ["a"]    
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): pass
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a"]
+        with self.assertRaisesRegex(TypeError, 'multiple bases have instance lay-out conflict'):
+            class C(A, B): __slots__ = ["a", "a"]
+            
+    def test_no_bases_have_class_layout_conflict(self):
+        class A: __slots__ = ["__dict__"]
+        class B: __slots__ = ["__dict__"]        
+        class C(A, B): pass
+        class C(A, B): __slots__ = ["a"]
+        class C(A, B): __slots__ = ["__weakref__"]
+                
+        class A: __slots__ = ["__weakref__"]
+        class B: __slots__ = ["__weakref__"]       
+        class C(A, B): pass
+        class C(A, B): __slots__ = ["a"]
+        class C(A, B): __slots__ = ["_dict_"]
         
+    def test_slot_disallowed(self):    
+        class A: __slots__ = ["__dict__"]
+        class B: __slots__ = ["__dict__"]                
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__"]
+        
+        class A: pass
+        class B: __slots__ = ["__dict__"]        
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__"]
+        
+        class A: __slots__ = ["__weakref__"]
+        class B: __slots__ = ["__weakref__"]
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__"]
+
+        class A: pass
+        class B: __slots__ = ["__weakref__"]        
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__"]                
+        
+        class A: pass
+        class B: pass
+        with self.assertRaisesRegex(TypeError, '__dict__ slot disallowed: we already got one'):
+            class C(A, B): __slots__ = ["__dict__", "__dict__"]
+        with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
+            class C(A, B): __slots__ = ["__weakref__", "__weakref__"]
+            
 if __name__ == "__main__":
     unittest.main()
