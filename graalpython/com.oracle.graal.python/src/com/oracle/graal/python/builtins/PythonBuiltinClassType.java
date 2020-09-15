@@ -36,6 +36,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -212,7 +213,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     nil(null);
 
     private final String name;
-    private final Shape instanceShape;
     private final String publicInModule;
     private final String qualifiedName;
     private final boolean basetype;
@@ -227,11 +227,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
             qualifiedName = publicInModule + "." + name;
         } else {
             qualifiedName = name;
-        }
-        if (name != null) {
-            this.instanceShape = com.oracle.graal.python.builtins.objects.object.PythonObject.freshShape(this);
-        } else {
-            this.instanceShape = null;
         }
         this.basetype = basetype;
     }
@@ -275,7 +270,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     public final Shape getInstanceShape() {
-        return instanceShape;
+        if (name == null) {
+            CompilerDirectives.shouldNotReachHere("incorrect use of Python builtin type marker");
+        }
+        return PythonLanguage.getBuiltinTypeInstanceShape(this);
     }
 
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);

@@ -38,6 +38,7 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -89,6 +90,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -141,6 +143,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final NodeFactory nodeFactory;
     private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+
+    private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
+    @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
@@ -644,5 +649,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
         String key = builtin.name() + nodeClass.getName();
         return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
+    }
+
+    public static Shape getEmptyShape() {
+        return getCurrent().emptyShape;
+    }
+
+    public static Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
+        Shape[] builtinTypeInstanceShapes = getCurrent().builtinTypeInstanceShapes;
+        int ordinal = type.ordinal();
+        Shape shape = builtinTypeInstanceShapes[ordinal];
+        if (shape == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            shape = PythonObject.freshShape(type);
+            builtinTypeInstanceShapes[ordinal] = shape;
+        }
+        return shape;
     }
 }

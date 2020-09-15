@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.object;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -194,13 +195,11 @@ public class PythonObject extends PythonAbstractObject {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
 
-    private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
-
     public static Shape freshShape(Object klass) {
-        return Shape.newBuilder(emptyShape).addConstantProperty(CLASS, klass, 0).build();
+        return Shape.newBuilder(PythonLanguage.getEmptyShape()).addConstantProperty(CLASS, klass, 0).build();
     }
 
     public static Shape freshShape() {
-        return emptyShape;
+        return PythonLanguage.getEmptyShape();
     }
 }

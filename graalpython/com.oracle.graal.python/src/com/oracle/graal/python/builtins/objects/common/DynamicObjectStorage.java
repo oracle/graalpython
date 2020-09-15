@@ -45,12 +45,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
@@ -84,8 +84,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class DynamicObjectStorage extends HashingStorage {
     public static final int SIZE_THRESHOLD = 100;
 
-    private static final Shape EMPTY_SHAPE = PythonObject.freshShape();
-
     final DynamicObject store;
     private final MroSequenceStorage mro;
 
@@ -96,7 +94,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     public DynamicObjectStorage() {
-        this(new Store(EMPTY_SHAPE), null);
+        this(new Store(PythonLanguage.getEmptyShape()), null);
     }
 
     public DynamicObjectStorage(DynamicObject store) {
@@ -373,13 +371,13 @@ public final class DynamicObjectStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage clear(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        dylib.resetShape(store, EMPTY_SHAPE);
+        dylib.resetShape(store, PythonLanguage.getEmptyShape());
         return this;
     }
 
     @ExportMessage
     public HashingStorage copy(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        DynamicObject copy = new Store(EMPTY_SHAPE);
+        DynamicObject copy = new Store(PythonLanguage.getEmptyShape());
         Object[] keys = dylib.getKeyArray(store);
         for (int i = 0; i < keys.length; i++) {
             dylib.put(copy, keys[i], dylib.getOrDefault(store, keys[i], PNone.NO_VALUE));
