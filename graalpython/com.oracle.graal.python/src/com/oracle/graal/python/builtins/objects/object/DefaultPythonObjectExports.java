@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -251,18 +252,12 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object asPString(Object receiver,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Exclusive @Cached PRaiseNode raise) {
-        if (lib.isString(receiver)) {
-            try {
-                return lib.asString(receiver);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
-            }
-        }
-        throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
+    static Object asPStringWithState(Object receiver, ThreadState state,
+                    @CachedLibrary("receiver") PythonObjectLibrary plib) {
+        // Needs to go through ForeignObjectBuiltins.StrNode
+        // The thread state may be necessary when the object is an array-like that contains python
+        // objects whose __repr__ will be called by the library
+        return plib.lookupAndCallSpecialMethodWithState(receiver, state, __STR__);
     }
 
     @ExportMessage
