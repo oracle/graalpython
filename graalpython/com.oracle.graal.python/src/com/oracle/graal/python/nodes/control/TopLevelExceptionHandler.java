@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -64,6 +63,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -235,18 +236,16 @@ public class TopLevelExceptionHandler extends RootNode {
             return;
         }
         Object attribute = pythonException.getAttribute("code");
-        Integer exitcode = null;
-        if (attribute instanceof Number) {
-            exitcode = ((Number) attribute).intValue();
-        } else if (attribute instanceof PInt) {
-            exitcode = ((PInt) attribute).intValue();
-        } else if (attribute instanceof PNone) {
-            exitcode = 0; // "goto done" case in CPython
-        } else if (attribute instanceof Boolean) {
-            exitcode = ((boolean) attribute) ? 1 : 0;
-        }
-        if (exitcode != null) {
+        try {
+            int exitcode = 0;
+            if (attribute != PNone.NONE) {
+                // CPython checks if the object is subclass of PyLong and only then calls
+                // PyLong_AsLong, so it always skips __index__/__int__
+                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(attribute);
+            }
             throw new PythonExitException(this, exitcode);
+        } catch (CannotCastException e) {
+            // fall through
         }
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
