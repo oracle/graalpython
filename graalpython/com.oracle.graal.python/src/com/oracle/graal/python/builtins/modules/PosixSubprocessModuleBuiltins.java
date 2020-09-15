@@ -58,15 +58,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
@@ -86,6 +83,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
@@ -102,21 +100,18 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
     abstract static class ForkExecNode extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ForkExecNode.class);
 
-        @Child private BytesNodes.ToBytesNode toBytes = BytesNodes.ToBytesNode.create();
-
         @Specialization
         int forkExec(VirtualFrame frame, PList args, @SuppressWarnings("unused") PList execList, @SuppressWarnings("unused") boolean closeFds,
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn,
-                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
 
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return forkExec(args, execList, closeFds, fdsToKeep, cwd, env, p2cread, p2cwrite, c2pread, c2pwrite, errread, errwrite, errpipe_read, errpipe_write, restore_signals, call_setsid,
-                                preexec_fn, copy);
+                                preexec_fn);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
@@ -127,22 +122,20 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PList fdsToKeep, String cwd, PList env,
                         int p2cread, int p2cwrite, int c2pread, int c2pwrite,
                         int errread, int errwrite, @SuppressWarnings("unused") int errpipe_read, int errpipe_write,
-                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn,
-                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy) {
+                        @SuppressWarnings("unused") boolean restore_signals, @SuppressWarnings("unused") boolean call_setsid, @SuppressWarnings("unused") PNone preexec_fn) {
             PythonContext context = getContext();
             PosixResources resources = context.getResources();
             if (!context.isExecutableAccessAllowed()) {
                 return -1;
             }
 
-            ArrayList<String> argStrings = new ArrayList<>();
-            Object[] copyOfInternalArray = copy.execute(args.getSequenceStorage());
-            for (Object o : copyOfInternalArray) {
-                if (o instanceof String) {
-                    argStrings.add((String) o);
-                } else if (o instanceof PString) {
-                    argStrings.add(((PString) o).getValue());
-                } else {
+            SequenceStorage argsStorage = args.getSequenceStorage();
+            ArrayList<String> argStrings = new ArrayList<>(argsStorage.length());
+            CastToJavaStringNode castToStringNode = CastToJavaStringNode.getUncached();
+            for (int i = 0; i < argsStorage.length(); i++) {
+                try {
+                    argStrings.add(castToStringNode.execute(argsStorage.getItemNormalized(i)));
+                } catch (CannotCastException ex) {
                     throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_ARG);
                 }
             }
@@ -158,16 +151,19 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.OSError, e);
             }
 
-            HashMap<String, String> envMap = new HashMap<>(env.getSequenceStorage().length());
-            for (Object keyValue : env.getSequenceStorage().getInternalArray()) {
-                if (keyValue instanceof PBytes) {
-                    // NOTE: passing 'null' frame means we took care of the global state in the
-                    // callers
-                    String str = checkNullBytesAndEncode(toBytes.execute(null, keyValue));
-                    String[] strings = str.split("=", 2);
-                    if (strings.length == 2) {
-                        envMap.put(strings[0], strings[1]);
-                    }
+            SequenceStorage envStorage = env.getSequenceStorage();
+            HashMap<String, String> envMap = new HashMap<>(envStorage.length());
+            PythonObjectLibrary pyLib = PythonObjectLibrary.getUncached();
+            for (int i = 0; i < envStorage.length(); i++) {
+                Object keyValue = envStorage.getItemNormalized(i);
+                if (!(keyValue instanceof PBytes)) {
+                    continue;
+                }
+                // NOTE: passing 'null' frame means we took care of the global state in the callers
+                String str = checkNullBytesAndEncode(pyLib, (PBytes) keyValue);
+                String[] strings = str.split("=", 2);
+                if (strings.length == 2) {
+                    envMap.put(strings[0], strings[1]);
                 }
             }
 
@@ -198,7 +194,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 if (!(item instanceof PBytes)) {
                     throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, item);
                 }
-                String path = checkNullBytesAndEncode(toBytes.execute(null, item));
+                String path = checkNullBytesAndEncode(pyLib, (PBytes) item);
                 int executableListLen = 0;
                 if (path.equals(context.getOption(PythonOptions.Executable))) {
                     // In case someone passed to us sys.executable that happens to be java command
@@ -289,7 +285,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return resources.registerChild(process);
         }
 
-        private String checkNullBytesAndEncode(byte[] bytes) {
+        private String checkNullBytesAndEncode(PythonObjectLibrary pyLib, PBytes bytesObj) {
+            byte[] bytes;
+            try {
+                bytes = pyLib.getBufferBytes(bytesObj);
+            } catch (UnsupportedMessageException e) {
+                throw new AssertionError(); // should not happen
+            }
             for (byte b : bytes) {
                 if (b == 0) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
@@ -329,7 +331,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached CastToListNode castFdsToKeep,
                         @Cached CastToJavaStringNode castCwd,
                         @Cached CastToListNode castEnv,
-                        @Cached SequenceStorageNodes.CopyInternalArrayNode copy,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             String actualCwd;
             if (cwd instanceof PNone) {
@@ -367,7 +368,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                             lib.asSizeWithState(errpipe_read, PArguments.getThreadState(frame)),
                             lib.asSizeWithState(errpipe_write, PArguments.getThreadState(frame)),
                             lib.isTrueWithState(restore_signals, PArguments.getThreadState(frame)),
-                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), PNone.NO_VALUE, copy);
+                            lib.isTrueWithState(call_setsid, PArguments.getThreadState(frame)), PNone.NO_VALUE);
         }
 
     }
