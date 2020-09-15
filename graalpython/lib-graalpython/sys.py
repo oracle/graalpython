@@ -170,8 +170,12 @@ def addaudithook(hook):
 
 
 @__graalpython__.builtin
-def exit(arg=0):
-    raise SystemExit(arg)
+def exit(arg=None):
+    # see SystemExit_init, tuple of size 1 is unpacked
+    code = arg
+    if isinstance(arg, tuple) and len(arg) == 1:
+        code = arg[0]
+    raise SystemExit(code)
 
 
 def make_excepthook():
