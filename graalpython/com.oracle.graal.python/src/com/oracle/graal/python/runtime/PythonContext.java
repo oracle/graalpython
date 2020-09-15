@@ -694,6 +694,10 @@ public final class PythonContext {
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
+        // destroy thread state
+        if (customThreadState != null) {
+            customThreadState.set(null);
+        }
     }
 
     @TruffleBoundary
