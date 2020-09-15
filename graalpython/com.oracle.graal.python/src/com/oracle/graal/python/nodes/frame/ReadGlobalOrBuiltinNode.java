@@ -86,7 +86,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
     protected Object readGlobalCached(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals) {
+                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals) {
         Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
         return returnGlobalOrBuiltin(result);
     }
@@ -104,8 +104,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isBuiltinDict(cachedGlobals, builtinProfile)",
                     "getStorage(cachedGlobals) == cachedStorage"}, assumptions = "singleContextAssumption", limit = "1")
     protected Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") VirtualFrame frame,
-                    @SuppressWarnings("unused") @Cached("getGlobals(frame)") Object cachedGlobals,
-                    @Cached("getStorage(cachedGlobals)") HashingStorage cachedStorage,
+                    @SuppressWarnings("unused") @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
+                    @Cached(value = "getStorage(getGlobals(frame))", weak = true) HashingStorage cachedStorage,
                     @CachedLibrary("cachedStorage") HashingStorageLibrary hlib,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile builtinProfile) {
         Object result = hlib.getItem(cachedStorage, attributeId);
@@ -119,7 +119,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals",
                     "isBuiltinDict(cachedGlobals, builtinProfile)"}, assumptions = "singleContextAssumption", replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
     protected Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
                     @CachedLibrary(value = "getDictStorage(cachedGlobals)") HashingStorageLibrary hlib,
                     @Cached @SuppressWarnings("unused") IsBuiltinClassProfile builtinProfile) {
         Object result = hlib.getItem(getDictStorage(cachedGlobals), attributeId);
@@ -140,7 +140,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, rewriteOn = PException.class, assumptions = "singleContextAssumption", limit = "1")
     protected Object readGlobalDictCached(VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
                     @Cached GetItemNode getItemNode) {
         return returnGlobalOrBuiltin(getItemNode.execute(frame, cachedGlobals, attributeId));
     }
