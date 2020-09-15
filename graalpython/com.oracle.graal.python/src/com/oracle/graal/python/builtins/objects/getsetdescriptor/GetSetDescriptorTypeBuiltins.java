@@ -44,8 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -73,6 +71,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -81,6 +81,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -186,131 +187,171 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Builtin(name = __GET__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
-        @Child private GetNameNode getNameNode;
-        private final BranchProfile branchProfile = BranchProfile.create();
-
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached CallUnaryMethodNode callNode) {
+                        @Cached DescrGetNode getNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
+            return getNode.execute(frame, descr, obj);
+        }
+
+        @Specialization
+        Object getSlot(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached DescrGetNode getNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+                return descr;
+            }
+            return getNode.execute(frame, descr, obj);
+        }
+    }
+
+    public abstract static class DescrGetNode extends AbstractDescrNode {
+        public abstract Object execute(VirtualFrame frame, Object descr, Object obj);
+
+        @Specialization
+        Object get(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                        @Cached CallUnaryMethodNode callNode,
+                        @Cached BranchProfile branchProfile) {
             if (descr.getGet() != null) {
                 return callNode.executeObject(frame, descr.getGet(), obj);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getTypeName(descr.getType()));
+                throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_READABLE, descr.getName(), getTypeName(descr.getType()));
             }
         }
 
         @Specialization
-        Object getSlot(HiddenKeyDescriptor descr, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
+        Object getSlot(HiddenKeyDescriptor descr, Object obj,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached ConditionProfile profile) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
-                return descr;
-            }
             Object val = readNode.execute(obj, descr.getKey());
             if (profile.profile(val != PNone.NO_VALUE)) {
                 return val;
             }
-            throw raise(AttributeError, descr.getKey().getName());
-        }
-
-        private Object getTypeName(Object descrType) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            return getNameNode.execute(descrType);
+            throw getRaiseNode().raise(AttributeError, descr.getKey().getName());
         }
     }
 
     @Builtin(name = __SET__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends PythonTernaryBuiltinNode {
-        @Child private GetNameNode getNameNode;
-        private final BranchProfile branchProfile = BranchProfile.create();
-
         @Specialization
         Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached CallBinaryMethodNode callNode) {
+                        @Cached DescrSetNode setNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
+            return setNode.execute(frame, descr, obj, value);
+        }
+
+        @Specialization
+        Object setSlot(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj, Object value,
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached DescrSetNode setNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+                return descr;
+            }
+            return setNode.execute(frame, descr, obj, value);
+        }
+    }
+
+    public abstract static class DescrSetNode extends AbstractDescrNode {
+        public abstract Object execute(VirtualFrame frame, Object descr, Object obj, Object value);
+
+        @Specialization
+        Object set(VirtualFrame frame, GetSetDescriptor descr, Object obj, Object value,
+                        @Cached CallBinaryMethodNode callNode,
+                        @Cached BranchProfile branchProfile) {
             if (descr.getSet() != null) {
                 return callNode.executeObject(frame, descr.getSet(), obj, value);
             } else {
                 branchProfile.enter();
-                throw raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getTypeName(descr.getType()));
+                throw getRaiseNode().raise(AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_WRITABLE, descr.getName(), getTypeName(descr.getType()));
             }
         }
 
         @Specialization
         Object setSlot(HiddenKeyDescriptor descr, Object obj, Object value,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
-                return descr;
-            }
             return writeNode.execute(obj, descr.getKey(), value);
-        }
-
-        private Object getTypeName(Object descrType) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            return getNameNode.execute(descrType);
         }
     }
 
     @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetSetDeleteNode extends PythonBinaryBuiltinNode {
-        @Child private GetNameNode getNameNode;
-        private final BranchProfile branchProfile = BranchProfile.create();
 
         @Specialization
         Object delete(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Cached DescriptorCheckNode descriptorCheckNode,
-                        @Cached CallBinaryMethodNode callNode) {
+                        @Cached DescrDeleteNode deleteNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
+            return deleteNode.execute(frame, descr, obj);
+        }
+
+        @Specialization
+        Object deleteSlot(VirtualFrame frame, HiddenKeyDescriptor descr, Object obj,
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached DescrDeleteNode deleteNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
+                return descr;
+            }
+            return deleteNode.execute(frame, descr, obj);
+        }
+    }
+
+    public abstract static class DescrDeleteNode extends AbstractDescrNode {
+        public abstract Object execute(VirtualFrame frame, Object descr, Object obj);
+
+        @Specialization
+        Object delete(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                        @Cached CallBinaryMethodNode callNode,
+                        @Cached BranchProfile branchProfile) {
             if (descr.allowsDelete()) {
                 return callNode.executeObject(frame, descr.getSet(), obj, DescriptorDeleteMarker.INSTANCE);
             } else {
                 branchProfile.enter();
                 if (descr.getSet() != null) {
-                    throw raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
+                    throw getRaiseNode().raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());
                 } else {
-                    throw raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+                    throw getRaiseNode().raise(AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
                 }
             }
         }
 
         @Specialization
         Object deleteSlot(HiddenKeyDescriptor descr, Object obj,
-                        @Cached DescriptorCheckNode descriptorCheckNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
-            if (descriptorCheckNode.execute(descr.getType(), descr.getKey().getName(), obj)) {
-                return descr;
-            }
             writeNode.execute(obj, descr.getKey(), PNone.NO_VALUE);
             return PNone.NONE;
         }
+    }
 
-        private Object getTypeName(Object descrType) {
+    private abstract static class AbstractDescrNode extends Node {
+        @Node.Child private GetNameNode getNameNode;
+        @Node.Child private PRaiseNode raiseNode;
+
+        protected Object getTypeName(Object descrType) {
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
             }
             return getNameNode.execute(descrType);
+        }
+
+        protected PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
         }
     }
 }

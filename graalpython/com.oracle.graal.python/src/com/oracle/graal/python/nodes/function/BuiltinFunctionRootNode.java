@@ -55,9 +55,13 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.List;
 
 /**
  * CPython wraps built-in types' slots so the C can take the direct arguments. The slot wrappers for
@@ -89,6 +93,48 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.declaresExplicitSelf = declaresExplicitSelf;
         if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
+        }
+    }
+
+    public static class StandaloneBuiltinFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
+        private final T node;
+        private final Class<T> nodeClass;
+
+        public StandaloneBuiltinFactory(T node) {
+            this.node = node;
+            this.nodeClass = determineNodeClass(node);
+        }
+
+        @Override
+        public T createNode(Object... arguments) {
+            return NodeUtil.cloneNode(node);
+        }
+
+        @Override
+        public Class<T> getNodeClass() {
+            return nodeClass;
+        }
+
+        @SuppressWarnings("unchecked")
+        private static <T> Class<T> determineNodeClass(T node) {
+            CompilerAsserts.neverPartOfCompilation();
+            Class<T> nodeClass = (Class<T>) node.getClass();
+            GeneratedBy genBy = nodeClass.getAnnotation(GeneratedBy.class);
+            if (genBy != null) {
+                nodeClass = (Class<T>) genBy.value();
+                assert nodeClass.isAssignableFrom(node.getClass());
+            }
+            return nodeClass;
+        }
+
+        @Override
+        public List<List<Class<?>>> getNodeSignatures() {
+            throw new IllegalAccessError();
+        }
+
+        @Override
+        public List<Class<? extends Node>> getExecutionSignature() {
+            throw new IllegalAccessError();
         }
     }
 

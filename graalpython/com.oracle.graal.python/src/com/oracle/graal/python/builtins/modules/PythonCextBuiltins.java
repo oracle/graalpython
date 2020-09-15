@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ObjectUpcallNode;
@@ -221,6 +220,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2325,17 +2325,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 switch (funcSignature.getMaxNumOfPositionalArgs()) {
                     case 1:
                         rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
-                                        new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
+                                        new StandaloneBuiltinFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 2:
                         rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
-                                        new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
+                                        new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     case 3:
                         rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
-                                        new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
+                                        new StandaloneBuiltinFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
                                         true);
                         break;
                     default:
@@ -2344,7 +2344,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
             if (rootNode == null) {
                 rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
-                                new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
+                                new StandaloneBuiltinFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
                                 true);
             }
 
