@@ -103,7 +103,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached("create()") GetSignatureNode getSignatureNode,
                     @Cached("create()") GetDefaultsNode getDefaultsNode,
                     @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("method") @SuppressWarnings("unused") PythonObject cachedMethod) {
+                    @Cached(value = "method", weak = true) @SuppressWarnings("unused") PythonObject cachedMethod) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
@@ -118,11 +118,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached", assumptions = "singleContextAssumption()")
     Object[] doMethodFunctionAndSelfCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction,
+                    @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction,
                     @Cached("create()") GetSignatureNode getSignatureNode,
                     @Cached("create()") GetDefaultsNode getDefaultsNode,
                     @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getSelf(method)") Object cachedSelf) {
+                    @Cached(value = "getSelf(method)", weak = true) Object cachedSelf) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
@@ -138,7 +138,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached("create()") GetSignatureNode getSignatureNode,
                     @Cached("create()") GetDefaultsNode getDefaultsNode,
                     @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction) {
+                    @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
@@ -155,7 +155,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     @Cached("create()") GetSignatureNode getSignatureNode,
                     @Cached("create()") GetDefaultsNode getDefaultsNode,
                     @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("callable") @SuppressWarnings("unused") PythonObject cachedCallable) {
+                    @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PythonObject cachedCallable) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
