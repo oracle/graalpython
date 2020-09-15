@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.IOException;
 import java.util.IllegalFormatException;
 import java.util.List;
 
@@ -529,18 +528,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 name = polib.lookupAttribute(category, null, SpecialAttributeNames.__NAME__);
             }
-            Object sys = PythonLanguage.getCore().lookupBuiltinModule("sys");
-            Object stderr;
-            try {
-                stderr = polib.lookupAttribute(sys, null, "stderr");
-            } catch (PException e) {
-                try {
-                    PythonLanguage.getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
-                } catch (IOException ioe) {
-                    // nothing more we can do
-                }
-                throw e;
-            }
+            Object stderr = PythonLanguage.getCore().getStderr();
 
             // tfel: I've inlined PyFile_WriteObject, which just calls the "write" method and
             // decides if we should use "repr" or "str" - in this case its always "str" for objects
@@ -823,10 +811,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         private final Assumption passFrame = Truffle.getRuntime().createAssumption();
         private final Assumption passExc = Truffle.getRuntime().createAssumption();
 
+        @Override
         public Assumption needNotPassFrameAssumption() {
             return passFrame;
         }
 
+        @Override
         public Assumption needNotPassExceptionAssumption() {
             return passExc;
         }

@@ -250,11 +250,9 @@ public class TopLevelExceptionHandler extends RootNode {
         }
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
-            try {
-                theContext.getEnv().err().write(callStrNode.executeObject(frame, pythonException).toString().getBytes());
-                theContext.getEnv().err().write('\n');
-            } catch (IOException e1) {
-            }
+            Object stderr = theContext.getCore().getStderr();
+            Object message = callStrNode.executeObject(frame, pythonException);
+            PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(stderr, null, "write", message);
             throw new PythonExitException(this, 1);
         }
         PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());

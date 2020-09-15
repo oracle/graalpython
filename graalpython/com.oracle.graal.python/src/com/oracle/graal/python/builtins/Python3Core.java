@@ -152,6 +152,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
@@ -566,6 +567,21 @@ public final class Python3Core implements PythonCore {
     @TruffleBoundary
     public void warn(PythonBuiltinClassType type, String format, Object... args) {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
+    }
+
+    @Override
+    public Object getStderr() {
+        Object sys = lookupBuiltinModule("sys");
+        try {
+            return PythonObjectLibrary.getUncached().lookupAttribute(sys, null, "stderr");
+        } catch (PException e) {
+            try {
+                getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
+            } catch (IOException ioe) {
+                // nothing more we can do
+            }
+            throw e;
+        }
     }
 
     private void publishBuiltinModules() {
