@@ -36,6 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from builtins import BaseException
+
 
 def make_implementation_info():
     from _descriptor import SimpleNamespace, make_named_tuple_class
@@ -190,6 +192,10 @@ def make_excepthook():
             print(type(e).__qualname__, file=stderr)
 
     def __print_traceback__(typ, value, tb):
+        if not isinstance(value, BaseException):
+            msg = "TypeError: print_exception(): Exception expected for value, {} found\n".format(type(value).__name__)
+            print(msg, file=stderr, end="")
+            return
         try:
             import traceback
             lines = traceback.format_exception(typ, value, tb)
