@@ -408,6 +408,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             if (cachePrefix != null) {
                 contextBuilder.option("python.PyCachePrefix", cachePrefix);
             }
+
+            String encoding = System.getenv("PYTHONIOENCODING");
+            if (encoding != null) {
+                contextBuilder.option("python.StandardStreamEncoding", encoding);
+            }
         }
         if (warnOptions == null || warnOptions.isEmpty()) {
             warnOptions = "";

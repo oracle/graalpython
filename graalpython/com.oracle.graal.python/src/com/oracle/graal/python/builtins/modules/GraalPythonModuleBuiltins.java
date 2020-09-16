@@ -112,6 +112,7 @@ import com.oracle.truffle.llvm.api.Toolchain;
 @CoreFunctions(defineModule = __GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -122,6 +123,24 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         builtinConstants.put("is_native", TruffleOptions.AOT);
+        PythonContext ctx = core.getContext();
+        String encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
+        String standardStreamEncoding;
+        String standardStreamError;
+        if (encodingOpt != null && !encodingOpt.isEmpty()) {
+            String[] parts = encodingOpt.split(":");
+            standardStreamEncoding = parts[0];
+            standardStreamError = parts.length > 1 ? parts[1] : "strict";
+        } else {
+            standardStreamEncoding = "utf-8";
+            standardStreamError = "surrogateescape";
+        }
+
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.fine(String.format("Setting default stdio encoding to %s:%s", standardStreamEncoding, standardStreamError));
+        }
+        this.builtinConstants.put("stdio_encoding", standardStreamEncoding);
+        this.builtinConstants.put("stdio_error", standardStreamError);
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize(core);
     }
@@ -426,6 +445,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
                 functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
+                    @Override
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
                             ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
