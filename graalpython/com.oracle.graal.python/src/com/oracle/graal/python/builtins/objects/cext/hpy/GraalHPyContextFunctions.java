@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddFunctionNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddLegacyMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -214,6 +215,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
                         @Cached HPyAddFunctionNode addFunctionNode,
+                        @Cached HPyAddLegacyMethodNode addLegacyMethodNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PRaiseNode raiseNode) throws ArityException {
             if (arguments.length != 2) {
@@ -232,37 +234,55 @@ public abstract class GraalHPyContextFunctions {
                 // do not eagerly read the doc string; this turned out to be unnecessarily expensive
                 Object mDoc = fromCharPointerNode.execute(ptrLib.readMember(moduleDef, "m_doc"));
 
-                Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
-                Object legacyMethods = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
-                // TODO(fa): support legacy methods
-
-                if (!ptrLib.hasArrayElements(moduleDefines)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "");
-                }
-
                 // create the module object
                 PythonModule module = factory.createPythonModule(mName);
 
-                long nModuleDefines = ptrLib.getArraySize(moduleDefines);
-                for (long i = 0; i < nModuleDefines; i++) {
-                    Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
-                    int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
+                // process HPy methods
+                {
+                    Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
+                    if (!ptrLib.hasArrayElements(moduleDefines)) {
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
+                    }
 
-                    switch (kind) {
-                        case GraalHPyDef.HPY_DEF_KIND_METH:
-                            PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
-                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                            writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
-                            writeAttrNode.execute(module, fun.getName(), method);
-                            break;
-                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                            // silently ignore
-                            // TODO(fa): maybe we should log a warning
-                            break;
-                        default:
-                            assert false : "unknown definition kind";
+                    long nModuleDefines = ptrLib.getArraySize(moduleDefines);
+                    for (long i = 0; i < nModuleDefines; i++) {
+                        Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
+                        int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
+
+                        switch (kind) {
+                            case GraalHPyDef.HPY_DEF_KIND_METH:
+                                PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
+                                PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                                writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                                writeAttrNode.execute(module, fun.getName(), method);
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                                // silently ignore
+                                // TODO(fa): maybe we should log a warning
+                                break;
+                            default:
+                                assert false : "unknown definition kind";
+                        }
+                    }
+                }
+
+                // process legacy methods
+                {
+                    Object legacyMethods = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
+                    if (!ptrLib.hasArrayElements(legacyMethods)) {
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
+                    }
+
+                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
+                    for (long i = 0; i < nLegacyMethods; i++) {
+                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+
+                        PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
+                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                        writeAttrNode.execute(module, fun.getName(), method);
                     }
                 }
 
