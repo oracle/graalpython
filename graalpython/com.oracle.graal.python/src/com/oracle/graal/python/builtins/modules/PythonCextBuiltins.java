@@ -1583,19 +1583,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
+    public abstract static class PExternalFunctionWrapper extends Object implements TruffleObject {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
         private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
             this.checkFunctionResultNodeSupplier = DefaultCheckFunctionResultNodeGen::create;
         }
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
-            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
             this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
         }
@@ -1610,11 +1608,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public CheckFunctionResultNode getCheckFunctionResultNode() {
             return checkFunctionResultNodeSupplier.get();
-        }
-
-        @Override
-        public int compareTo(Object o) {
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
