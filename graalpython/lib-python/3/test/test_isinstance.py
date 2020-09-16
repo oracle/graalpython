@@ -277,7 +277,7 @@ def blowstack(fxn, arg, compare_to):
     # argument will raise RecursionError eventually.
     tuple_arg = (compare_to,)
     # TODO: GR-23749 revert back when truffle support is in
-    for cnt in range(10000 if sys.implementation.name == "graalpython" else sys.getrecursionlimit()+5):
+    for cnt in range(10000000 if sys.implementation.name == "graalpython" else sys.getrecursionlimit()+5):
         tuple_arg = (tuple_arg,)
         fxn(arg, tuple_arg)
 

@@ -12,7 +12,7 @@ is made available for experimentation and curious end-users.
 To try it, you can use the bundled releases from
 [www.graalvm.org](https://www.graalvm.org/downloads/). For more information and
 some examples of what you can do with it, check out the
-[reference](https://www.graalvm.org/docs/reference-manual/languages/python/).
+[reference](https://www.graalvm.org/reference-manual/python/).
 
 ### Create a virtual environment
 
@@ -80,7 +80,7 @@ cross-language interop. This will hopefully give you an idea how to use it.
 We are working on a mode that is "mostly compatible" with some of Jython's
 features, minus of course that Jython implements Python 2.7 and we implement
 Python 3.8+. We describe the current status of the compatibility mode
-[here](docs/user/JYTHON.md).
+[here](docs/user/Jython.md).
 
 ### Contributing
 
