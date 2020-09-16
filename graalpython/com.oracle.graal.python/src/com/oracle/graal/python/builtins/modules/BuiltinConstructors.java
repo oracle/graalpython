@@ -778,7 +778,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callReprNode;
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-        private ConditionProfile isNanProfile;
 
         public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg);
 
@@ -828,7 +827,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (isPrimitiveFloat(cls)) {
                 return arg;
             }
-            return factoryCreateFloat(cls, arg);
+            return factory().createFloat(cls, arg);
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -837,7 +836,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
-            return factoryCreateFloat(cls, value);
+            return factory().createFloat(cls, value);
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PBytesLike arg) {
@@ -979,21 +978,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
             return toByteArrayNode.execute(frame, pByteArray);
-        }
-
-        private PFloat factoryCreateFloat(Object cls, double arg) {
-            if (isNaN(arg)) {
-                return getCore().getNaN();
-            }
-            return factory().createFloat(cls, arg);
-        }
-
-        private boolean isNaN(double d) {
-            if (isNanProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isNanProfile = ConditionProfile.createBinaryProfile();
-            }
-            return isNanProfile.profile(Double.isNaN(d));
         }
     }
 

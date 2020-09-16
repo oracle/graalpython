@@ -879,3 +879,8 @@ class ReprTests(unittest.TestCase):
             # Since Python 3.2, repr and str are identical
             self.assertEqual(repr(float(s)), str(float(s)))
             self.assertEqual(repr(float(negs)), str(float(negs)))
+
+
+class SubclassTests(unittest.TestCase):
+    def test_subclass_nan(self):
+        self.assertEqual(MyFloat, type(MyFloat('nan')))
