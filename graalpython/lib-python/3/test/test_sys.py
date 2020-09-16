@@ -533,6 +533,10 @@ class SysModuleTest(unittest.TestCase):
         INTERN_NUMRUNS += 1
         self.assertRaises(TypeError, sys.intern)
         s = "never interned before" + str(INTERN_NUMRUNS)
+        # GraalPython patch: added the following line
+        # The docs does not seem to indicate that 'sys.intern(s) is s'
+        # should hold in general unless 's' was already an interned string
+        s = sys.intern(s)
         self.assertTrue(sys.intern(s) is s)
         s2 = s.swapcase().swapcase()
         self.assertTrue(sys.intern(s2) is s)

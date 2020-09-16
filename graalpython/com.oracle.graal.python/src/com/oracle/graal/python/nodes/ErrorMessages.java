@@ -576,4 +576,5 @@ public abstract class ErrorMessages {
     public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
+    public static final String CANNOT_INTERN_P = "can't intern %p";
 }
