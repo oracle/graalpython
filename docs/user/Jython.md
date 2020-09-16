@@ -63,18 +63,18 @@ more dynamic approach to matching &mdash; Python types emulating `int` or
 example, to use Pandas frames as `double[][]` or NumPy array elements as `int[]`
 when the elements fit into those Java primitive types.
 
-| Java type                       | Python type                                                               |
-|:--------------------------------|:--------------------------------------------------------------------------|
-| `null`                          | `None`                                                                    |
-| `boolean`                       | `bool`                                                                    |
-| `byte`, `short`, `int` , `long` | `int`, any object that has an `__int__` method                            |
-| `float`, `double`               | `float`, any object that has a `__float__` method                         |
-| `char`                          | `str` of length 1                                                         |
-| `java.lang.String`              | `str`                                                                     |
+| Java type                       | Python type                                                                           |
+|:--------------------------------|:--------------------------------------------------------------------------------------|
+| `null`                          | `None`                                                                                |
+| `boolean`                       | `bool`                                                                                |
+| `byte`, `short`, `int` , `long` | `int`, any object that has an `__int__` method                                        |
+| `float`, `double`               | `float`, any object that has a `__float__` method                                     |
+| `char`                          | `str` of length 1                                                                     |
+| `java.lang.String`              | `str`                                                                                 |
 | `byte[]`                        | `bytes`, `bytearray`, wrapped Java array, Python list with only the appropriate types |
-| Java arrays                     | Wrapped Java array or Python list with only the appropriate types         |
-| Java objects                    | Wrapped Java object of the appropriate type                               |
-| `java.lang.Object`              | Any object                                                                |
+| Java arrays                     | Wrapped Java array or Python list with only the appropriate types                     |
+| Java objects                    | Wrapped Java object of the appropriate type                                           |
+| `java.lang.Object`              | Any object                                                                            |
 
 ### Special Jython Modules
 Any of the special Jython modules are not available. For example, the `jarray`
