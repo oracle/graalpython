@@ -61,4 +61,8 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_HPY_MODULE_DEF = "graal_hpy_from_HPyModuleDef";
     public static final String GRAAL_HPY_MODULE_GET_DEFINES = "graal_hpy_module_get_defines";
     public static final String GRAAL_HPY_MODULE_GET_LEGACY_METHODS = "graal_hpy_module_get_legacy_methods";
+    public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC = "graal_hpy_from_HPyType_Spec";
+    public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY = "graal_hpy_from_HPyType_SpecParam_array";
+    public static final String GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT = "graal_hpy_HPyType_SpecParam_get_object";
+
 }

@@ -104,4 +104,8 @@ public abstract class GraalHPyDef {
     public static final int HPY_MEMBER_ULONGLONG = 18;
     public static final int HPY_MEMBER_HPYSSIZET = 19;
     public static final int HPY_MEMBER_NONE = 20;
+
+    /* enum values of 'HPyType_SpecParam_Kind' */
+    public static final int HPyType_SPEC_PARAM_BASE = 1;
+    public static final int HPyType_SPEC_PARAM_BASES_TUPLE = 2;
 }

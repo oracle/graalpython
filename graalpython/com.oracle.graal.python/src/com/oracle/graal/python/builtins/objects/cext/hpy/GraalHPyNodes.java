@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
+
 import java.math.BigInteger;
+import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,17 +62,26 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethORoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
@@ -88,6 +101,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -734,6 +748,148 @@ public class GraalHPyNodes {
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return toSulongNode.execute(factory.createNativeVoidPtr(n.getPtr()));
         }
+    }
+
+    /**
+     * <pre>
+     *     typedef struct {
+     *         const char* name;
+     *         int basicsize;
+     *         int itemsize;
+     *         unsigned int flags;
+     *         void *legacy_slots;
+     *         HPyDef **defines;
+     *     } HPyType_Spec;
+     * </pre>
+     */
+    @GenerateUncached
+    abstract static class HPyCreateTypeFromSpecNode extends Node {
+
+        abstract Object execute(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray);
+
+        @Specialization
+        static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
+                        @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached CallNode callTypeNewNode,
+                        @Cached CastToJavaIntLossyNode castToJavaIntNode,
+                        @Cached HPyAddFunctionNode addFunctionNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            try {
+                String typeName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(typeSpec, "name")));
+
+                // process defines
+
+                Object defines = ptrLib.readMember(typeSpec, "defines");
+                if (!ptrLib.hasArrayElements(defines)) {
+                    return raiseNode.raise(SystemError, "field 'defines' did not return an array for type %s", typeName);
+                }
+
+                int nDefines = PInt.intValueExact(ptrLib.getArraySize(defines));
+                EconomicMapStorage dictStorage = EconomicMapStorage.create(nDefines);
+                for (long i = 0; i < nDefines; i++) {
+                    Object moduleDefine = ptrLib.readArrayElement(defines, i);
+                    int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
+                    switch (kind) {
+                        case GraalHPyDef.HPY_DEF_KIND_METH:
+                            PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
+                            dictStorageLib.setItem(dictStorage, fun.getName(), fun);
+                            break;
+                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                            // TODO(fa): add slots
+                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                            // TODO(fa): add members
+                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                            // TODO(fa): add get/set descriptors
+                            break;
+                        default:
+                            assert false : "unknown definition kind";
+                    }
+                }
+
+                // process legacy slots
+                // TODO
+
+                // extract bases from type spec params
+
+                PTuple bases;
+                try {
+                    bases = extractBases(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, HPyAsPythonObjectNodeGen.getUncached(), factory);
+                } catch (CannotCastException | InteropException e) {
+                    throw raiseNode.raise(SystemError, "failed to extract bases from type spec params for type %s", typeName);
+                }
+
+                // create the type object
+                Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.TYPE);
+                Object newType = callTypeNewNode.execute(typeBuiltin, PythonBuiltinClassType.PythonClass, typeName, bases, factory.createDict(dictStorage), PKeyword.EMPTY_KEYWORDS);
+
+                // store flags, basicsize, and itemsize to type
+                // TODO
+
+                return newType;
+            } catch (CannotCastException | InteropException e) {
+                throw raiseNode.raise(SystemError, "Could not create type from spec because: %m", e);
+            } catch (OverflowException e) {
+                throw raiseNode.raise(SystemError, "Could not create type from spec: too many members");
+            }
+        }
+
+        /**
+         * Extract bases from an array consisting of elements with the following C struct.
+         *
+         * <pre>
+         *     typedef struct {
+         *         HPyType_SpecParam_Kind kind;
+         *         HPy object;
+         *     } HPyType_SpecParam;
+         * </pre>
+         *
+         * Reference implementation can be found in {@code ctx_type.c:build_bases_from_params}.
+         *
+         * @return The bases tuple or {@code null} in case of an error.
+         */
+        @TruffleBoundary
+        private static PTuple extractBases(GraalHPyContext context, Object typeSpecParamArray,
+                        InteropLibrary ptrLib,
+                        CastToJavaIntLossyNode castToJavaIntNode,
+                        PCallHPyFunction callHelperFunctionNode,
+                        HPyAsPythonObjectNode asPythonObjectNode,
+                        PythonObjectFactory factory) throws InteropException {
+            long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
+            ArrayList<Object> basesList = new ArrayList<>();
+            for (long i = 0; i < nSpecParam; i++) {
+                Object specParam = ptrLib.readArrayElement(typeSpecParamArray, i);
+                // TODO(fa): directly read member as soon as this is supported by Sulong.
+                // Currently, we cannot pass struct-by-value via interop.
+                int specParamKind = castToJavaIntNode.execute(ptrLib.readMember(specParam, "kind"));
+                Object specParamObject = asPythonObjectNode.execute(context, callHelperFunctionNode.call(context, GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT, specParam));
+
+                switch (specParamKind) {
+                    case GraalHPyDef.HPyType_SPEC_PARAM_BASE:
+                        // In this case, the 'specParamObject' is a single handle. We add it to
+                        // the list of bases.
+                        assert PGuards.isClass(specParamObject, InteropLibrary.getUncached()) : "base object is not a Python class";
+                        basesList.add(specParamObject);
+                        break;
+                    case GraalHPyDef.HPyType_SPEC_PARAM_BASES_TUPLE:
+                        // In this case, the 'specParamObject' is tuple. According to the
+                        // reference implementation, we immediately use this tuple and throw
+                        // away any other single base classes or subsequent params.
+                        assert PGuards.isPTuple(specParamObject) : "type spec param claims to be a tuple but isn't";
+                        return (PTuple) specParamObject;
+                    default:
+                        assert false : "unknown type spec param kind";
+                }
+            }
+            return factory.createTuple(basesList.toArray());
+        }
+
     }
 
 }

@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeAsUTF8String;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
@@ -146,6 +147,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_OBJECT_ISTRUE("ctx_Object_IsTrue"),
+        CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
         CTX_GETATTR("ctx_GetAttr"),
         CTX_GETATTR_S("ctx_GetAttr_s"),
         CTX_HASATTR("ctx_HasAttr"),
@@ -412,6 +414,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
         members[HPyContextMembers.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
         members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
+        members[HPyContextMembers.CTX_TYPE_FROM_SPEC.ordinal()] = new GraalHPyTypeFromSpec();
         members[HPyContextMembers.CTX_GETATTR.ordinal()] = new GraalHPyGetAttr(OBJECT);
         members[HPyContextMembers.CTX_GETATTR_S.ordinal()] = new GraalHPyGetAttr(CHAR_PTR);
         members[HPyContextMembers.CTX_HASATTR.ordinal()] = new GraalHPyHasAttr(OBJECT);

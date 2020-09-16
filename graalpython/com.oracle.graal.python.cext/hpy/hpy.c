@@ -45,6 +45,9 @@
 #include <wchar.h>
 
 #define SRC_CS "utf-8"
+#define UNWRAP(_h) ((_h)._i)
+#define WRAP(_ptr) ((HPy){(_ptr)})
+
 
 typedef HPyDef* HPyDefPtr;
 
@@ -59,6 +62,8 @@ POLYGLOT_DECLARE_TYPE(HPyMember_FieldType);
 POLYGLOT_DECLARE_TYPE(HPyMember);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
 POLYGLOT_DECLARE_TYPE(wchar_t);
+POLYGLOT_DECLARE_TYPE(HPyType_Spec);
+POLYGLOT_DECLARE_TYPE(HPyType_SpecParam);
 
 int graal_hpy_init(void *initObject) {
 	// register the native type of HPy
@@ -99,6 +104,18 @@ void* graal_hpy_from_HPyModuleDef(void *ptr) {
 	return polyglot_from_HPyModuleDef(ptr);
 }
 
+HPyType_Spec* graal_hpy_from_HPyType_Spec(HPyType_Spec *ptr) {
+	return polyglot_from_HPyType_Spec(ptr);
+}
+
+HPyType_SpecParam* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
+	uint64_t len=0;
+	while (ptr[len].kind) {
+		len++;
+	}
+	return polyglot_from_HPyType_SpecParam_array(ptr, len);
+}
+
 void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
 	return polyglot_from_string(moduleDef->m_name, SRC_CS);
 }
@@ -125,6 +142,12 @@ void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
 
 int graal_hpy_def_get_kind(HPyDef *def) {
 	return def->kind;
+}
+
+/* getters for HPyType_SpecParam */
+
+void* graal_hpy_HPyType_SpecParam_get_object(HPyType_SpecParam *def) {
+	return UNWRAP(def->object);
 }
 
 /* getters for HPyModuleDef */
