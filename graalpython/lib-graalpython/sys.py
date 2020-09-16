@@ -56,7 +56,7 @@ implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
 version_info = implementation.version
-hexversion = ((version_info.major << 24) |
+implementation.hexversion = hexversion = ((version_info.major << 24) |
               (version_info.minor << 16) |
               (version_info.micro << 8) |
               (0xa << 4) | # 0xA is alpha, 0xB is beta, 0xC is rc, 0xF is final
