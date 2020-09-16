@@ -41,7 +41,14 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PInt;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonClass;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PythonObject;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
@@ -52,7 +59,6 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -122,6 +128,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         H_FALSE("h_False"),
         H_VALUE_ERROR("h_ValueError"),
         H_TYPE_ERROR("h_TypeError"),
+        H_BASE_OBJECT_TYPE("h_BaseObjectType"),
+        H_TYPE_TYPE("h_TypeType"),
+        H_LONG_TYPE("h_LongType"),
+        H_UNICODE_TYPE("h_UnicodeType"),
+        H_TUPLE_TYPE("h_TupleType"),
+        H_LIST_TYPE("h_ListType"),
         CTX_MODULE_CREATE("ctx_Module_Create"),
         CTX_DUP("ctx_Dup"),
         CTX_CLOSE("ctx_Close"),
@@ -364,8 +376,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.H_NONE.ordinal()] = new GraalHPyHandle(PNone.NONE);
         members[HPyContextMembers.H_TRUE.ordinal()] = new GraalHPyHandle(context.getCore().getTrue());
         members[HPyContextMembers.H_FALSE.ordinal()] = new GraalHPyHandle(context.getCore().getFalse());
-        members[HPyContextMembers.H_VALUE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonBuiltinClassType.ValueError));
-        members[HPyContextMembers.H_TYPE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonBuiltinClassType.TypeError));
+        members[HPyContextMembers.H_VALUE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(ValueError));
+        members[HPyContextMembers.H_TYPE_ERROR.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(TypeError));
+        members[HPyContextMembers.H_BASE_OBJECT_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonObject));
+        members[HPyContextMembers.H_TYPE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PythonClass));
+        members[HPyContextMembers.H_LONG_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PInt));
+        members[HPyContextMembers.H_UNICODE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PString));
+        members[HPyContextMembers.H_TUPLE_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PTuple));
+        members[HPyContextMembers.H_LIST_TYPE.ordinal()] = new GraalHPyHandle(context.getCore().lookupType(PList));
         members[HPyContextMembers.CTX_ASPYOBJECT.ordinal()] = new GraalHPyAsPyObject();
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
