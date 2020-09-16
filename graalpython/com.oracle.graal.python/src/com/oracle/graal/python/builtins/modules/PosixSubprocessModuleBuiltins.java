@@ -77,6 +77,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -141,14 +143,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             File cwdFile;
-            try {
-                if (getContext().getEnv().getPublicTruffleFile(cwd).exists()) {
-                    cwdFile = new File(cwd);
-                } else {
-                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
-                }
-            } catch (SecurityException e) {
-                throw raise(PythonBuiltinClassType.OSError, e);
+            Env truffleEnv = context.getEnv();
+            if (getSafeTruffleFile(truffleEnv, cwd).exists()) {
+                cwdFile = new File(cwd);
+            } else {
+                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
             }
 
             SequenceStorage envStorage = env.getSequenceStorage();
@@ -209,18 +208,22 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 } else {
                     argStrings.set(0, path);
                 }
-                try {
-                    return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
-                } catch (IOException ex) {
-                    if (firstError == null) {
-                        firstError = ex;
+                TruffleFile executableFile = getSafeTruffleFile(truffleEnv, argStrings.get(0));
+                if (executableFile.isExecutable()) {
+                    try {
+                        return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
+                    } catch (IOException ex) {
+                        if (firstError == null) {
+                            firstError = ex;
+                        }
                     }
+                } else {
+                    LOGGER.finest(() -> "_posixsubprocess.fork_exec not executable: " + executableFile);
                 }
                 for (int j = 1; j < executableListLen; j++) {
                     argStrings.remove(1);
                 }
             }
-            assert firstError != null;
             if (errpipe_write != -1) {
                 handleIOError(errpipe_write, resources, firstError);
             }
@@ -285,6 +288,14 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return resources.registerChild(process);
         }
 
+        private TruffleFile getSafeTruffleFile(Env env, String path) {
+            try {
+                return env.getPublicTruffleFile(path);
+            } catch (SecurityException e) {
+                throw raise(PythonBuiltinClassType.OSError, e);
+            }
+        }
+
         private String checkNullBytesAndEncode(PythonObjectLibrary pyLib, PBytes bytesObj) {
             byte[] bytes;
             try {
@@ -307,12 +318,18 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary(allowInlining = true)
         private void handleIOError(int errpipe_write, PosixResources resources, IOException e) {
             // write exec error information here. Data format: "exception name:hex
-            // errno:description"
+            // errno:description". The exception can be null if we did not find any file in the
+            // execList that could be executed
             Channel err = resources.getFileChannel(errpipe_write);
             if (!(err instanceof WritableByteChannel)) {
                 throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ERROR_WRITING_FORKEXEC);
             } else {
-                ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
+                ErrorAndMessagePair pair;
+                if (e == null) {
+                    pair = new ErrorAndMessagePair(OSErrorEnum.ENOENT, OSErrorEnum.ENOENT.getMessage());
+                } else {
+                    pair = OSErrorEnum.fromException(e);
+                }
                 try {
                     ((WritableByteChannel) err).write(ByteBuffer.wrap(("OSError:" + Long.toHexString(pair.oserror.getNumber()) + ":" + pair.message).getBytes()));
                 } catch (IOException e1) {
