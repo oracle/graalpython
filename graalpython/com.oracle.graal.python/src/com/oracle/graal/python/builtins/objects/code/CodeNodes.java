@@ -123,37 +123,24 @@ public abstract class CodeNodes {
                             firstlineno, lnotab);
         }
 
-        public PCode execute(VirtualFrame frame, Object cls, String sourceCode,
-                        int nlocals, int stacksize, int flags,
-                        byte[] codedata, Object[] constants, Object[] names,
-                        Object[] varnames, Object[] freevars, Object[] cellvars,
-                        String filename, String name, int firstlineno,
-                        byte[] lnotab) {
+        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, String sourceCode, int flags, byte[] codedata, String filename,
+                        int firstlineno, byte[] lnotab) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return createCode(context, cls, sourceCode,
-                                nlocals, stacksize, flags,
-                                codedata, constants, names,
-                                varnames, freevars, cellvars,
-                                filename, name, firstlineno,
-                                lnotab);
+                return createCode(context, sourceCode, flags, codedata, filename, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonContext context, Object cls, String sourceCode,
-                        int nlocals, int stacksize, int flags,
-                        byte[] codedata, Object[] constants, Object[] names,
-                        Object[] varnames, Object[] freevars, Object[] cellvars,
-                        String filename, String name, int firstlineno,
-                        byte[] lnotab) {
+        private static PCode createCode(PythonContext context, String sourceCode, int flags, byte[] codedata, String filename,
+                        int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
             Source source = PythonLanguage.newSource(context, sourceCode, filename, isNotAModule);
             Supplier<CallTarget> createCode = () -> {
-                RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata, toStringArray(cellvars), toStringArray(freevars));
+                RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
                 return PythonUtils.getOrCreateCallTarget(rootNode);
             };
 
@@ -164,8 +151,7 @@ public abstract class CodeNodes {
                 ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filename, createCode);
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
-                            firstlineno, lnotab);
+            return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
         }
 
         private ContextReference<PythonContext> getContextRef() {

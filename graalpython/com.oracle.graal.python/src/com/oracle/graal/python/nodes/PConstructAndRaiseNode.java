@@ -154,14 +154,14 @@ public abstract class PConstructAndRaiseNode extends Node {
         return exception.getMessage();
     }
 
-    private Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
+    private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
         return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(),
                         (filename1 != null) ? filename1 : PNone.NONE,
                         PNone.NONE,
                         (filename2 != null) ? filename2 : PNone.NONE};
     }
 
-    private Object[] createOsErrorArgs(Exception exception, String filename1, String filename2) {
+    private static Object[] createOsErrorArgs(Exception exception, String filename1, String filename2) {
         OSErrorEnum.ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(exception);
         return new Object[]{errorAndMessage.oserror.getNumber(), errorAndMessage.message,
                         (filename1 != null) ? filename1 : PNone.NONE,

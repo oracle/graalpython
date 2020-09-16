@@ -436,16 +436,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeByte(TYPE_CODE, version, buffer);
             writeString(getSourceCode(c), version, buffer);
             writeString(c.getFilename(), version, buffer);
-            writeString(c.getName(), version, buffer);
-            writeInt(c.getNlocals(), version, buffer);
-            writeInt(c.getStacksize(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
             writeBytes(c.getCodestring(), version, buffer);
-            writeArray(frame, c.getConstants(), version, buffer);
-            writeArray(frame, c.getNames(), version, buffer);
-            writeArray(frame, c.getVarnames(), version, buffer);
-            writeArray(frame, c.getFreeVars(), version, buffer);
-            writeArray(frame, c.getCellVars(), version, buffer);
             writeInt(c.getFirstLineNo(), version, buffer);
             writeBytes(c.getLnotab(), version, buffer);
         }
@@ -644,28 +636,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createComplex(real, imag);
         }
 
-        private PCode readCode(int depth, HashingStorageLibrary lib) {
+        private PCode readCode() {
             String sourceCode = readString();
             String fileName = readInternedString();
-            String name = readString();
-            int nLocals = readInt();
-            int stackSize = readInt();
             int flags = readInt();
             byte[] codeString = readBytes();
-            Object[] constants = readArray(depth, lib);
-            Object[] names = readArray(depth, lib);
-            Object[] varNames = readArray(depth, lib);
-            Object[] freeVars = readArray(depth, lib);
-            Object[] cellVars = readArray(depth, lib);
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
 
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, sourceCode,
-                            nLocals, stackSize, flags,
-                            codeString, constants, names,
-                            varNames, freeVars, cellVars,
-                            fileName, name, firstLineNo,
-                            lnoTab);
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, sourceCode, flags,
+                            codeString, fileName, firstLineNo, lnoTab);
         }
 
         private PDict readDict(int depth, HashingStorageLibrary lib) {
@@ -774,7 +754,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_FROZENSET:
                     return readFrozenSet(depth, lib);
                 case TYPE_CODE:
-                    return readCode(depth, lib);
+                    return readCode();
                 case TYPE_COMPLEX:
                     return readPComplex();
                 default:
