@@ -91,6 +91,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
@@ -100,12 +101,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    public abstract static class HandleEncodingErrorNode extends Node {
-        public abstract byte[] execute(TruffleEncoder encoder, String errorAction, Object inputObject);
+    public abstract static class RaiseEncodingErrorNode extends Node {
+        public abstract RuntimeException execute(TruffleEncoder encoder, Object inputObject);
 
-        // Only "strict" for now, everything else is handled by Java
         @Specialization
-        public byte[] doRaise(TruffleEncoder encoder, @SuppressWarnings("unused") String errorAction, Object inputObject,
+        public RuntimeException doRaise(TruffleEncoder encoder, Object inputObject,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode,
                         @CachedLanguage PythonLanguage pythonLanguage) {
@@ -121,6 +121,54 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, exception);
             }
         }
+    }
+
+    @GenerateUncached
+    public abstract static class HandleEncodingErrorNode extends Node {
+        public abstract void execute(TruffleEncoder encoder, String errorAction, Object inputObject);
+
+        @Specialization
+        void handle(TruffleEncoder encoder, String errorAction, Object inputObject,
+                        @Cached("createIdentityProfile()") ValueProfile actionProfile,
+                        @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
+                        @Cached PRaiseNode raiseNode) {
+            // Ignore and replace are handled by Java Charset
+            switch (actionProfile.profile(errorAction)) {
+                case "strict":
+                    break;
+                case "surrogatepass":
+                    if (surrogatepass(encoder)) {
+                        return;
+                    }
+                    break;
+                default:
+                    raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+            }
+            throw raiseEncodingErrorNode.execute(encoder, inputObject);
+        }
+
+        private static boolean surrogatepass(TruffleEncoder encoder) {
+            // UTF-8 only for now. The name should be normalized already
+            if (encoder.getEncodingName().equals("utf_8")) {
+                String p = new String(encoder.getInputChars(encoder.getErrorLenght()));
+                byte[] replacement = new byte[p.length() * 3];
+                int outp = 0;
+                for (int i = 0; i < p.length();) {
+                    int ch = p.codePointAt(i);
+                    if (!(0xD800 <= ch && ch <= 0xDFFF)) {
+                        // Not a surrogate
+                        return false;
+                    }
+                    replacement[outp++] = (byte) (0xe0 | (ch >> 12));
+                    replacement[outp++] = (byte) (0x80 | ((ch >> 6) & 0x3f));
+                    replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
+                    i += Character.charCount(ch);
+                }
+                encoder.replace(replacement, encoder.getErrorLenght());
+                return true;
+            }
+            return false;
+        }
 
         public static HandleEncodingErrorNode create() {
             return CodecsModuleBuiltinsFactory.HandleEncodingErrorNodeGen.create();
@@ -128,18 +176,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
-    public abstract static class HandleDecodingErrorNode extends Node {
-        public abstract byte[] execute(TruffleDecoder encoder, String errorAction, Object inputObject);
+    public abstract static class RaiseDecodingErrorNode extends Node {
+        public abstract RuntimeException execute(TruffleDecoder decoder, Object inputObject);
 
-        // Only "strict" for now, everything else is handled by Java
         @Specialization
-        public byte[] doRaise(TruffleDecoder encoder, @SuppressWarnings("unused") String errorAction, Object inputObject,
+        public RuntimeException doRaise(TruffleDecoder decoder, Object inputObject,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode,
                         @CachedLanguage PythonLanguage pythonLanguage) {
-            int start = encoder.getInputPosition();
-            int end = start + encoder.getErrorLenght();
-            Object exception = callNode.execute(UnicodeDecodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
+            int start = decoder.getInputPosition();
+            int end = start + decoder.getErrorLenght();
+            Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
             } else {
@@ -148,6 +195,48 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeDecodeError, exception);
             }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HandleDecodingErrorNode extends Node {
+        public abstract void execute(TruffleDecoder decoder, String errorAction, Object inputObject);
+
+        @Specialization
+        void doStrict(TruffleDecoder decoder, String errorAction, Object inputObject,
+                        @Cached("createIdentityProfile()") ValueProfile actionProfile,
+                        @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
+                        @Cached PRaiseNode raiseNode) {
+            // Ignore and replace are handled by Java Charset
+            switch (actionProfile.profile(errorAction)) {
+                case "strict":
+                    break;
+                case "surrogatepass":
+                    if (surrogatepass(decoder)) {
+                        return;
+                    }
+                    break;
+                default:
+                    raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+            }
+            throw raiseDecodingErrorNode.execute(decoder, inputObject);
+        }
+
+        private static boolean surrogatepass(TruffleDecoder decoder) {
+            // UTF-8 only for now. The name should be normalized already
+            if (decoder.getEncodingName().equals("utf_8")) {
+                if (decoder.getInputRemaining() >= 3) {
+                    byte[] p = decoder.getInputBytes(3);
+                    if ((p[0] & 0xf0) == 0xe0 && (p[1] & 0xc0) == 0x80 && (p[2] & 0xc0) == 0x80) {
+                        int codePoint = ((p[0] & 0x0f) << 12) + ((p[1] & 0x3f) << 6) + (p[2] & 0x3f);
+                        if (0xD800 <= codePoint && codePoint <= 0xDFFF) {
+                            decoder.replace(Character.toChars(codePoint), 3);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         public static HandleDecodingErrorNode create() {
@@ -162,7 +251,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             switch (errors) {
                 // TODO: see [GR-10256] to implement the correct handling mechanics
                 case "ignore":
-                case "surrogatepass":
                     errorAction = CodingErrorAction.IGNORE;
                     break;
                 case "replace":
@@ -173,6 +261,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     errorAction = CodingErrorAction.REPLACE;
                     break;
                 default:
+                    // Everything else will be handled by our Handle nodes
                     errorAction = CodingErrorAction.REPORT;
                     break;
             }
@@ -248,9 +337,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleEncoder encoder = new TruffleEncoder(CharsetMapping.normalize(encoding), charset, input, errorAction);
-            if (!encoder.encodingStep()) {
-                // Everything not "strict" currently handled by Java
-                handleEncodingError(encoder, "strict", self);
+            while (!encoder.encodingStep()) {
+                handleEncodingError(encoder, errors, self);
             }
             return factory().createBytes(encoder.getBytes());
         }
@@ -263,12 +351,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return lenNode.execute(b.getSequenceStorage());
         }
 
-        private byte[] handleEncodingError(TruffleEncoder encoder, String errorAction, Object input) {
+        private void handleEncodingError(TruffleEncoder encoder, String errorAction, Object input) {
             if (handleEncodingErrorNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 handleEncodingErrorNode = insert(HandleEncodingErrorNode.create());
             }
-            return handleEncodingErrorNode.execute(encoder, errorAction, input);
+            handleEncodingErrorNode.execute(encoder, errorAction, input);
         }
     }
 
@@ -314,9 +402,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleDecoder decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
-            if (!decoder.decodingStep(finalData)) {
-                // Everything not "strict" currently handled by Java
-                handleDecodingError(decoder, "strict", input);
+            while (!decoder.decodingStep(finalData)) {
+                handleDecodingError(decoder, errors, input);
             }
             return factory().createTuple(new Object[]{decoder.getString(), decoder.getInputPosition()});
         }
@@ -353,12 +440,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return castToBooleanNode.executeBoolean(frame, object);
         }
 
-        private byte[] handleDecodingError(TruffleDecoder encoder, String errorAction, Object input) {
+        private void handleDecodingError(TruffleDecoder encoder, String errorAction, Object input) {
             if (handleDecodingErrorNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 handleDecodingErrorNode = insert(HandleDecodingErrorNode.create());
             }
-            return handleDecodingErrorNode.execute(encoder, errorAction, input);
+            handleDecodingErrorNode.execute(encoder, errorAction, input);
         }
     }
 
@@ -437,14 +524,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
 
                 if (coderResult.isOverflow()) {
-                    ByteBuffer newBuffer = ByteBuffer.allocate(2 * outputBuffer.capacity() + 1);
-                    outputBuffer.flip();
-                    newBuffer.put(outputBuffer);
-                    outputBuffer = newBuffer;
+                    grow();
                 } else if (coderResult.isError()) {
                     return false;
                 }
             }
+        }
+
+        private void grow() {
+            ByteBuffer newBuffer = ByteBuffer.allocate(2 * outputBuffer.capacity() + 1);
+            outputBuffer.flip();
+            newBuffer.put(outputBuffer);
+            outputBuffer = newBuffer;
         }
 
         @TruffleBoundary
@@ -473,6 +564,29 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             byte[] data = new byte[outputBuffer.remaining()];
             outputBuffer.get(data);
             return data;
+        }
+
+        @TruffleBoundary
+        public int getInputRemaining() {
+            return inputBuffer.remaining();
+        }
+
+        @TruffleBoundary
+        public char[] getInputChars(int num) {
+            char[] chars = new char[num];
+            int pos = inputBuffer.position();
+            inputBuffer.get(chars);
+            inputBuffer.position(pos);
+            return chars;
+        }
+
+        @TruffleBoundary
+        public void replace(byte[] replacement, int skipInput) {
+            while (outputBuffer.remaining() < replacement.length) {
+                grow();
+            }
+            outputBuffer.put(replacement);
+            inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
         public String getEncodingName() {
@@ -509,14 +623,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
 
                 if (coderResult.isOverflow()) {
-                    CharBuffer newBuffer = CharBuffer.allocate(2 * outputBuffer.capacity() + 1);
-                    outputBuffer.flip();
-                    newBuffer.put(outputBuffer);
-                    outputBuffer = newBuffer;
+                    grow();
                 } else if (coderResult.isError()) {
                     return false;
                 }
             }
+        }
+
+        private void grow() {
+            CharBuffer newBuffer = CharBuffer.allocate(2 * outputBuffer.capacity() + 1);
+            outputBuffer.flip();
+            newBuffer.put(outputBuffer);
+            outputBuffer = newBuffer;
         }
 
         @TruffleBoundary
@@ -528,6 +646,20 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } else {
                 throw new IllegalArgumentException("Unicode error constructed from non-error result");
             }
+        }
+
+        @TruffleBoundary
+        public int getInputRemaining() {
+            return inputBuffer.remaining();
+        }
+
+        @TruffleBoundary
+        public byte[] getInputBytes(int num) {
+            byte[] bytes = new byte[num];
+            int pos = inputBuffer.position();
+            inputBuffer.get(bytes);
+            inputBuffer.position(pos);
+            return bytes;
         }
 
         @TruffleBoundary
@@ -543,6 +675,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public int getErrorLenght() {
             return coderResult.length();
+        }
+
+        @TruffleBoundary
+        public void replace(char[] chars, int skipInput) {
+            while (outputBuffer.remaining() < chars.length) {
+                grow();
+            }
+            outputBuffer.put(chars);
+            inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
         public String getEncodingName() {

@@ -22,6 +22,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs_idna
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs_utf7
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_codecs_utf8
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_compare
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_comparison
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_concatenation
