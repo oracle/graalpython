@@ -261,11 +261,41 @@ def breakpointhook(*args, **kws):
 
 __breakpointhook__ = breakpointhook
 
-
 @__graalpython__.builtin
 def getrecursionlimit():
-    return 1000
+    return __graalpython__.sys_state.recursionlimit
 
+@__graalpython__.builtin
+def setrecursionlimit(value):
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    if value <= 0:
+        raise ValueError("recursion limit must be greater or equal than 1")
+    __graalpython__.sys_state.recursionlimit = value
+
+@__graalpython__.builtin
+def getcheckinterval():
+    return __graalpython__.sys_state.checkinterval
+
+@__graalpython__.builtin
+def setcheckinterval(value):
+    import warnings
+    warnings.warn("sys.getcheckinterval() and sys.setcheckinterval() are deprecated. Use sys.setswitchinterval() instead.", DeprecationWarning)
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    __graalpython__.sys_state.checkinterval = value
+
+@__graalpython__.builtin
+def getswitchinterval():
+    return __graalpython__.sys_state.switchinterval
+
+@__graalpython__.builtin
+def setswitchinterval(value):
+    if not isinstance(value, (int, float)):
+        raise TypeError("must be real number, not str")
+    if value <= 0:
+        raise ValueError("switch interval must be strictly positive")
+    __graalpython__.sys_state.switchinterval = value
 
 @__graalpython__.builtin
 def displayhook(value):
