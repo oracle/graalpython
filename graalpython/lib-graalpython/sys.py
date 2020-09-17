@@ -63,27 +63,12 @@ hexversion = ((version_info.major << 24) |
 
 def make_flags_class():
     from _descriptor import make_named_tuple_class
-    get_set_descriptor = type(type(make_flags_class).__code__)
-
     names = ["bytes_warning", "debug", "dont_write_bytecode",
              "hash_randomization", "ignore_environment", "inspect",
              "interactive", "isolated", "no_site", "no_user_site", "optimize",
              "quiet", "verbose", "dev_mode", "utf8_mode"]
-
-    flags_class = make_named_tuple_class("sys.flags", names)
-
-    def make_func(i):
-        def func(self):
-            return __graalpython__.flags[i]
-        return func
-
-    for i, f in enumerate(names):
-        setattr(flags_class, f, get_set_descriptor(fget=make_func(i), name=f, owner=flags_class))
-
-    return flags_class
-
-
-flags = make_flags_class()()
+    return make_named_tuple_class("sys.flags", names)
+flags = make_flags_class()(__graalpython__.flags)
 del make_flags_class
 
 

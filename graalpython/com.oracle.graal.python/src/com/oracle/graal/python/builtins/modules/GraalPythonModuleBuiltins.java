@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -172,19 +173,19 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("capi_home", capiHome);
         mod.setAttribute("platform_id", toolchain.getIdentifier());
         mod.setAttribute("flags", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
-                        false, // hash_randomization
-                        context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
-                        context.getOption(PythonOptions.InspectFlag), // inspect
-                        context.getOption(PythonOptions.TerminalIsInteractive), // interactive
-                        context.getOption(PythonOptions.IsolateFlag), // isolated
-                        context.getOption(PythonOptions.NoSiteFlag), // no_site
-                        context.getOption(PythonOptions.NoUserSiteFlag), // no_user_site
-                        context.getOption(PythonOptions.PythonOptimizeFlag), // optimize
-                        context.getOption(PythonOptions.QuietFlag), // quiet
-                        context.getOption(PythonOptions.VerboseFlag), // verbose
+                        0, // bytes_warning
+                        PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
+                        PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
+                        0, // hash_randomization
+                        PInt.intValue(context.getOption(PythonOptions.IgnoreEnvironmentFlag)), // ignore_environment
+                        PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
+                        PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
+                        PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
+                        PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
+                        PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
+                        PInt.intValue(context.getOption(PythonOptions.PythonOptimizeFlag)), // optimize
+                        PInt.intValue(context.getOption(PythonOptions.QuietFlag)), // quiet
+                        PInt.intValue(context.getOption(PythonOptions.VerboseFlag)), // verbose
                         false, // dev_mode
                         0, // utf8_mode
         }));
