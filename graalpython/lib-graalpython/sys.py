@@ -122,6 +122,17 @@ hash_info = make_hash_info_class()(hash_info)
 del make_hash_info_class
 
 
+def make_thread_info_class():
+    from _descriptor import make_named_tuple_class
+    return make_named_tuple_class(
+        "thread_info",
+        ["name",
+         "lock",
+         "version"]
+    )
+thread_info = make_thread_info_class()([None, None, None])
+del make_thread_info_class
+
 def make_unraisable_hook_args_class():
     from _descriptor import make_named_tuple_class
     return make_named_tuple_class(
