@@ -44,12 +44,14 @@ def make_implementation_info():
     version_info_type = make_named_tuple_class(
         "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
     )
-    return SimpleNamespace(
+    result = SimpleNamespace(
         name="graalpython",
         cache_tag="graalpython",
         version=version_info_type(version_info),
         _multiarch=__gmultiarch
     )
+    version_info_type.seal()
+    return result
 implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
@@ -69,6 +71,7 @@ def make_flags_class():
              "quiet", "verbose", "dev_mode", "utf8_mode"]
     return make_named_tuple_class("sys.flags", names)
 flags = make_flags_class()(__graalpython__.flags)
+type(flags).seal()
 del make_flags_class
 
 
