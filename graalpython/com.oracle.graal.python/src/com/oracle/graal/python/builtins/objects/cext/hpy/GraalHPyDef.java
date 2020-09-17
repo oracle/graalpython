@@ -40,10 +40,16 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import com.oracle.truffle.api.object.HiddenKey;
+
 /**
  * A container class for mirroring definitions of {@code hpydef.h}
  */
 public abstract class GraalHPyDef {
+
+    public static final HiddenKey TYPE_HPY_BASICSIZE = new HiddenKey("hpy_basicsize");
+    public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
+    public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
@@ -108,4 +114,10 @@ public abstract class GraalHPyDef {
     /* enum values of 'HPyType_SpecParam_Kind' */
     public static final int HPyType_SPEC_PARAM_BASE = 1;
     public static final int HPyType_SPEC_PARAM_BASES_TUPLE = 2;
+
+    /* type flags according to 'hpytype.h' */
+    public static final long _Py_TPFLAGS_HEAPTYPE = (1L << 9);
+    public static final long HPy_TPFLAGS_BASETYPE = (1L << 10);
+    public static final long HPy_TPFLAGS_DEFAULT = _Py_TPFLAGS_HEAPTYPE;
+
 }

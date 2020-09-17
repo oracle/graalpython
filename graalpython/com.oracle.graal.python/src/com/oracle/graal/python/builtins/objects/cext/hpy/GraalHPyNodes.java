@@ -81,10 +81,12 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -770,12 +772,14 @@ public class GraalHPyNodes {
         @Specialization
         static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
+                        @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached CallNode callTypeNewNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached HPyAddFunctionNode addFunctionNode,
@@ -830,7 +834,12 @@ public class GraalHPyNodes {
                 Object newType = callTypeNewNode.execute(typeBuiltin, PythonBuiltinClassType.PythonClass, typeName, bases, factory.createDict(dictStorage), PKeyword.EMPTY_KEYWORDS);
 
                 // store flags, basicsize, and itemsize to type
-                // TODO
+                long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
+                long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
+                long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BASICSIZE, basicSize);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
+                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
 
                 return newType;
             } catch (CannotCastException | InteropException e) {
@@ -890,6 +899,16 @@ public class GraalHPyNodes {
             return factory.createTuple(basesList.toArray());
         }
 
+        private static long castToLong(InteropLibrary lib, Object value) throws OverflowException {
+            if (lib.fitsInLong(value)) {
+                try {
+                    return lib.asLong(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw OverflowException.INSTANCE;
+        }
     }
 
 }

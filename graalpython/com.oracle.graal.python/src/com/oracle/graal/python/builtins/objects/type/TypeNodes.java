@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -1381,22 +1382,31 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        boolean doUserClass(@SuppressWarnings("unused") PythonClass obj) {
+        static boolean doUserClass(PythonClass obj,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @Cached BranchProfile hasHPyFlagsProfile) {
+            // Special case for custom classes created via HPy: They are managed classes but can
+            // have custom flags. The flags may prohibit subtyping.
+            Object flagsObj = readAttributeFromObjectNode.execute(obj, GraalHPyDef.TYPE_HPY_FLAGS);
+            if (flagsObj != PNone.NO_VALUE) {
+                hasHPyFlagsProfile.enter();
+                return (((long) flagsObj) & GraalHPyDef.HPy_TPFLAGS_BASETYPE) != 0;
+            }
             return true;
         }
 
         @Specialization
-        boolean doBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
+        static boolean doBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
             return obj.getType().isAcceptableBase();
         }
 
         @Specialization
-        boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
+        static boolean doBuiltinType(PythonBuiltinClassType obj) {
             return obj.isAcceptableBase();
         }
 
         @Specialization
-        boolean doNativeClass(PythonAbstractNativeObject obj,
+        static boolean doNativeClass(PythonAbstractNativeObject obj,
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
             if (isType.execute(obj)) {
@@ -1406,7 +1416,7 @@ public abstract class TypeNodes {
         }
 
         @Fallback
-        boolean doOther(@SuppressWarnings("unused") Object obj) {
+        static boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }
 
