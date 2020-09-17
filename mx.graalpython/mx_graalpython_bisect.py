@@ -44,7 +44,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
     git_dir = suite.vc_dir
     commits = suite.vc.git_command(
         git_dir,
-        ['log', '--merges', '--format=format:%H', f'{good}^..{bad}'],
+        ['log', '--first-parent', '--format=format:%H', f'{good}^..{bad}'],
         abortOnError=True,
     ).splitlines()
     if not commits:
