@@ -298,67 +298,12 @@ default configuration of a single Python context (as is used when running the
 launcher). For better sharing of warmup and where absolutely best peak
 performance is not needed, contexts can be configured with a shared engine and
 the ASTs will be shared across contexts. However, that implies we *must* not
-store any user objects strongly in the ASTs. Here is a query to find any such
-leaks where a PythonObject is reacheable from any kind of Truffle AST Node
-subinstance in VisualVM:
+store any user objects strongly in the ASTs. We test that we have no
+PythonObjects alive after a Context is closed that are run as part of our JUnit
+tests. These can be run by themselves, for example, like so:
 
-    findLeaks("com.oracle.graal.python.builtins.objects.object.PythonObject", "com.oracle.truffle.api.nodes.Node")
+    $ mx python-leak-test --lang python --shared-engine --code 'import site, json' --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject --keep-dump
 
-    function findLeaks(to, from) {
-      var objs = heap.objects(to, true)
-      var leaks = []
-      var path = []
-      var cutOffPath = false
-
-      while (objs.hasMoreElements() && leaks.length < 100) {
-        var o = objs.nextElement()
-        path = []
-        cutOffPath = false
-        if (isReferencedFromAtMaxDepth(o, 20)) {
-          if (!cutOffPath) {
-            leaks.push(o)
-          }
-        }
-      }
-      return leaks
-
-      function isReferencedFromAtMaxDepth(obj, limit) {
-        var refs = referrers(obj)
-        while (refs.hasMoreElements()) {
-          var o = refs.nextElement()
-          var refClass = classof(o)
-          var cutOffHere = false
-          while (refClass != null) {
-            if (refClass.name == from) {
-              leaks.push(classof(o).name)
-              return true
-            } else if (refClass.name == "java.lang.ref.WeakReference" ||
-                       refClass.name == "java.lang.ref.SoftReference" ||
-                       refClass.name == "java.lang.ref.PhantomReference") {
-              // any weak reference is fine
-              return false;
-            } else if (refClass.name == to) {
-              // we have found another `to` object along the path, use this one as the shorter path
-              cutOffHere = true
-            }
-            refClass = refClass.superclass
-          }
-          if (limit > 0) {
-            if (isReferencedFromAtMaxDepth(o, limit - 1)) {
-              if (!cutOffPath) {
-                if (cutOffHere) {
-                  cutOffPath = true
-                  leaks.push(o)
-                } else {
-                  leaks.push(classof(o).name)
-                }
-              }
-              return true
-            }
-          }
-        }
-        return false
-      }
-    }
-
-Running such a query on a multi-context heap should yield no results.
+The `--keep-dump` option will print the heapdump location and leave the file
+there rather than deleting it. It can then be opened for example with VisualVM
+to check for the paths of any leaked object, if there are any.
