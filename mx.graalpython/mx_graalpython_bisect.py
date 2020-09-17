@@ -9,7 +9,25 @@ import configparser
 import mx
 
 
-SUITE = mx.suite('graalpython')
+def get_suite(name):
+    suite_name = name.lstrip('/')
+    suite = mx.suite(suite_name, fatalIfMissing=False)
+    if not suite:
+        suite = mx.primary_suite().import_suite(suite_name, version=None, urlinfos=None, in_subdir=name.startswith('/'))
+    assert suite
+    return suite
+
+
+def get_downstream_suite(suite):
+    downstreams = {
+        'graalpython-apptests': 'graalpython',
+        'graalpython-extensions': 'graalpython',
+        'graalpython': '/vm',
+        'vm': '/vm-enterprise',
+    }
+    downstream = downstreams.get(suite.name)
+    if downstream:
+        return get_suite(downstream)
 
 
 def get_commit(suite, ref='HEAD'):
@@ -22,16 +40,16 @@ def get_message(suite, commit):
     return suite.vc.git_command(suite.vc_dir, ['log', '--format=%s', '-n', '1', commit]).strip()
 
 
-def run_bisect_benchmark(suite, bad, good, callback, downstreams, threshold=None):
+def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
     git_dir = suite.vc_dir
-    commits = SUITE.vc.git_command(
+    commits = suite.vc.git_command(
         git_dir,
         ['log', '--merges', '--format=format:%H', f'{good}^..{bad}'],
         abortOnError=True,
     ).splitlines()
     if not commits:
         sys.exit("No merge commits found in the range. Did you swap good and bad?")
-    downstream_suite = downstreams.get(suite)
+    downstream_suite = get_downstream_suite(suite)
     values = [None] * len(commits)
     if threshold is None:
         bad_index = 0
@@ -66,7 +84,7 @@ def run_bisect_benchmark(suite, bad, good, callback, downstreams, threshold=None
             downstream_bad = get_commit(downstream_suite)
     subresults = {}
     if downstream_bad and downstream_good and downstream_bad != downstream_good:
-        subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, downstreams, threshold)
+        subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, threshold)
         subresults[bad_index] = subresult
     return BisectResult(suite, commits, values, good_index, bad_index, subresults)
 
@@ -117,18 +135,6 @@ class BisectResult:
         return False
 
 
-def get_suite_py(commit):
-    suite_py = SUITE.vc.git_command(['show', f'{commit}:mx.graalpython/suite.py'], abortOnError=True)
-    namespace = {}
-    exec(suite_py, namespace, namespace)
-    return namespace['suite']
-
-
-def get_graal_commit(commit):
-    suite_py = get_suite_py(commit)
-    return [imp for imp in suite_py['imports'] if imp['name'] == 'sulong'][0]['version']
-
-
 def bisect_benchmark(argv):
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         cp = configparser.ConfigParser()
@@ -152,12 +158,7 @@ def bisect_benchmark(argv):
         parser.add_argument('--enterprise', action='store_true')
         args = parser.parse_args(argv)
 
-    vm_suite = mx.suite('vm')
-    downstreams = {
-        SUITE: vm_suite,
-    }
-    if args.enterprise:
-        downstreams[vm_suite] = mx.suite('vm-enterprise')
+    primary_suite = mx.primary_suite()
 
     fetched_enterprise = False
 
@@ -170,10 +171,10 @@ def bisect_benchmark(argv):
             if fetched_enterprise:
                 checkout_args.append('--no-fetch')
             mx.run_mx(checkout_args, out=mx.OutputCapture())
-            mx.run_mx(['--env', 'ee', 'sforceimports'], suite=mx.suite('vm-enterprise'))
+            mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
             fetched_enterprise = True
         elif suite.name != 'vm':
-            mx.run_mx(['--env', 'ce', 'sforceimports'], suite=vm_suite)
+            mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         env = os.environ.copy()
@@ -191,9 +192,9 @@ def bisect_benchmark(argv):
             sys.exit(f"Failed to get result from the benchmark")
         return float(match.group(1))
 
-    bad = get_commit(SUITE, args.bad)
-    good = get_commit(SUITE, args.good)
-    result = run_bisect_benchmark(SUITE, bad, good, benchmark_callback, downstreams)
+    bad = get_commit(primary_suite, args.bad)
+    good = get_commit(primary_suite, args.good)
+    result = run_bisect_benchmark(primary_suite, bad, good, benchmark_callback)
     print()
     result.visualize()
     print()
