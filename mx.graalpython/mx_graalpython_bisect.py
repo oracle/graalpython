@@ -44,7 +44,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
     git_dir = suite.vc_dir
     commits = suite.vc.git_command(
         git_dir,
-        ['log', '--first-parent', '--format=format:%H', f'{good}^..{bad}'],
+        ['log', '--first-parent', '--format=format:%H', '{}^..{}'.format(good, bad)],
         abortOnError=True,
     ).splitlines()
     if not commits:
@@ -62,7 +62,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
         if values[good_index] * 1.03 > values[bad_index]:
             sys.exit(
                 "Didn't detect a regression - less that 3% difference between good value "
-                f"{values[good_index]} and bad value {values[bad_index]}"
+                "{} and bad value {}".format(values[good_index], values[bad_index])
             )
     else:
         bad_index = -1
@@ -118,10 +118,10 @@ class BisectResult:
 
     def visualize(self, level=1):
         level_marker = '=' * level
-        print(f"{level_marker} {self.repo_name}")
+        print(level_marker, self.repo_name)
         for index, (commit, value) in enumerate(zip(self.commits, self.values)):
             if value is not None:
-                print(f"{level_marker} {commit} {value:6.6} {get_message(self.suite, commit)}")
+                print("{} {} {:6.6} {}".format(level_marker, commit, value, get_message(self.suite, commit)))
             if self.subresults and index in self.subresults:
                 self.subresults[index].visualize(level + 1)
 
@@ -130,7 +130,8 @@ class BisectResult:
             for subresult in self.subresults.values():
                 if subresult.summarize():
                     return True
-            print(f"Detected bad commit in {self.repo_name} repository:\n{self.bad_commit} {get_message(self.suite, self.bad_commit)}")
+            print("Detected bad commit in {} repository:\n{} {}"
+                  .format(self.repo_name, self.bad_commit, get_message(self.suite, self.bad_commit)))
             return True
         return False
 
@@ -160,36 +161,35 @@ def bisect_benchmark(argv):
 
     primary_suite = mx.primary_suite()
 
-    fetched_enterprise = False
+    fetched_enterprise = [False]
 
     def benchmark_callback(suite, commit):
-        nonlocal fetched_enterprise
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         if args.enterprise and suite.name != 'vm-enterprise':
             checkout_args = ['--dynamicimports', '/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise']
-            if fetched_enterprise:
+            if fetched_enterprise[0]:
                 checkout_args.append('--no-fetch')
             mx.run_mx(checkout_args, out=mx.OutputCapture())
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
-            fetched_enterprise = True
+            fetched_enterprise[0] = True
         elif suite.name != 'vm':
             mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         env = os.environ.copy()
         if 'CI' not in os.environ:
-            env['MX_ALT_OUTPUT_ROOT'] = f'mxbuild-{commit}'
+            env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
         if retcode:
-            sys.exit(f"Failed to execute the build command for {commit}")
+            sys.exit("Failed to execute the build command for {}".format(commit))
         output = mx.OutputCapture()
         retcode = mx.run(shlex.split(args.benchmark_command), env=env, out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
         if retcode:
-            sys.exit(f"Failed to execute benchmark for {commit}")
-        match = re.search(rf'{re.escape(args.benchmark_criterion)}.*duration: ([\d.]+)', output.data)
+            sys.exit("Failed to execute benchmark for {}".format(commit))
+        match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
         if not match:
-            sys.exit(f"Failed to get result from the benchmark")
+            sys.exit("Failed to get result from the benchmark")
         return float(match.group(1))
 
     bad = get_commit(primary_suite, args.bad)
@@ -202,4 +202,4 @@ def bisect_benchmark(argv):
     print()
 
     if 'CI' not in os.environ:
-        print(f"You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {args.benchmark_command}")
+        print("You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {}".format(args.benchmark_command))
