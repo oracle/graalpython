@@ -35,3 +35,4 @@
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook_err
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook_wrong_type
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_flags
+*graalpython.lib-python.3.test.test_sys.DisplayHookTest.test_lost_displayhook
