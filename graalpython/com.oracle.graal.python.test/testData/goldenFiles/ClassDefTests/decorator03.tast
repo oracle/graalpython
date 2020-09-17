@@ -1,0 +1,104 @@
+ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,60]`class C(object):↵   ...`
+  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+  FreeVars: None
+  NeedsCellFrame: False
+  FrameDescriptor:  Empty
+  Documentation: None
+  InnerRootNode SourceSection: [0,60]`class C(object):↵   ...`
+    ExpressionWithSideEffect SourceSection: [0,60]`class C(object):↵   ...`
+      Expression:
+        EmptyNode SourceSection: None
+      SideEffect:
+        WriteNameNodeGen SourceSection: [0,60]`class C(object):↵   ...`
+          Identifier: C
+          PythonCallTernary SourceSection: [0,60]`class C(object):↵   ...`
+            CallTernaryMethodNodeGen SourceSection: None
+            GetCallAttributeNodeGen SourceSection: None
+              BuiltinsLiteralNode SourceSection: None
+            FunctionDefinitionNode Name: C SourceSection: None
+              Arguments: None
+              KwArguments: None
+              Documentation: None
+              FreeVarSlots: None
+              ExecutionSlots:
+                FreeVarsSlots: None
+                CellVarsSlots: None
+              ClassBodyRootNode SourceSection: [0,60]`class C(object):↵   ...`
+                Name: C
+                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                  Param Names: namespace
+                CelVars: None
+                FreeVars: None
+                NeedsCellFrame: False
+                FrameDescriptor: 1 slots [foo]
+                ExecutionSlots:
+                  FreeVarsSlots: None
+                  CellVarsSlots: None
+                InnerRootNode SourceSection: [0,60]`class C(object):↵   ...`
+                  ReturnTargetNode SourceSection: [0,60]`class C(object):↵   ...`
+                    Body: BlockNode SourceSection: None
+                      ClassDefinitionPrologueNode SourceSection: None
+                        QualName: C
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: __name__
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadIndexedArgumentNodeGen SourceSection: None
+                          Index: 0
+                        SetItemIfNotPresentNodeGen SourceSection: None
+                          SetItemNodeGen SourceSection: None
+                      FunctionBodyNode SourceSection: [21,60]`@staticmethod↵    de...`
+                        SetItemNodeGen SourceSection: [21,60]`@staticmethod↵    de...`
+                          ArgumentExpressionNode SourceSection: None
+                            ReadIndexedArgumentNodeGen SourceSection: None
+                              Index: 0
+                          StringLiteralNode SourceSection: None
+                          PythonCallUnary SourceSection: [21,34]`@staticmethod`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadClassAttributeNodeGen SourceSection: [21,34]`@staticmethod`
+                              GetItemNodeGen SourceSection: None
+                                ArgumentExpressionNode SourceSection: None
+                                  ReadIndexedArgumentNodeGen SourceSection: None
+                                    Index: 0
+                                StringLiteralNode SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: None
+                                Identifier: staticmethod
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            FunctionDefinitionNode Name: foo SourceSection: None
+                              Arguments: None
+                              KwArguments: None
+                              Documentation: None
+                              FreeVarSlots: None
+                              ExecutionSlots:
+                                FreeVarsSlots: None
+                                CellVarsSlots: None
+                              FunctionRootNode SourceSection: [39,60]`def foo(): return 42...`
+                                Name: foo
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                CelVars: None
+                                FreeVars: None
+                                NeedsCellFrame: False
+                                FrameDescriptor: 1 slots [<return_val>]
+                                ExecutionSlots:
+                                  FreeVarsSlots: None
+                                  CellVarsSlots: None
+                                InnerRootNode SourceSection: [39,60]`def foo(): return 42...`
+                                  ReturnTargetNode SourceSection: [39,60]`def foo(): return 42...`
+                                    Body: BlockNode SourceSection: None
+                                      BlockNode SourceSection: None
+                                      FunctionBodyNode SourceSection: [50,59]`return 42`
+                                        FrameReturnNode SourceSection: [50,59]`return 42`
+                                          WriteLocalVariableNodeGen SourceSection: None
+                                            Identifier: <return_val>
+                                            WriteLocalFrameSlotNodeGen SourceSection: None
+                                              Frame: [0,<return_val>,Illegal]
+                                            IntegerLiteralNode SourceSection: [57,59]`42`
+                                              Value: 42
+                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                      Frame: [0,<return_val>,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                    Return Expresssion: ObjectLiteralNode SourceSection: None
+            StringLiteralNode SourceSection: None
+            ReadNameNodeGen SourceSection: [8,14]`object`
+              Identifier: object
+              IsBuiltinClassProfile SourceSection: None
+                CachedDispatchFirst SourceSection: None

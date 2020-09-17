@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                         Identifier: filtered
                         WriteGeneraterFrameSlotNodeGen SourceSection: None
                           Frame: [4,filtered,Illegal]
-                        GeneratorExpressionNode SourceSection: [356,424]`for entry in entries...`
+                        GeneratorExpressionNode SourceSection: [342,424]`entry↵        for en...`
                           Name: <genexpr>
                           FrameDescriptor: 4 slots [entry, path_item, only, <return_val>]
                           Enclosing
@@ -136,7 +136,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: true
-                          FunctionRootNode SourceSection: [356,424]`for entry in entries...`
+                          FunctionRootNode SourceSection: [342,424]`entry↵        for en...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -146,10 +146,10 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                             ExecutionSlots:
                               FreeVarsSlots: only, , path_item, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [356,424]`for entry in entries...`
-                              GeneratorReturnTargetNode SourceSection: [356,424]`for entry in entries...`
+                            InnerRootNode SourceSection: [342,424]`entry↵        for en...`
+                              GeneratorReturnTargetNode SourceSection: [342,424]`entry↵        for en...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [356,424]`for entry in entries...`
+                                GeneratorForNode SourceSection: [342,424]`entry↵        for en...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None

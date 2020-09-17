@@ -1883,7 +1883,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: dict
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [9419,9445]`for k, v in locals.i...`
+                                          GeneratorExpressionNode SourceSection: [9408,9445]`k: repr(v) for k, v ...`
                                             Name: <genexpr>
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                             Enclosing
@@ -1892,7 +1892,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [9419,9445]`for k, v in locals.i...`
+                                            FunctionRootNode SourceSection: [9408,9445]`k: repr(v) for k, v ...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -1902,10 +1902,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [9419,9445]`for k, v in locals.i...`
-                                                GeneratorReturnTargetNode SourceSection: [9419,9445]`for k, v in locals.i...`
+                                              InnerRootNode SourceSection: [9408,9445]`k: repr(v) for k, v ...`
+                                                GeneratorReturnTargetNode SourceSection: [9408,9445]`k: repr(v) for k, v ...`
                                                   flagSlot: 1
-                                                  GeneratorForNode SourceSection: [9419,9445]`for k, v in locals.i...`
+                                                  GeneratorForNode SourceSection: [9408,9445]`k: repr(v) for k, v ...`
                                                     ExpressionStatementNode SourceSection: None
                                                       YieldNode SourceSection: None
                                                         flagSlot: 0
@@ -5534,7 +5534,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   Identifier: caretspace
                                                   WriteGeneraterFrameSlotNodeGen SourceSection: None
                                                     Frame: [7,caretspace,Illegal]
-                                                  GeneratorExpressionNode SourceSection: [21873,21892]`for c in caretspace`
+                                                  GeneratorExpressionNode SourceSection: [21847,21892]`c.isspace() and c or...`
                                                     Name: <genexpr>
                                                     FrameDescriptor: 2 slots [c, <return_val>]
                                                     Enclosing
@@ -5543,7 +5543,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     For Nodes: 1
                                                     Block Nodes: 0
                                                     Is Enclosing Frame Generator: true
-                                                    FunctionRootNode SourceSection: [21873,21892]`for c in caretspace`
+                                                    FunctionRootNode SourceSection: [21847,21892]`c.isspace() and c or...`
                                                       Name: <genexpr>
                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                       CelVars: None
@@ -5553,10 +5553,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ExecutionSlots:
                                                         FreeVarsSlots: None
                                                         CellVarsSlots: None
-                                                      InnerRootNode SourceSection: [21873,21892]`for c in caretspace`
-                                                        GeneratorReturnTargetNode SourceSection: [21873,21892]`for c in caretspace`
+                                                      InnerRootNode SourceSection: [21847,21892]`c.isspace() and c or...`
+                                                        GeneratorReturnTargetNode SourceSection: [21847,21892]`c.isspace() and c or...`
                                                           flagSlot: 1
-                                                          GeneratorForNode SourceSection: [21873,21892]`for c in caretspace`
+                                                          GeneratorForNode SourceSection: [21847,21892]`c.isspace() and c or...`
                                                             ExpressionStatementNode SourceSection: [21847,21871]`c.isspace() and c or...`
                                                               YieldNode SourceSection: [21847,21871]`c.isspace() and c or...`
                                                                 flagSlot: 0

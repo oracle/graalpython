@@ -98,6 +98,47 @@ public class SSTNodeWithScopeFinderTest extends ParserTestBase {
         checkFinder(code, code.indexOf("def fn3"), code.indexOf("30") + 3, false);
     }
 
+    @Test
+    public void decoratedTest() throws Exception {
+        String code = "@mydecorator(lambda : 10)\n" +
+                        "def fn():\n" +
+                        "    pass\n";
+        checkFinder(code, code.indexOf("lambda"), code.indexOf("10") + 2, true);
+        checkFinder(code, code.indexOf("def fn"), code.indexOf("pass") + 5, false);
+    }
+
+    @Test
+    public void lambdaInLambda() throws Exception {
+        String code = "l4 = lambda x = lambda y = lambda z=1 : z : y() : x()";
+        checkFinder(code, code.indexOf("lambda x"), code.indexOf("x()") + 3, true);
+        checkFinder(code, code.indexOf("lambda y"), code.indexOf("y()") + 3, true);
+        checkFinder(code, code.indexOf("lambda z"), code.indexOf("z :") + 1, true);
+    }
+
+    @Test
+    public void lambdaInCall01() throws Exception {
+        String code = "fn(lambda: 20)";
+        checkFinder(code, code.indexOf("lambda"), code.indexOf("20") + 2, true);
+    }
+
+    @Test
+    public void lambdaInCall02() throws Exception {
+        String code = "fn(a = lambda: 20)";
+        checkFinder(code, code.indexOf("lambda"), code.indexOf("20") + 2, true);
+    }
+
+    @Test
+    public void funcDefTest01() throws Exception {
+        String code = "def fn (filter = lambda x: x > 4): pass";
+        checkFinder(code, code.indexOf("lambda"), code.indexOf("4") + 1, true);
+    }
+
+    @Test
+    public void with01() throws Exception {
+        String code = "with lambda: fn() as michael: pass";
+        checkFinder(code, code.indexOf("lambda"), code.indexOf("fn()") + 4, true);
+    }
+
     private void checkFinder(String code, int startOffset, int endOffset, boolean isLambda) {
         SSTNode result = findNodeWithScope(code, startOffset, endOffset);
         Assert.assertNotNull("No node with scope was found ", result);

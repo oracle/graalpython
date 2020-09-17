@@ -59,7 +59,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [44,77]`for dir in dirs for ...`
+                          GeneratorExpressionNode SourceSection: [28,77]`join(dir, file) for ...`
                             Name: <genexpr>
                             FrameDescriptor: 4 slots [file, dir, files, <return_val>]
                             Enclosing
@@ -68,7 +68,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                             For Nodes: 2
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [44,77]`for dir in dirs for ...`
+                            FunctionRootNode SourceSection: [28,77]`join(dir, file) for ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -78,11 +78,11 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                               ExecutionSlots:
                                 FreeVarsSlots: files, 
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [44,77]`for dir in dirs for ...`
-                                GeneratorReturnTargetNode SourceSection: [44,77]`for dir in dirs for ...`
+                              InnerRootNode SourceSection: [28,77]`join(dir, file) for ...`
+                                GeneratorReturnTargetNode SourceSection: [28,77]`join(dir, file) for ...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [44,77]`for dir in dirs for ...`
-                                    GeneratorForNode SourceSection: [60,77]`for file in files`
+                                  GeneratorForNode SourceSection: [28,77]`join(dir, file) for ...`
+                                    GeneratorForNode SourceSection: [55,77]`dirs for file in fil...`
                                       ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
                                         YieldNode SourceSection: [28,43]`join(dir, file)`
                                           flagSlot: 0

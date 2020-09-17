@@ -919,7 +919,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            GeneratorExpressionNode SourceSection: [2180,2210]`for elem in islice(x...`
+                                            GeneratorExpressionNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                               Name: <genexpr>
                                               FrameDescriptor: 4 slots [elem, newlevel, repr1, <return_val>]
                                               Enclosing
@@ -928,7 +928,7 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                               For Nodes: 1
                                               Block Nodes: 0
                                               Is Enclosing Frame Generator: false
-                                              FunctionRootNode SourceSection: [2180,2210]`for elem in islice(x...`
+                                              FunctionRootNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                                 Name: <genexpr>
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                 CelVars: None
@@ -938,10 +938,10 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
                                                 ExecutionSlots:
                                                   FreeVarsSlots: newlevel, , repr1, 
                                                   CellVarsSlots: None
-                                                InnerRootNode SourceSection: [2180,2210]`for elem in islice(x...`
-                                                  GeneratorReturnTargetNode SourceSection: [2180,2210]`for elem in islice(x...`
+                                                InnerRootNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
+                                                  GeneratorReturnTargetNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                                     flagSlot: 1
-                                                    GeneratorForNode SourceSection: [2180,2210]`for elem in islice(x...`
+                                                    GeneratorForNode SourceSection: [2158,2210]`repr1(elem, newlevel...`
                                                       ExpressionStatementNode SourceSection: [2158,2179]`repr1(elem, newlevel...`
                                                         YieldNode SourceSection: [2158,2179]`repr1(elem, newlevel...`
                                                           flagSlot: 0

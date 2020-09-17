@@ -4337,7 +4337,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [14096,14100]`', '`
-                            GeneratorExpressionNode SourceSection: [14119,14142]`for name in field_na...`
+                            GeneratorExpressionNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
                               Name: <genexpr>
                               FrameDescriptor: 2 slots [name, <return_val>]
                               Enclosing
@@ -4346,7 +4346,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               For Nodes: 1
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
-                              FunctionRootNode SourceSection: [14119,14142]`for name in field_na...`
+                              FunctionRootNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
                                 Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
@@ -4356,10 +4356,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [14119,14142]`for name in field_na...`
-                                  GeneratorReturnTargetNode SourceSection: [14119,14142]`for name in field_na...`
+                                InnerRootNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
+                                  GeneratorReturnTargetNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
                                     flagSlot: 1
-                                    GeneratorForNode SourceSection: [14119,14142]`for name in field_na...`
+                                    GeneratorForNode SourceSection: [14106,14142]`f'{name}=%r' for nam...`
                                       ExpressionStatementNode SourceSection: [14106,14118]`f'{name}=%r'`
                                         YieldNode SourceSection: [14106,14118]`f'{name}=%r'`
                                           flagSlot: 0
@@ -8178,7 +8178,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            GeneratorExpressionNode SourceSection: [30351,30399]`for elem, count in s...`
+                                            GeneratorExpressionNode SourceSection: [30346,30399]`elem for elem, count...`
                                               Name: <genexpr>
                                               FrameDescriptor: 5 slots [elem, count, <>temp2, <>temp3, <return_val>]
                                               Enclosing
@@ -8187,7 +8187,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               For Nodes: 1
                                               Block Nodes: 0
                                               Is Enclosing Frame Generator: false
-                                              FunctionRootNode SourceSection: [30351,30399]`for elem, count in s...`
+                                              FunctionRootNode SourceSection: [30346,30399]`elem for elem, count...`
                                                 Name: <genexpr>
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                 CelVars: None
@@ -8197,10 +8197,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ExecutionSlots:
                                                   FreeVarsSlots: None
                                                   CellVarsSlots: None
-                                                InnerRootNode SourceSection: [30351,30399]`for elem, count in s...`
-                                                  GeneratorReturnTargetNode SourceSection: [30351,30399]`for elem, count in s...`
+                                                InnerRootNode SourceSection: [30346,30399]`elem for elem, count...`
+                                                  GeneratorReturnTargetNode SourceSection: [30346,30399]`elem for elem, count...`
                                                     flagSlot: 3
-                                                    GeneratorForNode SourceSection: [30351,30399]`for elem, count in s...`
+                                                    GeneratorForNode SourceSection: [30346,30399]`elem for elem, count...`
                                                       GeneratorIfNode SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                         YesNodeGen SourceSection: None

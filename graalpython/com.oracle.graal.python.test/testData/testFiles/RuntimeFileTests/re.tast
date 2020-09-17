@@ -1303,7 +1303,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
           ReadGlobalOrBuiltinNodeGen SourceSection: None
             Identifier: dict
             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-          GeneratorExpressionNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
+          GeneratorExpressionNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
             Name: <genexpr>
             FrameDescriptor: 2 slots [i, <return_val>]
             Enclosing
@@ -1312,7 +1312,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
             For Nodes: 1
             Block Nodes: 0
             Is Enclosing Frame Generator: false
-            FunctionRootNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
+            FunctionRootNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
               Name: <genexpr>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: None
@@ -1322,10 +1322,10 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
-              InnerRootNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
-                GeneratorReturnTargetNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
+              InnerRootNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
+                GeneratorReturnTargetNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
                   flagSlot: 1
-                  GeneratorForNode SourceSection: [11478,11520]`for i in b'()[]{}?*+...`
+                  GeneratorForNode SourceSection: [11461,11520]`i: '\\' + chr(i) for...`
                     ExpressionStatementNode SourceSection: None
                       YieldNode SourceSection: None
                         flagSlot: 0

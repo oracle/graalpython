@@ -435,7 +435,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GeneratorExpressionNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
+                                        GeneratorExpressionNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [filename, dir, files, os, <return_val>]
                                           Enclosing
@@ -444,7 +444,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                           For Nodes: 2
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
+                                          FunctionRootNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -454,11 +454,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             ExecutionSlots:
                                               FreeVarsSlots: files, , os, 
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
-                                              GeneratorReturnTargetNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
+                                            InnerRootNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
+                                              GeneratorReturnTargetNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [1177,1242]`for dir in dirs↵    ...`
-                                                  GeneratorForNode SourceSection: [1221,1242]`for filename in file...`
+                                                GeneratorForNode SourceSection: [1121,1242]`os.path.join(dir, fi...`
+                                                  GeneratorForNode SourceSection: [1188,1242]`dirs↵               ...`
                                                     ExpressionStatementNode SourceSection: [1121,1148]`os.path.join(dir, fi...`
                                                       YieldNode SourceSection: [1121,1148]`os.path.join(dir, fi...`
                                                         flagSlot: 0

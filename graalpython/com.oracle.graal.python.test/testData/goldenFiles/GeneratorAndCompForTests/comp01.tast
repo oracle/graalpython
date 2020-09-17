@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: dict
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-            GeneratorExpressionNode SourceSection: [64,93]`for t in something f...`
+            GeneratorExpressionNode SourceSection: [10,93]`i: tuple(j for j in ...`
               Name: <genexpr>
               FrameDescriptor: 3 slots [i, t, <return_val>]
               Enclosing
@@ -25,7 +25,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
               For Nodes: 2
               Block Nodes: 0
               Is Enclosing Frame Generator: false
-              FunctionRootNode SourceSection: [64,93]`for t in something f...`
+              FunctionRootNode SourceSection: [10,93]`i: tuple(j for j in ...`
                 Name: <genexpr>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: i
@@ -35,11 +35,11 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: i, 
-                InnerRootNode SourceSection: [64,93]`for t in something f...`
-                  GeneratorReturnTargetNode SourceSection: [64,93]`for t in something f...`
+                InnerRootNode SourceSection: [10,93]`i: tuple(j for j in ...`
+                  GeneratorReturnTargetNode SourceSection: [10,93]`i: tuple(j for j in ...`
                     flagSlot: 1
-                    GeneratorForNode SourceSection: [64,93]`for t in something f...`
-                      GeneratorForNode SourceSection: [83,93]`for i in t`
+                    GeneratorForNode SourceSection: [10,93]`i: tuple(j for j in ...`
+                      GeneratorForNode SourceSection: [73,93]`something for i in t...`
                         ExpressionStatementNode SourceSection: None
                           YieldNode SourceSection: None
                             flagSlot: 0
@@ -54,7 +54,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [13,18]`tuple`
                                   Identifier: tuple
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                GeneratorExpressionNode SourceSection: [21,41]`for j in t if i != j...`
+                                GeneratorExpressionNode SourceSection: [19,41]`j for j in t if i !=...`
                                   Name: <genexpr>
                                   FrameDescriptor: 3 slots [j, i, <return_val>]
                                   Enclosing
@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                   For Nodes: 1
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: true
-                                  FunctionRootNode SourceSection: [21,41]`for j in t if i != j...`
+                                  FunctionRootNode SourceSection: [19,41]`j for j in t if i !=...`
                                     Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
@@ -73,10 +73,10 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                     ExecutionSlots:
                                       FreeVarsSlots: i, 
                                       CellVarsSlots: None
-                                    InnerRootNode SourceSection: [21,41]`for j in t if i != j...`
-                                      GeneratorReturnTargetNode SourceSection: [21,41]`for j in t if i != j...`
+                                    InnerRootNode SourceSection: [19,41]`j for j in t if i !=...`
+                                      GeneratorReturnTargetNode SourceSection: [19,41]`j for j in t if i !=...`
                                         flagSlot: 3
-                                        GeneratorForNode SourceSection: [21,41]`for j in t if i != j...`
+                                        GeneratorForNode SourceSection: [19,41]`j for j in t if i !=...`
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None

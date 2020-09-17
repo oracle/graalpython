@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [6,18]`for x in seq`
+      GeneratorExpressionNode SourceSection: [1,18]`f(x) for x in seq`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [6,18]`for x in seq`
+        FunctionRootNode SourceSection: [1,18]`f(x) for x in seq`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [6,18]`for x in seq`
-            GeneratorReturnTargetNode SourceSection: [6,18]`for x in seq`
+          InnerRootNode SourceSection: [1,18]`f(x) for x in seq`
+            GeneratorReturnTargetNode SourceSection: [1,18]`f(x) for x in seq`
               flagSlot: 1
-              GeneratorForNode SourceSection: [6,18]`for x in seq`
+              GeneratorForNode SourceSection: [1,18]`f(x) for x in seq`
                 ExpressionStatementNode SourceSection: [1,5]`f(x)`
                   YieldNode SourceSection: [1,5]`f(x)`
                     flagSlot: 0

@@ -3871,7 +3871,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
               ReadGlobalOrBuiltinNodeGen SourceSection: None
                 Identifier: list
                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-              GeneratorExpressionNode SourceSection: [9882,9916]`for n in globals() i...`
+              GeneratorExpressionNode SourceSection: [9880,9916]`n for n in globals()...`
                 Name: <genexpr>
                 FrameDescriptor: 2 slots [n, <return_val>]
                 Enclosing
@@ -3880,7 +3880,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                 For Nodes: 1
                 Block Nodes: 0
                 Is Enclosing Frame Generator: false
-                FunctionRootNode SourceSection: [9882,9916]`for n in globals() i...`
+                FunctionRootNode SourceSection: [9880,9916]`n for n in globals()...`
                   Name: <genexpr>
                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                   CelVars: None
@@ -3890,10 +3890,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   ExecutionSlots:
                     FreeVarsSlots: None
                     CellVarsSlots: None
-                  InnerRootNode SourceSection: [9882,9916]`for n in globals() i...`
-                    GeneratorReturnTargetNode SourceSection: [9882,9916]`for n in globals() i...`
+                  InnerRootNode SourceSection: [9880,9916]`n for n in globals()...`
+                    GeneratorReturnTargetNode SourceSection: [9880,9916]`n for n in globals()...`
                       flagSlot: 3
-                      GeneratorForNode SourceSection: [9882,9916]`for n in globals() i...`
+                      GeneratorForNode SourceSection: [9880,9916]`n for n in globals()...`
                         GeneratorIfNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
                           YesNodeGen SourceSection: None

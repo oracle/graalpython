@@ -5343,7 +5343,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [12386,12421]`for value in other i...`
+                                          GeneratorExpressionNode SourceSection: [12380,12421]`value for value in o...`
                                             Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, self, <return_val>]
                                             Enclosing
@@ -5352,7 +5352,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [12386,12421]`for value in other i...`
+                                            FunctionRootNode SourceSection: [12380,12421]`value for value in o...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -5362,10 +5362,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExecutionSlots:
                                                 FreeVarsSlots: self, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [12386,12421]`for value in other i...`
-                                                GeneratorReturnTargetNode SourceSection: [12386,12421]`for value in other i...`
+                                              InnerRootNode SourceSection: [12380,12421]`value for value in o...`
+                                                GeneratorReturnTargetNode SourceSection: [12380,12421]`value for value in o...`
                                                   flagSlot: 3
-                                                  GeneratorForNode SourceSection: [12386,12421]`for value in other i...`
+                                                  GeneratorForNode SourceSection: [12380,12421]`value for value in o...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -5593,7 +5593,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       Identifier: chain
                                       WriteLocalFrameSlotNodeGen SourceSection: None
                                         Frame: [2,chain,Illegal]
-                                      GeneratorExpressionNode SourceSection: [12775,12808]`for s in (self, othe...`
+                                      GeneratorExpressionNode SourceSection: [12773,12808]`e for s in (self, ot...`
                                         Name: <genexpr>
                                         FrameDescriptor: 3 slots [e, s, <return_val>]
                                         Enclosing
@@ -5602,7 +5602,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         For Nodes: 2
                                         Block Nodes: 0
                                         Is Enclosing Frame Generator: false
-                                        FunctionRootNode SourceSection: [12775,12808]`for s in (self, othe...`
+                                        FunctionRootNode SourceSection: [12773,12808]`e for s in (self, ot...`
                                           Name: <genexpr>
                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                           CelVars: None
@@ -5612,11 +5612,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ExecutionSlots:
                                             FreeVarsSlots: None
                                             CellVarsSlots: None
-                                          InnerRootNode SourceSection: [12775,12808]`for s in (self, othe...`
-                                            GeneratorReturnTargetNode SourceSection: [12775,12808]`for s in (self, othe...`
+                                          InnerRootNode SourceSection: [12773,12808]`e for s in (self, ot...`
+                                            GeneratorReturnTargetNode SourceSection: [12773,12808]`e for s in (self, ot...`
                                               flagSlot: 1
-                                              GeneratorForNode SourceSection: [12775,12808]`for s in (self, othe...`
-                                                GeneratorForNode SourceSection: [12798,12808]`for e in s`
+                                              GeneratorForNode SourceSection: [12773,12808]`e for s in (self, ot...`
+                                                GeneratorForNode SourceSection: [12784,12808]`(self, other) for e ...`
                                                   ExpressionStatementNode SourceSection: [12773,12774]`e`
                                                     YieldNode SourceSection: [12773,12774]`e`
                                                       flagSlot: 0
@@ -5814,7 +5814,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadLocalVariableNode SourceSection: [13092,13096]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [13118,13192]`for value in self↵  ...`
+                                          GeneratorExpressionNode SourceSection: [13112,13192]`value for value in s...`
                                             Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, other, <return_val>]
                                             Enclosing
@@ -5823,7 +5823,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [13118,13192]`for value in self↵  ...`
+                                            FunctionRootNode SourceSection: [13112,13192]`value for value in s...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -5833,10 +5833,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExecutionSlots:
                                                 FreeVarsSlots: other, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [13118,13192]`for value in self↵  ...`
-                                                GeneratorReturnTargetNode SourceSection: [13118,13192]`for value in self↵  ...`
+                                              InnerRootNode SourceSection: [13112,13192]`value for value in s...`
+                                                GeneratorReturnTargetNode SourceSection: [13112,13192]`value for value in s...`
                                                   flagSlot: 3
-                                                  GeneratorForNode SourceSection: [13118,13192]`for value in self↵  ...`
+                                                  GeneratorForNode SourceSection: [13112,13192]`value for value in s...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -6007,7 +6007,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 Frame: [0,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ReadFromCellNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [13439,13513]`for value in other↵ ...`
+                                          GeneratorExpressionNode SourceSection: [13433,13513]`value for value in o...`
                                             Name: <genexpr>
                                             FrameDescriptor: 3 slots [value, self, <return_val>]
                                             Enclosing
@@ -6016,7 +6016,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [13439,13513]`for value in other↵ ...`
+                                            FunctionRootNode SourceSection: [13433,13513]`value for value in o...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -6026,10 +6026,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExecutionSlots:
                                                 FreeVarsSlots: self, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [13439,13513]`for value in other↵ ...`
-                                                GeneratorReturnTargetNode SourceSection: [13439,13513]`for value in other↵ ...`
+                                              InnerRootNode SourceSection: [13433,13513]`value for value in o...`
+                                                GeneratorReturnTargetNode SourceSection: [13433,13513]`value for value in o...`
                                                   flagSlot: 3
-                                                  GeneratorForNode SourceSection: [13439,13513]`for value in other↵ ...`
+                                                  GeneratorForNode SourceSection: [13433,13513]`value for value in o...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -10629,7 +10629,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [24221,24224]`sum`
                                             Identifier: sum
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [24227,24268]`for v in self if v i...`
+                                          GeneratorExpressionNode SourceSection: [24225,24268]`1 for v in self if v...`
                                             Name: <genexpr>
                                             FrameDescriptor: 3 slots [v, value, <return_val>]
                                             Enclosing
@@ -10638,7 +10638,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [24227,24268]`for v in self if v i...`
+                                            FunctionRootNode SourceSection: [24225,24268]`1 for v in self if v...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -10648,10 +10648,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ExecutionSlots:
                                                 FreeVarsSlots: value, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [24227,24268]`for v in self if v i...`
-                                                GeneratorReturnTargetNode SourceSection: [24227,24268]`for v in self if v i...`
+                                              InnerRootNode SourceSection: [24225,24268]`1 for v in self if v...`
+                                                GeneratorReturnTargetNode SourceSection: [24225,24268]`1 for v in self if v...`
                                                   flagSlot: 3
-                                                  GeneratorForNode SourceSection: [24227,24268]`for v in self if v i...`
+                                                  GeneratorForNode SourceSection: [24225,24268]`1 for v in self if v...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
