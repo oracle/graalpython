@@ -249,3 +249,147 @@ PRIMITIVE_ARRAY_TO_NATIVE(int, int32_t, i32, polyglot_as_i32);
 PRIMITIVE_ARRAY_TO_NATIVE(long, int64_t, i64, polyglot_as_i64);
 PRIMITIVE_ARRAY_TO_NATIVE(double, double, double, polyglot_as_double);
 PRIMITIVE_ARRAY_TO_NATIVE(pointer, VoidPtr, VoidPtr, (VoidPtr));
+
+/*****************************************************************************/
+/* getter for reading native members                                         */
+/*****************************************************************************/
+
+#define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
+
+int graal_hpy_read_s(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, short);
+}
+
+int graal_hpy_read_i(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, int);
+}
+
+long graal_hpy_read_l(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, long);
+}
+
+double graal_hpy_read_f(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, float);
+}
+
+double graal_hpy_read_d(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, double);
+}
+
+void* graal_hpy_read_string(void* object, HPy_ssize_t offset) {
+    return polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
+}
+
+void* graal_hpy_read_string_in_place(void* object, HPy_ssize_t offset) {
+	char *addr = (char*) (((char*)object) + offset);
+    return polyglot_from_string(addr, "utf-8");
+}
+
+void* graal_hpy_read_HPy(void* object, HPy_ssize_t offset) {
+    return UNWRAP(ReadMember(object, offset, HPy));
+}
+
+char graal_hpy_read_c(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, char);
+}
+
+int graal_hpy_read_uc(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned char);
+}
+
+int graal_hpy_read_us(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned short);
+}
+
+long graal_hpy_read_ui(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned int);
+}
+
+unsigned long graal_hpy_read_ul(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned long);
+}
+
+long long graal_hpy_read_ll(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, long long);
+}
+
+unsigned long long graal_hpy_read_ull(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, unsigned long long);
+}
+
+HPy_ssize_t graal_hpy_read_HPy_ssize_t(void* object, HPy_ssize_t offset) {
+    return ReadMember(object, offset, HPy_ssize_t);
+}
+
+#undef ReadMember
+
+/*****************************************************************************/
+/* setter for writing native members                                         */
+/*****************************************************************************/
+
+#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (value)
+
+void graal_hpy_write_s(void* object, HPy_ssize_t offset, short value) {
+    WriteMember(object, offset, value, short);
+}
+
+void graal_hpy_write_i(void* object, HPy_ssize_t offset, int value) {
+    WriteMember(object, offset, (value), int);
+}
+
+void graal_hpy_write_l(void* object, HPy_ssize_t offset, long value) {
+    WriteMember(object, offset, (value), long);
+}
+
+void graal_hpy_write_f(void* object, HPy_ssize_t offset, float value) {
+    WriteMember(object, offset, (value), float);
+}
+
+void graal_hpy_write_d(void* object, HPy_ssize_t offset, double value) {
+    WriteMember(object, offset, (value), double);
+}
+
+void graal_hpy_write_string(void* object, HPy_ssize_t offset, char* value) {
+    WriteMember(object, offset, value, char*);
+}
+
+void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
+    WriteMember(object, offset, WRAP(value), HPy);
+}
+
+void graal_hpy_write_c(void* object, HPy_ssize_t offset, char value) {
+    WriteMember(object, offset, value, char);
+}
+
+void graal_hpy_write_uc(void* object, HPy_ssize_t offset, unsigned char value) {
+    WriteMember(object, offset, value, unsigned char);
+}
+
+void graal_hpy_write_us(void* object, HPy_ssize_t offset, unsigned short value) {
+    WriteMember(object, offset, value, unsigned short);
+}
+
+void graal_hpy_write_ui(void* object, HPy_ssize_t offset, unsigned int value) {
+    WriteMember(object, offset, value, unsigned int);
+}
+
+void graal_hpy_write_ul(void* object, HPy_ssize_t offset, unsigned long value) {
+    WriteMember(object, offset, value, unsigned long);
+}
+
+void graal_hpy_write_ll(void* object, HPy_ssize_t offset, long long value) {
+    WriteMember(object, offset, value, long long);
+}
+
+void graal_hpy_write_ull(void* object, HPy_ssize_t offset, unsigned long long value) {
+    WriteMember(object, offset, value, unsigned long long);
+}
+
+void graal_hpy_write_HPy_ssize_t(void* object, HPy_ssize_t offset, HPy_ssize_t value) {
+    WriteMember(object, offset, value, HPy_ssize_t);
+}
+
+#undef WriteMember
+
+#undef WRAP
+#undef UNWRAP

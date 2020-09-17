@@ -65,4 +65,39 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY = "graal_hpy_from_HPyType_SpecParam_array";
     public static final String GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT = "graal_hpy_HPyType_SpecParam_get_object";
 
+    /* C functions for reading native members by offset */
+    public static final String GRAAL_HPY_READ_S = "graal_hpy_read_s";
+    public static final String GRAAL_HPY_READ_I = "graal_hpy_read_i";
+    public static final String GRAAL_HPY_READ_L = "graal_hpy_read_l";
+    public static final String GRAAL_HPY_READ_F = "graal_hpy_read_f";
+    public static final String GRAAL_HPY_READ_D = "graal_hpy_read_d";
+    public static final String GRAAL_HPY_READ_STRING = "graal_hpy_read_string";
+    public static final String GRAAL_HPY_READ_STRING_IN_PLACE = "graal_hpy_read_string_in_place";
+    public static final String GRAAL_HPY_READ_HPY = "graal_hpy_read_HPy";
+    public static final String GRAAL_HPY_READ_C = "graal_hpy_read_c";
+    public static final String GRAAL_HPY_READ_UC = "graal_hpy_read_uc";
+    public static final String GRAAL_HPY_READ_US = "graal_hpy_read_us";
+    public static final String GRAAL_HPY_READ_UI = "graal_hpy_read_ui";
+    public static final String GRAAL_HPY_READ_UL = "graal_hpy_read_ul";
+    public static final String GRAAL_HPY_READ_LL = "graal_hpy_read_ll";
+    public static final String GRAAL_HPY_READ_ULL = "graal_hpy_read_ull";
+    public static final String GRAAL_HPY_READ_HPY_SSIZE_T = "graal_hpy_read_HPy_ssize_t";
+
+    /* C functions for writing native members by offset */
+    public static final String GRAAL_HPY_WRITE_S = "graal_hpy_write_s";
+    public static final String GRAAL_HPY_WRITE_I = "graal_hpy_write_i";
+    public static final String GRAAL_HPY_WRITE_L = "graal_hpy_write_l";
+    public static final String GRAAL_HPY_WRITE_F = "graal_hpy_write_f";
+    public static final String GRAAL_HPY_WRITE_D = "graal_hpy_write_d";
+    public static final String GRAAL_HPY_WRITE_STRING = "graal_hpy_write_string";
+    public static final String GRAAL_HPY_WRITE_HPY = "graal_hpy_write_HPy";
+    public static final String GRAAL_HPY_WRITE_C = "graal_hpy_write_c";
+    public static final String GRAAL_HPY_WRITE_UC = "graal_hpy_write_uc";
+    public static final String GRAAL_HPY_WRITE_US = "graal_hpy_write_us";
+    public static final String GRAAL_HPY_WRITE_UI = "graal_hpy_write_ui";
+    public static final String GRAAL_HPY_WRITE_UL = "graal_hpy_write_ul";
+    public static final String GRAAL_HPY_WRITE_LL = "graal_hpy_write_ll";
+    public static final String GRAAL_HPY_WRITE_ULL = "graal_hpy_write_ull";
+    public static final String GRAAL_HPY_WRITE_HPY_SSIZE_T = "graal_hpy_write_HPy_ssize_t";
+
 }

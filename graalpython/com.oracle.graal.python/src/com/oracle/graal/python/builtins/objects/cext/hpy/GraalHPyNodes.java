@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethORoot;
@@ -86,7 +85,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -95,6 +93,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -491,6 +490,105 @@ public class GraalHPyNodes {
         }
     }
 
+    /**
+     * A simple helper class to return the property and its name separately.
+     */
+    @ValueType
+    static final class HPyProperty {
+        final String name;
+        final Object propertyObject;
+
+        HPyProperty(String name, Object propertyObject) {
+            this.name = name;
+            this.propertyObject = propertyObject;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HPyAddMemberNode extends PNodeWithContext {
+
+        public abstract HPyProperty execute(GraalHPyContext context, Object memberDef);
+
+        /**
+         * <pre>
+         * typedef struct {
+         *     const char *name;
+         *     HPyMember_FieldType type;
+         *     HPy_ssize_t offset;
+         *     int readonly;
+         *     const char *doc;
+         * } HPyMember;
+         * </pre>
+         */
+        @Specialization(limit = "1")
+        static HPyProperty doIt(GraalHPyContext context, Object memberDef,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedLibrary("memberDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary valueLib,
+                        @Cached PCallHPyFunction callGetNameNode,
+                        @Cached PCallHPyFunction callGetDocNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CastToJavaIntLossyNode castToJavaIntNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                        @Cached BranchProfile profile,
+                        @Cached ReadAttributeFromObjectNode readAttributeNode,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached CallNode callPropertyClassNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert interopLibrary.hasMembers(memberDef);
+            assert interopLibrary.isMemberReadable(memberDef, "name");
+            assert interopLibrary.isMemberReadable(memberDef, "type");
+            assert interopLibrary.isMemberReadable(memberDef, "offset");
+            assert interopLibrary.isMemberReadable(memberDef, "readonly");
+            assert interopLibrary.isMemberReadable(memberDef, "doc");
+
+            try {
+                String name;
+                try {
+                    name = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+                }
+
+                // note: 'doc' may be NULL; in this case, we would store 'None'
+                Object memberDoc = PNone.NONE;
+                Object doc = interopLibrary.readMember(memberDef, "doc");
+                if (!valueLib.isNull(doc)) {
+                    memberDoc = fromCharPointerNode.execute(doc);
+                }
+
+                boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
+                int type = valueLib.asInt(interopLibrary.readMember(memberDef, "type"));
+                int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
+
+                PBuiltinFunction getterObject = GraalHPyMemberAccessNodes.ReadMemberNode.createBuiltinFunction(language, name, GraalHPyMemberAccessNodes.getAccessorName(type), offset,
+                                GraalHPyMemberAccessNodes.getConverterNode(type));
+
+                Object setterObject = PNone.NONE;
+                if (!readOnly) {
+                    // TODO: setup setter
+                }
+
+                // read class 'property' from 'builtins/property.py'
+                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
+                Object propertyObject = callPropertyClassNode.execute(property, new Object[-1], new PKeyword[]{
+                                new PKeyword("fget", getterObject),
+                                new PKeyword("fset", setterObject),
+                                new PKeyword("doc", memberDoc)
+                });
+
+                return new HPyProperty(name, propertyObject);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
+            }
+        }
+
+    }
+
     @GenerateUncached
     public abstract static class HPyAsContextNode extends PNodeWithContext {
 
@@ -618,6 +716,73 @@ public class GraalHPyNodes {
         static Object doObject(GraalHPyContext hpyContext, Object object,
                         @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) {
             return ensureHandleNode.execute(hpyContext, object).getDelegate();
+        }
+    }
+
+    /**
+     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
+     * appropriate Python value considering the native value as unsigned. For example, a negative
+     * {@code int} value will be converted to a positive {@code long} value.
+     */
+    @GenerateUncached
+    public abstract static class HPyUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
+
+        @Specialization(guards = "n >= 0")
+        static int doUnsignedIntPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
+            return n;
+        }
+
+        @Specialization(replaces = "doUnsignedIntPositive")
+        static long doUnsignedInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
+            if (n < 0) {
+                return ((long) n) & 0xffffffffL;
+            }
+            return n;
+        }
+
+        @Specialization(guards = "n >= 0")
+        static long doUnsignedLongPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n) {
+            return n;
+        }
+
+        @Specialization(guards = "n < 0")
+        static Object doUnsignedLongNegative(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createInt(PInt.longToUnsignedBigInteger(n));
+        }
+
+        @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
+        static Object doGeneric(GraalHPyContext hpyContext, Object n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            if (n instanceof Integer) {
+                int i = (int) n;
+                if (i >= 0) {
+                    return i;
+                } else {
+                    return doUnsignedInt(hpyContext, i);
+                }
+            } else if (n instanceof Long) {
+                long l = (long) n;
+                if (l >= 0) {
+                    return l;
+                } else {
+                    return doUnsignedLongNegative(hpyContext, l, factory);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * A special and simple node for converting everything to {@code None}. This is needed for
+     * reading members of type {@code HPyMember_None}.
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNone extends CExtToJavaNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object doGeneric(GraalHPyContext hpyContext, Object value) {
+            return PNone.NONE;
         }
     }
 
@@ -783,6 +948,8 @@ public class GraalHPyNodes {
                         @Cached CallNode callTypeNewNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached HPyAddFunctionNode addFunctionNode,
+                        @Cached HPyAddMemberNode addMemberNode,
+                        @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
             try {
@@ -808,7 +975,8 @@ public class GraalHPyNodes {
                         case GraalHPyDef.HPY_DEF_KIND_SLOT:
                             // TODO(fa): add slots
                         case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                            // TODO(fa): add members
+                            HPyProperty property = addMemberNode.execute(context, moduleDefine);
+                            dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
                         case GraalHPyDef.HPY_DEF_KIND_GETSET:
                             // TODO(fa): add get/set descriptors
                             break;
@@ -824,7 +992,7 @@ public class GraalHPyNodes {
 
                 PTuple bases;
                 try {
-                    bases = extractBases(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, HPyAsPythonObjectNodeGen.getUncached(), factory);
+                    bases = extractBases(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode, factory);
                 } catch (CannotCastException | InteropException e) {
                     throw raiseNode.raise(SystemError, "failed to extract bases from type spec params for type %s", typeName);
                 }
