@@ -276,15 +276,19 @@ def displayhook(value):
     builtins._ = None
     text = repr(value)
     try:
-        stdout.write(text)
+        local_stdout = stdout
+    except NameError as e:
+        raise RuntimeError("lost sys.stdout") from e
+    try:
+        local_stdout.write(text)
     except UnicodeEncodeError:
-        bytes = text.encode(stdout.encoding, 'backslashreplace')
-        if hasattr(stdout, 'buffer'):
-            stdout.buffer.write(bytes)
+        bytes = text.encode(local_stdout.encoding, 'backslashreplace')
+        if hasattr(local_stdout, 'buffer'):
+            local_stdout.buffer.write(bytes)
         else:
-            text = bytes.decode(stdout.encoding, 'strict')
-            stdout.write(text)
-    stdout.write("\n")
+            text = bytes.decode(local_stdout.encoding, 'strict')
+            local_stdout.write(text)
+    local_stdout.write("\n")
     builtins._ = value
 
 
