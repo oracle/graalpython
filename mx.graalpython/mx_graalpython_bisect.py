@@ -150,13 +150,14 @@ def bisect_benchmark(argv):
         args.enterprise = sec.getboolean('enterprise', False)
     else:
         parser = argparse.ArgumentParser()
-        parser.add_mutually_exclusive_group()
-        parser.add_argument('bad')
-        parser.add_argument('good')
-        parser.add_argument('build_command')
-        parser.add_argument('benchmark_command')
-        parser.add_argument('--benchmark-criterion', default='BEST')
-        parser.add_argument('--enterprise', action='store_true')
+        parser.add_argument('bad', help="Bad commit for bisection")
+        parser.add_argument('good', help="Good commit for bisection")
+        parser.add_argument('build_command', help="Command to run in order to build the configuration")
+        parser.add_argument('benchmark_command',
+                            help="Command to run in order to run the benchmark. Output needs to be in mx's format")
+        parser.add_argument('--benchmark-criterion', default='BEST',
+                            help="Which result parameter should be used for comparisons")
+        parser.add_argument('--enterprise', action='store_true', help="Whether to checkout graal-enterprise")
         args = parser.parse_args(argv)
 
     primary_suite = mx.primary_suite()
