@@ -200,12 +200,30 @@ def make_excepthook():
             print(msg, file=stderr, end="")
             return
         try:
+            # CPython's C traceback printer diverges from traceback.print_exception in some details marked as (*)
+            import sys
             import traceback
-            lines = traceback.format_exception(typ, value, tb)
-            # CPython's C traceback printer diverges from traceback.print_exception in this small detail.
-            # We'd like to contribute to CPython to fix the divergence, but for now we do just
-            # a string substitution to pass the tests
+            no_traceback = False
+            limit = getattr(sys, 'tracebacklimit', None)
+            if isinstance(limit, int):
+                if limit <= 0:
+                    # (*) the C traceback printer does nothing if the limit is <= 0,
+                    # but the exception message is still printed
+                    limit = 0
+                    no_traceback = True
+                else:
+                    # (*) in the C printer limit is interpreted as -limit in format_exception
+                    limit = -limit
+            else:
+                # (*) non integer values of limit are interpreted as the default limit
+                limit = None
+            lines = traceback.format_exception(typ, value, tb, limit=limit)
+            # (*) if the exception cannot be printed, then the message differs between the C driver and format_exception
+            # We'd like to contribute to CPython to fix the divergence, but for now we do just a string substitution
+            # to pass the tests
             lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
+            if no_traceback:
+                lines = lines[-1:]
             for line in lines:
                 print(line, file=stderr, end="")
         except BaseException as exc:
