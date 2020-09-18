@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
       For Nodes: 1
       Block Nodes: 0
       Is Enclosing Frame Generator: false
-      FunctionRootNode SourceSection: [5,23]`for x in range(10)`
+      FunctionRootNode SourceSection: [1,23]`x*x for x in range(1...`
         Name: <genexpr>
         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
         CelVars: None
@@ -24,10 +24,10 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None
-        InnerRootNode SourceSection: [5,23]`for x in range(10)`
-          GeneratorReturnTargetNode SourceSection: [5,23]`for x in range(10)`
+        InnerRootNode SourceSection: [1,23]`x*x for x in range(1...`
+          GeneratorReturnTargetNode SourceSection: [1,23]`x*x for x in range(1...`
             flagSlot: 1
-            GeneratorForNode SourceSection: [5,23]`for x in range(10)`
+            GeneratorForNode SourceSection: [1,23]`x*x for x in range(1...`
               ExpressionStatementNode SourceSection: [1,4]`x*x`
                 YieldNode SourceSection: [1,4]`x*x`
                   flagSlot: 0

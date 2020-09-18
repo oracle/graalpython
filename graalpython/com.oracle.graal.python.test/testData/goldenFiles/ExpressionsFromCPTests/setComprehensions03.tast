@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: set
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [6,34]`for x in seq if cond...`
+      GeneratorExpressionNode SourceSection: [1,34]`f(x) for x in seq if...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [6,34]`for x in seq if cond...`
+        FunctionRootNode SourceSection: [1,34]`f(x) for x in seq if...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'setComprehensions03'> SourceSection: [0,35]`{f(x) 
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [6,34]`for x in seq if cond...`
-            GeneratorReturnTargetNode SourceSection: [6,34]`for x in seq if cond...`
+          InnerRootNode SourceSection: [1,34]`f(x) for x in seq if...`
+            GeneratorReturnTargetNode SourceSection: [1,34]`f(x) for x in seq if...`
               flagSlot: 3
-              GeneratorForNode SourceSection: [6,34]`for x in seq if cond...`
+              GeneratorForNode SourceSection: [1,34]`f(x) for x in seq if...`
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None

@@ -223,7 +223,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
           ReadGlobalOrBuiltinNodeGen SourceSection: None
             Identifier: dict
             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-          GeneratorExpressionNode SourceSection: [2238,2271]`for t in _equivalenc...`
+          GeneratorExpressionNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
             Name: <genexpr>
             FrameDescriptor: 3 slots [i, t, <return_val>]
             Enclosing
@@ -232,7 +232,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             For Nodes: 2
             Block Nodes: 0
             Is Enclosing Frame Generator: false
-            FunctionRootNode SourceSection: [2238,2271]`for t in _equivalenc...`
+            FunctionRootNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
               Name: <genexpr>
               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
               CelVars: i
@@ -242,11 +242,11 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: i, 
-              InnerRootNode SourceSection: [2238,2271]`for t in _equivalenc...`
-                GeneratorReturnTargetNode SourceSection: [2238,2271]`for t in _equivalenc...`
+              InnerRootNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
+                GeneratorReturnTargetNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
                   flagSlot: 1
-                  GeneratorForNode SourceSection: [2238,2271]`for t in _equivalenc...`
-                    GeneratorForNode SourceSection: [2261,2271]`for i in t`
+                  GeneratorForNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
+                    GeneratorForNode SourceSection: [2247,2271]`_equivalences for i ...`
                       ExpressionStatementNode SourceSection: None
                         YieldNode SourceSection: None
                           flagSlot: 0
@@ -261,7 +261,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2187,2192]`tuple`
                                 Identifier: tuple
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [2195,2215]`for j in t if i != j...`
+                              GeneratorExpressionNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                 Name: <genexpr>
                                 FrameDescriptor: 3 slots [j, i, <return_val>]
                                 Enclosing
@@ -270,7 +270,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 For Nodes: 1
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: true
-                                FunctionRootNode SourceSection: [2195,2215]`for j in t if i != j...`
+                                FunctionRootNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                   Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
@@ -280,10 +280,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ExecutionSlots:
                                     FreeVarsSlots: i, 
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [2195,2215]`for j in t if i != j...`
-                                    GeneratorReturnTargetNode SourceSection: [2195,2215]`for j in t if i != j...`
+                                  InnerRootNode SourceSection: [2193,2215]`j for j in t if i !=...`
+                                    GeneratorReturnTargetNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                       flagSlot: 3
-                                      GeneratorForNode SourceSection: [2195,2215]`for j in t if i != j...`
+                                      GeneratorForNode SourceSection: [2193,2215]`j for j in t if i !=...`
                                         GeneratorIfNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                           YesNodeGen SourceSection: None
@@ -4528,7 +4528,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [14905,14942]`for i in range(len(s...`
+                          GeneratorExpressionNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                             Name: <genexpr>
                             FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
                             Enclosing
@@ -4537,7 +4537,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [14905,14942]`for i in range(len(s...`
+                            FunctionRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -4547,10 +4547,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               ExecutionSlots:
                                 FreeVarsSlots: _CODEBITS, , _int, , s, 
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [14905,14942]`for i in range(len(s...`
-                                GeneratorReturnTargetNode SourceSection: [14905,14942]`for i in range(len(s...`
+                              InnerRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                                GeneratorReturnTargetNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [14905,14942]`for i in range(len(s...`
+                                  GeneratorForNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                                     ExpressionStatementNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
                                       YieldNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
                                         flagSlot: 0
@@ -7090,7 +7090,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             CallUnaryMethodNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               StringLiteralNode SourceSection: [20930,20934]`', '`
-                            GeneratorExpressionNode SourceSection: [20973,20986]`for x in code`
+                            GeneratorExpressionNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                               Name: <genexpr>
                               FrameDescriptor: 2 slots [x, <return_val>]
                               Enclosing
@@ -7099,7 +7099,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               For Nodes: 1
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
-                              FunctionRootNode SourceSection: [20973,20986]`for x in code`
+                              FunctionRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                                 Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
@@ -7109,10 +7109,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [20973,20986]`for x in code`
-                                  GeneratorReturnTargetNode SourceSection: [20973,20986]`for x in code`
+                                InnerRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                                  GeneratorReturnTargetNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                                     flagSlot: 1
-                                    GeneratorForNode SourceSection: [20973,20986]`for x in code`
+                                    GeneratorForNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                                       ExpressionStatementNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
                                         YieldNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
                                           flagSlot: 0
@@ -8299,7 +8299,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   GetCallAttributeNodeGen SourceSection: None
                                                                     BytesLiteralNode SourceSection: [23287,23290]`b''`
                                                                       PythonObjectFactoryNodeGen SourceSection: None
-                                                                  GeneratorExpressionNode SourceSection: [23377,23417]`for x in code[i: i +...`
+                                                                  GeneratorExpressionNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                     Name: <genexpr>
                                                                     FrameDescriptor: 3 slots [x, sys, <return_val>]
                                                                     Enclosing
@@ -8308,7 +8308,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     For Nodes: 1
                                                                     Block Nodes: 0
                                                                     Is Enclosing Frame Generator: false
-                                                                    FunctionRootNode SourceSection: [23377,23417]`for x in code[i: i +...`
+                                                                    FunctionRootNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                       Name: <genexpr>
                                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                       CelVars: None
@@ -8318,10 +8318,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       ExecutionSlots:
                                                                         FreeVarsSlots: sys, 
                                                                         CellVarsSlots: None
-                                                                      InnerRootNode SourceSection: [23377,23417]`for x in code[i: i +...`
-                                                                        GeneratorReturnTargetNode SourceSection: [23377,23417]`for x in code[i: i +...`
+                                                                      InnerRootNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
+                                                                        GeneratorReturnTargetNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                           flagSlot: 1
-                                                                          GeneratorForNode SourceSection: [23377,23417]`for x in code[i: i +...`
+                                                                          GeneratorForNode SourceSection: [23296,23417]`x.to_bytes(_sre.CODE...`
                                                                             ExpressionStatementNode SourceSection: [23296,23336]`x.to_bytes(_sre.CODE...`
                                                                               YieldNode SourceSection: [23296,23336]`x.to_bytes(_sre.CODE...`
                                                                                 flagSlot: 0
@@ -9512,7 +9512,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                       CallUnaryMethodNodeGen SourceSection: None
                                                                                       GetCallAttributeNodeGen SourceSection: None
                                                                                         StringLiteralNode SourceSection: [25707,25711]`', '`
-                                                                                      GeneratorExpressionNode SourceSection: [25729,25744]`for x in prefix`
+                                                                                      GeneratorExpressionNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
                                                                                         Name: <genexpr>
                                                                                         FrameDescriptor: 2 slots [x, <return_val>]
                                                                                         Enclosing
@@ -9521,7 +9521,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                         For Nodes: 1
                                                                                         Block Nodes: 0
                                                                                         Is Enclosing Frame Generator: false
-                                                                                        FunctionRootNode SourceSection: [25729,25744]`for x in prefix`
+                                                                                        FunctionRootNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
                                                                                           Name: <genexpr>
                                                                                           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                                           CelVars: None
@@ -9531,10 +9531,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                           ExecutionSlots:
                                                                                             FreeVarsSlots: None
                                                                                             CellVarsSlots: None
-                                                                                          InnerRootNode SourceSection: [25729,25744]`for x in prefix`
-                                                                                            GeneratorReturnTargetNode SourceSection: [25729,25744]`for x in prefix`
+                                                                                          InnerRootNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
+                                                                                            GeneratorReturnTargetNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
                                                                                               flagSlot: 1
-                                                                                              GeneratorForNode SourceSection: [25729,25744]`for x in prefix`
+                                                                                              GeneratorForNode SourceSection: [25717,25744]`'%#02x' % x for x in...`
                                                                                                 ExpressionStatementNode SourceSection: [25717,25728]`'%#02x' % x`
                                                                                                   YieldNode SourceSection: [25717,25728]`'%#02x' % x`
                                                                                                     flagSlot: 0

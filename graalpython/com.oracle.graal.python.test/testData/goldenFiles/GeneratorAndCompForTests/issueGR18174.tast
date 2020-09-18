@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [3,30]`for b in [a for a in...`
+      GeneratorExpressionNode SourceSection: [1,30]`b for b in [a for a ...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [b, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [3,30]`for b in [a for a in...`
+        FunctionRootNode SourceSection: [1,30]`b for b in [a for a ...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [3,30]`for b in [a for a in...`
-            GeneratorReturnTargetNode SourceSection: [3,30]`for b in [a for a in...`
+          InnerRootNode SourceSection: [1,30]`b for b in [a for a ...`
+            GeneratorReturnTargetNode SourceSection: [1,30]`b for b in [a for a ...`
               flagSlot: 1
-              GeneratorForNode SourceSection: [3,30]`for b in [a for a in...`
+              GeneratorForNode SourceSection: [1,30]`b for b in [a for a ...`
                 ExpressionStatementNode SourceSection: [1,2]`b`
                   YieldNode SourceSection: [1,2]`b`
                     flagSlot: 0
@@ -65,7 +65,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
             ReadGlobalOrBuiltinNodeGen SourceSection: None
               Identifier: list
               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-            GeneratorExpressionNode SourceSection: [15,29]`for a in (1,2)`
+            GeneratorExpressionNode SourceSection: [13,29]`a for a in (1,2)`
               Name: <genexpr>
               FrameDescriptor: 2 slots [a, <return_val>]
               Enclosing
@@ -74,7 +74,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
               For Nodes: 1
               Block Nodes: 0
               Is Enclosing Frame Generator: true
-              FunctionRootNode SourceSection: [15,29]`for a in (1,2)`
+              FunctionRootNode SourceSection: [13,29]`a for a in (1,2)`
                 Name: <genexpr>
                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                 CelVars: None
@@ -84,10 +84,10 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                 ExecutionSlots:
                   FreeVarsSlots: None
                   CellVarsSlots: None
-                InnerRootNode SourceSection: [15,29]`for a in (1,2)`
-                  GeneratorReturnTargetNode SourceSection: [15,29]`for a in (1,2)`
+                InnerRootNode SourceSection: [13,29]`a for a in (1,2)`
+                  GeneratorReturnTargetNode SourceSection: [13,29]`a for a in (1,2)`
                     flagSlot: 1
-                    GeneratorForNode SourceSection: [15,29]`for a in (1,2)`
+                    GeneratorForNode SourceSection: [13,29]`a for a in (1,2)`
                       ExpressionStatementNode SourceSection: [13,14]`a`
                         YieldNode SourceSection: [13,14]`a`
                           flagSlot: 0

@@ -41,8 +41,8 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                           ReadVariableFromFrameNodeGen SourceSection: None
                         IntegerLiteralNode SourceSection: [16,18]`10`
                           Value: 10
-                      ExpressionStatementNode SourceSection: [28,46]`for x in range(10)`
-                        GeneratorExpressionNode SourceSection: [28,46]`for x in range(10)`
+                      ExpressionStatementNode SourceSection: [22,46]`x + c for x in range...`
+                        GeneratorExpressionNode SourceSection: [22,46]`x + c for x in range...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [x, c, <return_val>]
                           Enclosing
@@ -51,7 +51,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [28,46]`for x in range(10)`
+                          FunctionRootNode SourceSection: [22,46]`x + c for x in range...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -61,10 +61,10 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,47]`def fn():↵  
                             ExecutionSlots:
                               FreeVarsSlots: c, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [28,46]`for x in range(10)`
-                              GeneratorReturnTargetNode SourceSection: [28,46]`for x in range(10)`
+                            InnerRootNode SourceSection: [22,46]`x + c for x in range...`
+                              GeneratorReturnTargetNode SourceSection: [22,46]`x + c for x in range...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [28,46]`for x in range(10)`
+                                GeneratorForNode SourceSection: [22,46]`x + c for x in range...`
                                   ExpressionStatementNode SourceSection: [22,27]`x + c`
                                     YieldNode SourceSection: [22,27]`x + c`
                                       flagSlot: 0

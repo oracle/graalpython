@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'genExpr'> SourceSection: [0,21]`(i for i in range(
       For Nodes: 1
       Block Nodes: 0
       Is Enclosing Frame Generator: false
-      FunctionRootNode SourceSection: [3,20]`for i in range(3)`
+      FunctionRootNode SourceSection: [1,20]`i for i in range(3)`
         Name: <genexpr>
         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
         CelVars: None
@@ -24,10 +24,10 @@ ModuleRootNode Name: <module 'genExpr'> SourceSection: [0,21]`(i for i in range(
         ExecutionSlots:
           FreeVarsSlots: None
           CellVarsSlots: None
-        InnerRootNode SourceSection: [3,20]`for i in range(3)`
-          GeneratorReturnTargetNode SourceSection: [3,20]`for i in range(3)`
+        InnerRootNode SourceSection: [1,20]`i for i in range(3)`
+          GeneratorReturnTargetNode SourceSection: [1,20]`i for i in range(3)`
             flagSlot: 1
-            GeneratorForNode SourceSection: [3,20]`for i in range(3)`
+            GeneratorForNode SourceSection: [1,20]`i for i in range(3)`
               ExpressionStatementNode SourceSection: [1,2]`i`
                 YieldNode SourceSection: [1,2]`i`
                   flagSlot: 0

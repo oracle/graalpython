@@ -1352,7 +1352,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [7409,7451]`for name in names if...`
+                        GeneratorExpressionNode SourceSection: [7404,7451]`name for name in nam...`
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [name, <return_val>]
                           Enclosing
@@ -1361,7 +1361,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [7409,7451]`for name in names if...`
+                          FunctionRootNode SourceSection: [7404,7451]`name for name in nam...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -1371,10 +1371,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [7409,7451]`for name in names if...`
-                              GeneratorReturnTargetNode SourceSection: [7409,7451]`for name in names if...`
+                            InnerRootNode SourceSection: [7404,7451]`name for name in nam...`
+                              GeneratorReturnTargetNode SourceSection: [7404,7451]`name for name in nam...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [7409,7451]`for name in names if...`
+                                GeneratorForNode SourceSection: [7404,7451]`name for name in nam...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -3556,7 +3556,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [16123,16293]`for conffile in (↵  ...`
+                        GeneratorExpressionNode SourceSection: [16114,16293]`conffile for conffil...`
                           Name: <genexpr>
                           FrameDescriptor: 2 slots [conffile, <return_val>]
                           Enclosing
@@ -3565,7 +3565,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [16123,16293]`for conffile in (↵  ...`
+                          FunctionRootNode SourceSection: [16114,16293]`conffile for conffil...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -3575,10 +3575,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [16123,16293]`for conffile in (↵  ...`
-                              GeneratorReturnTargetNode SourceSection: [16123,16293]`for conffile in (↵  ...`
+                            InnerRootNode SourceSection: [16114,16293]`conffile for conffil...`
+                              GeneratorReturnTargetNode SourceSection: [16114,16293]`conffile for conffil...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [16123,16293]`for conffile in (↵  ...`
+                                GeneratorForNode SourceSection: [16114,16293]`conffile for conffil...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None

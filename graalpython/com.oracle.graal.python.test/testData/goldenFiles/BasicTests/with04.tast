@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [12,45]`with A() as a, B() a...`
                       WithNode SourceSection: [12,45]`with A() as a, B() a...`
-                        WithNode SourceSection: None
+                        WithNode SourceSection: [27,45]`B() as b:↵    pass`
                           ExpressionStatementNode SourceSection: [41,45]`pass`
                             EmptyNode SourceSection: [41,45]`pass`
                           WriteLocalVariableNodeGen SourceSection: None

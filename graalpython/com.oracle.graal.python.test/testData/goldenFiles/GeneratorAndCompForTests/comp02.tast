@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [62,65]`any`
                                     Identifier: any
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  GeneratorExpressionNode SourceSection: [86,108]`for b in cls.__bases...`
+                                  GeneratorExpressionNode SourceSection: [66,108]`issubclass(b, base) ...`
                                     Name: <genexpr>
                                     FrameDescriptor: 3 slots [b, base, <return_val>]
                                     Enclosing
@@ -78,7 +78,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     For Nodes: 1
                                     Block Nodes: 0
                                     Is Enclosing Frame Generator: false
-                                    FunctionRootNode SourceSection: [86,108]`for b in cls.__bases...`
+                                    FunctionRootNode SourceSection: [66,108]`issubclass(b, base) ...`
                                       Name: <genexpr>
                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                       CelVars: None
@@ -88,10 +88,10 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                       ExecutionSlots:
                                         FreeVarsSlots: base, 
                                         CellVarsSlots: None
-                                      InnerRootNode SourceSection: [86,108]`for b in cls.__bases...`
-                                        GeneratorReturnTargetNode SourceSection: [86,108]`for b in cls.__bases...`
+                                      InnerRootNode SourceSection: [66,108]`issubclass(b, base) ...`
+                                        GeneratorReturnTargetNode SourceSection: [66,108]`issubclass(b, base) ...`
                                           flagSlot: 1
-                                          GeneratorForNode SourceSection: [86,108]`for b in cls.__bases...`
+                                          GeneratorForNode SourceSection: [66,108]`issubclass(b, base) ...`
                                             ExpressionStatementNode SourceSection: [66,85]`issubclass(b, base)`
                                               YieldNode SourceSection: [66,85]`issubclass(b, base)`
                                                 flagSlot: 0
@@ -170,7 +170,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [185,202]`for base in other`
+                          GeneratorExpressionNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                             Name: <genexpr>
                             FrameDescriptor: 3 slots [base, abcs, <return_val>]
                             Enclosing
@@ -179,7 +179,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [185,202]`for base in other`
+                            FunctionRootNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -189,10 +189,10 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                               ExecutionSlots:
                                 FreeVarsSlots: abcs, 
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [185,202]`for base in other`
-                                GeneratorReturnTargetNode SourceSection: [185,202]`for base in other`
+                              InnerRootNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
+                                GeneratorReturnTargetNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [185,202]`for base in other`
+                                  GeneratorForNode SourceSection: [164,202]`mro(base, abcs=abcs)...`
                                     ExpressionStatementNode SourceSection: [164,184]`mro(base, abcs=abcs)...`
                                       YieldNode SourceSection: [164,184]`mro(base, abcs=abcs)...`
                                         flagSlot: 0

@@ -525,14 +525,16 @@ decorators returns [DecoratorSSTNode[] result]:
 ;
 
 decorated: 
-    { SSTNode decor; }
     decorators 
         (
             classdef | 
             funcdef | 
             async_funcdef 
         )
-    { stack[stackIndex-1] = new DecoratedSSTNode($decorators.result, (SSTNode)stack[stackIndex-1], getStartIndex($ctx), getLastIndex($ctx)); }
+    { 
+        SSTNode decoratedNode = (SSTNode)stack[stackIndex-1];
+        stack[stackIndex-1] = new DecoratedSSTNode($decorators.result, decoratedNode, getStartIndex($ctx), Math.max(decoratedNode.getEndOffset(), getLastIndex($ctx))); 
+    }
 ;
 
 async_funcdef: ASYNC funcdef;
@@ -1111,7 +1113,7 @@ with_item returns [SSTNode result]
 		| ':' suite
 		{ sub = $suite.result; }
 	)
-	{ $result = factory.createWith($test.result, asName, sub, -1, getLastIndex($ctx)); }
+	{ $result = factory.createWith($test.result, asName, sub, getStartIndex($ctx), getLastIndex($ctx)); }
 ;
 
 // NB compile.c makes sure that the default except clause is last
@@ -1775,7 +1777,7 @@ returns [SSTNode result]
                 iterator = $comp_for.result; 
             }
 	)?
-	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, getStartIndex($f), getLastIndex(_localctx)); }
+	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, $name != null ? $name.getStartOffset() : $target.getStartOffset(), getLastIndex(_localctx)); }
 ;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler

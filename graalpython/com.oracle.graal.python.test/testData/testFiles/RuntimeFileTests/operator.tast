@@ -2763,7 +2763,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5912,5917]`tuple`
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                            GeneratorExpressionNode SourceSection: [5930,5951]`for getter in getter...`
+                                                            GeneratorExpressionNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                               Name: <genexpr>
                                                               FrameDescriptor: 3 slots [getter, obj, <return_val>]
                                                               Enclosing
@@ -2772,7 +2772,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               For Nodes: 1
                                                               Block Nodes: 0
                                                               Is Enclosing Frame Generator: false
-                                                              FunctionRootNode SourceSection: [5930,5951]`for getter in getter...`
+                                                              FunctionRootNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                                 Name: <genexpr>
                                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                 CelVars: None
@@ -2782,10 +2782,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                 ExecutionSlots:
                                                                   FreeVarsSlots: obj, 
                                                                   CellVarsSlots: None
-                                                                InnerRootNode SourceSection: [5930,5951]`for getter in getter...`
-                                                                  GeneratorReturnTargetNode SourceSection: [5930,5951]`for getter in getter...`
+                                                                InnerRootNode SourceSection: [5918,5951]`getter(obj) for gett...`
+                                                                  GeneratorReturnTargetNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                                     flagSlot: 1
-                                                                    GeneratorForNode SourceSection: [5930,5951]`for getter in getter...`
+                                                                    GeneratorForNode SourceSection: [5918,5951]`getter(obj) for gett...`
                                                                       ExpressionStatementNode SourceSection: [5918,5929]`getter(obj)`
                                                                         YieldNode SourceSection: [5918,5929]`getter(obj)`
                                                                           flagSlot: 0
@@ -3347,7 +3347,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6901,6906]`tuple`
                                                               Identifier: tuple
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                            GeneratorExpressionNode SourceSection: [6914,6928]`for i in items`
+                                                            GeneratorExpressionNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                               Name: <genexpr>
                                                               FrameDescriptor: 3 slots [i, obj, <return_val>]
                                                               Enclosing
@@ -3356,7 +3356,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                               For Nodes: 1
                                                               Block Nodes: 0
                                                               Is Enclosing Frame Generator: false
-                                                              FunctionRootNode SourceSection: [6914,6928]`for i in items`
+                                                              FunctionRootNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                                 Name: <genexpr>
                                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                                 CelVars: None
@@ -3366,10 +3366,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                 ExecutionSlots:
                                                                   FreeVarsSlots: obj, 
                                                                   CellVarsSlots: None
-                                                                InnerRootNode SourceSection: [6914,6928]`for i in items`
-                                                                  GeneratorReturnTargetNode SourceSection: [6914,6928]`for i in items`
+                                                                InnerRootNode SourceSection: [6907,6928]`obj[i] for i in item...`
+                                                                  GeneratorReturnTargetNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                                     flagSlot: 1
-                                                                    GeneratorForNode SourceSection: [6914,6928]`for i in items`
+                                                                    GeneratorForNode SourceSection: [6907,6928]`obj[i] for i in item...`
                                                                       ExpressionStatementNode SourceSection: [6907,6913]`obj[i]`
                                                                         YieldNode SourceSection: [6907,6913]`obj[i]`
                                                                           flagSlot: 0
@@ -4061,7 +4061,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           ReadLocalVariableNode SourceSection: [8215,8219]`args`
                                             Frame: [1,args,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
-                                        GeneratorExpressionNode SourceSection: [8244,8276]`for k, v in self._kw...`
+                                        GeneratorExpressionNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                           Enclosing
@@ -4070,7 +4070,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           For Nodes: 1
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [8244,8276]`for k, v in self._kw...`
+                                          FunctionRootNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -4080,10 +4080,10 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [8244,8276]`for k, v in self._kw...`
-                                              GeneratorReturnTargetNode SourceSection: [8244,8276]`for k, v in self._kw...`
+                                            InnerRootNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
+                                              GeneratorReturnTargetNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [8244,8276]`for k, v in self._kw...`
+                                                GeneratorForNode SourceSection: [8227,8276]`'%s=%r' % (k, v) for...`
                                                   ExpressionStatementNode SourceSection: [8227,8243]`'%s=%r' % (k, v)`
                                                     YieldNode SourceSection: [8227,8243]`'%s=%r' % (k, v)`
                                                       flagSlot: 0

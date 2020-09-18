@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: dict
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [10,27]`for i in range(3)`
+      GeneratorExpressionNode SourceSection: [1,27]`i: i + 1 for i in ra...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [i, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [10,27]`for i in range(3)`
+        FunctionRootNode SourceSection: [1,27]`i: i + 1 for i in ra...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [10,27]`for i in range(3)`
-            GeneratorReturnTargetNode SourceSection: [10,27]`for i in range(3)`
+          InnerRootNode SourceSection: [1,27]`i: i + 1 for i in ra...`
+            GeneratorReturnTargetNode SourceSection: [1,27]`i: i + 1 for i in ra...`
               flagSlot: 1
-              GeneratorForNode SourceSection: [10,27]`for i in range(3)`
+              GeneratorForNode SourceSection: [1,27]`i: i + 1 for i in ra...`
                 ExpressionStatementNode SourceSection: None
                   YieldNode SourceSection: None
                     flagSlot: 0

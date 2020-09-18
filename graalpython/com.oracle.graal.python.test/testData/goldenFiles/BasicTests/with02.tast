@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
         EmptyNode SourceSection: None
       SideEffect:
         WithNode SourceSection: [0,31]`with A() as a, B() a...`
-          WithNode SourceSection: None
+          WithNode SourceSection: [15,31]`B() as b:↵  pass`
             ExpressionStatementNode SourceSection: [27,31]`pass`
               EmptyNode SourceSection: [27,31]`pass`
             WriteNameNodeGen SourceSection: None

@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
       CallUnaryMethodNodeGen SourceSection: None
       GetCallAttributeNodeGen SourceSection: None
         StringLiteralNode SourceSection: [0,2]`''`
-      GeneratorExpressionNode SourceSection: [18,47]`for name in ['Pepa',...`
+      GeneratorExpressionNode SourceSection: [8,47]`f'{name}' for name i...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [name, <return_val>]
         Enclosing
@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [18,47]`for name in ['Pepa',...`
+        FunctionRootNode SourceSection: [8,47]`f'{name}' for name i...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -28,10 +28,10 @@ ModuleRootNode Name: <module 'topLevelParser02'> SourceSection: [0,48]`''.join(f
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [18,47]`for name in ['Pepa',...`
-            GeneratorReturnTargetNode SourceSection: [18,47]`for name in ['Pepa',...`
+          InnerRootNode SourceSection: [8,47]`f'{name}' for name i...`
+            GeneratorReturnTargetNode SourceSection: [8,47]`f'{name}' for name i...`
               flagSlot: 1
-              GeneratorForNode SourceSection: [18,47]`for name in ['Pepa',...`
+              GeneratorForNode SourceSection: [8,47]`f'{name}' for name i...`
                 ExpressionStatementNode SourceSection: [8,17]`f'{name}'`
                   YieldNode SourceSection: [8,17]`f'{name}'`
                     flagSlot: 0

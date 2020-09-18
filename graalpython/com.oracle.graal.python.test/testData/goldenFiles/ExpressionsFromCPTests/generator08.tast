@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-      GeneratorExpressionNode SourceSection: [6,24]`for x in range(10)`
+      GeneratorExpressionNode SourceSection: [4,24]`x for x in range(10)...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
@@ -20,7 +20,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [6,24]`for x in range(10)`
+        FunctionRootNode SourceSection: [4,24]`x for x in range(10)...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -30,10 +30,10 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [6,24]`for x in range(10)`
-            GeneratorReturnTargetNode SourceSection: [6,24]`for x in range(10)`
+          InnerRootNode SourceSection: [4,24]`x for x in range(10)...`
+            GeneratorReturnTargetNode SourceSection: [4,24]`x for x in range(10)...`
               flagSlot: 1
-              GeneratorForNode SourceSection: [6,24]`for x in range(10)`
+              GeneratorForNode SourceSection: [4,24]`x for x in range(10)...`
                 ExpressionStatementNode SourceSection: [4,5]`x`
                   YieldNode SourceSection: [4,5]`x`
                     flagSlot: 0

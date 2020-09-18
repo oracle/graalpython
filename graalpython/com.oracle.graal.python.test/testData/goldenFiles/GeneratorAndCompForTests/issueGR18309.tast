@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+      GeneratorExpressionNode SourceSection: [2,33]`b for a in d1 if d1 ...`
         Name: <genexpr>
         FrameDescriptor: 3 slots [b, a, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
         For Nodes: 2
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+        FunctionRootNode SourceSection: [2,33]`b for a in d1 if d1 ...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [4,33]`for a in d1 if d1 fo...`
-            GeneratorReturnTargetNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+          InnerRootNode SourceSection: [2,33]`b for a in d1 if d1 ...`
+            GeneratorReturnTargetNode SourceSection: [2,33]`b for a in d1 if d1 ...`
               flagSlot: 3
-              GeneratorForNode SourceSection: [4,33]`for a in d1 if d1 fo...`
+              GeneratorForNode SourceSection: [2,33]`b for a in d1 if d1 ...`
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
@@ -41,7 +41,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                     ReadGlobalOrBuiltinNodeGen SourceSection: [19,21]`d1`
                       Identifier: d1
                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  GeneratorForNode SourceSection: [22,33]`for b in d2`
+                  GeneratorForNode SourceSection: [13,33]`d1 if d1 for b in d2...`
                     ExpressionStatementNode SourceSection: [2,3]`b`
                       YieldNode SourceSection: [2,3]`b`
                         flagSlot: 0
