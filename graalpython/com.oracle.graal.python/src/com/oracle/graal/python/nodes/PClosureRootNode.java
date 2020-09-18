@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
@@ -52,7 +53,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
-    private static final PCell[] NO_CLOSURE = new PCell[0];
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
@@ -73,13 +73,13 @@ public abstract class PClosureRootNode extends PRootNode {
             if (singleContextAssumption.isValid() && closure == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 closure = frameClosure;
-            } else if (closure != NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
+            } else if (closure != PythonUtils.NO_CLOSURE && ((!singleContextAssumption.isValid() && closure != null) || closure != frameClosure)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                closure = NO_CLOSURE;
+                closure = PythonUtils.NO_CLOSURE;
             }
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
             assert frameClosure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
-            if (closure != null && closure != NO_CLOSURE) {
+            if (closure != null && closure != PythonUtils.NO_CLOSURE) {
                 if (freeVarSlots.length < 32) {
                     addClosureCellsToLocalsExploded(frame, closure);
                 } else {

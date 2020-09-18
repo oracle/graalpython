@@ -65,11 +65,15 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
@@ -77,17 +81,30 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -402,6 +419,208 @@ public class GraalHPyMemberAccessNodes {
             CExtToNativeNode toNativeNode = getWriteConverterNode(type);
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+        }
+    }
+
+    /**
+     * A simple and lightweight Python root node that invokes a native getter function. The native
+     * call target and the native closure pointer are passed as Python closure.
+     */
+    abstract static class HPyGetSetDescriptorRootNode extends PRootNode {
+
+        /**
+         * The index of the cell that contains the target (i.e. the pointer of native getter/setter
+         * function).
+         */
+        static final int CELL_INDEX_TARGET = 0;
+
+        /**
+         * The index of the cell that contains the native closure pointer (i.e. a native pointer of
+         * type {@code void*}).
+         */
+        static final int CELL_INDEX_CLOSURE = 1;
+
+        @Child private HPyExternalFunctionInvokeNode invokeNode;
+        @Child private CellBuiltins.GetRefNode readTargetCellNode;
+        @Child private CellBuiltins.GetRefNode readClosureCellNode;
+
+        private final String name;
+
+        HPyGetSetDescriptorRootNode(PythonLanguage language, String name) {
+            super(language);
+            this.name = name;
+        }
+
+        static PCell[] createPythonClosure(Object target, Object closure, PythonObjectFactory factory) {
+            PCell[] pythonClosure = new PCell[2];
+
+            PCell targetCell = factory.createCell(Truffle.getRuntime().createAssumption());
+            targetCell.setRef(target);
+            pythonClosure[CELL_INDEX_TARGET] = targetCell;
+
+            PCell closureCell = factory.createCell(Truffle.getRuntime().createAssumption());
+            closureCell.setRef(closure);
+            pythonClosure[CELL_INDEX_CLOSURE] = closureCell;
+            return pythonClosure;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            PCell[] frameClosure = PArguments.getClosure(frame);
+            assert frameClosure.length == 2 : "invalid closure for HPyGetSetDescriptorSetterRootNode";
+
+            Object target = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
+            Object closure = ensureReadClosureCellNode().execute(frameClosure[CELL_INDEX_CLOSURE]);
+
+            return ensureInvokeNode().execute(frame, name, target, createArguments(frame, closure));
+        }
+
+        protected abstract Object[] createArguments(VirtualFrame frame, Object closure);
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        private HPyExternalFunctionInvokeNode ensureInvokeNode() {
+            if (invokeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                invokeNode = insert(HPyExternalFunctionInvokeNodeGen.create());
+            }
+            return invokeNode;
+        }
+
+        private GetRefNode ensureReadTargetCellNode() {
+            if (readTargetCellNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readTargetCellNode = insert(GetRefNode.create());
+            }
+            return readTargetCellNode;
+        }
+
+        private GetRefNode ensureReadClosureCellNode() {
+            if (readClosureCellNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readClosureCellNode = insert(GetRefNode.create());
+            }
+            return readClosureCellNode;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
+        @Override
+        public boolean isInternal() {
+            return true;
+        }
+    }
+
+    /**
+     * A simple and lightweight Python root node that invokes a native getter function. The native
+     * call target and the native closure pointer are passed as Python closure.
+     */
+    static final class HPyGetSetDescriptorGetterRootNode extends HPyGetSetDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"$self"}, null);
+
+        HPyGetSetDescriptorGetterRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] createArguments(VirtualFrame frame, Object closure) {
+            return new Object[]{PArguments.getArgument(frame, 0), closure};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @TruffleBoundary
+        public static PFunction createFunction(PythonContext context, String propertyName, Object target, Object closure) {
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PCell[] pythonClosure = createPythonClosure(target, closure, factory);
+
+            HPyGetSetDescriptorGetterRootNode rootNode = new HPyGetSetDescriptorGetterRootNode(context.getLanguage(), propertyName);
+            PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
+            return factory.createFunction(propertyName, "", code, context.getBuiltins(), pythonClosure);
+        }
+
+    }
+
+    /**
+     * A simple and lightweight Python root node that invokes a native setter function. The native
+     * call target and the native closure pointer are passed as Python closure.
+     */
+    static final class HPyGetSetDescriptorSetterRootNode extends HPyGetSetDescriptorRootNode {
+        static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"$self", "value"}, null);
+
+        HPyGetSetDescriptorSetterRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] createArguments(VirtualFrame frame, Object closure) {
+            return new Object[]{PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), closure};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @TruffleBoundary
+        public static PFunction createFunction(PythonContext context, String propertyName, Object target, Object closure) {
+            HPyGetSetDescriptorSetterRootNode rootNode = new HPyGetSetDescriptorSetterRootNode(context.getLanguage(), propertyName);
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PCell[] pythonClosure = createPythonClosure(target, closure, factory);
+            PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
+            return factory.createFunction(propertyName, "", code, context.getBuiltins(), pythonClosure);
+        }
+    }
+
+    static final class HPyGetSetDescriptorNotWritableRootNode extends HPyGetSetDescriptorRootNode {
+
+        @Child private PRaiseNode raiseNode;
+        @Child private PythonObjectLibrary lib;
+        @Child private GetNameNode getNameNode;
+
+        HPyGetSetDescriptorNotWritableRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        @Override
+        protected Object[] createArguments(VirtualFrame frame, Object closure) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            if (lib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+            }
+            if (getNameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getNameNode = insert(GetNameNode.create());
+            }
+            Object type = lib.getLazyPythonClass(PArguments.getArgument(frame, 0));
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, getName(), getNameNode.execute(type));
+        }
+
+        @Override
+        public Signature getSignature() {
+            return HPyGetSetDescriptorSetterRootNode.SIGNATURE;
+        }
+
+        @TruffleBoundary
+        public static PFunction createFunction(PythonContext context, String propertyName) {
+            HPyGetSetDescriptorNotWritableRootNode rootNode = new HPyGetSetDescriptorNotWritableRootNode(context.getLanguage(), propertyName);
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
+            // we don't need the closure
+            return factory.createFunction(propertyName, "", code, context.getBuiltins(), PythonUtils.NO_CLOSURE);
         }
     }
 }

@@ -49,6 +49,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CallTarget;
@@ -59,6 +60,8 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonUtils {
+
+    public static final PCell[] NO_CLOSURE = new PCell[0];
 
     private PythonUtils() {
         // no instances

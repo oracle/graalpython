@@ -64,6 +64,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethKeywordsRoot;
@@ -73,7 +76,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -585,6 +590,86 @@ public class GraalHPyNodes {
 
     }
 
+    /**
+     * Creates a get/set descriptor from an HPy get/set descriptor specification.
+     * 
+     * <pre>
+     * typedef struct {
+     *     const char *name;
+     *     void *getter_impl;            // Function pointer to the implementation
+     *     void *setter_impl;            // Same; this may be NULL
+     *     void *getter_cpy_trampoline;  // Used by CPython to call getter_impl
+     *     void *setter_cpy_trampoline;  // Same; this may be NULL
+     *     const char *doc;
+     *     void *closure;
+     * } HPyGetSet;
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class HPyCreateGetSetDescriptorNode extends PNodeWithContext {
+
+        public abstract GetSetDescriptor execute(GraalHPyContext context, Object memberDef);
+
+        @Specialization(limit = "1")
+        static GetSetDescriptor doIt(GraalHPyContext context, Object memberDef,
+                        @CachedLibrary("memberDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary valueLib,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert interopLibrary.hasMembers(memberDef);
+            assert interopLibrary.isMemberReadable(memberDef, "name");
+            assert interopLibrary.isMemberReadable(memberDef, "getter_impl");
+            assert interopLibrary.isMemberReadable(memberDef, "setter_impl");
+            assert interopLibrary.isMemberReadable(memberDef, "doc");
+            assert interopLibrary.isMemberReadable(memberDef, "closure");
+
+            try {
+                String name;
+                try {
+                    name = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+                }
+
+                // note: 'doc' may be NULL; in this case, we would store 'None'
+                Object memberDoc = PNone.NONE;
+                Object docCharPtr = interopLibrary.readMember(memberDef, "doc");
+                if (!valueLib.isNull(docCharPtr)) {
+                    memberDoc = fromCharPointerNode.execute(docCharPtr);
+                }
+
+                Object closurePtr = interopLibrary.readMember(memberDef, "closure");
+
+                // signature: self, closure
+                Object getterFunctionPtr = interopLibrary.readMember(memberDef, "getter_impl");
+                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), name, getterFunctionPtr, closurePtr);
+
+                // signature: self, value, closure
+                Object setterFunctionPtr = interopLibrary.readMember(memberDef, "setter_impl");
+                boolean readOnly = interopLibrary.isNull(setterFunctionPtr);
+
+                Object setterObject;
+                if (readOnly) {
+                    setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), name);
+                } else {
+                    setterObject = HPyGetSetDescriptorSetterRootNode.createFunction(context.getContext(), name, setterFunctionPtr, closurePtr);
+                }
+
+                GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, null, !readOnly);
+                writeAttributeToObjectNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+                return getSetDescriptor;
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
+            }
+        }
+
+    }
+
     @GenerateUncached
     public abstract static class HPyAsContextNode extends PNodeWithContext {
 
@@ -978,6 +1063,7 @@ public class GraalHPyNodes {
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
                         @Cached HPyAddFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
+                        @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -1003,11 +1089,14 @@ public class GraalHPyNodes {
                             break;
                         case GraalHPyDef.HPY_DEF_KIND_SLOT:
                             // TODO(fa): add slots
+                            break;
                         case GraalHPyDef.HPY_DEF_KIND_MEMBER:
                             HPyProperty property = addMemberNode.execute(context, moduleDefine);
                             dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
+                            break;
                         case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                            // TODO(fa): add get/set descriptors
+                            GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, moduleDefine);
+                            dictStorageLib.setItem(dictStorage, getSetDescriptor.getName(), getSetDescriptor);
                             break;
                         default:
                             assert false : "unknown definition kind";
