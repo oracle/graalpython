@@ -182,7 +182,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
                 i += Character.charCount(ch);
             }
-            encoder.replace(sb.toString(), p.length());
+            encoder.replace(p.length(), sb.toString());
             return true;
         }
 
@@ -204,7 +204,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
                     i += Character.charCount(ch);
                 }
-                encoder.replace(replacement, encoder.getErrorLenght());
+                encoder.replace(encoder.getErrorLenght(), replacement, 0, outp);
                 return true;
             }
             return false;
@@ -280,7 +280,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 replacement[outp++] = (char) buf[2];
                 replacement[outp++] = (char) buf[3];
             }
-            decoder.replace(replacement, p.length);
+            decoder.replace(p.length, replacement, 0, outp);
             return true;
         }
 
@@ -293,7 +293,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     if ((p[0] & 0xf0) == 0xe0 && (p[1] & 0xc0) == 0x80 && (p[2] & 0xc0) == 0x80) {
                         int codePoint = ((p[0] & 0x0f) << 12) + ((p[1] & 0x3f) << 6) + (p[2] & 0x3f);
                         if (0xD800 <= codePoint && codePoint <= 0xDFFF) {
-                            decoder.replace(Character.toChars(codePoint), 3);
+                            decoder.replace(3, Character.toChars(codePoint));
                             return true;
                         }
                     }
@@ -646,16 +646,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public void replace(byte[] replacement, int skipInput) {
+        public void replace(int skipInput, byte[] replacement, int offset, int length) {
             while (outputBuffer.remaining() < replacement.length) {
                 grow();
             }
-            outputBuffer.put(replacement);
+            outputBuffer.put(replacement, offset, length);
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
         @TruffleBoundary
-        public void replace(String replacement, int skipInput) {
+        public void replace(int skipInput, String replacement) {
             inputBuffer.position(inputBuffer.position() + skipInput);
             CharBuffer newBuffer = CharBuffer.allocate(inputBuffer.remaining() + replacement.length());
             newBuffer.put(replacement);
@@ -752,12 +752,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return coderResult.length();
         }
 
+        public void replace(int skipInput, char[] chars) {
+            replace(skipInput, chars, 0, chars.length);
+        }
+
         @TruffleBoundary
-        public void replace(char[] chars, int skipInput) {
+        public void replace(int skipInput, char[] chars, int offset, int lenght) {
             while (outputBuffer.remaining() < chars.length) {
                 grow();
             }
-            outputBuffer.put(chars);
+            outputBuffer.put(chars, offset, lenght);
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
