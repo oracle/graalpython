@@ -90,6 +90,7 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_WRITE_F = "graal_hpy_write_f";
     public static final String GRAAL_HPY_WRITE_D = "graal_hpy_write_d";
     public static final String GRAAL_HPY_WRITE_STRING = "graal_hpy_write_string";
+    public static final String GRAAL_HPY_WRITE_STRING_IN_PLACE = "graal_hpy_write_string_in_place";
     public static final String GRAAL_HPY_WRITE_HPY = "graal_hpy_write_HPy";
     public static final String GRAAL_HPY_WRITE_C = "graal_hpy_write_c";
     public static final String GRAAL_HPY_WRITE_UC = "graal_hpy_write_uc";

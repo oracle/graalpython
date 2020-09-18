@@ -353,6 +353,17 @@ void graal_hpy_write_string(void* object, HPy_ssize_t offset, char* value) {
     WriteMember(object, offset, value, char*);
 }
 
+void graal_hpy_write_string_in_place(void* object, HPy_ssize_t offset, char* value) {
+	char *addr = (char*) (((char*)object) + offset);
+	size_t n;
+	if (polyglot_has_array_elements(value)) {
+		n = polyglot_get_array_size(value);
+	} else {
+		n = strlen(value);
+	}
+	memcpy(addr, value, n);
+}
+
 void graal_hpy_write_HPy(void* object, HPy_ssize_t offset, void* value) {
     WriteMember(object, offset, WRAP(value), HPy);
 }

@@ -66,8 +66,13 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.ReadMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNoneNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
@@ -75,7 +80,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PC
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -91,7 +98,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public class GraalHPyMemberAccessNodes {
 
-    static String getAccessorName(int type) {
+    static String getReadAccessorName(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
                 return GraalHPyNativeSymbols.GRAAL_HPY_READ_S;
@@ -134,7 +141,7 @@ public class GraalHPyMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    static CExtAsPythonObjectNode getConverterNode(int type) {
+    static CExtAsPythonObjectNode getReadConverterNode(int type) {
         switch (type) {
             case HPY_MEMBER_SHORT:
             case HPY_MEMBER_INT:
@@ -165,11 +172,90 @@ public class GraalHPyMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    public static class ReadMemberNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
+    static String getWriteAccessorName(int type) {
+        switch (type) {
+            case HPY_MEMBER_SHORT:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_S;
+            case HPY_MEMBER_INT:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_I;
+            case HPY_MEMBER_LONG:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_L;
+            case HPY_MEMBER_FLOAT:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_F;
+            case HPY_MEMBER_DOUBLE:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_D;
+            case HPY_MEMBER_STRING:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_STRING;
+            case HPY_MEMBER_OBJECT:
+            case HPY_MEMBER_OBJECT_EX:
+            case HPY_MEMBER_NONE:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_HPY;
+            case HPY_MEMBER_CHAR:
+            case HPY_MEMBER_BYTE:
+            case HPY_MEMBER_BOOL:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_C;
+            case HPY_MEMBER_UBYTE:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UC;
+            case HPY_MEMBER_USHORT:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_US;
+            case HPY_MEMBER_UINT:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UI;
+            case HPY_MEMBER_ULONG:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_UL;
+            case HPY_MEMBER_STRING_INPLACE:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_STRING_IN_PLACE;
+            case HPY_MEMBER_LONGLONG:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_LL;
+            case HPY_MEMBER_ULONGLONG:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_ULL;
+            case HPY_MEMBER_HPYSSIZET:
+                return GraalHPyNativeSymbols.GRAAL_HPY_WRITE_HPY_SSIZE_T;
+        }
+        throw CompilerDirectives.shouldNotReachHere("invalid member type");
+    }
+
+    static CExtToNativeNode getWriteConverterNode(int type) {
+        switch (type) {
+            case HPY_MEMBER_SHORT:
+            case HPY_MEMBER_INT:
+            case HPY_MEMBER_CHAR:
+            case HPY_MEMBER_BYTE:
+            case HPY_MEMBER_BOOL:
+                // TODO(fa): use appropriate native type sizes
+                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, true);
+            case HPY_MEMBER_LONG:
+            case HPY_MEMBER_HPYSSIZET:
+                // TODO(fa): use appropriate native type sizes
+                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, true);
+            case HPY_MEMBER_FLOAT:
+            case HPY_MEMBER_DOUBLE:
+                return HPyAsNativeDoubleNodeGen.create();
+            case HPY_MEMBER_USHORT:
+            case HPY_MEMBER_UINT:
+            case HPY_MEMBER_UBYTE:
+                // TODO(fa): use appropriate native type sizes
+                return HPyAsNativePrimitiveNodeGen.create(Integer.BYTES, false);
+            case HPY_MEMBER_ULONG:
+            case HPY_MEMBER_LONGLONG:
+            case HPY_MEMBER_ULONGLONG:
+                // TODO(fa): use appropriate native type sizes
+                return HPyAsNativePrimitiveNodeGen.create(Long.BYTES, false);
+            case HPY_MEMBER_OBJECT:
+            case HPY_MEMBER_OBJECT_EX:
+            case HPY_MEMBER_NONE:
+                return HPyAsHandleNodeGen.create();
+            case HPY_MEMBER_STRING:
+            case HPY_MEMBER_STRING_INPLACE:
+                return null;
+        }
+        throw CompilerDirectives.shouldNotReachHere("invalid member type");
+    }
+
+    public static class HPyMemberNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
         private final T node;
         private final Class<T> nodeClass;
 
-        public ReadMemberNodeFactory(T node) {
+        public HPyMemberNodeFactory(T node) {
             this.node = node;
             this.nodeClass = determineNodeClass(node);
         }
@@ -209,8 +295,8 @@ public class GraalHPyMemberAccessNodes {
     }
 
     @Builtin(minNumOfPositionalArgs = 1, parameterNames = "$self")
-    protected abstract static class ReadMemberNode extends PythonUnaryBuiltinNode {
-        private static final Builtin builtin = ReadMemberNode.class.getAnnotation(Builtin.class);
+    protected abstract static class HPyReadMemberNode extends PythonUnaryBuiltinNode {
+        private static final Builtin builtin = HPyReadMemberNode.class.getAnnotation(Builtin.class);
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
@@ -221,7 +307,7 @@ public class GraalHPyMemberAccessNodes {
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected ReadMemberNode(String accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+        protected HPyReadMemberNode(String accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
             this.accessor = accessor;
             this.offset = offset;
             this.asPythonObjectNode = asPythonObjectNode;
@@ -249,9 +335,72 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, String accessor, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
+            String accessor = getReadAccessorName(type);
+            CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
             RootNode rootNode = new BuiltinFunctionRootNode(language, builtin,
-                            new ReadMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true);
+                            new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+        }
+    }
+
+    @Builtin(minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
+    protected abstract static class HPyWriteMemberNode extends PythonBinaryBuiltinNode {
+        private static final Builtin builtin = HPyWriteMemberNode.class.getAnnotation(Builtin.class);
+
+        @Child private PCallHPyFunction callHPyFunctionNode;
+        @Child private CExtToNativeNode toNativeNode;
+
+        /** The name of the native getter function. */
+        private final String accessor;
+
+        /** The offset where to read from (will be passed to the native getter). */
+        private final int offset;
+
+        protected HPyWriteMemberNode(String accessor, int offset, CExtToNativeNode toNativeNode) {
+            this.accessor = accessor;
+            this.offset = offset;
+            this.toNativeNode = toNativeNode;
+        }
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object self, Object value) {
+            GraalHPyContext hPyContext = getContext().getHPyContext();
+
+            // convert value if needed
+            Object nativeValue;
+            if (toNativeNode != null) {
+                // The conversion to a native primitive may call arbitrary user code. So we need to
+                // prepare an indirect call.
+                Object savedState = IndirectCallContext.enter(frame, getContext(), this);
+                try {
+                    nativeValue = toNativeNode.execute(hPyContext, value);
+                } finally {
+                    IndirectCallContext.exit(frame, getContext(), savedState);
+                }
+            } else {
+                nativeValue = value;
+            }
+
+            // This will call pure C functions that won't ever access the Python stack nor the
+            // exception state. So, we don't need to setup an indirect call.
+            ensureCallHPyFunctionNode().call(hPyContext, accessor, self, (long) offset, nativeValue);
+            return value;
+        }
+
+        private PCallHPyFunction ensureCallHPyFunctionNode() {
+            if (callHPyFunctionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callHPyFunctionNode = insert(PCallHPyFunctionNodeGen.create());
+            }
+            return callHPyFunctionNode;
+        }
+
+        @TruffleBoundary
+        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
+            String accessor = getWriteAccessorName(type);
+            CExtToNativeNode toNativeNode = getWriteConverterNode(type);
+            RootNode rootNode = new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
         }
     }
