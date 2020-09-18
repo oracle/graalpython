@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -344,35 +343,26 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_encode", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends EncodeBaseNode {
-        @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private HandleEncodingErrorNode handleEncodingErrorNode;
 
         @Specialization(guards = "isString(str)")
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            String profiledStr = cast(castStr, str);
-            PBytes bytes = encodeString(str, profiledStr, "utf-8", STRICT);
-            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
+            return encodeString(str, cast(castStr, str), "utf-8", STRICT);
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
         Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding) {
-            String profiledStr = cast(castStr, str);
-            String profiledEncoding = cast(castEncoding, encoding);
-            PBytes bytes = encodeString(str, profiledStr, profiledEncoding, STRICT);
-            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
+            return encodeString(str, cast(castStr, str), cast(castEncoding, encoding), STRICT);
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            String profiledStr = cast(castStr, str);
-            String profiledErrors = cast(castErrors, errors);
-            PBytes bytes = encodeString(str, profiledStr, "utf-8", profiledErrors);
-            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
+            return encodeString(str, cast(castStr, str), "utf-8", cast(castErrors, errors));
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
@@ -380,11 +370,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding,
                         @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            String profiledStr = cast(castStr, str);
-            String profiledEncoding = cast(castEncoding, encoding);
-            String profiledErrors = cast(castErrors, errors);
-            PBytes bytes = encodeString(str, profiledStr, profiledEncoding, profiledErrors);
-            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
+            return encodeString(str, cast(castStr, str), cast(castEncoding, encoding), cast(castErrors, errors));
         }
 
         private static String cast(CastToJavaStringNode cast, Object obj) {
@@ -401,7 +387,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
         }
 
-        private PBytes encodeString(Object self, String input, String encoding, String errors) {
+        private Object encodeString(Object self, String input, String encoding, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
@@ -417,15 +403,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(MemoryError);
             }
-            return factory().createBytes(encoder.getBytes());
-        }
-
-        private int getLength(PBytes b) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(b.getSequenceStorage());
+            PBytes bytes = factory().createBytes(encoder.getBytes());
+            return factory().createTuple(new Object[]{bytes, input.length()});
         }
 
         private void handleEncodingError(TruffleEncoder encoder, String errorAction, Object input) {
