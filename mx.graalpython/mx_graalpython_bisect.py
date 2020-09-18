@@ -1,10 +1,10 @@
-import re
-import os
-import sys
 import argparse
-import shlex
-import types
 import configparser
+import os
+import re
+import shlex
+import sys
+import types
 
 import mx
 
@@ -48,7 +48,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
         abortOnError=True,
     ).splitlines()
     if not commits:
-        sys.exit("No merge commits found in the range. Did you swap good and bad?")
+        raise RuntimeError("No merge commits found in the range. Did you swap good and bad?")
     downstream_suite = get_downstream_suite(suite)
     values = [None] * len(commits)
     if threshold is None:
@@ -60,7 +60,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
         downstream_good = get_commit(downstream_suite)
         threshold = (values[bad_index] + values[good_index]) / 2
         if values[good_index] * 1.03 > values[bad_index]:
-            sys.exit(
+            raise RuntimeError(
                 "Didn't detect a regression - less that 3% difference between good value "
                 "{} and bad value {}".format(values[good_index], values[bad_index])
             )
@@ -118,25 +118,26 @@ class BisectResult:
 
     def visualize(self, level=1):
         level_marker = '=' * level
-        print(level_marker, self.repo_name)
+        out = ["{} {}".format(level_marker, self.repo_name)]
         for index, (commit, value) in enumerate(zip(self.commits, self.values)):
             if value is not None:
-                print("{} {} {:6.6} {}".format(level_marker, commit, value, get_message(self.suite, commit)))
+                out.append("{} {} {:6.6} s {}".format(level_marker, commit, value, get_message(self.suite, commit)))
             if self.subresults and index in self.subresults:
-                self.subresults[index].visualize(level + 1)
+                out.append(self.subresults[index].visualize(level + 1))
+        return '\n'.join(out)
 
     def summarize(self):
         if self.bad_commit and self.good_commit:
             for subresult in self.subresults.values():
-                if subresult.summarize():
-                    return True
-            print("Detected bad commit in {} repository:\n{} {}"
-                  .format(self.repo_name, self.bad_commit, get_message(self.suite, self.bad_commit)))
-            return True
-        return False
+                sub = subresult.summarize()
+                if sub:
+                    return sub
+            return ("Detected bad commit in {} repository:\n{} {}"
+                    .format(self.repo_name, self.bad_commit, get_message(self.suite, self.bad_commit)))
+        return ''
 
 
-def bisect_benchmark(argv):
+def _bisect_benchmark(argv, initial_branch, email_to):
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         cp = configparser.ConfigParser()
         cp.read(os.environ['BISECT_BENCHMARK_CONFIG'])
@@ -183,24 +184,67 @@ def bisect_benchmark(argv):
             env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
         if retcode:
-            sys.exit("Failed to execute the build command for {}".format(commit))
+            raise RuntimeError("Failed to execute the build command for {}".format(commit))
         output = mx.OutputCapture()
-        retcode = mx.run(shlex.split(args.benchmark_command), env=env, out=mx.TeeOutputCapture(output), nonZeroIsFatal=False)
+        retcode = mx.run(shlex.split(args.benchmark_command), env=env, out=mx.TeeOutputCapture(output),
+                         nonZeroIsFatal=False)
         if retcode:
-            sys.exit("Failed to execute benchmark for {}".format(commit))
+            raise RuntimeError("Failed to execute benchmark for {}".format(commit))
         match = re.search(r'{}.*duration: ([\d.]+)'.format(re.escape(args.benchmark_criterion)), output.data)
         if not match:
-            sys.exit("Failed to get result from the benchmark")
+            raise RuntimeError("Failed to get result from the benchmark")
         return float(match.group(1))
 
     bad = get_commit(primary_suite, args.bad)
     good = get_commit(primary_suite, args.good)
     result = run_bisect_benchmark(primary_suite, bad, good, benchmark_callback)
+    visualization = result.visualize()
+    summary = result.summarize()
+
     print()
-    result.visualize()
+    print(visualization)
     print()
-    result.summarize()
-    print()
+    print(summary)
 
     if 'CI' not in os.environ:
-        print("You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {}".format(args.benchmark_command))
+        print("You can rerun a benchmark for a particular commit using:\nMX_ALT_OUTPUT_ROOT=mxbuild-$commit {}".format(
+            args.benchmark_command))
+
+    send_email(
+        initial_branch,
+        email_to,
+        "Bisection job has finished successfully.\n{}\n".format(summary)
+        + "Note I'm just a script and I don't validate statistical significance of the above result.\n"
+        + "Please take a moment to also inspect the detailed results below.\n\n{}\n\n".format(visualization)
+        + os.environ.get('BUILD_URL', 'Unknown URL')
+    )
+
+
+def bisect_benchmark(argv):
+    suite = mx.primary_suite()
+    initial_branch = suite.vc.git_command(suite.vc_dir, ['rev-parse', '--abbrev-ref', 'HEAD']).strip()
+    email_to = suite.vc.git_command(suite.vc_dir, ['log', '--format=%cE', '-n', '1']).strip()
+    try:
+        _bisect_benchmark(argv, initial_branch, email_to)
+    except Exception:
+        send_email(initial_branch, email_to, "Job failed.\n {}".format(os.environ.get('BUILD_URL', 'Unknown URL')))
+        raise
+
+
+def send_email(initial_branch, email_to, content):
+    if 'BISECT_EMAIL_SMTP_SERVER' in os.environ:
+        import smtplib
+        from email.message import EmailMessage
+
+        msg = EmailMessage()
+        msg['Subject'] = "Bisection result for {}".format(initial_branch)
+        msg['From'] = os.environ['BISECT_EMAIL_FROM']
+        validate_to = os.environ['BISECT_EMAIL_TO_PATTERN']
+        if not re.match(validate_to, email_to):
+            sys.exit("Email {} not allowed, aborting sending".format(email_to))
+        msg['To'] = email_to
+        msg.set_content(content)
+        print(msg)
+        smtp = smtplib.SMTP(os.environ['BISECT_EMAIL_SMTP_SERVER'])
+        smtp.send_message(msg)
+        smtp.quit()
