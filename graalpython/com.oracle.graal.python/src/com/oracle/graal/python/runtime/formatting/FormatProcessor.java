@@ -9,6 +9,7 @@ package com.oracle.graal.python.runtime.formatting;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -18,7 +19,6 @@ import java.math.MathContext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -126,21 +127,25 @@ abstract class FormatProcessor<T> {
     int getNumber() {
         char c = pop();
         if (c == '*') {
+            long value;
             Object o = getArg();
-            if (o instanceof Long) {
-                return ((Long) o).intValue();
-            } else if (o instanceof Integer) {
+            if (o instanceof Integer) {
                 return (int) o;
+            } else if (o instanceof Long) {
+                value = (long) o;
             } else if (o instanceof PInt) {
-                return ((PInt) o).intValue();
-            } else if (o instanceof Double) {
-                return ((Double) o).intValue();
-            } else if (o instanceof Boolean) {
-                return (Boolean) o ? 1 : 0;
-            } else if (o instanceof PFloat) {
-                return (int) ((PFloat) o).getValue();
+                try {
+                    return ((PInt) o).intValueExact();
+                } catch (OverflowException e) {
+                    value = Long.MAX_VALUE;
+                }
+            } else {
+                throw core.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
             }
-            throw core.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
+            if (value > Integer.MAX_VALUE) {
+                throw core.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
+            }
+            return (int) value;
         } else {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
