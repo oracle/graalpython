@@ -83,7 +83,6 @@ for module in [_io, io]:
 
 setattr(builtins, 'open', open)
 
-import __graalpython__
 sys.stdin = _pyio.TextIOWrapper(_pyio.BufferedReader(sys.stdin), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
 sys.stdin.mode = "r"
 sys.__stdin__ = sys.stdin

@@ -129,14 +129,14 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         String standardStreamError;
         if (encodingOpt != null && !encodingOpt.isEmpty()) {
             String[] parts = encodingOpt.split(":");
-            standardStreamEncoding = parts[0];
-            standardStreamError = parts.length > 1 ? parts[1] : "strict";
+            standardStreamEncoding = parts[0].isEmpty() ? "utf-8" : parts[0];
+            standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : "strict";
         } else {
             standardStreamEncoding = "utf-8";
             standardStreamError = "surrogateescape";
         }
 
-        if (LOGGER.isLoggable(Level.INFO)) {
+        if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(String.format("Setting default stdio encoding to %s:%s", standardStreamEncoding, standardStreamError));
         }
         this.builtinConstants.put("stdio_encoding", standardStreamEncoding);
