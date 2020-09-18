@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
@@ -143,22 +144,27 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createIdentityProfile()") ValueProfile actionProfile,
                         @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
-            // Ignore and replace are handled by Java Charset
-            switch (actionProfile.profile(errorAction)) {
-                case STRICT:
-                    break;
-                case BACKSLASHREPLACE:
-                    if (backslashreplace(encoder)) {
-                        return;
-                    }
-                    break;
-                case SURROGATEPASS:
-                    if (surrogatepass(encoder)) {
-                        return;
-                    }
-                    break;
-                default:
-                    raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+            try {
+                // Ignore and replace are handled by Java Charset
+                switch (actionProfile.profile(errorAction)) {
+                    case STRICT:
+                        break;
+                    case BACKSLASHREPLACE:
+                        if (backslashreplace(encoder)) {
+                            return;
+                        }
+                        break;
+                    case SURROGATEPASS:
+                        if (surrogatepass(encoder)) {
+                            return;
+                        }
+                        break;
+                    default:
+                        raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(MemoryError);
             }
             throw raiseEncodingErrorNode.execute(encoder, inputObject);
         }
@@ -401,9 +407,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (charset == null) {
                 throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
-            TruffleEncoder encoder = new TruffleEncoder(CharsetMapping.normalize(encoding), charset, input, errorAction);
-            while (!encoder.encodingStep()) {
-                handleEncodingError(encoder, errors, self);
+            TruffleEncoder encoder;
+            try {
+                encoder = new TruffleEncoder(CharsetMapping.normalize(encoding), charset, input, errorAction);
+                while (!encoder.encodingStep()) {
+                    handleEncodingError(encoder, errors, self);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raise(MemoryError);
             }
             return factory().createBytes(encoder.getBytes());
         }
@@ -466,9 +478,15 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             if (charset == null) {
                 throw raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
-            TruffleDecoder decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
-            while (!decoder.decodingStep(finalData)) {
-                handleDecodingError(decoder, errors, input);
+            TruffleDecoder decoder;
+            try {
+                decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
+                while (!decoder.decodingStep(finalData)) {
+                    handleDecodingError(decoder, errors, input);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raise(MemoryError);
             }
             return factory().createTuple(new Object[]{decoder.getString(), decoder.getInputPosition()});
         }
@@ -597,7 +615,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         private void grow() {
-            ByteBuffer newBuffer = ByteBuffer.allocate(2 * outputBuffer.capacity() + 1);
+            int newCapacity = 2 * outputBuffer.capacity() + 1;
+            // Overflow check - (2 * Integer.MAX_VALUE + 1 == -1) => overflown result cannot be
+            // positive
+            if (newCapacity < 0) {
+                throw new OutOfMemoryError();
+            }
+            ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
             outputBuffer.flip();
             newBuffer.put(outputBuffer);
             outputBuffer = newBuffer;
@@ -706,7 +730,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         private void grow() {
-            CharBuffer newBuffer = CharBuffer.allocate(2 * outputBuffer.capacity() + 1);
+            int newCapacity = 2 * outputBuffer.capacity() + 1;
+            // Overflow check - (2 * Integer.MAX_VALUE + 1 == -1) => overflown result cannot be
+            // positive
+            if (newCapacity < 0) {
+                throw new OutOfMemoryError();
+            }
+            CharBuffer newBuffer = CharBuffer.allocate(newCapacity);
             outputBuffer.flip();
             newBuffer.put(outputBuffer);
             outputBuffer = newBuffer;
