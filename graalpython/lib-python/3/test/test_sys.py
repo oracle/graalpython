@@ -829,6 +829,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertIn(c, range(b - 50, b + 50))
 
     @test.support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_is_finalizing(self):
         self.assertIs(sys.is_finalizing(), False)
         # Don't use the atexit module because _Py_Finalizing is only set
@@ -851,6 +852,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(stdout.rstrip(), b'True')
 
     @test.support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_issue20602(self):
         # sys.flags and sys.float_info were wiped during shutdown.
         code = """if 1:
