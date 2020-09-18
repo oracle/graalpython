@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -95,6 +96,16 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
+
+    public static final String STRICT = "strict";
+    public static final String IGNORE = "ignore";
+    public static final String REPLACE = "replace";
+    public static final String BACKSLASHREPLACE = "backslashreplace";
+    public static final String NAMEREPLACE = "namereplace";
+    public static final String XMLCHARREFREPLACE = "xmlcharrefreplace";
+    public static final String SURROGATEESCAPE = "surrogateescape";
+    public static final String SURROGATEPASS = "surrogatepass";
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodecsModuleBuiltinsFactory.getFactories();
@@ -134,9 +145,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             // Ignore and replace are handled by Java Charset
             switch (actionProfile.profile(errorAction)) {
-                case "strict":
+                case STRICT:
                     break;
-                case "surrogatepass":
+                case BACKSLASHREPLACE:
+                    if (backslashreplace(encoder)) {
+                        return;
+                    }
+                    break;
+                case SURROGATEPASS:
                     if (surrogatepass(encoder)) {
                         return;
                     }
@@ -147,6 +163,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             throw raiseEncodingErrorNode.execute(encoder, inputObject);
         }
 
+        @TruffleBoundary
+        private static boolean backslashreplace(TruffleEncoder encoder) {
+            String p = new String(encoder.getInputChars(encoder.getErrorLenght()));
+            StringBuilder sb = new StringBuilder();
+            byte[] buf = new byte[10];
+            for (int i = 0; i < p.length();) {
+                int ch = p.codePointAt(i);
+                int len;
+                if (ch < 0x100) {
+                    BytesUtils.byteEscape(ch, 0, buf);
+                    len = 4;
+                } else {
+                    len = BytesUtils.unicodeNonAsciiEscape(ch, 0, buf);
+                }
+                for (int j = 0; j < len; j++) {
+                    sb.append((char) buf[j]);
+                }
+                i += Character.charCount(ch);
+            }
+            encoder.replace(sb.toString(), p.length());
+            return true;
+        }
+
+        @TruffleBoundary
         private static boolean surrogatepass(TruffleEncoder encoder) {
             // UTF-8 only for now. The name should be normalized already
             if (encoder.getEncodingName().equals("utf_8")) {
@@ -209,9 +249,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             // Ignore and replace are handled by Java Charset
             switch (actionProfile.profile(errorAction)) {
-                case "strict":
+                case STRICT:
                     break;
-                case "surrogatepass":
+                case BACKSLASHREPLACE:
+                    if (backslashreplace(decoder)) {
+                        return;
+                    }
+                    break;
+                case SURROGATEPASS:
                     if (surrogatepass(decoder)) {
                         return;
                     }
@@ -222,6 +267,24 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             throw raiseDecodingErrorNode.execute(decoder, inputObject);
         }
 
+        @TruffleBoundary
+        private static boolean backslashreplace(TruffleDecoder decoder) {
+            byte[] p = decoder.getInputBytes(decoder.getErrorLenght());
+            char[] replacement = new char[p.length * 4];
+            int outp = 0;
+            byte[] buf = new byte[4];
+            for (int i = 0; i < p.length; i++) {
+                BytesUtils.byteEscape(p[i], 0, buf);
+                replacement[outp++] = (char) buf[0];
+                replacement[outp++] = (char) buf[1];
+                replacement[outp++] = (char) buf[2];
+                replacement[outp++] = (char) buf[3];
+            }
+            decoder.replace(replacement, p.length);
+            return true;
+        }
+
+        @TruffleBoundary
         private static boolean surrogatepass(TruffleDecoder decoder) {
             // UTF-8 only for now. The name should be normalized already
             if (decoder.getEncodingName().equals("utf_8")) {
@@ -250,16 +313,18 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             CodingErrorAction errorAction;
             switch (errors) {
                 // TODO: see [GR-10256] to implement the correct handling mechanics
-                case "ignore":
+                case IGNORE:
                     errorAction = CodingErrorAction.IGNORE;
                     break;
-                case "replace":
-                case "surrogateescape":
-                case "namereplace":
-                case "backslashreplace":
-                case "xmlcharrefreplace":
+                case REPLACE:
+                case SURROGATEESCAPE:
+                case NAMEREPLACE:
+                case XMLCHARREFREPLACE:
                     errorAction = CodingErrorAction.REPLACE;
                     break;
+                case STRICT:
+                case BACKSLASHREPLACE:
+                case SURROGATEPASS:
                 default:
                     // Everything else will be handled by our Handle nodes
                     errorAction = CodingErrorAction.REPORT;
@@ -280,7 +345,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Shared("castStr") @Cached CastToJavaStringNode castStr) {
             String profiledStr = cast(castStr, str);
-            PBytes bytes = encodeString(str, profiledStr, "utf-8", "strict");
+            PBytes bytes = encodeString(str, profiledStr, "utf-8", STRICT);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
@@ -290,7 +355,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding) {
             String profiledStr = cast(castStr, str);
             String profiledEncoding = cast(castEncoding, encoding);
-            PBytes bytes = encodeString(str, profiledStr, profiledEncoding, "strict");
+            PBytes bytes = encodeString(str, profiledStr, profiledEncoding, STRICT);
             return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
@@ -371,12 +436,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object decode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
-            return decodeBytes(bytes, "utf-8", "strict", castToBoolean(frame, finalData));
+            return decodeBytes(bytes, "utf-8", STRICT, castToBoolean(frame, finalData));
         }
 
         @Specialization(guards = {"isString(encoding)"})
         Object decode(VirtualFrame frame, PBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
-            return decodeBytes(bytes, castToString(encoding), "strict", castToBoolean(frame, finalData));
+            return decodeBytes(bytes, castToString(encoding), STRICT, castToBoolean(frame, finalData));
         }
 
         @Specialization(guards = {"isString(errors)"})
@@ -498,7 +563,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     static class TruffleEncoder {
         private final String encodingName;
         private final CharsetEncoder encoder;
-        private final CharBuffer inputBuffer;
+        private CharBuffer inputBuffer;
         private ByteBuffer outputBuffer;
         private CoderResult coderResult;
 
@@ -587,6 +652,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             outputBuffer.put(replacement);
             inputBuffer.position(inputBuffer.position() + skipInput);
+        }
+
+        @TruffleBoundary
+        public void replace(String replacement, int skipInput) {
+            inputBuffer.position(inputBuffer.position() + skipInput);
+            CharBuffer newBuffer = CharBuffer.allocate(inputBuffer.remaining() + replacement.length());
+            newBuffer.put(replacement);
+            newBuffer.put(inputBuffer);
+            newBuffer.flip();
+            inputBuffer = newBuffer;
         }
 
         public String getEncodingName() {

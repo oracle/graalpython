@@ -297,10 +297,8 @@ public final class BytesUtils {
                 buffer[i++] = 'r';
             } else {
                 /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
-                buffer[i++] = '\\';
-                buffer[i++] = 'x';
-                buffer[i++] = hexdigits[(codePoint >> 4) & 0x000F];
-                buffer[i++] = hexdigits[codePoint & 0x000F];
+                byteEscape(codePoint, i, buffer);
+                i += 4;
             }
         } else {
             i = unicodeNonAsciiEscape(codePoint, i, buffer);
@@ -308,7 +306,15 @@ public final class BytesUtils {
         return i;
     }
 
-    private static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
+    public static void byteEscape(int codePoint, int startIndex, byte[] buffer) {
+        int i = startIndex;
+        buffer[i++] = '\\';
+        buffer[i++] = 'x';
+        buffer[i++] = hexdigits[(codePoint >> 4) & 0x000F];
+        buffer[i] = hexdigits[codePoint & 0x000F];
+    }
+
+    public static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
         int i = startIndex;
         if (codePoint < 0x100) {
             buffer[i++] = (byte) codePoint;
