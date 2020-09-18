@@ -101,7 +101,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -142,7 +141,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         String str(double self) {
             Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
-            FloatFormatter f = new FloatFormatter(getCore(), spec);
+            FloatFormatter f = new FloatFormatter(getRaiseNode(), spec);
             f.setMinFracDigits(1);
             return doFormat(self, f);
         }
@@ -183,13 +182,13 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         Object formatPF(double self, String formatString) {
-            return doFormat(self, formatString, getCore());
+            return doFormat(self, formatString);
         }
 
         @TruffleBoundary
-        private String doFormat(double self, String formatString, PythonCore core) {
-            InternalFormat.Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
-            FloatFormatter formatter = new FloatFormatter(core, validateAndPrepareForFloat(spec, getCore(), "float"));
+        private String doFormat(double self, String formatString) {
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, __FORMAT__);
+            FloatFormatter formatter = new FloatFormatter(getRaiseNode(), validateAndPrepareForFloat(getRaiseNode(), spec, "float"));
             formatter.format(self);
             return formatter.pad().getResult();
         }

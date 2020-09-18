@@ -20,6 +20,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -27,8 +28,8 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 public final class StringFormatProcessor extends FormatProcessor<String> {
     private final String formatText;
 
-    public StringFormatProcessor(PythonCore core, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
-        super(core, getItemNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
+    public StringFormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, String format) {
+        super(core, raiseNode, getItemNode, getTupleItemNode, new FormattingBuffer.StringFormattingBuffer(format.length() + 100));
         index = 0;
         this.formatText = format;
     }
@@ -43,7 +44,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         try {
             return formatText.charAt(index++);
         } catch (StringIndexOutOfBoundsException e) {
-            throw core.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw raiseNode.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -73,15 +74,15 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         TextFormatter ft;
         Object arg = getArg();
         if (arg instanceof String && ((String) arg).length() == 1) {
-            f = ft = setupFormat(new TextFormatter(core, buffer, spec));
+            f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
             ft.format((String) arg);
         } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
-            f = ft = new TextFormatter(core, buffer, spec);
+            f = ft = new TextFormatter(raiseNode, buffer, spec);
             ft.format(((PString) arg).getCharSequence());
         } else {
             f = formatInteger(asNumber(arg, spec.type), spec);
             if (f == null) {
-                throw core.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
+                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_INT_OR_CHAR, spec.type);
             }
         }
         return f;
@@ -103,12 +104,12 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
                             // this is mostly what encode('ascii', 'backslashreplace') would do
                             result = new String(BytesUtils.unicodeNonAsciiEscape(result.toString()), StandardCharsets.US_ASCII);
                         }
-                        TextFormatter ft = new TextFormatter(core, buffer, spec);
+                        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
                         ft.format(result.toString());
                         return ft;
                     }
                 }
-                throw core.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
+                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
             default:
                 return null;
         }

@@ -25,6 +25,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -55,10 +56,12 @@ abstract class FormatProcessor<T> {
 
     protected int index;
     protected final PythonCore core;
+    protected final PRaiseNode raiseNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(PythonCore core, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
         this.core = core;
+        this.raiseNode = raiseNode;
         this.getItemNode = getItemNode;
         this.getTupleItemNode = getTupleItemNode;
         this.buffer = buffer;
@@ -119,7 +122,7 @@ abstract class FormatProcessor<T> {
                 break;
         }
         if (ret == null) {
-            throw core.raise(TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
+            throw raiseNode.raise(TypeError, ErrorMessages.NOT_ENOUGH_ARGS_FOR_FORMAT_STRING);
         }
         return ret;
     }
@@ -140,10 +143,10 @@ abstract class FormatProcessor<T> {
                     value = Long.MAX_VALUE;
                 }
             } else {
-                throw core.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
+                throw raiseNode.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
             }
             if (value > Integer.MAX_VALUE) {
-                throw core.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
+                throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
             }
             return (int) value;
         } else {
@@ -156,7 +159,7 @@ abstract class FormatProcessor<T> {
                 try {
                     return parseNumber(numStart, index);
                 } catch (NumberFormatException e) {
-                    throw core.raise(ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
+                    throw raiseNode.raise(ValueError, ErrorMessages.TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING);
                 }
             }
             index -= 1;
@@ -214,13 +217,13 @@ abstract class FormatProcessor<T> {
     protected InternalFormat.Formatter formatInteger(Object intObj, InternalFormat.Spec spec) {
         IntegerFormatter.Traditional fi;
         if (intObj instanceof Integer) {
-            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
             fi.format((Integer) intObj);
         } else if (intObj instanceof Long) {
-            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
             fi.format((BigInteger.valueOf((Long) intObj)));
         } else if (intObj instanceof PInt) {
-            fi = setupFormat(new IntegerFormatter.Traditional(core, buffer, spec));
+            fi = setupFormat(new IntegerFormatter.Traditional(raiseNode, buffer, spec));
             fi.format(((PInt) intObj).getValue());
         } else {
             // It couldn't be converted, null indicates error
@@ -256,7 +259,7 @@ abstract class FormatProcessor<T> {
         try {
             return formatImpl(args1);
         } catch (OutOfMemoryError e) {
-            throw core.raise(MemoryError, null);
+            throw raiseNode.raise(MemoryError);
         }
     }
 
@@ -321,7 +324,7 @@ abstract class FormatProcessor<T> {
             if (c == '(') {
                 // Mapping key, consisting of a parenthesised sequence of characters.
                 if (mapping == null) {
-                    throw core.raise(TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
+                    throw raiseNode.raise(TypeError, ErrorMessages.FORMAT_REQUIRES_MAPPING);
                 }
                 // Scan along until a matching close parenthesis is found
                 int parens = 1;
@@ -460,9 +463,9 @@ abstract class FormatProcessor<T> {
                     f = formatInteger(asNumber(arg, spec.type), spec);
                     if (f == null) {
                         if (allowsFloat(spec.type)) {
-                            throw core.raise(TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw raiseNode.raise(TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
                         } else {
-                            throw core.raise(TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw raiseNode.raise(TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
                         }
                     }
                     break;
@@ -474,7 +477,7 @@ abstract class FormatProcessor<T> {
                 case 'g':
                 case 'G':
                     // Format using this Spec the double form of the argument.
-                    f = ff = new FloatFormatter(core, buffer, spec);
+                    f = ff = new FloatFormatter(raiseNode, buffer, spec);
 
                     // Note various types accepted here as long as they have a __float__ method.
                     arg = getArg();
@@ -484,7 +487,7 @@ abstract class FormatProcessor<T> {
                 default:
                     f = handleRemainingFormats(spec);
                     if (f == null) {
-                        throw core.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
+                        throw raiseNode.raise(ValueError, ErrorMessages.UNSUPPORTED_FORMAT_CHAR_AT_INDEX, spec.type, (int) spec.type, index - 1);
                     }
             }
 
@@ -500,7 +503,7 @@ abstract class FormatProcessor<T> {
          * that has not yet been used.
          */
         if (argIndex == -1 || (argIndex >= 0 && PythonObjectLibrary.getUncached().length(args1) >= argIndex + 1)) {
-            throw core.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
+            throw raiseNode.raise(TypeError, ErrorMessages.NOT_ALL_ARGS_CONVERTED_DURING_FORMATTING, getFormatType());
         }
 
         // Return the final buffer contents as a str or unicode as appropriate.
