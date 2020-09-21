@@ -83,7 +83,7 @@ public class PythonUnicodeEscapeCharsetDecoder extends CharsetDecoder {
         source.get(numbuf, 0, count);
         int codePoint;
         try {
-            codePoint = Integer.parseInt(new String(numbuf, 0, count), 16);
+            codePoint = Integer.parseInt(new String(numbuf, 0, count, StandardCharsets.US_ASCII), 16);
         } catch (NumberFormatException e) {
             int pos = source.position();
             source.position(initialPosition);
