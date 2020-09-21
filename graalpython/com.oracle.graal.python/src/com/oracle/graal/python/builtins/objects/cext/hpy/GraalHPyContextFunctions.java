@@ -288,18 +288,21 @@ public abstract class GraalHPyContextFunctions {
                 // process legacy methods
                 {
                     Object legacyMethods = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
-                    if (!ptrLib.hasArrayElements(legacyMethods)) {
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
-                    }
+                    // the field 'legacy_methods' may be 'NULL'
+                    if (!ptrLib.isNull(legacyMethods)) {
+                        if (!ptrLib.hasArrayElements(legacyMethods)) {
+                            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
+                        }
 
-                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                    for (long i = 0; i < nLegacyMethods; i++) {
-                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+                        long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
+                        for (long i = 0; i < nLegacyMethods; i++) {
+                            Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
 
-                        PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
-                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
-                        writeAttrNode.execute(module, fun.getName(), method);
+                            PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
+                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                            writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                            writeAttrNode.execute(module, fun.getName(), method);
+                        }
                     }
                 }
 

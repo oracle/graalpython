@@ -157,10 +157,13 @@ void* graal_hpy_HPyType_SpecParam_get_object(HPyType_SpecParam *def) {
 
 void* graal_hpy_module_get_legacy_methods(HPyModuleDef *moduleDef) {
 	uint64_t len=0;
-	while ((moduleDef->legacy_methods[len]).ml_name != NULL) {
-		len++;
+	if (moduleDef->legacy_methods != NULL) {
+		while ((moduleDef->legacy_methods[len]).ml_name != NULL) {
+			len++;
+		}
+		return polyglot_from_cpy_PyMethodDef_array(moduleDef->legacy_methods, len);
 	}
-	return polyglot_from_cpy_PyMethodDef_array(moduleDef->legacy_methods, len);
+	return NULL;
 }
 
 void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
