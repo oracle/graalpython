@@ -92,7 +92,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_codecs")
 public class CodecsModuleBuiltins extends PythonBuiltins {
@@ -116,12 +116,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         public abstract RuntimeException execute(TruffleEncoder encoder, Object inputObject);
 
         @Specialization
-        public RuntimeException doRaise(TruffleEncoder encoder, Object inputObject,
+        static RuntimeException doRaise(TruffleEncoder encoder, Object inputObject,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode,
                         @CachedLanguage PythonLanguage pythonLanguage) {
             int start = encoder.getInputPosition();
-            int end = start + encoder.getErrorLenght();
+            int end = start + encoder.getErrorLength();
             Object exception = callNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
@@ -139,38 +139,36 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         public abstract void execute(TruffleEncoder encoder, String errorAction, Object inputObject);
 
         @Specialization
-        void handle(TruffleEncoder encoder, String errorAction, Object inputObject,
-                        @Cached("createIdentityProfile()") ValueProfile actionProfile,
+        static void handle(TruffleEncoder encoder, String errorAction, Object inputObject,
+                        @Cached ConditionProfile strictProfile,
+                        @Cached ConditionProfile backslashreplaceProfile,
+                        @Cached ConditionProfile surrogatepassProfile,
                         @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
+            boolean fixed;
             try {
                 // Ignore and replace are handled by Java Charset
-                switch (actionProfile.profile(errorAction)) {
-                    case STRICT:
-                        break;
-                    case BACKSLASHREPLACE:
-                        if (backslashreplace(encoder)) {
-                            return;
-                        }
-                        break;
-                    case SURROGATEPASS:
-                        if (surrogatepass(encoder)) {
-                            return;
-                        }
-                        break;
-                    default:
-                        raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+                if (strictProfile.profile(STRICT.equals(errorAction))) {
+                    fixed = false;
+                } else if (backslashreplaceProfile.profile(BACKSLASHREPLACE.equals(errorAction))) {
+                    fixed = backslashreplace(encoder);
+                } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
+                    fixed = surrogatepass(encoder);
+                } else {
+                    throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(MemoryError);
             }
-            throw raiseEncodingErrorNode.execute(encoder, inputObject);
+            if (!fixed) {
+                throw raiseEncodingErrorNode.execute(encoder, inputObject);
+            }
         }
 
         @TruffleBoundary
         private static boolean backslashreplace(TruffleEncoder encoder) {
-            String p = new String(encoder.getInputChars(encoder.getErrorLenght()));
+            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
             StringBuilder sb = new StringBuilder();
             byte[] buf = new byte[10];
             for (int i = 0; i < p.length();) {
@@ -195,7 +193,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         private static boolean surrogatepass(TruffleEncoder encoder) {
             // UTF-8 only for now. The name should be normalized already
             if (encoder.getEncodingName().equals("utf_8")) {
-                String p = new String(encoder.getInputChars(encoder.getErrorLenght()));
+                String p = new String(encoder.getInputChars(encoder.getErrorLength()));
                 byte[] replacement = new byte[p.length() * 3];
                 int outp = 0;
                 for (int i = 0; i < p.length();) {
@@ -209,7 +207,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
                     i += Character.charCount(ch);
                 }
-                encoder.replace(encoder.getErrorLenght(), replacement, 0, outp);
+                encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
                 return true;
             }
             return false;
@@ -225,12 +223,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         public abstract RuntimeException execute(TruffleDecoder decoder, Object inputObject);
 
         @Specialization
-        public RuntimeException doRaise(TruffleDecoder decoder, Object inputObject,
+        static RuntimeException doRaise(TruffleDecoder decoder, Object inputObject,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode,
                         @CachedLanguage PythonLanguage pythonLanguage) {
             int start = decoder.getInputPosition();
-            int end = start + decoder.getErrorLenght();
+            int end = start + decoder.getErrorLength();
             Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
             if (exception instanceof PBaseException) {
                 throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
@@ -248,33 +246,36 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         public abstract void execute(TruffleDecoder decoder, String errorAction, Object inputObject);
 
         @Specialization
-        void doStrict(TruffleDecoder decoder, String errorAction, Object inputObject,
-                        @Cached("createIdentityProfile()") ValueProfile actionProfile,
+        static void doStrict(TruffleDecoder decoder, String errorAction, Object inputObject,
+                        @Cached ConditionProfile strictProfile,
+                        @Cached ConditionProfile backslashreplaceProfile,
+                        @Cached ConditionProfile surrogatepassProfile,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
-            // Ignore and replace are handled by Java Charset
-            switch (actionProfile.profile(errorAction)) {
-                case STRICT:
-                    break;
-                case BACKSLASHREPLACE:
-                    if (backslashreplace(decoder)) {
-                        return;
-                    }
-                    break;
-                case SURROGATEPASS:
-                    if (surrogatepass(decoder)) {
-                        return;
-                    }
-                    break;
-                default:
-                    raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+            boolean fixed;
+            try {
+                // Ignore and replace are handled by Java Charset
+                if (strictProfile.profile(STRICT.equals(errorAction))) {
+                    fixed = false;
+                } else if (backslashreplaceProfile.profile(BACKSLASHREPLACE.equals(errorAction))) {
+                    fixed = backslashreplace(decoder);
+                } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
+                    fixed = surrogatepass(decoder);
+                } else {
+                    throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
+                }
+            } catch (OutOfMemoryError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(MemoryError);
             }
-            throw raiseDecodingErrorNode.execute(decoder, inputObject);
+            if (!fixed) {
+                throw raiseDecodingErrorNode.execute(decoder, inputObject);
+            }
         }
 
         @TruffleBoundary
         private static boolean backslashreplace(TruffleDecoder decoder) {
-            byte[] p = decoder.getInputBytes(decoder.getErrorLenght());
+            byte[] p = decoder.getInputBytes(decoder.getErrorLength());
             char[] replacement = new char[p.length * 4];
             int outp = 0;
             byte[] buf = new byte[4];
@@ -515,7 +516,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         @Specialization
-        Object lookup(String encoding) {
+        static Object lookup(String encoding) {
             if (CharsetMapping.getCharset(encoding) != null) {
                 return true;
             } else {
@@ -623,7 +624,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public int getErrorLenght() {
+        public int getErrorLength() {
             return coderResult.length();
         }
 
@@ -757,7 +758,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public int getErrorLenght() {
+        public int getErrorLength() {
             return coderResult.length();
         }
 
