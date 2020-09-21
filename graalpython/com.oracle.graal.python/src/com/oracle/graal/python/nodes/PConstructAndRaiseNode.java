@@ -109,7 +109,7 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseInternal(frame, type, arguments, keywords, callNode, language, core);
     }
 
-    @Specialization(guards = {"arguments == null"})
+    @Specialization(guards = {"format != null", "arguments == null"})
     PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, String format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
@@ -117,11 +117,11 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
-        Object[] args = new Object[]{getFormattedMessage(pol, format, formatArgs)};
+        Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format};
         return raiseInternal(frame, type, args, keywords, callNode, language, core);
     }
 
-    @Specialization(guards = {"arguments != null"})
+    @Specialization(guards = {"format != null", "arguments != null"})
     PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, String format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,

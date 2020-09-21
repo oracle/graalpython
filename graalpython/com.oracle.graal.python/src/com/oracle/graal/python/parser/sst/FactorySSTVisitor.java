@@ -995,7 +995,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 }
 
                 WriteNode readNode = (WriteNode) scopeEnvironment.findVariable(node.asName).makeWriteNode(EmptyNode.create());
-                result = nodeFactory.createImportFrom(from, new String[]{parts[parts.length - 1]}, new WriteNode[]{readNode}, level);
+                StatementNode importFrom = nodeFactory.createImportFrom(from, new String[]{parts[parts.length - 1]}, new WriteNode[]{readNode}, level);
+                result = nodeFactory.createBlock(importNode.asStatement(), importFrom);
             } else {
                 result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
             }
