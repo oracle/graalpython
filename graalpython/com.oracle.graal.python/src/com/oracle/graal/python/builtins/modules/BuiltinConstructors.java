@@ -2293,6 +2293,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 int slotlen = getListLenNode().execute(slotsStorage);
 
+                if (slotlen > 0 && hasItemSize) {
+                    throw raise(TypeError, ErrorMessages.NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S, base);
+                }
+
                 for (int i = 0; i < slotlen; i++) {
                     String slotName;
                     Object element = getSlotItemNode().execute(frame, slotsStorage, i);

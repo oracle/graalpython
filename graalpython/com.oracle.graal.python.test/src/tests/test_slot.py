@@ -151,5 +151,13 @@ class TestSlots(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, '__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0'):
             class C(A, B): __slots__ = ["__weakref__", "__weakref__"]
             
+    def test_itemsize_and_non_empty_slots(self):
+        raised = False
+        try:
+            class C(tuple): __slots__ = ['a']
+        except TypeError:
+            raised = True
+        assert raised        
+        
 if __name__ == "__main__":
     unittest.main()
