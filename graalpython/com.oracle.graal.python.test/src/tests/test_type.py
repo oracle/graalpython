@@ -296,4 +296,37 @@ def test_dict():
     str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
     assert SubSlots().__dict__ == {}
         
+def test_itemsize():
+    assert object.__itemsize__ == 0
+    assert list.__itemsize__ == 0
+    assert type.__itemsize__ == 40
+    assert tuple.__itemsize__ == 8
+    
+    class C: pass
+    assert C.__itemsize__ == 0
+    
+    class C(tuple): pass
+    assert C.__itemsize__ == 8
+    
+    
+    raised = False
+    try:
+        object.__itemsize__ = 1
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        C.__itemsize__ = 1
+    except AttributeError:
+        raised = True
+    assert raised
 
+    class C():
+        __itemsize__ = 'abc'
+    assert C.__itemsize__ == 0
+    
+    class C(tuple):
+        __itemsize__ = 42
+    assert C.__itemsize__ == 8

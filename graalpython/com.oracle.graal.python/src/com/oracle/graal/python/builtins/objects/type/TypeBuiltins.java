@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
@@ -1050,47 +1051,36 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class ItemsizeNode extends AbstractSlotNode {
 
-        @Specialization(guards = "isNoValue(value)")
-        Object getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") IsBuiltinClassProfile profile,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            return getItemsizeManaged(getCore().lookupType(cls), value, profile, getName);
+        static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
+                        @Cached GetItemsizeNode getItemsizeNode) {
+            return getItemsizeNode.execute(cls);
         }
 
         @Specialization(guards = "isNoValue(value)")
         static Object getItemsizeManaged(PythonManagedClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") IsBuiltinClassProfile profile,
-                        @Cached("create()") ReadAttributeFromObjectNode getName) {
-            Object itemsize;
-            // recursion anchor; since the metaclass of 'type' is 'type'
-            if (profile.profileClass(cls, PythonBuiltinClassType.PythonClass)) {
-                itemsize = getName.execute(cls, TYPE_ITEMSIZE);
-            } else {
-                itemsize = getName.execute(cls, __ITEMSIZE__);
-            }
-            return itemsize != PNone.NO_VALUE ? itemsize : 0;
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setItemsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = "!isNoValue(value)")
-        Object setItemsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
-        }
-
-        @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
-        static Object setItemsize(PythonClass cls, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode setName) {
-            return setName.execute(cls, __ITEMSIZE__, value);
+                        @Cached GetItemsizeNode getItemsizeNode) {
+            return getItemsizeNode.execute(cls);
         }
 
         @Specialization(guards = "isNoValue(value)")
         static Object getNative(PythonNativeClass cls, @SuppressWarnings("unused") PNone value,
-                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
-            return getTpDictoffsetNode.execute(cls, NativeMember.TP_ITEMSIZE);
+                        @Cached GetItemsizeNode getItemsizeNode) {
+            return getItemsizeNode.execute(cls);
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setItemsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setItemsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
+        @Specialization(guards = {"!isPythonBuiltinClass(cls)", "!isNoValue(value)"})
+        Object setItemsize(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
         }
 
         @Specialization(guards = "!isNoValue(value)")

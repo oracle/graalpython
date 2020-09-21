@@ -43,7 +43,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit));
+PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit), sizeof(PyObject *));
 
 PyObject * _PyLong_Zero;
 PyObject * _PyLong_One;

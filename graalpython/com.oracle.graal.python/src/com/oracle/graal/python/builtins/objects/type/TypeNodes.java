@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
@@ -1471,6 +1472,208 @@ public abstract class TypeNodes {
 
         public static GetInstanceShape create() {
             return GetInstanceShapeNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetItemsizeNode extends Node {
+
+        public abstract Long execute(Object cls);
+
+        @Specialization
+        static Long getItemsizeType(PythonBuiltinClassType cls) {
+            return getBuiltinTypeItemsize(cls);
+        }
+
+        @Specialization
+        static Long getItemsizeManaged(PythonBuiltinClass cls) {
+            return getItemsizeType(cls.getType());
+        }
+
+        @Specialization
+        static Long getItemsizeManaged(PythonClass cls,
+                        @Cached ConditionProfile hasValueProfile,
+                        @Cached ReadAttributeFromObjectNode readNode,
+                        @Cached WriteAttributeToObjectNode writeNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached GetItemsizeNode baseItemsizeNode) {
+            Object itemsize = readNode.execute(cls, TYPE_ITEMSIZE);
+            if (hasValueProfile.profile(itemsize != PNone.NO_VALUE)) {
+                return (long) itemsize;
+            }
+            itemsize = computeItemSize(cls, getBaseNode, baseItemsizeNode);
+            writeNode.execute(cls, TYPE_ITEMSIZE, itemsize);
+            return (long) itemsize;
+        }
+
+        private static Long computeItemSize(PythonManagedClass cls, GetBaseClassNode getBaseNode, GetItemsizeNode baseItemsizeNode) {
+            if (cls instanceof PythonBuiltinClass) {
+                return getItemsizeType(((PythonBuiltinClass) cls).getType());
+            }
+            Object base = getBaseNode.execute(cls);
+            assert base != null;
+            return baseItemsizeNode.execute(base);
+        }
+
+        @Specialization
+        static Long getNative(PythonNativeClass cls,
+                        @Cached GetTypeMemberNode getTpDictoffsetNode) {
+            return (long) getTpDictoffsetNode.execute(cls, NativeMember.TP_ITEMSIZE);
+        }
+
+        private static long getBuiltinTypeItemsize(PythonBuiltinClassType cls) {
+            switch (cls) {
+                case PBytes:
+                    return 1;
+                case PInt:
+                    return 4;
+                case PFrame:
+                case PMemoryView:
+                case PTuple:
+                    return 8;
+                case PythonClass:
+                    return 40;
+
+                case ForeignObject:
+                case Boolean:
+                case GetSetDescriptor:
+                case PArray:
+                case PArrayIterator:
+                case PIterator:
+                case PBuiltinFunction:
+                case PBuiltinMethod:
+                case PByteArray:
+                case PCell:
+                case PComplex:
+                case PDict:
+                case PDictItemIterator:
+                case PDictReverseItemIterator:
+                case PDictItemsView:
+                case PDictKeyIterator:
+                case PDictReverseKeyIterator:
+                case PDictKeysView:
+                case PDictValueIterator:
+                case PDictReverseValueIterator:
+                case PDictValuesView:
+                case PEllipsis:
+                case PEnumerate:
+                case PMap:
+                case PFloat:
+                case PFrozenSet:
+                case PFunction:
+                case PGenerator:
+                case PList:
+                case PMappingproxy:
+                case PMethod:
+                case PMMap:
+                case PNone:
+                case PNotImplemented:
+                case PRandom:
+                case PRange:
+                case PReferenceType:
+                case PSentinelIterator:
+                case PForeignArrayIterator:
+                case PReverseIterator:
+                case PSet:
+                case PSlice:
+                case PString:
+                case PTraceback:
+                case PythonModule:
+                case PythonObject:
+                case Super:
+                case PCode:
+                case PZip:
+                case PZipImporter:
+                case PBuffer:
+                case PThread:
+                case PLock:
+                case PRLock:
+                case PSemLock:
+                case PSocket:
+                case PStaticmethod:
+                case PClassmethod:
+                case PScandirIterator:
+                case PDirEntry:
+                case PLZMACompressor:
+                case PLZMADecompressor:
+                case LsprofProfiler:
+                case PStruct:
+                case PBaseException:
+                case SystemExit:
+                case KeyboardInterrupt:
+                case GeneratorExit:
+                case Exception:
+                case StopIteration:
+                case StopAsyncIteration:
+                case ArithmeticError:
+                case FloatingPointError:
+                case OverflowError:
+                case ZeroDivisionError:
+                case AssertionError:
+                case AttributeError:
+                case BufferError:
+                case EOFError:
+                case ImportError:
+                case ModuleNotFoundError:
+                case LookupError:
+                case IndexError:
+                case KeyError:
+                case MemoryError:
+                case NameError:
+                case UnboundLocalError:
+                case OSError:
+                case BlockingIOError:
+                case ChildProcessError:
+                case ConnectionError:
+                case BrokenPipeError:
+                case ConnectionAbortedError:
+                case ConnectionRefusedError:
+                case ConnectionResetError:
+                case FileExistsError:
+                case FileNotFoundError:
+                case InterruptedError:
+                case IsADirectoryError:
+                case NotADirectoryError:
+                case PermissionError:
+                case ProcessLookupError:
+                case TimeoutError:
+                case ZipImportError:
+                case ZLibError:
+                case LZMAError:
+                case StructError:
+                case SocketGAIError:
+                case SocketHError:
+                case SocketTimeout:
+                case ReferenceError:
+                case RuntimeError:
+                case NotImplementedError:
+                case SyntaxError:
+                case IndentationError:
+                case TabError:
+                case SystemError:
+                case TypeError:
+                case ValueError:
+                case UnicodeError:
+                case UnicodeDecodeError:
+                case UnicodeEncodeError:
+                case UnicodeTranslateError:
+                case RecursionError:
+                case Warning:
+                case BytesWarning:
+                case DeprecationWarning:
+                case FutureWarning:
+                case ImportWarning:
+                case PendingDeprecationWarning:
+                case ResourceWarning:
+                case RuntimeWarning:
+                case SyntaxWarning:
+                case UnicodeWarning:
+                case UserWarning:
+                    return 0;
+                default:
+                    assert false : "unknown PythonBuiltinClassType " + cls;
+            }
+            return 0;
         }
     }
 }

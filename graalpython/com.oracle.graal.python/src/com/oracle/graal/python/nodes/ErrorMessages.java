@@ -382,6 +382,7 @@ public abstract class ErrorMessages {
     public static final String NO_FUNCTION_FOUND = "no function %s%s found in %s";
     public static final String NO_SUCH_FILE_OR_DIR = "No such file or directory: '%s:/%s'";
     public static final String NO_SUCH_NAME = "no such name";
+    public static final String NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S = "nonempty __slots__ not supported for subtype of '%s'";
     public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
     public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";

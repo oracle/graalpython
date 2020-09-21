@@ -68,7 +68,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASSCELL__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICTOFFSET__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
@@ -169,8 +168,10 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsAcceptableBaseNode;
@@ -187,6 +188,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -2090,6 +2092,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached CallNode callNewFuncNode,
                         @Cached("create(__DICT__)") LookupAttributeInMRONode getDictAttrNode,
                         @Cached("create(__WEAKREF__)") LookupAttributeInMRONode getWeakRefAttrNode,
+                        @Cached GetItemsizeNode getItemSize,
+                        @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
                         @Cached DictBuiltins.CopyNode copyDict) {
             // Determine the proper metatype to deal with this
@@ -2107,7 +2111,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
 
                 for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2202,7 +2206,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
-                        HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode, LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode) {
+                        HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode, LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode,
+                        GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2259,12 +2264,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // may_add_dict = base->tp_dictoffset == 0
             boolean mayAddDict = getDictAttrNode.execute(base) == PNone.NO_VALUE;
             // may_add_weak = base->tp_weaklistoffset == 0 && base->tp_itemsize == 0
-            // TODO: maybe also slots size as equivalent of tp_itemsize?
-            boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE;
+            boolean hasItemSize = getItemSize.execute(base) != 0;
+            boolean mayAddWeakRef = getWeakRefAttrNode.execute(base) == PNone.NO_VALUE && !hasItemSize;
 
             if (slots[0] == null) {
                 // takes care of checking if we may_add_dict and adds it if needed
-                addDictIfNative(frame, pythonClass);
+                addDictIfNative(frame, pythonClass, getItemSize, writeItemSize);
                 addDictDescrAttribute(basesArray, getDictAttrNode, pythonClass);
                 addWeakrefDescrAttribute(pythonClass);
             } else {
@@ -2287,8 +2292,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     slotsStorage = ((PList) slotsObject).getSequenceStorage();
                 }
                 int slotlen = getListLenNode().execute(slotsStorage);
-                // TODO: tfel - check if slots are allowed. They are not if the base class is var
-                // sized
 
                 for (int i = 0; i < slotlen; i++) {
                     String slotName;
@@ -2300,7 +2303,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
                     if (__DICT__.equals(slotName)) {
-                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass)) {
+                        if (!mayAddDict || addDict || addDictIfNative(frame, pythonClass, getItemSize, writeItemSize)) {
                             throw raise(TypeError, ErrorMessages.DICT_SLOT_DISALLOWED_WE_GOT_ONE);
                         }
                         addDict = true;
@@ -2574,7 +2577,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         /**
          * check that the native base does not already have tp_dictoffset
          */
-        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass) {
+        private boolean addDictIfNative(VirtualFrame frame, PythonManagedClass pythonClass, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             boolean addedNewDict = false;
             if (pythonClass.needsNativeAllocation()) {
                 for (Object cls : getMro(pythonClass)) {
@@ -2582,7 +2585,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         // Use GetAnyAttributeNode since these are get-set-descriptors
                         long dictoffset = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __DICTOFFSET__));
                         long basicsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __BASICSIZE__));
-                        long itemsize = ensureCastToIntNode().execute(ensureGetAttributeNode().executeObject(frame, cls, __ITEMSIZE__));
+                        long itemsize = ensureCastToIntNode().execute(getItemSize.execute(cls));
                         if (dictoffset == 0) {
                             addedNewDict = true;
                             // add_dict
@@ -2595,7 +2598,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         }
                         ensureWriteAttrNode().execute(frame, pythonClass, __DICTOFFSET__, dictoffset);
                         ensureWriteAttrNode().execute(frame, pythonClass, __BASICSIZE__, basicsize);
-                        ensureWriteAttrNode().execute(frame, pythonClass, __ITEMSIZE__, itemsize);
+                        writeItemSize.execute(pythonClass, TYPE_ITEMSIZE, itemsize);
                         break;
                     }
                 }
