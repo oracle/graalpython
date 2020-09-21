@@ -1156,6 +1156,11 @@ public class GraalHPyNodes {
                         PCallHPyFunction callHelperFunctionNode,
                         HPyAsPythonObjectNode asPythonObjectNode,
                         PythonObjectFactory factory) throws InteropException {
+
+            if (ptrLib.isNull(typeSpecParamArray)) {
+                throw new CannotCastException();
+            }
+
             long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
             ArrayList<Object> basesList = new ArrayList<>();
             for (long i = 0; i < nSpecParam; i++) {

@@ -109,11 +109,14 @@ HPyType_Spec* graal_hpy_from_HPyType_Spec(HPyType_Spec *ptr) {
 }
 
 HPyType_SpecParam* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
-	uint64_t len=0;
-	while (ptr[len].kind) {
-		len++;
+	if (ptr != NULL) {
+	    uint64_t len=0;
+	    while (ptr[len].kind) {
+		    len++;
+	    }
+	    return polyglot_from_HPyType_SpecParam_array(ptr, len);
 	}
-	return polyglot_from_HPyType_SpecParam_array(ptr, len);
+	return NULL;
 }
 
 void* graal_hpy_get_m_name(HPyModuleDef *moduleDef) {
