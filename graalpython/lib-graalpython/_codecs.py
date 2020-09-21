@@ -261,12 +261,22 @@ def unicode_internal_decode(obj, errors=None):
 
 @__graalpython__.builtin
 def raw_unicode_escape_encode(string, errors=None):
-    return __truffle_raw_encode(string, errors)
+    return __truffle_encode(string, "raw_unicode_escape", errors)
 
 
 @__graalpython__.builtin
 def raw_unicode_escape_decode(string, errors=None):
-    return __truffle_raw_decode(string, errors)
+    return __truffle_decode(string, "raw_unicode_escape", errors)
+
+
+@__graalpython__.builtin
+def unicode_escape_encode(string, errors=None):
+    return __truffle_encode(string, "unicode_escape", errors)
+
+
+@__graalpython__.builtin
+def unicode_escape_decode(string, errors=None):
+    return __truffle_decode(string, "unicode_escape", errors)
 
 
 @__graalpython__.builtin
