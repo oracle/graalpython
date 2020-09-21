@@ -70,7 +70,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -469,14 +468,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     @TruffleBoundary
-    protected Iterable<Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
-        ArrayList<Scope> scopes = new ArrayList<>();
-        for (Scope s : super.findLocalScopes(context, node, frame)) {
+    // Remove in GR-26206
+    @SuppressWarnings("deprecation")
+    protected Iterable<com.oracle.truffle.api.Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
+        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
+        for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, frame)) {
             if (frame == null) {
                 PFunctionArgsFinder argsFinder = new PFunctionArgsFinder(node);
 
-                Scope.Builder scopeBuilder = Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(), s.getReceiver()).rootInstance(
-                                s.getRootInstance()).arguments(argsFinder.collectArgs());
+                com.oracle.truffle.api.Scope.Builder scopeBuilder = com.oracle.truffle.api.Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(),
+                                s.getReceiver()).rootInstance(
+                                                s.getRootInstance()).arguments(argsFinder.collectArgs());
 
                 scopes.add(scopeBuilder.build());
             } else {
@@ -487,11 +489,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
             if (globals != null) {
-                scopes.add(Scope.newBuilder("globals()", scopeFromObject(globals)).build());
+                scopes.add(com.oracle.truffle.api.Scope.newBuilder("globals()", scopeFromObject(globals)).build());
             }
             Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
             if (generatorFrame != null) {
-                for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
+                for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, generatorFrame)) {
                     scopes.add(s);
                 }
             }
@@ -508,12 +510,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    protected Iterable<Scope> findTopScopes(PythonContext context) {
-        ArrayList<Scope> scopes = new ArrayList<>();
+    // Remove in GR-26206
+    @SuppressWarnings("deprecation")
+    protected Iterable<com.oracle.truffle.api.Scope> findTopScopes(PythonContext context) {
+        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
         if (context.getBuiltins() != null) {
             // false during initialization
-            scopes.add(Scope.newBuilder(BuiltinNames.__MAIN__, context.getMainModule()).build());
-            scopes.add(Scope.newBuilder(BuiltinNames.BUILTINS, scopeFromObject(context.getBuiltins())).build());
+            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.__MAIN__, context.getMainModule()).build());
+            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.BUILTINS, scopeFromObject(context.getBuiltins())).build());
         }
         return scopes;
     }
