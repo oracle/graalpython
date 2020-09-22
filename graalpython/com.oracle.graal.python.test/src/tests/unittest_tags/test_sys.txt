@@ -27,6 +27,8 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setrecursionlimit_recursion_depth
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_getwindowsversion_no_instantiation
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_c_locale_surrogateescape
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_posix_locale_surrogateescape
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook_fail
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook
