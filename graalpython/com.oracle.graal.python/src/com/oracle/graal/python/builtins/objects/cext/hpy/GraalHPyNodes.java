@@ -1068,9 +1068,12 @@ public class GraalHPyNodes {
                         @Cached PRaiseNode raiseNode) {
 
             try {
-                String typeName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(typeSpec, "name")));
+                // the name as given by the specification
+                String specName = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(typeSpec, "name")));
 
-                // process defines
+                // extract module and type name
+                String[] names = splitName(specName);
+                assert names.length == 2;
 
                 Object defines = ptrLib.readMember(typeSpec, "defines");
                 if (!ptrLib.hasArrayElements(defines)) {
@@ -1112,12 +1115,21 @@ public class GraalHPyNodes {
                 try {
                     bases = extractBases(context, typeSpecParamArray, ptrLib, castToJavaIntNode, callHelperFunctionNode, hPyAsPythonObjectNode, factory);
                 } catch (CannotCastException | InteropException e) {
-                    throw raiseNode.raise(SystemError, "failed to extract bases from type spec params for type %s", typeName);
+                    throw raiseNode.raise(SystemError, "failed to extract bases from type spec params for type %s", specName);
                 }
 
                 // create the type object
                 Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.TYPE);
-                Object newType = callTypeNewNode.execute(typeBuiltin, PythonBuiltinClassType.PythonClass, typeName, bases, factory.createDict(dictStorage), PKeyword.EMPTY_KEYWORDS);
+                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, factory.createDict(dictStorage));
+
+                // determine and set the correct module attribute
+                String value = names[0];
+                if (value != null) {
+                    writeAttributeToObjectNode.execute(newType, SpecialAttributeNames.__MODULE__, value);
+                } else {
+                    // TODO(fa): issue deprecation warning with message "builtin type %.200s has no
+                    // __module__ attribute"
+                }
 
                 // store flags, basicsize, and itemsize to type
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
@@ -1188,6 +1200,22 @@ public class GraalHPyNodes {
                 }
             }
             return factory.createTuple(basesList.toArray());
+        }
+
+        /**
+         * Extract the heap type's and the module's name from the name given by the type
+         * specification.<br/>
+         * According to CPython, we need to look for the first {@code '.'} and everything before it
+         * is the module name. Everything after it (which may also contain more dots) is the type
+         * name. See also: {@code typeobject.c: PyType_FromSpecWithBases}
+         */
+        @TruffleBoundary
+        private static String[] splitName(String specName) {
+            int firstDotIdx = specName.indexOf('.');
+            if (firstDotIdx != -1) {
+                return new String[]{specName.substring(0, firstDotIdx), specName.substring(firstDotIdx + 1)};
+            }
+            return new String[]{null, specName};
         }
 
         private static long castToLong(InteropLibrary lib, Object value) throws OverflowException {
