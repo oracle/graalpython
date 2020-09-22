@@ -1843,6 +1843,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
+        @CompilationFinal private CastToJavaStringNode castToJavaStringNode;
 
         public final Object executeWith(VirtualFrame frame, Object arg) {
             return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
@@ -1866,8 +1867,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return asPString(strClass, (String) result);
             }
 
-            // PythonObjectLibrary guarantees that the returned object is an instanceof of 'str'
-            return result;
+            if (isPrimitiveProfile.profileClass(strClass, PythonBuiltinClassType.PString)) {
+                // PythonObjectLibrary guarantees that the returned object is an instanceof of 'str'
+                return result;
+            } else {
+                try {
+                    return asPString(strClass, getCastToJavaStringNode().execute(result));
+                } catch (CannotCastException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("asPstring result not castable to String");
+                }
+            }
         }
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
@@ -1945,6 +1955,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 isPStringProfile = ConditionProfile.createBinaryProfile();
             }
             return isPStringProfile;
+        }
+
+        private CastToJavaStringNode getCastToJavaStringNode() {
+            if (castToJavaStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToJavaStringNode = insert(CastToJavaStringNode.create());
+            }
+            return castToJavaStringNode;
         }
 
         public static StrNode create() {
