@@ -984,11 +984,22 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         } else {
             if (dotIndex != -1) {
                 String[] parts = node.name.split("\\.");
-                for (int i = 1; i < parts.length; i++) {
-                    importNode = nodeFactory.createGetAttribute(importNode, parts[i]);
+
+                String from = node.name.substring(0, node.name.lastIndexOf("."));
+                int level = 0;
+                while (from.length() > level && from.charAt(level) == '.') {
+                    level++;
                 }
+                if (level > 0) {
+                    from = from.substring(level);
+                }
+
+                WriteNode readNode = (WriteNode) scopeEnvironment.findVariable(node.asName).makeWriteNode(EmptyNode.create());
+                StatementNode importFrom = nodeFactory.createImportFrom(from, new String[]{parts[parts.length - 1]}, new WriteNode[]{readNode}, level);
+                result = nodeFactory.createBlock(importNode.asStatement(), importFrom);
+            } else {
+                result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
             }
-            result = scopeEnvironment.findVariable(node.asName).makeWriteNode(importNode);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

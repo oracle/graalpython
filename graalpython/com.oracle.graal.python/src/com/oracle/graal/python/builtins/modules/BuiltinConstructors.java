@@ -276,7 +276,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public Object createByteArray(Object cls, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             // data filled in subsequent __init__ call - see BytesBuiltins.InitNode
-            return factory().createByteArray(cls, new byte[0]);
+            return factory().createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
     }
 
@@ -2932,11 +2932,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, maxNumOfPositionalArgs = 17)
     @GenerateNodeFactory
-    public abstract static class CodeTypeNode extends PythonBuiltinNode {
+    public abstract static class CodeConstructorNode extends PythonBuiltinNode {
+
+        public abstract PCode execute(VirtualFrame frame, Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
+                        Object nlocals, Object stacksize, Object flags,
+                        Object codestring, Object constants, Object names,
+                        Object varnames, Object filename, Object name,
+                        Object firstlineno, Object lnotab,
+                        Object freevars, Object cellvars);
 
         // limit is 2 because we expect PBytes or String
         @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
-        Object call(VirtualFrame frame, Object cls, int argcount,
+        PCode call(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         Object codestring, PTuple constants, PTuple names,
@@ -2964,7 +2971,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
-        Object call(VirtualFrame frame, Object cls, Object argcount,
+        PCode call(VirtualFrame frame, Object cls, Object argcount,
                         int posonlyargcount, Object kwonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, PTuple constants, PTuple names,
@@ -2995,7 +3002,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
+        PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
                         Object nlocals, Object stacksize, Object flags,
                         Object codestring, Object constants, Object names,
                         Object varnames, Object filename, Object name,

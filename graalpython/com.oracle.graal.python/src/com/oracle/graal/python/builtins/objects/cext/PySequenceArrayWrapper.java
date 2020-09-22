@@ -66,6 +66,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -447,7 +448,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s,
                         @Shared("storageToNativeNode") @Cached SequenceStorageNodes.StorageToNativeNode storageToNativeNode) {
             // TODO(fa): not sure if that completely reflects semantics
-            return storageToNativeNode.execute(new byte[0]);
+            return storageToNativeNode.execute(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         protected static boolean isNative(SequenceStorage s) {

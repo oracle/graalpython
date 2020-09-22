@@ -162,6 +162,18 @@ suite = {
             "source": [],
         },
 
+        "docs.user": {
+            "type": "python",
+            "path": 'docs',
+            "source": ["user"],
+        },
+
+        "docs.contributor": {
+            "type": "python",
+            "path": 'docs',
+            "source": ["contributor"],
+        },
+
         "com.oracle.graal.python.cext": {
             "type": "python",
             "path": "graalpython/com.oracle.graal.python.cext",

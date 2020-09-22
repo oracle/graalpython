@@ -67,8 +67,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -84,6 +82,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -111,7 +110,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -477,21 +475,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
 
-        protected boolean isWithinContext() {
-            return getContext() != null && getContext().isInitialized();
-        }
-
-        protected HashingStorage getStorage() {
-            return isWithinContext() ? getContext().getImportedModules().getDictStorage() : null;
-        }
-
         @Specialization
-        public int run(VirtualFrame frame, String name,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hasKeyLib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame) {
+        public int run(String name) {
             if (getCore().lookupBuiltinModule(name) != null) {
-                return 1;
-            } else if (isWithinContext() && hasKeyLib.hasKeyWithFrame(getStorage(), name, hasFrame, frame)) {
+                // TODO: missing "1" case when the builtin module can be re-initialized
                 return -1;
             } else {
                 return 0;
@@ -548,8 +535,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object run(PCode code, PString path) {
-            code.setFilename(path.getValue());
+        public Object run(PCode code, PString path,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            code.setFilename(castToJavaStringNode.execute(path));
             return PNone.NONE;
         }
 

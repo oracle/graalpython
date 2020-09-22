@@ -83,8 +83,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.util.OverflowException;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -121,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -146,6 +145,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -942,7 +942,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("pathArg") PythonObjectLibrary lib) {
             String pathname = lib.asPath(pathArg);
             Set<StandardOpenOption> options = flagsToOptions((int) flags);
-            FileAttribute<Set<PosixFilePermission>>[] attributes = modeToAttributes((int) fileMode);
+            FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes((int) fileMode);
             try {
                 return doOpenFile(pathname, options, attributes);
             } catch (Exception e) {
@@ -951,7 +951,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>>[] attributes) throws IOException {
+        private Object doOpenFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
             SeekableByteChannel fc;
             TruffleFile truffleFile = getContext().getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
             if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
@@ -968,11 +968,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         @TruffleBoundary(allowInlining = true)
-        private static FileAttribute<Set<PosixFilePermission>>[] modeToAttributes(int fileMode) {
-            FileAttribute<Set<PosixFilePermission>> fa1 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(otherBitsToPermission[fileMode & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa2 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7])));
-            FileAttribute<Set<PosixFilePermission>> fa3 = PosixFilePermissions.asFileAttribute(new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7])));
-            return new FileAttribute[]{fa1, fa2, fa3};
+        private static FileAttribute<Set<PosixFilePermission>> modeToAttributes(int fileMode) {
+            HashSet<PosixFilePermission> perms = new HashSet<>(Arrays.asList(ownerBitsToPermission[fileMode >> 6 & 7]));
+            perms.addAll(Arrays.asList(groupBitsToPermission[fileMode >> 3 & 7]));
+            perms.addAll(Arrays.asList(otherBitsToPermission[fileMode & 7]));
+            return PosixFilePermissions.asFileAttribute(perms);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1972,8 +1972,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SymlinkNode extends PythonBuiltinNode {
 
-        @Specialization(guards = {"isNoValue(targetIsDir)", "isNoValue(dirFd)"}, limit = "1")
-        PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") PNone targetIsDir, @SuppressWarnings("unused") PNone dirFd,
+        @Specialization(guards = {"isNoValue(dirFd)"}, limit = "1")
+        PNone doSimple(VirtualFrame frame, Object srcObj, Object dstObj, @SuppressWarnings("unused") Object targetIsDir, @SuppressWarnings("unused") PNone dirFd,
                         @CachedLibrary("srcObj") PythonObjectLibrary libSrc,
                         @CachedLibrary("dstObj") PythonObjectLibrary libDst) {
             String src = libSrc.asPath(srcObj);

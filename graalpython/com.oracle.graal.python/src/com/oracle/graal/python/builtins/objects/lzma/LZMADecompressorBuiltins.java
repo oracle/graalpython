@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -184,7 +185,7 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         @Specialization
         PBytes doUnusedData(@SuppressWarnings("unused") PLZMADecompressor self) {
             // TODO implement
-            return factory().createBytes(new byte[0]);
+            return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
     }

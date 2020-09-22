@@ -2337,12 +2337,8 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             WriteLocalFrameSlotNodeGen SourceSection: None
                                               Frame: [4,SUBPATTERN,Illegal]
                                             EmptyNode SourceSection: None
-                                          GetAnyAttributeNodeGen SourceSection: None
+                                          IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
                                         IfNode SourceSection: [14036,14109]`if isinstance(flags,...`

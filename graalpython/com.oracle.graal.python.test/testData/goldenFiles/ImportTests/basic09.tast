@@ -5,28 +5,20 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,39]`import encodings.ali...`
-    ExpressionWithSideEffect SourceSection: [0,39]`import encodings.ali...`
-      Expression:
-        EmptyNode SourceSection: None
-      SideEffect:
-        WriteNameNodeGen SourceSection: [7,39]`encodings.aliases.so...`
+    ExpressionWithSideEffects SourceSection: [0,39]`import encodings.ali...`
+      ExpressionStatementNode SourceSection: None
+        ImportExpression SourceSection: None
+          ImportNode SourceSection: None
+            Module: encodings.aliases.something
+      ImportFromNode SourceSection: None
+        Importee: encodings.aliases
+        Level: 0
+        FromList: something
+        WriteNameNodeGen SourceSection: None
           Identifier: a
-          GetAttributeNodeGen SourceSection: None
-            GetFixedAttributeNodeGen SourceSection: None
-              Key: something
-              CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
-            GetAttributeNodeGen SourceSection: None
-              GetFixedAttributeNodeGen SourceSection: None
-                Key: aliases
-                CachedDispatchFirst SourceSection: None
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-              ImportExpression SourceSection: None
-                ImportNode SourceSection: None
-                  Module: encodings.aliases.something
+          EmptyNode SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
+          CachedDispatchFirst SourceSection: None
+      EmptyNode SourceSection: None

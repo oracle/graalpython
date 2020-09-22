@@ -1,3 +1,5 @@
+# Parser tests howto 
+
 The folders here contains golden files and test file that are used for testing 
 parser.
 
@@ -10,6 +12,8 @@ Folder `goldenFiles` contains golden files for tests, where the parsed source
 for the test is a string. The structure is that the folder is class name, where 
 the test is and the name of file is to the of the test. So for example:
 
+
+```java
 public class AssignmentTests extends ParserTestBase {
 
     @Test
@@ -18,6 +22,7 @@ public class AssignmentTests extends ParserTestBase {
     }
 
 }
+```
 
 creates file assignment01.tast (if not exists yet) in folder `AssignmentTests` 
 in `goldenFiles` folder.
@@ -28,6 +33,7 @@ that is tested.
 
 For example:
 
+```java
 public class RuntimeFileTests extends ParserTestBase {
 
     @Test
@@ -36,6 +42,7 @@ public class RuntimeFileTests extends ParserTestBase {
     }
 
 }
+```
 
 This test is looking for file `testFiles/RuntimeFileTests/_collections_abc.py` 
 and after first run are created `testFiles/RuntimeFileTests/_collections_abc.scope` 
@@ -46,22 +53,17 @@ source. The golden file is generated with the old parser and compares the result
 from new parser. If the old parser generate wrong tree, then it should be 
 manually corrected or reused the output from new parser. 
 
-
 If there is a change in a tree, that causes failing many tests, then it can be 
 done by deleting all `.tast` files, then run parser tests and check, whether 
 the diffs are correct.
 
 These commands should do it:
 
---------------------------------------------------
-
-$ cd graalpython/com.oracle.graal.python.test/testData
-
-$ find . -name "*.tast" -delete
-
-$ mx punittest com.oracle.graal.python.test.parser
-
---------------------------------------------------
+```shell
+cd graalpython/com.oracle.graal.python.test/testData
+find . -name "*.tast" -delete
+mx punittest com.oracle.graal.python.test.parser
+```
 
 After this all `.tast` files are regenerated. Currently after the regeneration 
 there are two test failing `DictAndSetTests.dict09` and `DictAndSetTests.dict10`. 

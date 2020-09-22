@@ -48,10 +48,10 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRaiseOSErrorNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -72,7 +72,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements IndirectCallNode {
     @Child private PythonObjectFactory objectFactory;
     @Child private PRaiseNode raiseNode;
-    @Child private PRaiseOSErrorNode raiseOSNode;
+    @Child private PConstructAndRaiseNode constructAndRaiseNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
     private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
@@ -111,12 +111,12 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return raiseNode;
     }
 
-    private final PRaiseOSErrorNode getRaiseOSNode() {
-        if (raiseOSNode == null) {
+    private PConstructAndRaiseNode getConstructAndRaiseNode() {
+        if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseOSNode = insert(PRaiseOSErrorNode.create());
+            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
         }
-        return raiseOSNode;
+        return constructAndRaiseNode;
     }
 
     public final PythonCore getCore() {
@@ -172,26 +172,26 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
-        return getRaiseOSNode().raiseOSError(frame, num);
+        return getConstructAndRaiseNode().raiseOSError(frame, num);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, Exception e) {
-        return getRaiseOSNode().raiseOSError(frame, oserror, e);
+        return getConstructAndRaiseNode().raiseOSError(frame, oserror, e);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
-        return getRaiseOSNode().raiseOSError(frame, oserror, filename);
+        return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
     }
 
     public final PException raiseOSError(VirtualFrame frame, Exception e) {
-        return getRaiseOSNode().raiseOSError(frame, e);
+        return getConstructAndRaiseNode().raiseOSError(frame, e);
     }
 
     public final PException raiseOSError(VirtualFrame frame, Exception e, String filename) {
-        return getRaiseOSNode().raiseOSError(frame, e, filename);
+        return getConstructAndRaiseNode().raiseOSError(frame, e, filename);
     }
 
     public final PException raiseOSError(VirtualFrame frame, Exception e, String filename, String filename2) {
-        return getRaiseOSNode().raiseOSError(frame, e, filename, filename2);
+        return getConstructAndRaiseNode().raiseOSError(frame, e, filename, filename2);
     }
 }

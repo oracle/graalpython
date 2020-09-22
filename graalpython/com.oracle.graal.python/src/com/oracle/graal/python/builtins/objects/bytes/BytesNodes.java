@@ -541,7 +541,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
         byte[] bytearray(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return new byte[0];
+            return PythonUtils.EMPTY_BYTE_ARRAY;
         }
 
         @Specialization(guards = {"lib.canBeIndex(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})

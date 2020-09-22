@@ -1648,7 +1648,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 if (begin < offset) {
                     result.add(copyOfRange(bytes, begin, offset));
                 } else {
-                    result.add(new byte[0]);
+                    result.add(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 begin = offset + sep.length;
                 offset = begin - 1;
@@ -1756,7 +1756,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 if (end > offset) {
                     result.add(0, copyOfRange(bytes, offset + 1, end));
                 } else {
-                    result.add(0, new byte[0]);
+                    result.add(0, PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 end = offset;
                 if (--countSplit == 0) {
