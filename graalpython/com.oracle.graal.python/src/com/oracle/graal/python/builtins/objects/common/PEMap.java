@@ -146,7 +146,7 @@ final class PEMap implements Iterable<DictKey> {
 
     private void init(int size) {
         if (size > INITIAL_CAPACITY) {
-            entries = new Object[size << 1];
+            entries = new Object[(size << 1) < 0 ? MAX_ELEMENT_COUNT : size << 1];
         }
     }
 
