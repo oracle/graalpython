@@ -74,6 +74,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethORoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -1075,35 +1077,42 @@ public class GraalHPyNodes {
                 String[] names = splitName(specName);
                 assert names.length == 2;
 
+                // process defines
+                HashingStorage dictStorage;
                 Object defines = ptrLib.readMember(typeSpec, "defines");
-                if (!ptrLib.hasArrayElements(defines)) {
-                    return raiseNode.raise(SystemError, "field 'defines' did not return an array for type %s", typeName);
-                }
-
-                int nDefines = PInt.intValueExact(ptrLib.getArraySize(defines));
-                EconomicMapStorage dictStorage = EconomicMapStorage.create(nDefines);
-                for (long i = 0; i < nDefines; i++) {
-                    Object moduleDefine = ptrLib.readArrayElement(defines, i);
-                    int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
-                    switch (kind) {
-                        case GraalHPyDef.HPY_DEF_KIND_METH:
-                            PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
-                            dictStorageLib.setItem(dictStorage, fun.getName(), fun);
-                            break;
-                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                            // TODO(fa): add slots
-                            break;
-                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                            HPyProperty property = addMemberNode.execute(context, moduleDefine);
-                            dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
-                            break;
-                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                            GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, moduleDefine);
-                            dictStorageLib.setItem(dictStorage, getSetDescriptor.getName(), getSetDescriptor);
-                            break;
-                        default:
-                            assert false : "unknown definition kind";
+                // field 'defines' may be 'NULL'
+                if (!ptrLib.isNull(defines)) {
+                    if (!ptrLib.hasArrayElements(defines)) {
+                        return raiseNode.raise(SystemError, "field 'defines' did not return an array for type %s", specName);
                     }
+
+                    int nDefines = PInt.intValueExact(ptrLib.getArraySize(defines));
+                    dictStorage = EconomicMapStorage.create(nDefines);
+                    for (long i = 0; i < nDefines; i++) {
+                        Object moduleDefine = ptrLib.readArrayElement(defines, i);
+                        int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
+                        switch (kind) {
+                            case GraalHPyDef.HPY_DEF_KIND_METH:
+                                PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
+                                dictStorageLib.setItem(dictStorage, fun.getName(), fun);
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                                // TODO(fa): add slots
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                                HPyProperty property = addMemberNode.execute(context, moduleDefine);
+                                dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, moduleDefine);
+                                dictStorageLib.setItem(dictStorage, getSetDescriptor.getName(), getSetDescriptor);
+                                break;
+                            default:
+                                assert false : "unknown definition kind";
+                        }
+                    }
+                } else {
+                    dictStorage = new EmptyStorage();
                 }
 
                 // process legacy slots
@@ -1169,8 +1178,9 @@ public class GraalHPyNodes {
                         HPyAsPythonObjectNode asPythonObjectNode,
                         PythonObjectFactory factory) throws InteropException {
 
+            // if the pointer is NULL, no bases have been explicitly specified
             if (ptrLib.isNull(typeSpecParamArray)) {
-                throw new CannotCastException();
+                return factory.createTuple(new Object[0]);
             }
 
             long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);
