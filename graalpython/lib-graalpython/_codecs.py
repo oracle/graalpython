@@ -121,7 +121,11 @@ def encode(obj, encoding='utf-8', errors='strict'):
         result = encoder(obj, errors)
         if not (isinstance(result, tuple) and len(result) == 2):
             raise TypeError('encoder must return a tuple (object, integer)')
-        return result[0]
+        encoded = result[0]
+        if not isinstance(encoded, bytes):
+            raise TypeError("'%s' encoder returned '%s' instead of 'bytes'; use codecs.encode() to encode to arbitrary types"
+                            % (encoding, type(encoded).__name__))
+        return encoded
 
 
 @__graalpython__.builtin
@@ -131,7 +135,11 @@ def decode(obj, encoding='utf-8', errors='strict'):
         result = decoder(obj, errors)
         if not (isinstance(result, tuple) and len(result) == 2):
             raise TypeError('decoder must return a tuple (object, integer)')
-        return result[0]
+        decoded = result[0]
+        if not isinstance(decoded, str):
+            raise TypeError("'%s' encoder returned '%s' instead of 'str'; use codecs.encode() to encode to arbitrary types"
+                            % (encoding, type(decoded).__name__))
+        return decoded
 
 
 @__graalpython__.builtin
