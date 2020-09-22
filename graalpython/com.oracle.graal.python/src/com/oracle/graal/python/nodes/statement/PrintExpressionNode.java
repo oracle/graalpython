@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,12 +43,17 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.nodes.BuiltinNames.DISPLAYHOOK;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -56,6 +61,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class PrintExpressionNode extends ExpressionNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @Child IsBuiltinClassProfile exceptionTypeProfile;
+    @Child PRaiseNode raiseNode;
     @Child GetAttributeNode getAttribute = GetAttributeNode.create(DISPLAYHOOK);
     @Child CallNode callNode = CallNode.create();
     @Child ExpressionNode valueNode;
@@ -72,12 +79,37 @@ public class PrintExpressionNode extends ExpressionNode {
             contextRef = lookupContextReference(PythonLanguage.class);
         }
         PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
-        Object displayhook = getAttribute.executeObject(frame, sysModule);
+        Object displayhook;
+        try {
+            displayhook = getAttribute.executeObject(frame, sysModule);
+        } catch (PException ex) {
+            if (ensureExceptionTypeProfile().profileException(ex, PythonBuiltinClassType.AttributeError)) {
+                throw ensureRaiseNode().raise(PythonBuiltinClassType.RuntimeError, ErrorMessages.LOST_SYSDISPLAYHOOK);
+            } else {
+                throw ex;
+            }
+        }
         callNode.execute(frame, displayhook, value);
         return PNone.NONE;
     }
 
     public static PrintExpressionNode create(ExpressionNode valueNode) {
         return new PrintExpressionNode(valueNode);
+    }
+
+    public IsBuiltinClassProfile ensureExceptionTypeProfile() {
+        if (exceptionTypeProfile == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            exceptionTypeProfile = insert(IsBuiltinClassProfile.create());
+        }
+        return exceptionTypeProfile;
+    }
+
+    public PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
     }
 }

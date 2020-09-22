@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.PGuards.cannotBeOverridden;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 
 import java.io.IOException;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -97,6 +99,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -146,7 +149,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("path", core.factory().createList());
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
-        builtinConstants.put("version_info", core.factory().createTuple(new Object[]{PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, "dev", 0}));
+        builtinConstants.put("version_info", core.factory().createTuple(new Object[]{PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL, 0}));
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
@@ -415,15 +418,24 @@ public class SysModuleBuiltins extends PythonBuiltins {
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String doBytes(String s) {
+        String doString(String s) {
             return s.intern();
         }
 
-        @Specialization
-        @TruffleBoundary
-        PString doBytes(PString ps) {
-            String s = ps.getValue();
-            return factory().createString(s.intern());
+        @Specialization(limit = "1")
+        String doPString(PString ps,
+                        @CachedLibrary("ps") PythonObjectLibrary lib,
+                        @Cached StringMaterializeNode materializeNode) {
+            if (cannotBeOverridden(lib.getLazyPythonClass(ps))) {
+                return doString(materializeNode.execute(ps));
+            } else {
+                throw raise(TypeError, ErrorMessages.CANNOT_INTERN_P, ps);
+            }
+        }
+
+        @Fallback
+        String doOthers(Object obj) {
+            throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
         }
     }
 

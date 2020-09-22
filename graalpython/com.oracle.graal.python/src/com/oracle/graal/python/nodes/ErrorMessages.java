@@ -335,6 +335,7 @@ public abstract class ErrorMessages {
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
+    public static final String LOST_SYSDISPLAYHOOK = "lost sys.displayhook";
     public static final String LENGTH_SHOULD_NOT_BE_NEG = "length should not be negative";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
@@ -575,4 +576,5 @@ public abstract class ErrorMessages {
     public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
+    public static final String CANNOT_INTERN_P = "can't intern %p";
 }
