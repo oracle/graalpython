@@ -125,13 +125,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("is_native", TruffleOptions.AOT);
         PythonContext ctx = core.getContext();
         String encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
-        String standardStreamEncoding;
-        String standardStreamError;
+        String standardStreamEncoding = null;
+        String standardStreamError = null;
         if (encodingOpt != null && !encodingOpt.isEmpty()) {
             String[] parts = encodingOpt.split(":");
-            standardStreamEncoding = parts[0].isEmpty() ? "utf-8" : parts[0];
-            standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : "strict";
-        } else {
+            if (parts.length > 0) {
+                standardStreamEncoding = parts[0].isEmpty() ? "utf-8" : parts[0];
+                standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : "strict";
+            }
+        }
+        if (standardStreamEncoding == null) {
             standardStreamEncoding = "utf-8";
             standardStreamError = "surrogateescape";
         }

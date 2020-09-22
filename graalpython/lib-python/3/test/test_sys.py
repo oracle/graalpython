@@ -169,10 +169,9 @@ class SysModuleTest(unittest.TestCase):
 
         # test that the exit message is written with backslashreplace error
         # handler to stderr
-        # TODO: GraalPython patch, will be fixed by proper implementation of backslashreplace handler (GR-10256)
-        # check_exit_message(
-        #     r'import sys; sys.exit("surrogates:\uDCFF")',
-        #     b"surrogates:\\udcff")
+        check_exit_message(
+            r'import sys; sys.exit("surrogates:\uDCFF")',
+            b"surrogates:\\udcff")
 
         # test that the unicode message is encoded to the stderr encoding
         # instead of the default encoding (utf8)
