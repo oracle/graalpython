@@ -4391,12 +4391,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapreplace_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -4416,12 +4412,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapify_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -4441,12 +4433,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heappop_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None

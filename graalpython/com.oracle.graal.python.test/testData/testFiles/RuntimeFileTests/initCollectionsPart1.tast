@@ -36,12 +36,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _eq
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [1059,1102]`from keyword import ...`
@@ -51,12 +47,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _iskeyword
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1110,1121]`sys as _sys`
@@ -76,12 +68,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _proxy
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [1182,1259]`from itertools impor...`
@@ -97,12 +85,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _starmap
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [1260,1313]`from reprlib import ...`
@@ -112,12 +96,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
         WriteNameNodeGen SourceSection: None
           Identifier: _recursive_repr
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       TryFinallyNode SourceSection: [1315,1444]`try:↵    from _colle...`
@@ -129,12 +109,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: deque
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -173,12 +149,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: defaultdict
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -3604,12 +3576,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -5471,12 +5439,8 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
             WriteNameNodeGen SourceSection: None
               Identifier: _count_elements
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None

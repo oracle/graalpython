@@ -27,12 +27,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         WriteNameNodeGen SourceSection: None
           Identifier: islice
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [170,199]`from _thread import ...`
@@ -42,12 +38,8 @@ ModuleRootNode Name: <module 'reprlib'> SourceSection: [0,5267]`"""Redo the buil
         WriteNameNodeGen SourceSection: None
           Identifier: get_ident
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [201,1178]`def recursive_repr(f...`

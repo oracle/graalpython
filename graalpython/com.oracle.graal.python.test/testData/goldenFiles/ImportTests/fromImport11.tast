@@ -19,11 +19,7 @@ ModuleRootNode Name: <module 'fromImport11'> SourceSection: [0,52]`from sys.path
           WriteNameNodeGen SourceSection: None
             Identifier: basename
             EmptyNode SourceSection: None
-          GetAnyAttributeNodeGen SourceSection: None
+          IsBuiltinClassProfile SourceSection: None
             CachedDispatchFirst SourceSection: None
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __getattribute__
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
           IsBuiltinClassProfile SourceSection: None
             CachedDispatchFirst SourceSection: None

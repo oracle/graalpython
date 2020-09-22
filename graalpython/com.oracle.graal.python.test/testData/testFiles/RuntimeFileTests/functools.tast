@@ -32,12 +32,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: reduce
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -55,12 +51,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: get_cache_token
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [749,783]`from collections imp...`
@@ -70,12 +62,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: namedtuple
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [841,875]`from reprlib import ...`
@@ -85,12 +73,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: recursive_repr
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [876,901]`from _thread import ...`
@@ -100,12 +84,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: RLock
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1222,1339]`WRAPPER_ASSIGNMENTS ...`
@@ -2553,12 +2533,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: cmp_to_key
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -3942,12 +3918,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: partial
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -7206,12 +7178,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: _lru_cache_wrapper
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -9593,12 +9561,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,get_type_hints,Illegal]
                                               EmptyNode SourceSection: None
-                                            GetAnyAttributeNodeGen SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: [31472,31527]`argname, cls = next(...`

@@ -21,12 +21,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         WriteNameNodeGen SourceSection: None
           Identifier: DynamicClassAttribute
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       TryFinallyNode SourceSection: [118,226]`try:↵    from _colle...`
@@ -38,12 +34,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -54,12 +46,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               WriteNameNodeGen SourceSection: None
                 Identifier: OrderedDict
                 EmptyNode SourceSection: None
-              GetAnyAttributeNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [171,182]`ImportError`
