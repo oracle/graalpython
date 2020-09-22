@@ -256,7 +256,8 @@ public abstract class StringNodes {
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile listProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmptyProfile,
+                        @Cached ConditionProfile isEmptyProfile,
+                        @Cached ConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode,
                         @Cached PRaiseNode raise) {
@@ -275,6 +276,10 @@ public abstract class StringNodes {
             try {
                 // manually peel first iteration
                 Object item = getItemNode.execute(frame, storage, i);
+                // shortcut
+                if (isSingleItemProfile.profile(len == 1)) {
+                    return castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item);
+                }
                 StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
 
                 for (i = 1; i < len; i++) {
