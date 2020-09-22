@@ -2148,6 +2148,8 @@ class UnicodeTest(string_tests.CommonTest,
         for encoding in ('utf-8',):
             self.assertEqual(str(u.encode(encoding),encoding), u)
 
+    # Java charsets sometimes produce a bit different results
+    @support.impl_detail(graalvm=False)
     def test_codecs_charmap(self):
         # 0-127
         s = bytes(range(128))
