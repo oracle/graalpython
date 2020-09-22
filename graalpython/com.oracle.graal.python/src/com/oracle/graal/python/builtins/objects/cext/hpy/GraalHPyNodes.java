@@ -41,6 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_GETSET;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_KIND;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_MEMBER;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_METH;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_SLOT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_MEMBER_GET_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_METH_GET_SIGNATURE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 
 import java.math.BigInteger;
@@ -289,23 +296,22 @@ public class GraalHPyNodes {
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("methodDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
-                        @Cached PCallHPyFunction callGetNameNode,
-                        @Cached PCallHPyFunction callGetDocNode,
-                        @Cached CastToJavaIntLossyNode castToJavaIntNode,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                         @Cached PRaiseNode raiseNode) {
             assert checkLayout(methodDef);
-            assert getKind(methodDef, interopLibrary, castToJavaIntNode) == GraalHPyDef.HPY_DEF_KIND_METH;
 
-            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
+            String methodName = castToJavaStringNode.execute(callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_NAME, methodDef));
 
             // note: 'ml_doc' may be NULL; in this case, we would store 'None'
             Object methodDoc = PNone.NONE;
             try {
-                if (!resultLib.isNull(interopLibrary.readMember(methodDef, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_DOC))) {
-                    methodDoc = castToJavaStringNode.execute(callGetDocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_GET_ML_DOC, methodDef));
+                Object doc = interopLibrary.readMember(methodDef, "doc");
+                if (!resultLib.isNull(doc)) {
+                    methodDoc = fromCharPointerNode.execute(doc);
                 }
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 // fall through
@@ -315,7 +321,7 @@ public class GraalHPyNodes {
             int signature;
             Object methodFunctionPointer;
             try {
-                methodSignatureObj = interopLibrary.readMember(methodDef, "signature");
+                methodSignatureObj = callHelperFunctionNode.call(context, GRAAL_HPY_METH_GET_SIGNATURE, methodDef);
                 if (!resultLib.fitsInInt(methodSignatureObj)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
@@ -325,7 +331,7 @@ public class GraalHPyNodes {
                 methodFunctionPointer = interopLibrary.readMember(methodDef, "impl");
                 if (!resultLib.isExecutable(methodFunctionPointer)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "meth of %s is not callable", methodName);
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -355,14 +361,6 @@ public class GraalHPyNodes {
                 }
             }
             return true;
-        }
-
-        private static int getKind(Object methodDef, InteropLibrary interopLibrary, CastToJavaIntLossyNode castToJavaIntNode) {
-            try {
-                return castToJavaIntNode.execute(interopLibrary.readMember(methodDef, "kind"));
-            } catch (UnsupportedMessageException | UnknownIdentifierException | CannotCastException e) {
-                return -1;
-            }
         }
 
         @TruffleBoundary
@@ -536,6 +534,7 @@ public class GraalHPyNodes {
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
+                        @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached ReadAttributeFromObjectNode readAttributeNode,
@@ -565,7 +564,7 @@ public class GraalHPyNodes {
                 }
 
                 boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
-                int type = valueLib.asInt(interopLibrary.readMember(memberDef, "type"));
+                int type = valueLib.asInt(callHelperNode.call(context, GRAAL_HPY_MEMBER_GET_TYPE, memberDef));
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
@@ -1079,7 +1078,7 @@ public class GraalHPyNodes {
 
                 // process defines
                 HashingStorage dictStorage;
-                Object defines = ptrLib.readMember(typeSpec, "defines");
+                Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
                 // field 'defines' may be 'NULL'
                 if (!ptrLib.isNull(defines)) {
                     if (!ptrLib.hasArrayElements(defines)) {
@@ -1090,21 +1089,25 @@ public class GraalHPyNodes {
                     dictStorage = EconomicMapStorage.create(nDefines);
                     for (long i = 0; i < nDefines; i++) {
                         Object moduleDefine = ptrLib.readArrayElement(defines, i);
-                        int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
+                        int kind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
                         switch (kind) {
                             case GraalHPyDef.HPY_DEF_KIND_METH:
-                                PBuiltinFunction fun = addFunctionNode.execute(context, moduleDefine);
+                                Object methodDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
+                                PBuiltinFunction fun = addFunctionNode.execute(context, methodDef);
                                 dictStorageLib.setItem(dictStorage, fun.getName(), fun);
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                                Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
                                 // TODO(fa): add slots
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                                HPyProperty property = addMemberNode.execute(context, moduleDefine);
+                                Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
+                                HPyProperty property = addMemberNode.execute(context, memberDef);
                                 dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, moduleDefine);
+                                Object getsetDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_GETSET, moduleDefine);
+                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, getsetDef);
                                 dictStorageLib.setItem(dictStorage, getSetDescriptor.getName(), getSetDescriptor);
                                 break;
                             default:

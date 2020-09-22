@@ -54,12 +54,15 @@ typedef HPyDef* HPyDefPtr;
 POLYGLOT_DECLARE_TYPE(HPy);
 POLYGLOT_DECLARE_STRUCT(_HPyContext_s);
 POLYGLOT_DECLARE_TYPE(HPyDef);
+POLYGLOT_DECLARE_TYPE(HPyDef_Kind);
 POLYGLOT_DECLARE_TYPE(HPyDefPtr);
 POLYGLOT_DECLARE_TYPE(HPySlot);
 POLYGLOT_DECLARE_TYPE(HPyMeth);
+POLYGLOT_DECLARE_TYPE(HPyFunc_Signature);
 POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef);
 POLYGLOT_DECLARE_TYPE(HPyMember_FieldType);
 POLYGLOT_DECLARE_TYPE(HPyMember);
+POLYGLOT_DECLARE_TYPE(HPyGetSet);
 POLYGLOT_DECLARE_TYPE(HPyModuleDef);
 POLYGLOT_DECLARE_TYPE(wchar_t);
 POLYGLOT_DECLARE_TYPE(HPyType_Spec);
@@ -141,10 +144,36 @@ void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
 	return polyglot_from_string(methodDef->doc, SRC_CS);
 }
 
+HPyFunc_Signature graal_hpy_meth_get_signature(HPyMeth *methodDef) {
+	return methodDef->signature;
+}
+
 /* getters for HPyDef */
 
 int graal_hpy_def_get_kind(HPyDef *def) {
 	return def->kind;
+}
+
+void* graal_hpy_def_get_slot(HPyDef *def) {
+	return polyglot_from_HPySlot(&(def->slot));
+}
+
+void* graal_hpy_def_get_meth(HPyDef *def) {
+	return polyglot_from_HPyMeth(&(def->meth));
+}
+
+void* graal_hpy_def_get_member(HPyDef *def) {
+	return polyglot_from_HPyMember(&(def->member));
+}
+
+void* graal_hpy_def_get_getset(HPyDef *def) {
+	return polyglot_from_HPyGetSet(&(def->getset));
+}
+
+/* getters for HPyMember */
+
+HPyMember_FieldType graal_hpy_member_get_type(HPyMember *member_def) {
+	return member_def->type;
 }
 
 /* getters for HPyType_SpecParam */
@@ -168,15 +197,32 @@ void* graal_hpy_module_get_legacy_methods(HPyModuleDef *moduleDef) {
 
 void* graal_hpy_module_get_defines(HPyModuleDef *moduleDef) {
 	uint64_t len=0;
-	while (moduleDef->defines[len] != NULL) {
-		len++;
+	if (moduleDef->defines) {
+	    while (moduleDef->defines[len] != NULL) {
+		    len++;
+	    }
+	    return polyglot_from_HPyDefPtr_array(moduleDef->defines, len);
 	}
-	return polyglot_from_HPyDefPtr_array(moduleDef->defines, len);
+	return NULL;
 }
 
 void* graal_hpy_from_string(const char *ptr) {
 	return polyglot_from_string(ptr, SRC_CS);
 }
+
+/* getters for HPyType_Spec */
+
+void* graal_hpy_type_spec_get_defines(HPyType_Spec *type_spec) {
+	uint64_t len=0;
+	if (type_spec->defines) {
+	    while (type_spec->defines[len] != NULL) {
+		    len++;
+	    }
+	    return polyglot_from_HPyDefPtr_array(type_spec->defines, len);
+	}
+	return NULL;
+}
+
 
 /*
  * Casts a 'wchar_t*' array to an 'int8_t*' array and also associates the proper length.
