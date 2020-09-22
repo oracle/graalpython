@@ -68,15 +68,19 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         return !isString(args1, lazyClass) && isMapping(args1);
     }
 
+    private static boolean isOneCharacter(String str) {
+        return str.length() == 1 || (str.length() == 2 && str.codePointCount(0, 2) == 1);
+    }
+
     @Override
     protected InternalFormat.Formatter handleSingleCharacterFormat(Spec spec) {
         InternalFormat.Formatter f;
         TextFormatter ft;
         Object arg = getArg();
-        if (arg instanceof String && ((String) arg).length() == 1) {
+        if (arg instanceof String && isOneCharacter((String) arg)) {
             f = ft = setupFormat(new TextFormatter(raiseNode, buffer, spec));
             ft.format((String) arg);
-        } else if (arg instanceof PString && ((PString) arg).getValue().length() == 1) {
+        } else if (arg instanceof PString && isOneCharacter(((PString) arg).getValue())) {
             f = ft = new TextFormatter(raiseNode, buffer, spec);
             ft.format(((PString) arg).getCharSequence());
         } else {
