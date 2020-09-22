@@ -161,6 +161,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1200,6 +1201,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object write(VirtualFrame frame, int fd, PBytesLike data,
                         @Cached("createClassProfile()") ValueProfile channelClassProfile) {
             return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object write(VirtualFrame frame, int fd, Object data,
+                        @CachedLibrary("data") PythonObjectLibrary lib,
+                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
+            if (lib.isBuffer(data)) {
+                try {
+                    byte[] b = lib.getBufferBytes(data);
+                    return write(frame, fd, b, channelClassProfile);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Buffer-like object does not support getBufferBytes()");
+                }
+            }
+            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
