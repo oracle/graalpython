@@ -14,6 +14,7 @@ import test.support
 import textwrap
 import unittest
 import warnings
+from test.support.graalpython import graalpython_ignore
 
 
 # count the number of test runs, used to create unique
@@ -448,7 +449,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(sys.float_info), 11)
         self.assertEqual(sys.float_info.radix, 2)
         self.assertEqual(len(sys.int_info), 2)
-        self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
+        graalpython_ignore(lambda: self.assertTrue(sys.int_info.bits_per_digit % 5 == 0), message='implementation specific')
         self.assertTrue(sys.int_info.sizeof_digit >= 1)
         self.assertEqual(type(sys.int_info.bits_per_digit), int)
         self.assertEqual(type(sys.int_info.sizeof_digit), int)

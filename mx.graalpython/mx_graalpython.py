@@ -1265,8 +1265,13 @@ def import_python_sources(args):
        This will apply copyrights to files that we're newly added from
        python-import.
 
-    7. Run the tests and fix any remaining issues.
-    8. You should push the python-import branch using:
+    7. Adjust some constants in the source code:
+
+            version information in PythonLanguage (e.g., PythonLanguage#MINOR)
+
+    8. Run the tests and fix any remaining issues.
+
+    9. You should push the python-import branch using:
 
            git push origin python-import:python-import
 

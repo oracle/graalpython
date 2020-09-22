@@ -122,6 +122,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     // Note: update hexversion in sys.py when updating release level
     public static final String RELEASE_LEVEL = "alpha";
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
+    // Rarely updated version of the C API, we should take it from the imported CPython version
+    public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
