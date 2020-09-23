@@ -375,7 +375,13 @@ def encode(self, encoding="utf-8", errors="strict"):
       as well as any other name registered with codecs.register_error that
       can handle UnicodeDecodeErrors.
     """
-    return _codecs.encode(self, encoding=encoding, errors=errors)
+    result = _codecs.encode(self, encoding=encoding, errors=errors)
+    if not isinstance(result, bytes):
+        if isinstance(result, bytearray):
+            return bytes(result)
+        raise TypeError("'%s' encoder returned '%s' instead of 'bytes'; use codecs.encode() to encode to arbitrary types"
+                        % (encoding, type(result).__name__))
+    return result
 
 
 str.encode = encode
