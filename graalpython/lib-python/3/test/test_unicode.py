@@ -2302,6 +2302,8 @@ class UnicodeTest(string_tests.CommonTest,
         s = 'abc'
         self.assertIs(s.expandtabs(), s)
 
+    # Makes assumptions about memory consumption of strings
+    @support.impl_detail(graalvm=False)
     def test_raiseMemError(self):
         if struct.calcsize('P') == 8:
             # 64 bits pointers

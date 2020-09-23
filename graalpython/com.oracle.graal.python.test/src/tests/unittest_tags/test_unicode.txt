@@ -92,6 +92,7 @@
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_partition
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printable_repr
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_printing
+*graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_raiseMemError
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_id
 *graalpython.lib-python.3.test.test_unicode.UnicodeTest.test_replace_overflow
