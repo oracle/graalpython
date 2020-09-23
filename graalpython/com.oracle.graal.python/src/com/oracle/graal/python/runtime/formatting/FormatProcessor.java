@@ -142,6 +142,8 @@ abstract class FormatProcessor<T> {
                 } catch (OverflowException e) {
                     value = Long.MAX_VALUE;
                 }
+            } else if (o instanceof Boolean) {
+                return (Boolean) o ? 1 : 0;
             } else {
                 throw raiseNode.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
             }
