@@ -48,11 +48,29 @@ import com.oracle.truffle.api.CompilerAsserts;
 
 public final class NativeCharSequence implements PCharSequence {
 
+    /**
+     * Pointer to the native buffer (most like a {@code char*} containing ASCII characters but could
+     * also be an arbitrary {@code void*} for {@code Py_UCS1}, {@code Py_UCS2}, or {@code Py_UCS4}
+     * characters)
+     */
     private final Object ptr;
+
+    /**
+     * The size of a single character in bytes (valid values are {@code 1, 2, 4}).
+     */
+    private final int elementSize;
+
+    /**
+     * Specifies if the native buffer contains only ASCII characters.
+     */
+    private final boolean asciiOnly;
+
     private String materialized;
 
-    public NativeCharSequence(Object ptr) {
+    public NativeCharSequence(Object ptr, int elementSize, boolean asciiOnly) {
         this.ptr = ptr;
+        this.elementSize = elementSize;
+        this.asciiOnly = asciiOnly;
     }
 
     @Override
@@ -90,8 +108,16 @@ public final class NativeCharSequence implements PCharSequence {
         return materialized;
     }
 
-    Object getPtr() {
+    public Object getPtr() {
         return ptr;
+    }
+
+    public int getElementSize() {
+        return elementSize;
+    }
+
+    public boolean isAsciiOnly() {
+        return asciiOnly;
     }
 
     @Override
