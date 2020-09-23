@@ -80,9 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethNoargsRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethORoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyMethVarargsRoot;
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -289,10 +286,10 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyAddFunctionNode extends PNodeWithContext {
 
-        public abstract PBuiltinFunction execute(GraalHPyContext context, Object methodDef);
+        public abstract PBuiltinFunction execute(GraalHPyContext context, Object enclosingType, Object methodDef);
 
         @Specialization(limit = "1")
-        static PBuiltinFunction doIt(GraalHPyContext context, Object methodDef,
+        static PBuiltinFunction doIt(GraalHPyContext context, Object enclosingType, Object methodDef,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("methodDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
@@ -342,7 +339,7 @@ public class GraalHPyNodes {
             }
 
             PRootNode rootNode = createHPyWrapperRootNode(language, signature, methodName, methodFunctionPointer);
-            PBuiltinFunction function = createWrapperFunction(factory, methodName, rootNode);
+            PBuiltinFunction function = createWrapperFunction(factory, methodName, enclosingType, rootNode);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
@@ -364,8 +361,8 @@ public class GraalHPyNodes {
         }
 
         @TruffleBoundary
-        private static PBuiltinFunction createWrapperFunction(PythonObjectFactory factory, String name, PRootNode rootNode) {
-            return factory.createBuiltinFunction(name, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+        private static PBuiltinFunction createWrapperFunction(PythonObjectFactory factory, String name, Object enclosingType, PRootNode rootNode) {
+            return factory.createBuiltinFunction(name, enclosingType, 0, PythonUtils.getOrCreateCallTarget(rootNode));
         }
 
         @TruffleBoundary
@@ -1076,51 +1073,6 @@ public class GraalHPyNodes {
                 String[] names = splitName(specName);
                 assert names.length == 2;
 
-                // process defines
-                HashingStorage dictStorage;
-                Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
-                // field 'defines' may be 'NULL'
-                if (!ptrLib.isNull(defines)) {
-                    if (!ptrLib.hasArrayElements(defines)) {
-                        return raiseNode.raise(SystemError, "field 'defines' did not return an array for type %s", specName);
-                    }
-
-                    int nDefines = PInt.intValueExact(ptrLib.getArraySize(defines));
-                    dictStorage = EconomicMapStorage.create(nDefines);
-                    for (long i = 0; i < nDefines; i++) {
-                        Object moduleDefine = ptrLib.readArrayElement(defines, i);
-                        int kind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
-                        switch (kind) {
-                            case GraalHPyDef.HPY_DEF_KIND_METH:
-                                Object methodDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
-                                PBuiltinFunction fun = addFunctionNode.execute(context, methodDef);
-                                dictStorageLib.setItem(dictStorage, fun.getName(), fun);
-                                break;
-                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                                Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
-                                // TODO(fa): add slots
-                                break;
-                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                                Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
-                                HPyProperty property = addMemberNode.execute(context, memberDef);
-                                dictStorageLib.setItem(dictStorage, property.name, property.propertyObject);
-                                break;
-                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                                Object getsetDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_GETSET, moduleDefine);
-                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, getsetDef);
-                                dictStorageLib.setItem(dictStorage, getSetDescriptor.getName(), getSetDescriptor);
-                                break;
-                            default:
-                                assert false : "unknown definition kind";
-                        }
-                    }
-                } else {
-                    dictStorage = new EmptyStorage();
-                }
-
-                // process legacy slots
-                // TODO
-
                 // extract bases from type spec params
 
                 PTuple bases;
@@ -1132,7 +1084,7 @@ public class GraalHPyNodes {
 
                 // create the type object
                 Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.TYPE);
-                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, factory.createDict(dictStorage));
+                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, factory.createDict());
 
                 // determine and set the correct module attribute
                 String value = names[0];
@@ -1150,6 +1102,56 @@ public class GraalHPyNodes {
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BASICSIZE, basicSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
+
+                // process defines
+                Object defines = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_DEFINES, typeSpec);
+                // field 'defines' may be 'NULL'
+                if (!ptrLib.isNull(defines)) {
+                    if (!ptrLib.hasArrayElements(defines)) {
+                        return raiseNode.raise(SystemError, "field 'defines' did not return an array for type %s", specName);
+                    }
+
+                    int nDefines = PInt.intValueExact(ptrLib.getArraySize(defines));
+                    for (long i = 0; i < nDefines; i++) {
+                        Object moduleDefine = ptrLib.readArrayElement(defines, i);
+                        String name = null;
+                        Object attribute = null;
+                        int kind = castToJavaIntNode.execute(callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                        switch (kind) {
+                            case GraalHPyDef.HPY_DEF_KIND_METH:
+                                Object methodDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
+                                PBuiltinFunction fun = addFunctionNode.execute(context, newType, methodDef);
+                                name = fun.getName();
+                                attribute = fun;
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                                Object slotDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_SLOT, moduleDefine);
+                                // TODO(fa): add slots
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                                Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
+                                HPyProperty property = addMemberNode.execute(context, memberDef);
+                                name = property.name;
+                                attribute = property.propertyObject;
+                                break;
+                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                                Object getsetDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_GETSET, moduleDefine);
+                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, getsetDef);
+                                name = getSetDescriptor.getName();
+                                attribute = getSetDescriptor;
+                                break;
+                            default:
+                                assert false : "unknown definition kind";
+                        }
+
+                        if (name != null) {
+                            writeAttributeToObjectNode.execute(newType, name, attribute);
+                        }
+                    }
+                }
+
+                // process legacy slots
+                // TODO
 
                 return newType;
             } catch (CannotCastException | InteropException e) {
