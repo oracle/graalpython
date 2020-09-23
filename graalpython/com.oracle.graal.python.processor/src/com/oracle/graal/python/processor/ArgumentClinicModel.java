@@ -73,6 +73,8 @@ public class ArgumentClinicModel {
                     return format("JavaIntConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
                 case CodePoint:
                     return format("CodePointConversionNodeGen.create(\"%s\", %s, %s)", builtin.name, annotation.defaultValue(), annotation.useDefaultForNone());
+                case Buffer:
+                    return "BufferConversionNodeGen.create()";
                 case Index:
                     return format("IndexConversionNodeGen.create(%s, %s)", annotation.defaultValue(), annotation.useDefaultForNone());
                 case None:
@@ -107,6 +109,8 @@ public class ArgumentClinicModel {
                     return "IndexConversionNodeGen";
                 case CodePoint:
                     return "CodePointConversionNodeGen";
+                case Buffer:
+                    return "BufferConversionNodeGen";
                 case None:
                     return "DefaultValueNode";
                 default:
@@ -120,6 +124,7 @@ public class ArgumentClinicModel {
                     return new PrimitiveType[]{PrimitiveType.Boolean};
                 case String:
                 case CodePoint:
+                case Buffer:
                     return new PrimitiveType[0];
                 case Int:
                 case Index:
