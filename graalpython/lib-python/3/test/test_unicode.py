@@ -1919,6 +1919,8 @@ class UnicodeTest(string_tests.CommonTest,
             self.assertCorrectUTF8Decoding(bytes.fromhex(seq), res,
                                            'invalid continuation byte')
 
+    # Java UTF-8 Charset reports the whole sequence as invalid
+    @support.impl_detail(graalvm=False)
     def test_invalid_cb_for_3bytes_seq(self):
         """
         Test that an 'invalid continuation byte' error is raised when the
