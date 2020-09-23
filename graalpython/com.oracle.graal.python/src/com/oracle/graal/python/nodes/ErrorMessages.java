@@ -60,6 +60,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
+    public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
@@ -95,6 +96,8 @@ public abstract class ErrorMessages {
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
+    public static final String BYTE_STRING_OF_LEN_ONE_ONLY = "%s argument 2 must be a byte string of length 1, not %s";
+    public static final String BYTE_MUST_BE_IN_RANGE = "byte must be in range(0, 256)";
     public static final String C_ARG_NOT_IN_RANGE = "%%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
     public static final String CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P = "calling argument converter failed; expected %d but got %d parameters.";
@@ -114,7 +117,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
-    public static final String CANNOT_CONVERT_S_OBJ_TO_BYTES = "cannot convert '%p' object to bytes";
+    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %p";
     public static final String CANNOT_CONVERT_S_TO_INT = "cannot convert %s to integer";
     public static final String CANNOT_CONVERT_S_TO_INT_RATIO = "cannot convert %s to integer ratio";
     public static final String CANNOT_CONVERT_TO = "cannot convert %s to %s";
@@ -186,6 +189,7 @@ public abstract class ErrorMessages {
     public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
+    public static final String DESCRIPTOR_NEED_OBJ = "descriptor '%s' of '%s' object needs an argument";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
     public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must be set to a dictionary, not a '%p'";
@@ -205,6 +209,7 @@ public abstract class ErrorMessages {
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
     public static final String ERROR_CALLING_SET_NAME = "Error calling __set_name__ on '%p' instance '%s' in '%N'";
     public static final String ERRORS_WITHOUT_STR_ARG = "errors without a string argument";
+    public static final String EXPORTS_CANNOT_RESIZE = "Existing exports of data: object cannot be re-sized";
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
@@ -421,6 +426,7 @@ public abstract class ErrorMessages {
     public static final String POLYGLOT_EVAL_MUST_PASS_STRINGS = "polyglot.eval must pass strings as either 'path' or a 'string' keyword";
     public static final String POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = "polyglot.eval with a string argument must pass a language or mime-type";
     public static final String POP_FROM_EMPTY_SET = "pop from an emtpy set";
+    public static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
     public static final String PORT_PROTO_NOT_FOUND = "port/proto not found";
     public static final String PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED = "private identifier too large to be mangled";
     public static final String PROVIDED_OBJ_NOT_ARRAY = "provided object is not an array";
@@ -460,6 +466,9 @@ public abstract class ErrorMessages {
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
     public static final String SEP_MUST_BE_NONE_OR_STRING = "sep must be None or a string, not %p";
+    public static final String SEP_MUST_BE_STR_OR_BYTES = "sep must be str or bytes.";
+    public static final String SEP_MUST_BE_LENGTH_1 = "sep must be length 1.";
+    public static final String SEP_MUST_BE_ASCII = "sep must be ASCII.";
     public static final String SET_DOES_NOT_SUPPORT_ITERABLE_OBJ = "set does not support iterable object %s";
     public static final String SHOULD_RETURN = "%s should return %s";
     public static final String SHOULD_RETURN_NONE = "%s should return None";
@@ -480,6 +489,7 @@ public abstract class ErrorMessages {
     public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
+    public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";

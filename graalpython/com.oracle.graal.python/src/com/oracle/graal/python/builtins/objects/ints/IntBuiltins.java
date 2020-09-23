@@ -2483,7 +2483,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_S_OBJ_TO_BYTES, object);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
         }
     }
 

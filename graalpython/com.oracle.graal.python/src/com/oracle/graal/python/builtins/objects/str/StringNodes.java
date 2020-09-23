@@ -54,9 +54,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -64,27 +61,19 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
-import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -424,124 +413,34 @@ public abstract class StringNodes {
 
     }
 
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FindBaseNode extends PNodeWithContext {
+    public abstract static class FindNode extends PNodeWithContext {
 
-        @Child private PythonObjectLibrary lib;
-        @Child private PythonObjectFactory objectFactory;
-
-        public abstract int execute(VirtualFrame frame, String self, Object substr, Object start, Object end);
-
-        private PythonObjectLibrary getLibrary() {
-            if (lib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-            }
-            return lib;
-        }
-
-        private SliceInfo computeSlice(@SuppressWarnings("unused") VirtualFrame frame, int length, long start, long end) {
-            PIntSlice tmpSlice = factory().createIntSlice(getLibrary().asSize(start, null), getLibrary().asSize(end, null), 1);
-            // We need to distinguish between slice with length == 0 and a slice that's out of
-            // bounds when matching empty strings
-            if (start > length) {
-                return null;
-            }
-            return tmpSlice.computeIndices(length);
-        }
+        public abstract int execute(String self, String sub, int start, int end);
 
         @Specialization
-        int findString(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, str);
-        }
+        int find(String haystack, String needle, int start, int end) {
+            int len1 = haystack.length();
+            int len2 = needle.length();
 
-        @Specialization
-        int findStringStart(VirtualFrame frame, String self, String str, long start, @SuppressWarnings("unused") PNone end) {
-            int len = self.length();
-            SliceInfo info = computeSlice(frame, len, start, len);
-            if (info == null) {
+            if (len2 == 0 && start <= len1) {
+                return emptySubIndex(start, end);
+            }
+            if (start >= len1 || len1 < len2) {
                 return -1;
             }
-            return findWithBounds(self, str, info.start, info.stop);
+
+            return findWithBounds(haystack, needle, start, end > len1 ? len1 : end);
         }
 
-        @Specialization
-        int findStringEnd(VirtualFrame frame, String self, String str, @SuppressWarnings("unused") PNone start, long end) {
-            SliceInfo info = computeSlice(frame, self.length(), 0, end);
-            if (info == null) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        int findStringStartEnd(VirtualFrame frame, String self, String str, long start, long end) {
-            SliceInfo info = computeSlice(frame, self.length(), start, end);
-            if (info == null) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        int findStringGeneric(VirtualFrame frame, String self, String str, Object start, Object end,
-                        @Cached SliceLiteralNode sliceNode,
-                        @Cached CoerceToIntSlice cast,
-                        @Cached ComputeIndices compute) {
-            PSlice slice = sliceNode.execute(frame, PGuards.isPNone(start) ? PNone.NONE : start, PGuards.isPNone(end) ? PNone.NONE : end, 1);
-            SliceInfo info = compute.execute(cast.execute(slice), self.length());
-            if (info == null) {
-                return -1;
-            }
-            return findWithBounds(self, str, info.start, info.stop);
-        }
-
-        @Specialization
-        int findGeneric(VirtualFrame frame, String self, Object sub, Object start, Object end,
-                        @Cached CastToJavaStringCheckedNode castSubNode,
-                        @Cached SliceLiteralNode slice,
-                        @Cached CoerceToIntSlice cast,
-                        @Cached ComputeIndices compute) {
-            String subStr = castSubNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
-            return findStringGeneric(frame, self, subStr, start, end, slice, cast, compute);
-        }
-
+        // Overridden in RFind
         @SuppressWarnings("unused")
-        protected int find(String self, String findStr) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
+        protected int emptySubIndex(int start, int end) {
+            return start;
         }
 
-        @SuppressWarnings("unused")
-        protected int findWithBounds(String self, String str, int start, int end) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new IllegalStateException("should not be reached");
-        }
-
-        protected final PythonObjectFactory factory() {
-            if (objectFactory == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                objectFactory = insert(PythonObjectFactory.create());
-            }
-            return objectFactory;
-        }
-
-    }
-
-    public abstract static class FindNode extends FindBaseNode {
-        @Override
-        @TruffleBoundary
-        protected int find(String self, String findStr) {
-            return self.indexOf(findStr);
-        }
-
-        @Override
-        protected int findWithBounds(String self, String str, int start, int end) {
-            if (end - start < str.length()) {
-                return -1;
-            }
-            int idx = PString.indexOf(self, str, start);
-            return idx + str.length() <= end ? idx : -1;
+        protected int findWithBounds(String haystack, String needle, int start, int end) {
+            int idx = PString.indexOf(haystack, needle, start);
+            return idx + needle.length() <= end ? idx : -1;
         }
 
         public static FindNode create() {
@@ -549,20 +448,16 @@ public abstract class StringNodes {
         }
     }
 
-    public abstract static class RFindNode extends FindBaseNode {
+    public abstract static class RFindNode extends FindNode {
 
         @Override
-        @TruffleBoundary
-        protected int find(String self, String findStr) {
-            return self.lastIndexOf(findStr);
+        protected int emptySubIndex(int start, int end) {
+            return (end - start) + start;
         }
 
         @Override
-        protected int findWithBounds(String self, String str, int start, int end) {
-            if (end - start < str.length()) {
-                return -1;
-            }
-            int idx = PString.lastIndexOf(self, str, end - str.length());
+        protected int findWithBounds(String haystack, String needle, int start, int end) {
+            int idx = PString.lastIndexOf(haystack, needle, end - needle.length());
             return idx >= start ? idx : -1;
         }
 

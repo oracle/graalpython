@@ -84,11 +84,20 @@ public abstract class PSlice extends PythonBuiltinObject {
         public final int stop;
         public final int step;
 
-        public SliceInfo(int start, int stop, int step) {
+        // This is mainly to store the result of SliceLiteralNode#AdjustIndices
+        public final int sliceLength;
+
+        public SliceInfo(int start, int stop, int step, int length) {
             this.start = start;
             this.stop = stop;
             this.step = step;
+            this.sliceLength = length;
         }
+
+        public SliceInfo(int start, int stop, int step) {
+            this(start, stop, step, -1);
+        }
+
     }
 
     protected static void checkNegative(int length) {

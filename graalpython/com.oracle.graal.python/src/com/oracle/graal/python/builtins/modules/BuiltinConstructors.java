@@ -98,6 +98,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -106,7 +107,8 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ConvertToByteObjectBytesNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -199,8 +201,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -215,10 +219,11 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -258,23 +263,49 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bytes([source[, encoding[, errors]]])
-    @Builtin(name = BYTES, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PBytes)
+    @Builtin(name = BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PBytes)
+    @ArgumentClinic(name = "encoding", customConversion = "createExpectStringNodeEncoding")
+    @ArgumentClinic(name = "errors", customConversion = "createExpectStringNodeErrors")
     @GenerateNodeFactory
-    public abstract static class BytesNode extends PythonBuiltinNode {
-        @Specialization
-        public Object createBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Cached ConvertToByteObjectBytesNode toBytesNode) {
-            return factory().createBytes(cls, toBytesNode.execute(frame, source, encoding, errors));
+    public abstract static class BytesNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinConstructorsClinicProviders.BytesNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static BytesNodes.ExpectStringNode createExpectStringNodeEncoding() {
+            return BytesNodesFactory.ExpectStringNodeGen.create(2, "bytes()");
+        }
+
+        public static BytesNodes.ExpectStringNode createExpectStringNodeErrors() {
+            return BytesNodesFactory.ExpectStringNodeGen.create(3, "bytes()");
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isNoValue(source)")
+        public PBytes byteDone(VirtualFrame frame, Object cls, PNone source, PNone encoding, PNone errors) {
+            return factory().createBytes(cls, PythonUtils.EMPTY_BYTE_ARRAY);
+        }
+
+        @Specialization(guards = "!isNone(source)")
+        public PBytes doInit(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Cached BytesNodes.BytesInitNode toBytesNode) {
+            return factory().createBytes(cls, new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
+        }
+
+        @Specialization(guards = "isNone(source)")
+        public PBytes sourceNone(Object cls, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, cls);
         }
     }
 
-    // bytearray([source[, encoding[, errors]]])
-    @Builtin(name = BYTEARRAY, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PByteArray)
+    @Builtin(name = BYTEARRAY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PByteArray)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
         @Specialization
-        public Object createByteArray(Object cls, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+        public PByteArray setEmpty(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BytesBuiltins.InitNode
             return factory().createByteArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }

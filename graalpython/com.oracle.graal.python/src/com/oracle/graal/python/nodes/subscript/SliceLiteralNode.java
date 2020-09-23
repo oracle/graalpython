@@ -122,6 +122,59 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     }
 
     /**
+     * Adopting logic from PySlice_AdjustIndices (sliceobject.c:248)
+     */
+    @GenerateNodeFactory
+    @GenerateUncached
+    public abstract static class AdjustIndices extends PNodeWithContext {
+
+        public abstract SliceInfo execute(int length, SliceInfo slice);
+
+        @Specialization
+        SliceInfo calc(int length, SliceInfo slice,
+                        @Cached PRaiseNode raiseNode) {
+            int start = slice.start;
+            int stop = slice.stop;
+            int step = slice.step;
+
+            if (step == 0) {
+                raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+            }
+            assert step > Integer.MIN_VALUE : "step must not be minimum integer value";
+
+            int len = 0;
+            if (start < 0) {
+                start += length;
+                if (start < 0) {
+                    start = (step < 0) ? -1 : 0;
+                }
+            } else if (start >= length) {
+                start = (step < 0) ? length - 1 : length;
+            }
+
+            if (stop < 0) {
+                stop += length;
+                if (stop < 0) {
+                    stop = (step < 0) ? -1 : 0;
+                }
+            } else if (stop >= length) {
+                stop = (step < 0) ? length - 1 : length;
+            }
+
+            if (step < 0) {
+                if (stop < start) {
+                    len = (start - stop - 1) / (-step) + 1;
+                }
+            } else {
+                if (start < stop) {
+                    len = (stop - start - 1) / step + 1;
+                }
+            }
+            return new SliceInfo(start, stop, step, len);
+        }
+    }
+
+    /**
      * Coerce indices computation to lossy integer values
      */
     @GenerateNodeFactory
@@ -228,6 +281,48 @@ public abstract class SliceLiteralNode extends ExpressionNode {
 
     @GenerateNodeFactory
     @GenerateUncached
+    public abstract static class SliceUnpack extends PNodeWithContext {
+
+        public abstract SliceInfo execute(PSlice slice);
+
+        @Specialization
+        SliceInfo doSliceInt(PIntSlice slice) {
+            return new SliceInfo(slice.getIntStart(), slice.getIntStop(), slice.getIntStep());
+        }
+
+        @Specialization
+        SliceInfo doSliceObject(PObjectSlice slice,
+                        @Cached SliceLossyCastToInt toInt,
+                        @Cached PRaiseNode raiseNode) {
+            /* this is harder to get right than you might think */
+            int start, stop, step;
+            if (slice.getStep() == PNone.NONE) {
+                step = 1;
+            } else {
+                step = (int) toInt.execute(slice.getStep());
+                if (step == 0) {
+                    raiseNode.raise(ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                }
+            }
+
+            if (slice.getStart() == PNone.NONE) {
+                start = step < 0 ? Integer.MAX_VALUE : 0;
+            } else {
+                start = (int) toInt.execute(slice.getStart());
+            }
+
+            if (slice.getStop() == PNone.NONE) {
+                stop = step < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            } else {
+                stop = (int) toInt.execute(slice.getStop());
+            }
+
+            return new SliceInfo(start, stop, step);
+        }
+    }
+
+    @GenerateNodeFactory
+    @GenerateUncached
     @ImportStatic({PythonOptions.class, PGuards.class})
     public abstract static class SliceCastToToBigInt extends Node {
 
@@ -280,7 +375,7 @@ public abstract class SliceLiteralNode extends ExpressionNode {
     @GenerateNodeFactory
     @GenerateUncached
     @ImportStatic({PythonOptions.class, PGuards.class})
-    protected abstract static class SliceLossyCastToInt extends Node {
+    public abstract static class SliceLossyCastToInt extends Node {
 
         public abstract Object execute(Object x);
 

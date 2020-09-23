@@ -18,6 +18,7 @@ import test.support
 import test.string_tests
 import test.list_tests
 from test.support import bigaddrspacetest, MAX_Py_ssize_t
+from test import support
 
 
 if sys.flags.bytes_warning:
@@ -869,6 +870,7 @@ class BaseBytesTest:
         self.assertRaisesRegex(TypeError, r'\bendswith\b', b.endswith,
                                 x, None, None, None)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         test.support.check_free_after_iterating(self, iter, self.type2test)
         test.support.check_free_after_iterating(self, reversed, self.type2test)

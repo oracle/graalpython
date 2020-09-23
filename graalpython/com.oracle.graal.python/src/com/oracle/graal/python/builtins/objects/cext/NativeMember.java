@@ -61,7 +61,9 @@ public enum NativeMember {
     OB_SVAL("ob_sval"),
 
     // PyByteArrayObject
+    OB_BYTES("ob_bytes"),
     OB_START("ob_start"),
+    OB_EXPORTS("ob_exports", PRIMITIVE),
 
     // PyTupleObject, PyListObject, arrayobject
     OB_ITEM("ob_item"),

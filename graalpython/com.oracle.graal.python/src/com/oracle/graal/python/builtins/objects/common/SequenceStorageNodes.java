@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.BufferError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ContainsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CopyItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CopyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateEmptyNodeGen;
@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DoGeneralizationNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EnsureCapacityNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetElementTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemDynamicNodeGen;
@@ -96,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetLenNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetStorageSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -121,6 +119,7 @@ import com.oracle.graal.python.nodes.control.GetNextNodeFactory.GetNextWithoutFr
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -1133,10 +1132,13 @@ public abstract class SequenceStorageNodes {
         protected SequenceStorage doSliceSequence(SequenceStorage storage, PSlice slice, PSequence sequence,
                         @Shared("generalizeProfile") @Cached BranchProfile generalizeProfile,
                         @Cached SetItemSliceNode setItemSliceNode,
-                        @Cached LenNode lenNode,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
+                        @Cached LenNode lenNode,
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
+            int len = lenNode.execute(storage);
+            SliceInfo info = adjustIndices.execute(len, unadjusted);
             try {
                 setItemSliceNode.execute(storage, info, sequence);
                 return storage;
@@ -1154,8 +1156,12 @@ public abstract class SequenceStorageNodes {
                         @Cached SetItemSliceNode setItemSliceNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), storage.length());
+                        @Cached LenNode lenNode,
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
+            int len = lenNode.execute(storage);
+            SliceInfo info = adjustIndices.execute(len, unadjusted);
 
             // We need to construct the list eagerly because if a SequenceStoreException occurs, we
             // must not use iterable again. It could have sice-effects.
@@ -1343,6 +1349,71 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class MemMoveNode extends Node {
+
+        public abstract void execute(SequenceStorage s, int distPos, int srcPos, int length);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "length <= 0")
+        protected static void nothing(SequenceStorage storage, int distPos, int srcPos, int length) {
+        }
+
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"length > 0", "storage.getClass() == cachedClass"})
+        protected static void doMove(BasicSequenceStorage storage, int distPos, int srcPos, int length,
+                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+            Object array = cachedClass.cast(storage).getInternalArrayObject();
+            PythonUtils.arraycopy(array, srcPos, array, distPos, length);
+        }
+
+        @Specialization(guards = {"length > 0", "!isBasicSequenceStorage(storage)"})
+        protected static void doOther(SequenceStorage storage, int distPos, int srcPos, int length,
+                        @Cached SetItemScalarNode setLeftItemNode,
+                        @Cached GetItemScalarNode getRightItemNode) {
+            for (int cur = distPos, j = srcPos, i = 0; i < length; cur += 1, j++, i++) {
+                setLeftItemNode.execute(storage, cur, getRightItemNode.execute(storage, j));
+            }
+        }
+
+        protected static boolean isBasicSequenceStorage(Object o) {
+            return o instanceof BasicSequenceStorage;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class MemCopyNode extends Node {
+
+        public abstract void execute(SequenceStorage dist, int distPos, SequenceStorage src, int srcPos, int length);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "length <= 0")
+        protected static void nothing(SequenceStorage dist, int distPos, SequenceStorage src, int srcPos, int length) {
+        }
+
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"length > 0", "dist.getClass() == cachedClass", "src.getClass() == dist.getClass()"})
+        protected static void doCopy(BasicSequenceStorage dist, int distPos, BasicSequenceStorage src, int srcPos, int length,
+                        @Cached("dist.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
+            Object distArray = cachedClass.cast(dist).getInternalArrayObject();
+            Object srcArray = cachedClass.cast(src).getInternalArrayObject();
+            PythonUtils.arraycopy(srcArray, srcPos, distArray, distPos, length);
+        }
+
+        @Specialization(guards = {"length > 0", "!isBasicSequenceStorage(dist) || dist.getClass() != src.getClass()"})
+        protected static void doOther(SequenceStorage dist, int distPos, SequenceStorage src, int srcPos, int length,
+                        @Cached SetItemScalarNode setLeftItemNode,
+                        @Cached GetItemScalarNode getRightItemNode) {
+            for (int cur = distPos, j = srcPos, i = 0; i < length; cur += 1, j++, i++) {
+                setLeftItemNode.execute(dist, cur, getRightItemNode.execute(src, j));
+            }
+        }
+
+        protected static boolean isBasicSequenceStorage(Object o) {
+            return o instanceof BasicSequenceStorage;
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
     abstract static class SetStorageSliceNode extends Node {
 
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable);
@@ -1357,93 +1428,66 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(guards = {"isDataTypeCompatibleNode.execute(store, sequence)"})
-        static void setSlice(SequenceStorage store, SliceInfo sinfo, SequenceStorage sequence,
-                        @Cached("createBinaryProfile()") ConditionProfile wrongLength,
-                        @Cached("createBinaryProfile()") ConditionProfile clearProfile,
-                        @Cached LenNode selfLenNode,
-                        @Cached LenNode otherLenNode,
-                        @Cached SetLenNode setLenNode,
-                        @Cached SetItemScalarNode setLeftItemNode,
-                        @Cached GetItemScalarNode getRightItemNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached EnsureCapacityNode ensureCapacity,
-                        @Cached CopyNode copyNode,
-                        @Cached CopyItemNode copyItemNode,
+        @Specialization(guards = {"isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"})
+        static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values,
                         @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
-                        @Cached LenOfRangeNode sliceLen) {
-            int length = selfLenNode.execute(store);
-            int valueLen = otherLenNode.execute(sequence);
-            int sliceLength = sliceLen.len(sinfo);
-            if (wrongLength.profile(sinfo.step != 1 && sliceLength != valueLen)) {
-                throw raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, valueLen, length);
-            }
+                        @Cached LenNode lenNode,
+                        @Cached SetLenNode setLenNode,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached MemMoveNode memove,
+                        @Cached MemCopyNode memcpy,
+                        @Cached CopyNode copyNode,
+                        @Cached ConditionProfile memoryError,
+                        @Cached ConditionProfile negGrowth,
+                        @Cached ConditionProfile posGrowth,
+                        @Cached PRaiseNode raiseNode) {
             int start = sinfo.start;
             int stop = sinfo.stop;
             int step = sinfo.step;
-            boolean negativeStep = step < 0;
 
-            if (negativeStep) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start item and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
-                stop = start + 1;
-                start = tmpStart;
-            }
-            if (start < 0) {
-                start = 0;
-            } else if (start > length) {
-                start = length;
-            }
-            if (stop < start) {
+            SequenceStorage data = (values == self) ? copyNode.execute(values) : values;
+            int needed = lenNode.execute(data);
+            /*- Make sure b[5:2] = ... inserts before 5, not before 2. */
+            if ((step < 0 && start < stop) || (step > 0 && start > stop)) {
                 stop = start;
-            } else if (stop > length) {
-                stop = length;
             }
+            singleStep(self, start, stop, data, needed,
+                            lenNode, setLenNode, ensureCapacityNode, memove, memcpy,
+                            memoryError, negGrowth, posGrowth, raiseNode);
+        }
 
-            int norig = sliceLength;
-            int delta = valueLen - norig;
-            int index;
+        @Specialization(guards = {"isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"})
+        static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values,
+                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
+                        @Cached ConditionProfile wrongLength,
+                        @Cached ConditionProfile deleteSlice,
+                        @Cached LenNode lenNode,
+                        @Cached SetLenNode setLenNode,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached MemMoveNode memove,
+                        @Cached SetItemScalarNode setLeftItemNode,
+                        @Cached GetItemScalarNode getRightItemNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached CopyNode copyNode) {
+            int start = sinfo.start;
+            int step = sinfo.step;
+            int slicelen = sinfo.sliceLength;
+            assert slicelen != -1 : "slice info has not been adjusted";
 
-            if (clearProfile.profile(length + delta == 0)) {
-                setLenNode.execute(store, 0);
-                return;
-            }
-            ensureCapacity.execute(store, length + delta);
-            // we need to work with the copy in the case if a[i:j] = a
-            SequenceStorage workingValue = store == sequence ? copyNode.execute(store) : sequence;
-
-            if (step == 1) {
-                if (delta < 0) {
-                    // delete items
-                    for (index = stop + delta; index < length + delta; index++) {
-                        copyItemNode.execute(store, index, index - delta);
-                    }
-                    length += delta;
-                    stop += delta;
-                } else if (delta > 0) {
-                    // insert items
-                    for (index = length - 1; index >= stop; index--) {
-                        copyItemNode.execute(store, index + delta, index);
-                    }
-                    length += delta;
-                    stop += delta;
-                }
-            }
-
-            if (!negativeStep) {
-                for (int i = start, j = 0; i < stop; i += step, j++) {
-                    setLeftItemNode.execute(store, i, getRightItemNode.execute(workingValue, j));
-                }
+            SequenceStorage data = (values == self) ? copyNode.execute(values) : values;
+            int needed = lenNode.execute(data);
+            if (deleteSlice.profile(needed == 0)) {
+                DeleteSliceNode.multipleSteps(self, sinfo,
+                                lenNode, setLenNode, ensureCapacityNode, memove);
             } else {
-                for (int i = start, j = valueLen - 1; i < stop; i += step, j--) {
-                    setLeftItemNode.execute(store, i, getRightItemNode.execute(workingValue, j));
+                /*- Assign slice */
+                if (wrongLength.profile(needed != slicelen)) {
+                    raiseNode.raise(ValueError, ErrorMessages.ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE, needed, slicelen);
+                }
+                for (int cur = start, i = 0; i < slicelen; cur += step, i++) {
+                    setLeftItemNode.execute(self, cur, getRightItemNode.execute(data, i));
                 }
             }
-            setLenNode.execute(store, length);
         }
 
         @Specialization(guards = "!isAssignCompatibleNode.execute(self, sequence)")
@@ -1452,16 +1496,78 @@ public abstract class SequenceStorageNodes {
             throw new SequenceStoreException(sequence.getIndicativeValue());
         }
 
+        /**
+         * based on CPython/Objects/listobject.c#list_ass_subscript and
+         * CPython/Objects/bytearrayobject.c#bytearray_ass_subscript
+         */
+        static void singleStep(SequenceStorage self, int lo, int hi, SequenceStorage data, int needed,
+                        LenNode selfLenNode,
+                        SetLenNode setLenNode,
+                        EnsureCapacityNode ensureCapacityNode,
+                        MemMoveNode memove,
+                        MemCopyNode memcpy,
+                        ConditionProfile memoryError,
+                        ConditionProfile negGrowth,
+                        ConditionProfile posGrowth,
+                        PRaiseNode raiseNode) {
+            int avail = hi - lo;
+            int growth = needed - avail;
+            assert avail >= 0 : "sliceInfo.start and sliceInfo.stop have not been adjusted.";
+            int len = selfLenNode.execute(self);
+
+            if (negGrowth.profile(growth < 0)) {
+                // ensure capacity will check if the storage can be resized.
+                ensureCapacityNode.execute(self, len + growth);
+
+                // We are shrinking the list here
+
+                /*-
+                TODO: it might be a good idea to implement this logic
+                if (lo == 0)
+                Shrink the buffer by advancing its logical start
+                  0   lo               hi             old_size
+                  |   |<----avail----->|<-----tail------>|
+                  |      |<-bytes_len->|<-----tail------>|
+                  0    new_lo         new_hi          new_size
+                */
+
+                // For now we are doing the generic approach
+                /*-
+                  0   lo               hi               old_size
+                  |   |<----avail----->|<-----tomove------>|
+                  |   |<-bytes_len->|<-----tomove------>|
+                  0   lo         new_hi              new_size
+                */
+                memove.execute(self, lo + needed, hi, len - hi);
+                setLenNode.execute(self, len + growth); // growth is negative (Shrinking)
+            } else if (posGrowth.profile(growth > 0)) {
+                // ensure capacity will check if the storage can be resized.
+                ensureCapacityNode.execute(self, len + growth);
+
+                if (memoryError.profile(len > Integer.MAX_VALUE - growth)) {
+                    throw raiseNode.raise(MemoryError);
+                }
+
+                len += growth;
+                setLenNode.execute(self, len);
+
+                /*- Make the place for the additional bytes */
+                /*-
+                  0   lo        hi               old_size
+                  |   |<-avail->|<-----tomove------>|
+                  |   |<---bytes_len-->|<-----tomove------>|
+                  0   lo            new_hi              new_size
+                 */
+                memove.execute(self, lo + needed, hi, len - lo - needed);
+            }
+
+            if (needed > 0) {
+                memcpy.execute(self, lo, data, 0, needed);
+            }
+        }
+
         protected static boolean replacesWholeSequence(Class<? extends BasicSequenceStorage> cachedClass, BasicSequenceStorage s, SliceInfo info) {
             return info.start == 0 && info.step == 1 && info.stop == cachedClass.cast(s).length();
-        }
-
-        public static SetStorageSliceNode create() {
-            return SetStorageSliceNodeGen.create();
-        }
-
-        public static SetStorageSliceNode getUncached() {
-            return SetStorageSliceNodeGen.getUncached();
         }
     }
 
@@ -1843,8 +1949,8 @@ public abstract class SequenceStorageNodes {
             int llen = left.length();
             int rlen = right.length();
             for (int i = 0; i < Math.min(llen, rlen); i++) {
-                int litem = left.getIntItemNormalized(i);
-                int ritem = right.getIntItemNormalized(i);
+                byte litem = left.getByteItemNormalized(i);
+                byte ritem = right.getByteItemNormalized(i);
                 if (litem != ritem) {
                     return cmpOp.cmp(litem, ritem);
                 }
@@ -2221,8 +2327,6 @@ public abstract class SequenceStorageNodes {
         @Child private ConcatBaseNode concatBaseNode = ConcatBaseNodeGen.create();
         @Child private CreateEmptyNode createEmptyNode = CreateEmptyNode.create();
         @Child private GeneralizationNode genNode;
-        @Child private EnsureCapacityNode ensureCapacityNode;
-        @Child private SetLenNode setLenNode;
 
         private final Supplier<GeneralizationNode> genNodeProvider;
 
@@ -2253,8 +2357,7 @@ public abstract class SequenceStorageNodes {
             if (l instanceof EmptySequenceStorage) {
                 return createEmptyNode.execute(r, len, -1);
             }
-            SequenceStorage empty = createEmptyNode.execute(l, len, len);
-            return empty;
+            return createEmptyNode.execute(l, len, len);
         }
 
         private SequenceStorage doConcat(SequenceStorage dest, SequenceStorage leftProfiled, SequenceStorage rightProfiled) {
@@ -2603,35 +2706,51 @@ public abstract class SequenceStorageNodes {
     public abstract static class ContainsNode extends SequenceStorageBaseNode {
         public abstract boolean execute(VirtualFrame frame, SequenceStorage left, Object item);
 
+        @Specialization
+        public static boolean doIndexOf(VirtualFrame frame, SequenceStorage left, Object item,
+                        @Cached IndexOfNode indexOfNode) {
+            return indexOfNode.execute(frame, left, item) != -1;
+        }
+
+    }
+
+    public abstract static class IndexOfNode extends SequenceStorageBaseNode {
+        public abstract int execute(VirtualFrame frame, SequenceStorage left, Object item);
+
         @Specialization(guards = "lenNode.execute(left) == 0")
         @SuppressWarnings("unused")
-        static boolean doEmpty(SequenceStorage left, Object item,
+        static int doEmpty(SequenceStorage left, Object item,
                         @Cached LenNode lenNode) {
-            return false;
+            return -1;
         }
 
         @Specialization
-        public static boolean doByteStorage(ByteSequenceStorage s, int item) {
-            return s.indexOfInt(item) != -1;
+        public static int doByteStorage(ByteSequenceStorage s, int item) {
+            return s.indexOfInt(item);
         }
 
         @Specialization
-        public static boolean doIntStorage(IntSequenceStorage s, int item) {
-            return s.indexOfInt(item) != -1;
+        public static int doByteStorage(ByteSequenceStorage s, byte item) {
+            return s.indexOfByte(item);
         }
 
         @Specialization
-        public static boolean doLongStorage(LongSequenceStorage s, long item) {
-            return s.indexOfLong(item) != -1;
+        public static int doIntStorage(IntSequenceStorage s, int item) {
+            return s.indexOfInt(item);
         }
 
         @Specialization
-        public static boolean doDoubleStorage(DoubleSequenceStorage s, double item) {
-            return s.indexOfDouble(item) != -1;
+        public static int doLongStorage(LongSequenceStorage s, long item) {
+            return s.indexOfLong(item);
         }
 
         @Specialization
-        static boolean doGeneric(VirtualFrame frame, SequenceStorage left, Object item,
+        public static int doDoubleStorage(DoubleSequenceStorage s, double item) {
+            return s.indexOfDouble(item);
+        }
+
+        @Specialization
+        static int doGeneric(VirtualFrame frame, SequenceStorage left, Object item,
                         @Cached LenNode lenNode,
                         @Cached GetItemScalarNode getItemNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
@@ -2639,14 +2758,10 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < lenNode.execute(left); i++) {
                 Object leftItem = getItemNode.execute(left, i);
                 if (lib.equalsWithState(leftItem, item, lib, threadState)) {
-                    return true;
+                    return i;
                 }
             }
-            return false;
-        }
-
-        public static ContainsNode create() {
-            return ContainsNodeGen.create();
+            return -1;
         }
     }
 
@@ -2893,37 +3008,36 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doEmpty(EmptySequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Cached AppendNode recursive,
-                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
+                        @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
             SequenceStorage newStorage = doGenNode.execute(genNodeSupplier, s, val);
             return recursive.execute(newStorage, val, genNodeSupplier);
         }
 
-        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
+        @Specialization
         static SequenceStorage doManaged(BasicSequenceStorage s, Object val, GenNodeSupplier genNodeSupplier,
                         @Cached BranchProfile increaseCapacity,
                         @Cached EnsureCapacityNode ensureCapacity,
-                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
-                        @Cached("create()") SetItemScalarNode setItemNode,
-                        @Cached("createClassProfile()") ValueProfile generalizedProfile,
-                        @Exclusive @Cached DoGeneralizationNode doGenNode) {
-            BasicSequenceStorage profiled = cachedClass.cast(s);
-            int len = profiled.length();
+                        @Cached SetLenNode setLenNode,
+                        @Cached LenNode lenNode,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Shared("genNode") @Cached DoGeneralizationNode doGenNode) {
+            int len = lenNode.execute(s);
             int newLen = len + 1;
-            int capacity = profiled.capacity();
+            int capacity = s.capacity();
             if (newLen > capacity) {
                 increaseCapacity.enter();
-                profiled.ensureCapacity(len + 1);
+                ensureCapacity.execute(s, len + 1);
             }
             try {
-                setItemNode.execute(profiled, len, val);
-                profiled.setNewLength(len + 1);
-                return profiled;
+                setItemNode.execute(s, len, val);
+                setLenNode.execute(s, len + 1);
+                return s;
             } catch (SequenceStoreException e) {
-                SequenceStorage generalized = generalizedProfile.profile(doGenNode.execute(genNodeSupplier, profiled, e.getIndicationValue()));
+                SequenceStorage generalized = doGenNode.execute(genNodeSupplier, s, e.getIndicationValue());
                 ensureCapacity.execute(generalized, len + 1);
                 try {
                     setItemNode.execute(generalized, len, val);
-                    generalized.setNewLength(len + 1);
+                    setLenNode.execute(generalized, len + 1);
                     return generalized;
                 } catch (SequenceStoreException e1) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -3119,20 +3233,18 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static NativeSequenceStorage doObject(@SuppressWarnings("unused") NativeSequenceStorage s, @SuppressWarnings("unused") int cap) {
+        static NativeSequenceStorage doNative(@SuppressWarnings("unused") NativeSequenceStorage s, @SuppressWarnings("unused") int cap,
+                        @Cached PRaiseNode raise) {
+            if (s.getElementType() == Byte) {
+                // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
+                // (mq) for the time being we will assume that native storage is exported, i.e.
+                // `ob_export > 0`.
+                raise.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+            }
             // TODO re-allocate native memory
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new UnsupportedOperationException();
         }
-
-        public static EnsureCapacityNode create() {
-            return EnsureCapacityNodeGen.create();
-        }
-
-        public static EnsureCapacityNode getUncached() {
-            return EnsureCapacityNodeGen.getUncached();
-        }
-
     }
 
     @GenerateUncached
@@ -3340,8 +3452,11 @@ public abstract class SequenceStorageNodes {
         protected void doSlice(SequenceStorage storage, PSlice slice,
                         @Cached LenNode lenNode,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), lenNode.execute(storage));
+                        @Cached SliceLiteralNode.SliceUnpack unpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            int len = lenNode.execute(storage);
+            SliceInfo unadjusted = unpack.execute(sliceCast.execute(slice));
+            SliceInfo info = adjustIndices.execute(len, unadjusted);
             try {
                 getGetItemSliceNode().execute(storage, info);
             } catch (SequenceStoreException e) {
@@ -3439,56 +3554,104 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(SequenceStorage s, SliceInfo info);
 
-        @Specialization
-        static void delSlice(SequenceStorage s, SliceInfo info,
-                        @Cached("create()") LenNode lenNode,
-                        @Cached("create()") SetLenNode setLenNode,
-                        @Cached("create()") GetItemScalarNode getItemNode,
-                        @Cached("create()") SetItemScalarNode setItemNode) {
-            int length = lenNode.execute(s);
-            int start = info.start;
-            int stop = info.stop;
-            int step = info.step;
+        @Specialization(guards = "sinfo.step == 1")
+        static void singleStep(SequenceStorage store, SliceInfo sinfo,
+                        @Cached ConditionProfile shortCircuitProfile,
+                        @Cached LenNode selfLenNode,
+                        @Cached SetLenNode setLenNode,
+                        @Cached MemMoveNode memove,
+                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
+            int length = selfLenNode.execute(store);
+            int sliceLength = sinfo.sliceLength;
 
-            int decraseLen; // how much will be the result array shorter
-            int index;  // index of the "old" array
+            if (shortCircuitProfile.profile(sliceLength == 0)) {
+                return;
+            }
+            int ilow = sinfo.start;
+            int ihigh = sinfo.stop;
+            int n = 0; /* # of elements in replacement list */
+
+            ilow = (ilow < 0) ? 0 : (ilow > length) ? length : ilow;
+            ihigh = (ihigh < ilow) ? ilow : (ihigh > length) ? length : ihigh;
+
+            int norig = ihigh - ilow; /* # of elements in list getting replaced */
+            assert norig >= 0 : "Something wrong with slice info";
+            int d = n - norig; /* Change in size */
+            if (length + d == 0) {
+                setLenNode.execute(store, 0);
+                return;
+            }
+
+            if (d == 0) {
+                return;
+            }
+
+            int tail = length - ihigh;
+            memove.execute(store, ihigh + d, ihigh, tail);
+
+            // change the result length
+            // TODO reallocate array if the change is big?
+            // Then unnecessary big array is kept in the memory.
+            setLenNode.execute(store, length + d);
+        }
+
+        @Specialization(guards = "sinfo.step != 1")
+        static void multipleSteps(SequenceStorage store, SliceInfo sinfo,
+                        @Cached EnsureCapacityNode ensureCapacityNode,
+                        @Cached LenNode selfLenNode,
+                        @Cached SetLenNode setLenNode,
+                        @Cached MemMoveNode memove,
+                        @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode) {
+            multipleSteps(store, sinfo, selfLenNode, setLenNode, ensureCapacityNode, memove);
+        }
+
+        static void multipleSteps(SequenceStorage self, PSlice.SliceInfo sinfo,
+                        LenNode selfLenNode,
+                        SetLenNode setLenNode,
+                        EnsureCapacityNode ensureCapacityNode,
+                        MemMoveNode memove) {
+            int start, stop, step, slicelen;
+            start = sinfo.start;
+            step = sinfo.step;
+            slicelen = sinfo.sliceLength;
+            int len = selfLenNode.execute(self);
+            step = step > (len + 1) ? len : step;
+            /*- Delete slice */
+            int cur;
+            int i;
+
+            // ensure capacity will check if the storage can be resized.
+            ensureCapacityNode.execute(self, len - slicelen);
+
+            if (slicelen == 0) {
+                /*- Nothing to do here. */
+                return;
+            }
+
             if (step < 0) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start itema and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
                 stop = start + 1;
-                start = tmpStart;
+                start = stop + step * (slicelen - 1) - 1;
+                step = -step;
             }
-            int arrayIndex = start; // pointer to the "new" form of array
-            if (step == 1) {
-                // this is easy, just remove the part of array
-                decraseLen = stop - start;
-                index = start + decraseLen;
-            } else {
-                int nextStep = index = start; // nextStep is a pointer to the next removed item
-                decraseLen = (stop - start - 1) / step + 1;
-                for (; index < stop && nextStep < stop; index++) {
-                    if (nextStep == index) {
-                        nextStep += step;
-                    } else {
-                        setItemNode.execute(s, arrayIndex, getItemNode.execute(s, index));
-                        arrayIndex++;
-                    }
+            for (cur = start, i = 0; i < slicelen; cur += step, i++) {
+                int lim = step - 1;
+
+                if (cur + step >= len) {
+                    lim = len - cur - 1;
                 }
+
+                memove.execute(self, cur - i, cur + 1, lim);
             }
-            if (decraseLen > 0) {
-                // shift all other items in array behind the last change
-                for (; index < length; arrayIndex++, index++) {
-                    setItemNode.execute(s, arrayIndex, getItemNode.execute(s, index));
-                }
-                // change the result length
-                // TODO reallocate array if the change is big?
-                // Then unnecessary big array is kept in the memory.
-                setLenNode.execute(s, length - decraseLen);
+            /*- Move the tail of the bytes, in one chunk */
+            cur = start + slicelen * step;
+            if (cur < len) {
+                memove.execute(self, cur - slicelen, cur, len - cur);
             }
+
+            // change the result length
+            // TODO reallocate array if the change is big?
+            // Then unnecessary big array is kept in the memory.
+            setLenNode.execute(self, len - slicelen);
         }
 
         protected static DeleteSliceNode create() {
