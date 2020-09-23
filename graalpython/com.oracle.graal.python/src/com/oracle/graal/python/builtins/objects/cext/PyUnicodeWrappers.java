@@ -252,7 +252,7 @@ public abstract class PyUnicodeWrappers {
             return doCheck(stringMaterializeNode.execute(value), asciiEncoder);
         }
 
-        private int getKind(PString value, ConditionProfile storageProfile, SizeofWCharNode sizeofWcharNode) {
+        private static int getKind(PString value, ConditionProfile storageProfile, SizeofWCharNode sizeofWcharNode) {
             CharSequence storage = value.getCharSequence();
 
             // important: avoid materialization of native sequences
