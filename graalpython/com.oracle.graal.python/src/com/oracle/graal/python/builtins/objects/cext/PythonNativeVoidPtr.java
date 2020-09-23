@@ -117,7 +117,7 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     }
 
     @ExportMessage(limit = "2")
-    long hash(
+    long hashWithState(@SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this.getPointerObject()") InteropLibrary lib) {
         if (lib.hasIdentity(object)) {
             try {

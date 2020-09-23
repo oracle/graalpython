@@ -131,17 +131,17 @@ public class PBigRange extends PRange {
     }
 
     @ExportMessage
-    public int length(@CachedLibrary("this.length") PythonObjectLibrary pol,
+    public int lengthWithState(@SuppressWarnings("unused") ThreadState state, @CachedLibrary("this.length") PythonObjectLibrary pol,
                     @Cached PRaiseNode raiseNode) {
         if (pol.canBeIndex(length)) {
-            return pol.asSize(length);
+            return pol.asSizeWithState(length, state);
         }
         throw raiseNode.raiseNumberTooLarge(OverflowError, length);
     }
 
     @ExportMessage
     @TruffleBoundary
-    public boolean isTrue() {
+    public boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {
         return length.getValue().compareTo(BigInteger.ZERO) != 0;
     }
 

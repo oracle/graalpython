@@ -514,10 +514,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
-    static long hash(PythonBuiltinClassType type,
+    static long hashWithState(PythonBuiltinClassType type, ThreadState state,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.hash(context.getCore().lookupType(type));
+        return lib.hashWithState(context.getCore().lookupType(type), state);
     }
 
     @ExportMessage
