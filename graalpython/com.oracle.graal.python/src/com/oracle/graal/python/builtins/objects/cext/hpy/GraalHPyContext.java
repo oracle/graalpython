@@ -143,7 +143,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_ASLONG("ctx_Long_AsLong"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
-        CTX_NUMBER_ADD("ctx_Number_Add"),
+        CTX_ADD("ctx_Add"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_OBJECT_ISTRUE("ctx_Object_IsTrue"),
@@ -394,7 +394,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = new GraalHPyLongFromLong();
         members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = new GraalHPyLongFromUnsignedLongLong();
         members[HPyContextMembers.CTX_LONG_ASLONG.ordinal()] = new GraalHPyLongAsLong();
-        members[HPyContextMembers.CTX_NUMBER_ADD.ordinal()] = new GraalHPyNumberAdd();
+        members[HPyContextMembers.CTX_ADD.ordinal()] = new GraalHPyNumberAdd();
         members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
         members[HPyContextMembers.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
