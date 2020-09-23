@@ -85,6 +85,7 @@ class DeadlockAvoidanceTests:
         self.assertEqual(len(results), NTHREADS)
         return results
 
+    @support.imp_detail("GR-16579: support for multi-threading", graalvm=False)
     def test_deadlock(self):
         results = self.run_deadlock_avoidance_test(True)
         # At least one of the threads detected a potential deadlock on its
