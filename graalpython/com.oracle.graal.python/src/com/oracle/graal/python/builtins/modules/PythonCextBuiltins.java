@@ -187,6 +187,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -711,6 +712,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached WriteUnraisableNode writeUnraisableNode) {
             writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
             return PNone.NO_VALUE;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyUnicode_New", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyUnicodeNewNode extends PythonBuiltinNode {
+        @Specialization
+        Object doGeneric(Object ptr, int elementSize, int isAscii,
+                        @Cached CExtNodes.ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(factory().createString(new NativeCharSequence(ptr, elementSize, isAscii != 0)));
         }
     }
 

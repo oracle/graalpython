@@ -1451,7 +1451,7 @@ public abstract class CExtNodes {
         @Specialization
         PString execute(Object charPtr,
                         @Cached PythonObjectFactory factory) {
-            return factory.createString(new NativeCharSequence(charPtr));
+            return factory.createString(new NativeCharSequence(charPtr, 1, false));
         }
     }
 
