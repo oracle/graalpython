@@ -1843,7 +1843,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @CompilationFinal private ConditionProfile isStringProfile;
         @CompilationFinal private ConditionProfile isPStringProfile;
-        @CompilationFinal private CastToJavaStringNode castToJavaStringNode;
+        @Child private CastToJavaStringNode castToJavaStringNode;
 
         public final Object executeWith(VirtualFrame frame, Object arg) {
             return executeWith(frame, PythonBuiltinClassType.PString, arg, PNone.NO_VALUE, PNone.NO_VALUE);
