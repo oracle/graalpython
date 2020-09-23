@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.U
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.LittleEndianNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen.NativeOrderNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -129,8 +130,9 @@ public abstract class UnicodeObjectNodes {
 
         @Specialization
         PBytes doUnicode(PString s, long elementSize, long elements,
+                        @Cached StringMaterializeNode materializeNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return doUnicode(s.getValue(), elementSize, elements, factory);
+            return doUnicode(materializeNode.execute(s), elementSize, elements, factory);
         }
 
         @Specialization

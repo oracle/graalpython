@@ -53,11 +53,15 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMember.UNICODE
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,6 +71,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public abstract class PyUnicodeWrappers {
@@ -163,6 +168,12 @@ public abstract class PyUnicodeWrappers {
             if (isMemberReadable(member)) {
                 int elementSize = (int) sizeofWcharNode.execute();
                 PString s = getPString(lib);
+                CharSequence content = s.getCharSequence();
+
+                if (content instanceof NativeCharSequence) {
+                    // in this case, we can just return the pointer
+                    return ((NativeCharSequence) content).getPtr();
+                }
                 return new PySequenceArrayWrapper(asWideCharNode.execute(s, elementSize, stringLenNode.execute(s)), elementSize);
             }
             throw UnknownIdentifierException.create(member);
@@ -209,13 +220,16 @@ public abstract class PyUnicodeWrappers {
         @ExportMessage
         Object readMember(String member,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Cached ConditionProfile storageProfile,
+                        @Cached StringMaterializeNode materializeNode,
                         @Cached CExtNodes.SizeofWCharNode sizeofWcharNode) throws UnknownIdentifierException {
             // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
             int value = 0b000000000000000000000000_1_0_0_000_00;
-            if (onlyAscii(getPString(lib).getValue())) {
+            PString delegate = getPString(lib);
+            if (onlyAscii(delegate, storageProfile, materializeNode)) {
                 value |= 0b1_0_000_00;
             }
-            value |= ((int) sizeofWcharNode.execute() << 2) & 0b11100;
+            value |= (getKind(delegate, storageProfile, sizeofWcharNode) << 2) & 0b11100;
             if (isMemberReadable(member)) {
                 // it's a bit field; so we need to return the whole 32-bit word
                 return value;
@@ -223,11 +237,29 @@ public abstract class PyUnicodeWrappers {
             throw UnknownIdentifierException.create(member);
         }
 
-        private boolean onlyAscii(String value) {
+        private boolean onlyAscii(PString value, ConditionProfile storageProfile, StringMaterializeNode stringMaterializeNode) {
+            CharSequence storage = value.getCharSequence();
+
+            // important: avoid materialization of native sequences
+            if (storageProfile.profile(storage instanceof NativeCharSequence)) {
+                return ((NativeCharSequence) storage).isAsciiOnly();
+            }
+
             if (asciiEncoder == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 asciiEncoder = newAsciiEncoder();
             }
-            return doCheck(value, asciiEncoder);
+            return doCheck(stringMaterializeNode.execute(value), asciiEncoder);
+        }
+
+        private int getKind(PString value, ConditionProfile storageProfile, SizeofWCharNode sizeofWcharNode) {
+            CharSequence storage = value.getCharSequence();
+
+            // important: avoid materialization of native sequences
+            if (storageProfile.profile(storage instanceof NativeCharSequence)) {
+                return ((NativeCharSequence) storage).getElementSize();
+            }
+            return (int) sizeofWcharNode.execute();
         }
 
         @TruffleBoundary
