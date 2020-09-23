@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import argparse
-import configparser
 import os
 import re
 import shlex
@@ -178,6 +177,7 @@ class BisectResult:
 
 def _bisect_benchmark(argv, initial_branch, email_to):
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
+        import configparser
         cp = configparser.ConfigParser()
         cp.read(os.environ['BISECT_BENCHMARK_CONFIG'])
         sec = cp['bisect-benchmark']
