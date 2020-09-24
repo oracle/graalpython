@@ -149,6 +149,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -875,6 +877,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(to)")
         @SuppressWarnings("unused")
         PDict doString(Object cls, Object from, Object to, Object z,
+                        @CachedLanguage PythonLanguage lang,
                         @Cached CastToJavaStringCheckedNode castFromNode,
                         @Cached CastToJavaStringCheckedNode castToNode,
                         @Cached CastToJavaStringCheckedNode castZNode,
@@ -889,7 +892,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 zString = castZNode.cast(z, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "maketrans()", 3, "str", z);
             }
 
-            HashingStorage storage = PDict.createNewStorage(false, fromStr.length());
+            HashingStorage storage = PDict.createNewStorage(lang, false, fromStr.length());
             int i, j;
             for (i = 0, j = 0; i < fromStr.length() && j < toStr.length();) {
                 int key = PString.codePointAt(fromStr, i);
@@ -915,11 +918,12 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(to)", "isNoValue(z)"})
         @SuppressWarnings("unused")
         PDict doDict(VirtualFrame frame, Object cls, PDict from, Object to, Object z,
+                        @CachedLanguage PythonLanguage lang,
                         @Cached HashingCollectionNodes.GetHashingStorageNode getHashingStorageNode,
                         @Cached CastToJavaStringCheckedNode cast,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hlib) {
             HashingStorage srcStorage = getHashingStorageNode.execute(frame, from);
-            HashingStorage destStorage = PDict.createNewStorage(false, hlib.length(srcStorage));
+            HashingStorage destStorage = PDict.createNewStorage(lang, false, hlib.length(srcStorage));
             for (HashingStorage.DictEntry entry : hlib.entries(srcStorage)) {
                 if (PGuards.isInteger(entry.key) || PGuards.isPInt(entry.key)) {
                     destStorage = hlib.setItem(destStorage, entry.key, entry.value);

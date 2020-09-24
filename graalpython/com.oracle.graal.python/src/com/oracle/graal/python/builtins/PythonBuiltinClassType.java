@@ -269,11 +269,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return name;
     }
 
-    public final Shape getInstanceShape() {
+    public final Shape getInstanceShape(PythonLanguage lang) {
         if (name == null) {
             CompilerDirectives.shouldNotReachHere("incorrect use of Python builtin type marker");
         }
-        return PythonLanguage.getBuiltinTypeInstanceShape(this);
+        return lang.getBuiltinTypeInstanceShape(this);
     }
 
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length - 1);

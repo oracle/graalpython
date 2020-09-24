@@ -597,9 +597,9 @@ public final class Python3Core implements PythonCore {
         if (builtinTypes[index] == null) {
             if (type.getBase() == null) {
                 // object case
-                builtinTypes[index] = new PythonBuiltinClass(type, null);
+                builtinTypes[index] = new PythonBuiltinClass(getLanguage(), type, null);
             } else {
-                builtinTypes[index] = new PythonBuiltinClass(type, initializeBuiltinClass(type.getBase()));
+                builtinTypes[index] = new PythonBuiltinClass(getLanguage(), type, initializeBuiltinClass(type.getBase()));
             }
         }
         return builtinTypes[index];

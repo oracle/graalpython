@@ -173,15 +173,13 @@ public class AsyncHandler {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
-        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
-
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, profile);
+            calleeContext.enter(frame);
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, ASYNC_CALLABLE_INDEX);
             int frameIndex = (int) PArguments.getArgument(frameArguments, ASYNC_FRAME_INDEX_INDEX);

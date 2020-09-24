@@ -45,7 +45,6 @@ import com.oracle.truffle.api.source.SourceSection;
 public class ModuleRootNode extends PClosureRootNode {
     private final String name;
     private final String doc;
-    private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
     @Child private ExpressionNode body;
     @Child private WriteGlobalNode writeModuleDoc;
     @Child private WriteGlobalNode writeAnnotations;
@@ -84,7 +83,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        CalleeContext.enter(frame, customLocalsProfile);
+        calleeContext.enter(frame);
         try {
             return body.execute(frame);
         } finally {
@@ -99,7 +98,7 @@ public class ModuleRootNode extends PClosureRootNode {
             getWriteModuleDoc().doWrite(frame, doc);
         }
         if (hasAnnotations()) {
-            getWriteAnnotations().doWrite(frame, new PDict());
+            getWriteAnnotations().doWrite(frame, new PDict(lookupLanguageReference(PythonLanguage.class).get()));
         }
     }
 

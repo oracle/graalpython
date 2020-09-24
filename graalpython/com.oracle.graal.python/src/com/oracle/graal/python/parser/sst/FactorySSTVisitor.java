@@ -60,7 +60,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
@@ -744,7 +743,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(FloatLiteralSSTNode node) {
         ExpressionNode result;
         if (node.imaginary) {
-            result = new ComplexLiteralNode(new PComplex(0, node.value));
+            result = new ComplexLiteralNode(0, node.value);
         } else {
             result = new DoubleLiteralNode(node.value);
         }

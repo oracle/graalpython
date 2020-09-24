@@ -79,7 +79,6 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     private final String name;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final boolean declaresExplicitSelf;
-    private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
     @Child private BuiltinCallNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
@@ -314,7 +313,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 body = insert(newBody);
             }
         }
-        CalleeContext.enter(frame, customLocalsProfile);
+        calleeContext.enter(frame);
         try {
             return body.execute(frame);
         } finally {

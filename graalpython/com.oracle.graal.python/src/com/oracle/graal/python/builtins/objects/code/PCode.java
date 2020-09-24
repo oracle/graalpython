@@ -282,7 +282,7 @@ public final class PCode extends PythonBuiltinObject {
                 if (node instanceof SimpleLiteralNode) {
                     constants.add(((SimpleLiteralNode) node).getValue());
                 } else if (node instanceof FunctionDefinitionNode) {
-                    constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(), ((FunctionDefinitionNode) node).getCallTarget()));
+                    constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.getCurrent()), ((FunctionDefinitionNode) node).getCallTarget()));
                 } else if (node instanceof GeneratorExpressionNode) {
                     // TODO: we do it this way here since we cannot deserialize generator
                     // expressions right now

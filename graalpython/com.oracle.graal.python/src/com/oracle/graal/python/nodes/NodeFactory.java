@@ -235,10 +235,6 @@ public class NodeFactory {
         return new DoubleLiteralNode(value);
     }
 
-    public ExpressionNode createComplexLiteral(PComplex value) {
-        return new ComplexLiteralNode(value);
-    }
-
     public ExpressionNode createStringLiteral(String value) {
         return new StringLiteralNode(value);
     }

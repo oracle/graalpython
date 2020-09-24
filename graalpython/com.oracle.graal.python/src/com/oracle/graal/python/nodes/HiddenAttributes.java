@@ -44,4 +44,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 
 public abstract class HiddenAttributes {
     public static final HiddenKey ID_KEY = new HiddenKey("object_id");
+    public static final HiddenKey DICT = new HiddenKey("ob_dict");
+    public static final HiddenKey CLASS = new HiddenKey("ob_type");
 }

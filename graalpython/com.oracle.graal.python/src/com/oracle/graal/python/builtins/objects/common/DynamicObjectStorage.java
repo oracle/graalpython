@@ -63,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -93,8 +94,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    public DynamicObjectStorage() {
-        this(new Store(PythonLanguage.getEmptyShape()), null);
+    public DynamicObjectStorage(PythonLanguage lang) {
+        this(new Store(lang.getEmptyShape()), null);
     }
 
     public DynamicObjectStorage(DynamicObject store) {
@@ -370,14 +371,16 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage clear(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        dylib.resetShape(store, PythonLanguage.getEmptyShape());
+    public HashingStorage clear(@CachedLanguage PythonLanguage lang,
+                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        dylib.resetShape(store, lang.getEmptyShape());
         return this;
     }
 
     @ExportMessage
-    public HashingStorage copy(@CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-        DynamicObject copy = new Store(PythonLanguage.getEmptyShape());
+    public HashingStorage copy(@CachedLanguage PythonLanguage lang,
+                    @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+        DynamicObject copy = new Store(lang.getEmptyShape());
         Object[] keys = dylib.getKeyArray(store);
         for (int i = 0; i < keys.length; i++) {
             dylib.put(copy, keys[i], dylib.getOrDefault(store, keys[i], PNone.NO_VALUE));

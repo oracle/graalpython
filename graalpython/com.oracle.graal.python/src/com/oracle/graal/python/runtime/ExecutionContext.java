@@ -63,6 +63,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -208,8 +209,10 @@ public abstract class ExecutionContext {
     public static final class CalleeContext extends Node {
 
         @Child private MaterializeFrameNode materializeNode;
-
         @CompilationFinal private boolean everEscaped = false;
+
+        @CompilationFinal private ConditionProfile customLocalsProfile;
+        @CompilationFinal private LanguageReference<PythonLanguage> langRef;
 
         @Override
         public Node copy() {
@@ -219,7 +222,7 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public static void enter(VirtualFrame frame, ConditionProfile profile) {
+        public void enter(VirtualFrame frame) {
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
@@ -227,8 +230,16 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
             // tfel: If there are custom locals, write them into an (incomplete)
             // PFrame here
-            if (profile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
-                thisFrameRef.setCustomLocals(customLocals);
+            if (customLocalsProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                customLocalsProfile = ConditionProfile.createCountingProfile();
+            }
+            if (customLocalsProfile.profile(customLocals != null && !(customLocals instanceof PFrame.Reference))) {
+                if (langRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    langRef = lookupLanguageReference(PythonLanguage.class);
+                }
+                thisFrameRef.setCustomLocals(langRef.get(), customLocals);
             }
         }
 
@@ -269,7 +280,11 @@ public abstract class ExecutionContext {
 
                 // force the frame so that it can be accessed later
                 ensureMaterializeNode().execute(frame, node, false, true);
-                info.materialize(frame, node);
+                if (langRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    langRef = lookupLanguageReference(PythonLanguage.class);
+                }
+                info.materialize(langRef.get(), frame, node);
                 // if this frame escaped we must ensure that also f_back does
                 callerInfo.markAsEscaped();
                 info.setBackref(callerInfo);

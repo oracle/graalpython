@@ -60,7 +60,8 @@ public final class PObjectSlice extends PSlice {
     protected final Object stopObject;
     @CompilationFinal protected Object stepObject;
 
-    public PObjectSlice(Object start, Object stop, Object step) {
+    public PObjectSlice(PythonLanguage lang, Object start, Object stop, Object step) {
+        super(lang);
         this.startObject = start;
         this.stopObject = stop;
         this.stepObject = step;

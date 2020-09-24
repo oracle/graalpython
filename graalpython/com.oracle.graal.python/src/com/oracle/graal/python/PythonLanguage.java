@@ -46,7 +46,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
@@ -306,13 +308,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final String[] argumentNames = request.getArgumentNames().toArray(new String[request.getArgumentNames().size()]);
         final Source source = request.getSource();
         CompilerDirectives.transferToInterpreter();
-        final RootNode executableNode = new RootNode(this) {
+        final PythonLanguage lang = this;
+        final RootNode executableNode = new RootNode(lang) {
             @Node.Child private RootNode rootNode;
 
             protected Object[] preparePArguments(VirtualFrame frame) {
                 int argumentsLength = frame.getArguments().length;
                 Object[] arguments = PArguments.create(argumentsLength);
-                PArguments.setGlobals(arguments, new PDict());
+                PArguments.setGlobals(arguments, new PDict(lang));
                 PythonUtils.arraycopy(frame.getArguments(), 0, arguments, PArguments.USER_ARGUMENTS_OFFSET, argumentsLength);
                 return arguments;
             }
@@ -651,17 +654,24 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
     }
 
-    public static Shape getEmptyShape() {
-        return getCurrent().emptyShape;
+    public Shape getEmptyShape() {
+        return emptyShape;
     }
 
-    public static Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
-        Shape[] builtinTypeInstanceShapes = getCurrent().builtinTypeInstanceShapes;
+    public Shape getShapeForClass(PythonManagedClass klass) {
+        if (singleContextAssumption.isValid()) {
+            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
+        } else {
+            return getEmptyShape();
+        }
+    }
+
+    public Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
         int ordinal = type.ordinal();
         Shape shape = builtinTypeInstanceShapes[ordinal];
         if (shape == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            shape = PythonObject.freshShape(type);
+            shape = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0).build();
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;

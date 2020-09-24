@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -47,8 +48,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
-    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(), builtinClass.getInstanceShape(), builtinClass.getQualifiedName(), base);
+    @TruffleBoundary
+    public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
+        super(lang, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getQualifiedName(), base);
         this.type = builtinClass;
     }
 

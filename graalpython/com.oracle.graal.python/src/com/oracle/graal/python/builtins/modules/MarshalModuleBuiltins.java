@@ -650,7 +650,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private PDict readDict(int depth, HashingStorageLibrary lib) {
             int len = readInt();
-            HashingStorage store = PDict.createNewStorage(false, len);
+            HashingStorage store = PDict.createNewStorage(PythonLanguage.getCurrent(), false, len);
             PDict dict = factory().createDict(store);
             for (int i = 0; i < len; i++) {
                 Object key = readObject(depth + 1, lib);
