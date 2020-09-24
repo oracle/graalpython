@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
@@ -90,7 +91,7 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
@@ -100,7 +101,7 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
         try {
             return PInt.byteValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 
@@ -110,7 +111,7 @@ public abstract class CastToJavaByteNode extends PNodeWithContext {
         try {
             return x.byteValueExact();
         } catch (ArithmeticException e) {
-            throw raiseNode.raise(PythonBuiltinClassType.ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+            throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 }

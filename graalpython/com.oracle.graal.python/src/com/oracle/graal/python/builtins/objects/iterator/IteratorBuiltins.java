@@ -425,6 +425,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         public Object reduce(VirtualFrame frame, PSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(frame, factory().createTuple(new Object[0]), null, context, pol);
+            }
             return reduceInternal(frame, self.getPSequence(), self.getIndex(), context, pol);
         }
 
@@ -435,7 +438,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (!self.isExhausted()) {
                 return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
             } else {
-                return reduceInternal(frame, factory().createTuple(new Object[]{}), null, context, pol);
+                return reduceInternal(frame, factory().createTuple(new Object[0]), null, context, pol);
             }
         }
 

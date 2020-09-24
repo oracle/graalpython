@@ -698,6 +698,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return new PySequenceArrayWrapper(object, 1);
         }
 
+        @Specialization(guards = "eq(OB_EXPORTS, key)")
+        static Object doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile classProfile) {
+            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
+            if (sequenceStorage instanceof NativeSequenceStorage) {
+                return ((NativeSequenceStorage) sequenceStorage).getPtr();
+            }
+            return new PySequenceArrayWrapper(object, 1);
+        }
+
         @Specialization(guards = "eq(OB_FVAL, key)")
         static Object doObFval(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached("createClassProfile()") ValueProfile profile) throws UnsupportedMessageException {

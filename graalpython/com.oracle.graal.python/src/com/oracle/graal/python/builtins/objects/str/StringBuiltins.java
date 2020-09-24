@@ -76,6 +76,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
@@ -115,6 +117,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -751,40 +754,86 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.rfind(str[, start[, end]])
-    @Builtin(name = "rfind", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "rfind", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
     @GenerateNodeFactory
-    public abstract static class RFindNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class RFindNode extends PythonQuaternaryClinicBuiltinNode {
 
-        @Specialization
-        public int rfind(VirtualFrame frame, String self, Object substr, Object start, Object end,
-                        @Cached StringNodes.RFindNode rFindNode) {
-            return rFindNode.execute(frame, self, substr, start, end);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RFindNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
-        public int rfind(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+        public int rfind(String self, String sub, int start, int end,
+                        @Cached StringNodes.RFindNode rFindNode) {
+            int len = self.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return rFindNode.execute(self, sub, begin, last);
+        }
+
+        @Specialization
+        public int rfind(Object self, Object sub, int start, int end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.RFindNode rFindNode) {
-            return rFindNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rfind", self), substr, start, end);
+            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rfind", self);
+            String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
+            int len = strSelf.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return rFindNode.execute(strSelf, subStr, begin, last);
         }
     }
 
     // str.find(str[, start[, end]])
-    @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
     @GenerateNodeFactory
-    public abstract static class FindNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
 
-        @Specialization
-        public int find(VirtualFrame frame, String self, Object substr, Object start, Object end,
-                        @Cached StringNodes.FindNode findNode) {
-            return findNode.execute(frame, self, substr, start, end);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.FindNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
-        public int find(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+        public int find(String self, String substr, int start, int end,
+                        @Cached StringNodes.FindNode findNode) {
+            int len = self.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return findNode.execute(self, substr, begin, last);
+        }
+
+        @Specialization
+        public int find(Object self, Object sub, int start, int end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.FindNode findNode) {
-            return findNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "find", self), substr, start, end);
+            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "find", self);
+            String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
+            int len = strSelf.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            return findNode.execute(strSelf, subStr, begin, last);
         }
     }
 
@@ -1486,13 +1535,31 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, needsFrame = true)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
     @GenerateNodeFactory
-    public abstract static class IndexNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.IndexNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
+        }
+
         @Specialization
-        public int index(VirtualFrame frame, String self, Object substr, Object start, Object end,
+        public int index(String self, String sub, int start, int end,
                         @Cached StringNodes.FindNode findNode) {
-            int idx = findNode.execute(frame, self, substr, start, end);
+            int len = self.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            int idx = findNode.execute(self, sub, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1500,10 +1567,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int index(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+        public int index(Object self, Object sub, int start, int end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.FindNode findNode) {
-            int idx = findNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self), substr, start, end);
+            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
+            String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
+            int len = strSelf.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            int idx = findNode.execute(strSelf, subStr, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1511,13 +1583,31 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rindex", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, needsFrame = true)
+    @Builtin(name = "rindex", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
+    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
     @GenerateNodeFactory
-    public abstract static class RIndexNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class RIndexNode extends PythonQuaternaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return StringBuiltinsClinicProviders.RIndexNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
+        }
+
+        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
+            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
+        }
+
         @Specialization
-        public int rindex(VirtualFrame frame, String self, Object substr, Object start, Object end,
+        public int rindex(String self, String sub, int start, int end,
                         @Cached StringNodes.RFindNode rFindNode) {
-            int idx = rFindNode.execute(frame, self, substr, start, end);
+            int len = self.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            int idx = rFindNode.execute(self, sub, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1525,10 +1615,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int rindex(VirtualFrame frame, Object self, Object substr, Object start, Object end,
+        public int rindex(Object self, Object sub, int start, int end,
                         @Cached CastToJavaStringCheckedNode castNode,
                         @Cached StringNodes.RFindNode rFindNode) {
-            int idx = rFindNode.execute(frame, castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rindex", self), substr, start, end);
+            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rindex", self);
+            String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
+            int len = strSelf.length();
+            int begin = adjustStartIndex(start, len);
+            int last = adjustEndIndex(end, len);
+            int idx = rFindNode.execute(strSelf, subStr, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -2387,5 +2482,23 @@ public final class StringBuiltins extends PythonBuiltins {
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.ExpandTabsNodeClinicProviderGen.INSTANCE;
         }
+    }
+
+    protected static int adjustStartIndex(int startIn, int len) {
+        if (startIn < 0) {
+            int start = startIn + len;
+            return start < 0 ? 0 : start;
+        }
+        return startIn;
+    }
+
+    protected static int adjustEndIndex(int endIn, int len) {
+        if (endIn > len) {
+            return len;
+        } else if (endIn < 0) {
+            int end = endIn + len;
+            return end < 0 ? 0 : end;
+        }
+        return endIn;
     }
 }

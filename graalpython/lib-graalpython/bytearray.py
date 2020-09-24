@@ -47,4 +47,3 @@ def strip(self, what=None):
 
 
 bytearray.strip = __graalpython__.builtin_method(strip)
-bytearray.rfind = bytes.rfind

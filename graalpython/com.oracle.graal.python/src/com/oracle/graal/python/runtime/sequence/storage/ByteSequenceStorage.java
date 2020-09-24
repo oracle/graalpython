@@ -33,7 +33,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -128,7 +127,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteItemNormalized(idx, (byte) value);
         } else if (value instanceof Integer) {
             if ((int) value < 0 || (int) value >= 256) {
-                throw PythonLanguage.getCore().raise(ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
             }
             setByteItemNormalized(idx, ((Integer) value).byteValue());
         } else {
@@ -205,7 +204,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         int i = start;
         for (int j = 0; j < otherLength; i += step, j++) {
             if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
-                throw PythonLanguage.getCore().raise(ValueError, CastToByteNode.INVALID_BYTE_VALUE);
+                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
             }
             values[i] = (byte) seqValues[j];
         }

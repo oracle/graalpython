@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.zip.CRC32;
 
@@ -55,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -132,13 +132,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private byte[] b64decode(byte[] data) {
-            try {
-                byte[] asciis = Base64.decode(new String(data, "ascii"));
-                if (asciis != null) {
-                    return asciis;
-                }
-            } catch (UnsupportedEncodingException e) {
-                // fall through
+            byte[] asciis = Base64.decode(BytesUtils.createASCIIString(data));
+            if (asciis != null) {
+                return asciis;
             }
             throw raise(ValueError);
         }

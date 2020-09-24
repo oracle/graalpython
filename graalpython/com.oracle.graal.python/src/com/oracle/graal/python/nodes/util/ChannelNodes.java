@@ -147,7 +147,7 @@ public abstract class ChannelNodes {
         public abstract ByteSequenceStorage execute(Object channel, int size);
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
+        @TruffleBoundary
         public static ByteSequenceStorage read(Object channel, int size,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode) {
@@ -302,7 +302,7 @@ public abstract class ChannelNodes {
         public abstract int execute(Object channel, SequenceStorage s, int len);
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
+        @TruffleBoundary
         int writeOp(Object channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
