@@ -91,6 +91,7 @@ public final class NativeCharSequence implements CharSequence {
         try {
             int arraySize = castToJavaIntNode.execute(lib.getArraySize(ptr));
             assert arraySize % elementSize == 0;
+            // we need to subtract the terminating null character
             return arraySize / elementSize;
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere("pointer of NativeCharSequence is not an array");
