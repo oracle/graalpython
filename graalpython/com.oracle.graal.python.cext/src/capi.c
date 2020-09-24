@@ -480,11 +480,14 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
+/* Use this function to decode a C char array to a Java string using the source file encoding. */
 void* PyTruffle_CstrToString(void* o) {
-    if (polyglot_fits_in_i64(o)) {
-        return polyglot_from_string((const char*)polyglot_as_i64(o), SRC_CS);
-    }
     return polyglot_from_string(o, SRC_CS);
+}
+
+/* Use this function to decode a C ASCII string to a Java string. */
+void* PyTruffle_AsciiToString(void* ptr) {
+    return polyglot_from_string(ptr, "ascii");
 }
 
 /* To be used from Java code only.

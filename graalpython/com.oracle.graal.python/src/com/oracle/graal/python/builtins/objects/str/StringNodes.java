@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -111,10 +112,10 @@ public abstract class StringNodes {
 
         @Specialization(guards = {"isNativeCharSequence(x)"}, replaces = "doMaterializedNative")
         static String doNative(PString x,
-                        @Cached PCallCapiFunction callCStringToStringNode) {
+                        @Cached PCallCapiFunction callCStringToStringNode,
+                        @Cached UnicodeFromWcharNode fromWcharNode) {
             // cast guaranteed by the guard
-            NativeCharSequence nativeCharSequence = (NativeCharSequence) x.getCharSequence();
-            String materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+            String materialized = materializeNativeCharSequence((NativeCharSequence) x.getCharSequence(), callCStringToStringNode, fromWcharNode);
             x.setCharSequence(materialized);
             return materialized;
         }
@@ -131,6 +132,29 @@ public abstract class StringNodes {
         static String doMaterialized(PString x) {
             // cast guaranteed by the guard
             return (String) x.getCharSequence();
+        }
+
+        public static String materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
+                        PCallCapiFunction callCStringToStringNode,
+                        UnicodeFromWcharNode fromWcharNode) {
+            // cast guaranteed by the guard
+            String materialized;
+            if (nativeCharSequence.isAsciiOnly()) {
+                materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
+            } else {
+                switch (nativeCharSequence.getElementSize()) {
+                    case 1:
+                        materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+                        break;
+                    case 2:
+                    case 4:
+                        materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere("illegal element size");
+                }
+            }
+            return materialized;
         }
     }
 
