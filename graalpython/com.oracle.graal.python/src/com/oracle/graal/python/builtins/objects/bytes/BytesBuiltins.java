@@ -104,7 +104,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -257,17 +256,17 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends BaseReprNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public static Object repr(VirtualFrame frame, PBytes self,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+        public static Object repr(PBytes self,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage store = self.getSequenceStorage();
-            StringBuilder sb = newStringBuilder();
-            sbAppend(sb, "b'");
-            reprLoop(frame, sb, store, lenNode, getItemNode);
-            sbAppend(sb, "'");
-            return sbToString(sb);
+            byte[] bytes = getBytes.execute(store);
+            int len = lenNode.execute(store);
+            StringBuilder sb = BytesUtils.newStringBuilder();
+            BytesUtils.reprLoop(sb, bytes, len);
+            return BytesUtils.sbToString(sb);
         }
     }
 
@@ -644,30 +643,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         Object mod(Object self, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    public abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        @CompilerDirectives.TruffleBoundary
-        protected static StringBuilder newStringBuilder() {
-            return new StringBuilder();
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        protected static String sbToString(StringBuilder sb) {
-            return sb.toString();
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        protected static void sbAppend(StringBuilder sb, String s) {
-            sb.append(s);
-        }
-
-        protected static void reprLoop(VirtualFrame frame, StringBuilder sb, SequenceStorage store, SequenceStorageNodes.LenNode lenNode, SequenceStorageNodes.GetItemNode getItemNode) {
-            int len = lenNode.execute(store);
-            for (int i = 0; i < len; i++) {
-                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(frame, store, i));
-            }
         }
     }
 
@@ -1236,17 +1211,17 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     public abstract static class SepExpectByteNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
-        private final byte defaultValue;
+        private final Object defaultValue;
 
-        protected SepExpectByteNode(byte defaultValue) {
+        protected SepExpectByteNode(Object defaultValue) {
             this.defaultValue = defaultValue;
         }
 
         @Override
         public abstract Object execute(VirtualFrame frame, Object value);
 
-        @Specialization
-        byte none(@SuppressWarnings("unused") PNone none) {
+        @Specialization(guards = "isNoValue(none)")
+        Object none(@SuppressWarnings("unused") PNone none) {
             return defaultValue;
         }
 
@@ -1275,7 +1250,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        byte[] error(VirtualFrame frame, Object value) {
+        byte error(VirtualFrame frame, Object value) {
             throw raise(TypeError, ErrorMessages.SEP_MUST_BE_STR_OR_BYTES);
         }
 
@@ -1306,19 +1281,28 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         public static SepExpectByteNode createSepExpectByteNode() {
-            return BytesBuiltinsFactory.SepExpectByteNodeGen.create((byte) 0);
+            return BytesBuiltinsFactory.SepExpectByteNodeGen.create(PNone.NO_VALUE);
         }
 
         public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(0);
+            return BytesBuiltinsFactory.ExpectIntNodeGen.create(1);
+        }
+
+        @Specialization
+        String none(PBytesLike self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+                        @Cached.Shared("p") @Cached ConditionProfile earlyExit,
+                        @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
+            return hex(self, (byte) 0, 0, earlyExit, lenNode, getBytes, toHexNode);
         }
 
         @Specialization
         String hex(PBytesLike self, byte sep, int bytesPerSepGroup,
-                        @Cached ConditionProfile earlyExit,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached BytesNodes.ByteToHexNode toHexNode) {
+                        @Cached.Shared("p") @Cached ConditionProfile earlyExit,
+                        @Cached.Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached.Shared("b") @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached.Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             int len = lenNode.execute(self.getSequenceStorage());
             if (earlyExit.profile(len == 0)) {
                 return "";
@@ -1675,32 +1659,110 @@ public class BytesBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "replace", minNumOfPositionalArgs = 3)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 3, parameterNames = {"$self", "old", "replacement", "count"})
+    @ArgumentClinic(name = "count", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
     @GenerateNodeFactory
-    abstract static class ReplaceNode extends PythonTernaryBuiltinNode {
+    abstract static class ReplaceNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
+        }
+
+        public static ExpectIntNode createExpectIntNode() {
+            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
+        }
 
         @Specialization
-        PBytesLike replace(VirtualFrame frame, PBytesLike self, PBytesLike substr, PBytesLike replacement,
+        PBytesLike replace(VirtualFrame frame, PBytesLike self, PBytesLike substr, PBytesLike replacement, int count,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode toInternalBytes,
                         @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached ConditionProfile selfSubAreEmpty,
+                        @Cached ConditionProfile selfIsEmpty,
+                        @Cached ConditionProfile subIsEmpty,
                         @Cached BytesNodes.CreateBytesNode create) {
-            byte[] bytes = toBytes.execute(frame, self);
+            int len = lenNode.execute(self.getSequenceStorage());
+            byte[] bytes = toInternalBytes.execute(self.getSequenceStorage());
             byte[] subBytes = toBytes.execute(frame, substr);
             byte[] replacementBytes = toBytes.execute(frame, replacement);
-            byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
+            int maxcount = count < 0 ? Integer.MAX_VALUE : count;
+            if (selfSubAreEmpty.profile(len == 0 && subBytes.length == 0)) {
+                return create.execute(factory(), self, replacementBytes);
+            }
+            if (selfIsEmpty.profile(len == 0)) {
+                return create.execute(factory(), self, PythonUtils.EMPTY_BYTE_ARRAY);
+            }
+            if (subIsEmpty.profile(subBytes.length == 0)) {
+                return create.execute(factory(), self, replaceWithEmptySub(bytes, len, replacementBytes, maxcount));
+            }
+            // byte[] newBytes = doReplace(bytes, subBytes, replacementBytes);
+            byte[] newBytes = replace(bytes, len, subBytes, replacementBytes, maxcount, findNode);
             return create.execute(factory(), self, newBytes);
         }
 
         @Fallback
-        boolean replace(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement) {
+        boolean error(@SuppressWarnings("unused") Object self, Object substr, @SuppressWarnings("unused") Object replacement, @SuppressWarnings("unused") Object count) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, substr);
         }
 
-        @CompilerDirectives.TruffleBoundary
-        protected static byte[] doReplace(byte[] bytes, byte[] subBytes, byte[] replacementBytes) {
-            String string = BytesUtils.createASCIIString(bytes);
-            String subString = BytesUtils.createASCIIString(subBytes);
-            String replacementString = BytesUtils.createASCIIString(replacementBytes);
-            return string.replace(subString, replacementString).getBytes(StandardCharsets.US_ASCII);
+        @CompilerDirectives.TruffleBoundary(allowInlining = true)
+        protected byte[] replaceWithEmptySub(byte[] bytes, int len, byte[] replacementBytes, int count) {
+            int repLen = replacementBytes.length;
+            byte[] result = new byte[len + repLen * Math.min(count, len + 1)];
+            int replacements, i, j = 0;
+            for (replacements = 0, i = 0; replacements < count && i < len; replacements++) {
+                PythonUtils.arraycopy(replacementBytes, 0, result, j, repLen);
+                j += repLen;
+                result[j++] = bytes[i++];
+            }
+            if (replacements < count) {
+                PythonUtils.arraycopy(replacementBytes, 0, result, j, repLen);
+            }
+            if (i < len) {
+                PythonUtils.arraycopy(bytes, i, result, j, len - i);
+            }
+            return result;
+        }
+
+        @CompilerDirectives.TruffleBoundary(allowInlining = true)
+        protected byte[] replace(byte[] bytes, int len, byte[] sub, byte[] replacementBytes, int count,
+                        BytesNodes.FindNode findNode) {
+            int i, j, pos, maxcount = count, subLen = sub.length, repLen = replacementBytes.length;
+            List<byte[]> list = new ArrayList<>();
+
+            int resultLen = 0;
+            i = 0;
+            while (maxcount-- > 0) {
+                pos = findNode.execute(bytes, len, sub, i, len);
+                if (pos < 0) {
+                    break;
+                }
+                j = pos;
+                list.add(copyOfRange(bytes, i, j));
+                list.add(replacementBytes);
+                resultLen += (j - i) + repLen;
+                i = j + subLen;
+            }
+
+            if (i == 0) {
+                return copyOfRange(bytes, 0, len);
+            }
+
+            list.add(copyOfRange(bytes, i, len));
+            resultLen += (len - i);
+
+            i = 0;
+            byte[] result = new byte[resultLen];
+            Iterator<byte[]> it = iterator(list);
+            while (hasNext(it)) {
+                byte[] b = next(it);
+                PythonUtils.arraycopy(b, 0, result, i, b.length);
+                i += b.length;
+            }
+
+            return result;
         }
     }
 
@@ -1925,26 +1987,6 @@ public class BytesBuiltins extends PythonBuiltins {
                 appendNode.execute(result, createBytesNode.execute(factory(), self, next(it)));
             }
             return result;
-        }
-
-        @CompilerDirectives.TruffleBoundary(allowInlining = true)
-        private static Iterator<byte[]> iterator(List<byte[]> bytes) {
-            return bytes.iterator();
-        }
-
-        @CompilerDirectives.TruffleBoundary(allowInlining = true)
-        private static byte[] next(Iterator<byte[]> it) {
-            return it.next();
-        }
-
-        @CompilerDirectives.TruffleBoundary(allowInlining = true)
-        private static boolean hasNext(Iterator<byte[]> it) {
-            return it.hasNext();
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        protected static byte[] copyOfRange(byte[] bytes, int from, int to) {
-            return Arrays.copyOfRange(bytes, from, to);
         }
 
         protected static Object asIndex(VirtualFrame frame, Object maxsplit, PythonObjectLibrary lib) {
@@ -2807,11 +2849,31 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @CompilerDirectives.TruffleBoundary
-    private static byte[] getStringBytes(Object o) {
+    protected static byte[] copyOfRange(byte[] bytes, int from, int to) {
+        return Arrays.copyOfRange(bytes, from, to);
+    }
+
+    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    protected static Iterator<byte[]> iterator(List<byte[]> bytes) {
+        return bytes.iterator();
+    }
+
+    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    protected static byte[] next(Iterator<byte[]> it) {
+        return it.next();
+    }
+
+    @CompilerDirectives.TruffleBoundary(allowInlining = true)
+    protected static boolean hasNext(Iterator<byte[]> it) {
+        return it.hasNext();
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    protected static byte[] getStringBytes(Object o) {
         return ((String) o).getBytes();
     }
 
-    private static byte[] getBytes(PythonObjectLibrary lib, Object object) {
+    protected static byte[] getBytes(PythonObjectLibrary lib, Object object) {
         try {
             return lib.getBufferBytes(object);
         } catch (UnsupportedMessageException e) {

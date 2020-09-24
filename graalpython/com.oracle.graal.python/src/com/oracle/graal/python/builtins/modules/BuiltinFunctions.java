@@ -1704,37 +1704,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             try {
                 String str = castToJavaStringNode.execute(obj);
-                return doAsciiString(str);
+                return BytesUtils.doAsciiString(str);
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
             }
-        }
-
-        @TruffleBoundary
-        private static Object doAsciiString(String str) {
-            byte[] bytes = BytesUtils.unicodeEscape(str);
-            boolean hasSingleQuote = false;
-            boolean hasDoubleQuote = false;
-            for (int i = 0; i < bytes.length; i++) {
-                char c = (char) bytes[i];
-                hasSingleQuote |= c == '\'';
-                hasDoubleQuote |= c == '"';
-            }
-            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
-            char quote = useDoubleQuotes ? '"' : '\'';
-            StringBuilder sb = new StringBuilder(bytes.length + 2);
-            sb.append(quote);
-            for (int i = 0; i < bytes.length; i++) {
-                char c = (char) bytes[i];
-                if (c == '\'' && !useDoubleQuotes) {
-                    sb.append("\\'");
-                } else {
-                    sb.append(c);
-                }
-            }
-            sb.append(quote);
-            return sb.toString();
         }
 
         @Specialization(guards = "!isString(obj)")

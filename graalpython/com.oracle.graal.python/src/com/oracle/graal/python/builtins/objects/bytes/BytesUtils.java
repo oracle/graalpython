@@ -346,26 +346,99 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
+    public static StringBuilder newStringBuilder(int capacity) {
+        return new StringBuilder(capacity);
+    }
+
+    @TruffleBoundary
     public static String sbToString(StringBuilder sb) {
         return sb.toString();
     }
 
     @TruffleBoundary
-    public static void byteRepr(StringBuilder sb, byte b) {
-        if (b == 9) {
-            sb.append("\\t");
-        } else if (b == 10) {
-            sb.append("\\n");
-        } else if (b == 13) {
-            sb.append("\\r");
+    public static void sbAppend(StringBuilder sb, char c) {
+        sb.append(c);
+    }
+
+    @TruffleBoundary
+    public static void sbAppend(StringBuilder sb, String s) {
+        sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static Object doAsciiString(String str) {
+        byte[] bytes = unicodeEscape(str);
+        boolean hasSingleQuote = false;
+        boolean hasDoubleQuote = false;
+        for (int i = 0; i < bytes.length; i++) {
+            char c = (char) bytes[i];
+            hasSingleQuote |= c == '\'';
+            hasDoubleQuote |= c == '"';
+        }
+        boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
+        char quote = useDoubleQuotes ? '"' : '\'';
+        StringBuilder sb = newStringBuilder(bytes.length + 2);
+        sbAppend(sb, quote);
+        for (int i = 0; i < bytes.length; i++) {
+            char c = (char) bytes[i];
+            if (c == '\'' && !useDoubleQuotes) {
+                sbAppend(sb, "\\'");
+            } else {
+                sbAppend(sb, c);
+            }
+        }
+        sbAppend(sb, quote);
+        return sbToString(sb);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static char figureOutQuote(byte[] bytes, int len) {
+        char quote = '\'';
+        for (int i = 0; i < len; i++) {
+            if (bytes[i] == '"') {
+                quote = '\'';
+                break;
+            } else if (bytes[i] == '\'') {
+                quote = '"';
+            }
+        }
+        return quote;
+    }
+
+    public static void reprLoop(StringBuilder sb, byte[] bytes, int len) {
+        char quote = figureOutQuote(bytes, len);
+        sbAppend(sb, 'b');
+        sbAppend(sb, quote);
+        for (int i = 0; i < len; i++) {
+            byteRepr(sb, bytes[i], quote == '\'');
+        }
+        sbAppend(sb, quote);
+    }
+
+    @TruffleBoundary
+    private static void byteRepr(StringBuilder sb, byte b, boolean isSingleQuote) {
+        if (b == '\t') {
+            sbAppend(sb, "\\t");
+        } else if (b == '\n') {
+            sbAppend(sb, "\\n");
+        } else if (b == '\r') {
+            sbAppend(sb, "\\r");
+        } else if (b == '\'') {
+            sbAppend(sb, isSingleQuote ? "\\'" : "\'");
         } else if (b > 31 && b <= 126) {
             char chr = (char) b;
-            if (chr == '\'' || chr == '\\') {
-                sb.append('\\');
+            if (chr == '\\') {
+                sbAppend(sb, '\\');
             }
-            sb.append(chr);
+            sbAppend(sb, chr);
         } else {
-            sb.append(String.format("\\x%02x", b));
+            sbAppend(sb, String.format("\\x%02x", b));
+        }
+    }
+
+    public static void repr(StringBuilder sb, byte[] bytes, int len) {
+        for (int i = 0; i < len; i++) {
+            byteRepr(sb, bytes[i], true);
         }
     }
 
@@ -376,13 +449,11 @@ public final class BytesUtils {
             len = bytes.length;
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("b'");
-        for (int i = 0; i < len; i++) {
-            byteRepr(sb, bytes[i]);
-        }
-        sb.append("'");
-        return sb.toString();
+        StringBuilder sb = newStringBuilder();
+        sbAppend(sb, "b'");
+        repr(sb, bytes, len);
+        sbAppend(sb, "'");
+        return sbToString(sb);
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)

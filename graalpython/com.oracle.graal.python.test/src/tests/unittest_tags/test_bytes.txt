@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_format
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_from_bytearray
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_literal
+*graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_repr_str
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_return_self
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_rsplit_bytearray
 *graalpython.lib-python.3.test.test_bytes.AssortedBytesTest.test_split_bytearray
@@ -27,6 +28,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_isupper
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_ljust
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_lower
+*graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_rfind
 *graalpython.lib-python.3.test.test_bytes.ByteArrayAsStringTest.test_rindex
@@ -47,6 +49,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_join
 *graalpython.lib-python.3.test.test_bytes.ByteArraySubclassTest.test_pickle
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_alloc
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_append
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_basics
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_bytearray_api
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_center
@@ -59,6 +62,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_constructor_type_errors
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_constructor_value_errors
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_contains
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_copied
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_copy
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_count
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_decode
@@ -75,6 +79,7 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_find
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_find_etc_raise_correct_error_messages
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_free_after_iterating
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_from_buffer
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_from_index
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_from_int
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_from_iterable
@@ -86,17 +91,20 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_getitem_error
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_getslice
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_hex
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_hex_separator_basics
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_hex_separator_five_bytes
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_hex_separator_six_bytes
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iconcat
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_imod
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_index
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_init_alloc
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_insert
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_integer_arguments_out_of_byte_range
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_irepeat
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_irepeat_1char
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iterator_length_hint
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iterator_pickling
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_iterator_pickling2
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_join
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_ljust
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_maketrans
@@ -113,10 +121,12 @@
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_pickling
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_pop
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_regexps
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_remove
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_repeat
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_repeat_1char
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_replace_int_error
+*graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_resize_forbidden
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_reverse
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_reversed
 *graalpython.lib-python.3.test.test_bytes.ByteArrayTest.test_rfind
@@ -159,6 +169,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_isupper
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_ljust
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_lower
+*graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_replace
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_replace_overflow
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_rfind
 *graalpython.lib-python.3.test.test_bytes.BytesAsStringTest.test_rindex
@@ -179,6 +190,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesSubclassTest.test_pickle
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_basics
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_buffer_is_readonly
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_bytes_blocking
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_center
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_compare
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_compare_to_str
@@ -190,6 +202,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_contains
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_copy
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_count
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_custom
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_decode
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_empty_sequence
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_encoding
@@ -198,6 +211,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_find
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_find_etc_raise_correct_error_messages
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_free_after_iterating
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_buffer
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_format
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_index
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_from_int
@@ -210,6 +224,7 @@
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_getitem_error
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_getslice
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_hex
+*graalpython.lib-python.3.test.test_bytes.BytesTest.test_hex_separator_basics
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_hex_separator_five_bytes
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_hex_separator_six_bytes
 *graalpython.lib-python.3.test.test_bytes.BytesTest.test_imod

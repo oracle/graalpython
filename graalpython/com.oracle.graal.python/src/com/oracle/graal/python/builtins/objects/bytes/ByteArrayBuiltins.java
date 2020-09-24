@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -302,22 +301,24 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends BytesBuiltins.BaseReprNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public static Object repr(VirtualFrame frame, PByteArray self,
-                        @Cached("create()") TypeNodes.GetNameNode getNameNode,
+        public static Object repr(PByteArray self,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             SequenceStorage store = self.getSequenceStorage();
-            StringBuilder sb = newStringBuilder();
+            byte[] bytes = getBytes.execute(store);
+            int len = lenNode.execute(store);
+            StringBuilder sb = BytesUtils.newStringBuilder();
             String typeName = getNameNode.execute(lib.getLazyPythonClass(self));
-            sb.append(typeName);
-            sb.append("(b'");
-            reprLoop(frame, sb, store, lenNode, getItemNode);
-            sb.append("')");
-            return sbToString(sb);
+            BytesUtils.sbAppend(sb, typeName);
+            BytesUtils.sbAppend(sb, '(');
+            BytesUtils.reprLoop(sb, bytes, len);
+            BytesUtils.sbAppend(sb, ')');
+            return BytesUtils.sbToString(sb);
         }
     }
 
@@ -326,7 +327,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PByteArray add(PByteArray self, PBytesLike other,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             updateSequenceStorage(self, res);
             return self;
@@ -336,7 +337,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         public PByteArray add(VirtualFrame frame, PByteArray self, PMemoryView other,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+                        @Cached SequenceStorageNodes.ConcatNode concatNode) {
 
             Object bytesObj = toBytesNode.executeObject(frame, other);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
@@ -365,7 +366,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class IMulNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object mul(VirtualFrame frame, PByteArray self, int times,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             self.setSequenceStorage(res);
             return self;
@@ -374,7 +375,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object mul(VirtualFrame frame, PByteArray self, Object times,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
             self.setSequenceStorage(res);
@@ -402,33 +403,32 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         private static final String NOT_IN_BYTEARRAY = "value not found in bytearray";
 
-        @Specialization
+        @Specialization(guards = {"isByteStorage(self)", "lib.canBeIndex(value)"})
         PNone remove(VirtualFrame frame, PByteArray self, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            SequenceStorage listStore = self.getSequenceStorage();
-            int len = lenNode.execute(listStore);
-            PArguments.ThreadState threadState = null;
-            if (hasFrame.profile(frame != null)) {
-                threadState = PArguments.getThreadState(frame);
+                        @Cached BytesNodes.FindNode findNode,
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+            SequenceStorage storage = self.getSequenceStorage();
+            int len = lenNode.execute(storage);
+            int pos = findNode.execute(self.getSequenceStorage(), len, value, 0, len);
+            if (pos != -1) {
+                deleteNode.execute(frame, storage, pos);
+                return PNone.NONE;
             }
-            for (int i = 0; i < len; i++) {
-                Object object = getItemNode.execute(frame, listStore, i);
-                final boolean hasItem;
-                if (hasFrame.profile(frame != null)) {
-                    hasItem = lib.equalsWithState(object, value, lib, threadState);
-                } else {
-                    hasItem = lib.equals(object, value, lib);
-                }
-                if (hasItem) {
-                    deleteNode.execute(frame, listStore, i);
-                    return PNone.NONE;
-                }
-            }
-            throw raise(PythonErrorType.ValueError, NOT_IN_BYTEARRAY);
+            throw raise(ValueError, NOT_IN_BYTEARRAY);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isByteStorage(self)")
+        Object bufferError(PByteArray self, Object value) {
+            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
+            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
+
+        @Fallback
+        public Object doError(@SuppressWarnings("unused") Object self, Object arg) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
     }
 
@@ -436,7 +436,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "isByteStorage(self)")
         public Object popLast(VirtualFrame frame, PByteArray self, @SuppressWarnings("unused") PNone none,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
@@ -446,7 +446,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return ret;
         }
 
-        @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
+        @Specialization(guards = {"isByteStorage(self)", "!isNoValue(idx)", "!isPSlice(idx)"})
         public Object doIndex(VirtualFrame frame, PByteArray self, Object idx,
                         @Cached.Shared("getItem") @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
@@ -456,8 +456,15 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return ret;
         }
 
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isByteStorage(self)")
+        Object bufferError(PByteArray self, Object idx) {
+            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
+            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
+
         @Fallback
-        public Object doError(@SuppressWarnings("unused") Object list, Object arg) {
+        public Object doError(@SuppressWarnings("unused") Object self, Object arg) {
             throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
@@ -474,11 +481,18 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isByteStorage(self)")
         protected PNone doGeneric(VirtualFrame frame, PByteArray self, Object key,
-                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode) {
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode) {
             deleteNode.execute(frame, self.getSequenceStorage(), key);
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isByteStorage(self)")
+        Object bufferError(PByteArray self, Object key) {
+            // TODO: (mq) need to check for the number of ob_exports, i.e. reference counter.
+            throw raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
         }
 
         @SuppressWarnings("unused")
@@ -491,12 +505,19 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AppendNode extends PythonBinaryBuiltinNode {
-        @Specialization
+
+        @Specialization(guards = "lib.canBeIndex(arg)", limit = "3")
         public PNone append(VirtualFrame frame, PByteArray byteArray, Object arg,
                         @Cached("createCast()") CastToByteNode toByteNode,
-                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @SuppressWarnings("unused") @CachedLibrary("arg") PythonObjectLibrary lib) {
             appendNode.execute(byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
+        }
+
+        @Fallback
+        public Object doError(@SuppressWarnings("unused") Object list, Object arg) {
+            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
         }
 
         protected CastToByteNode createCast() {
@@ -593,7 +614,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone clear(VirtualFrame frame, PByteArray byteArray,
-                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode,
+                        @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached SliceLiteralNode slice) {
             deleteNode.execute(frame, byteArray.getSequenceStorage(), slice.execute(frame, PNone.NONE, PNone.NONE, 1));
             return PNone.NONE;
@@ -690,7 +711,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         public int alloc(PByteArray byteArray,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             // XXX: (mq) We return a fake allocation size.
             // The actual number might useful for manual memory management.
             return lenNode.execute(byteArray.getSequenceStorage()) + 1;
@@ -700,9 +721,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     protected static Object commonReduce(int proto, byte[] bytes, int len, Object clazz, Object dict,
                     PythonObjectFactory factory) {
         StringBuilder sb = BytesUtils.newStringBuilder();
-        for (int i = 0; i < len; i++) {
-            BytesUtils.byteRepr(sb, bytes[i]);
-        }
+        BytesUtils.repr(sb, bytes, len);
         String str = BytesUtils.sbToString(sb);
         Object contents;
         if (proto < 3) {

@@ -75,6 +75,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
@@ -288,15 +289,44 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createBytes(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
-        @Specialization(guards = "!isNone(source)")
+        @Specialization(guards = "hasByteAttr(frame, source, lib)", limit = "3")
+        public PBytes hasBytesAttr(VirtualFrame frame, Object cls, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached ConditionProfile errorProfile,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached ConditionProfile isBytes,
+                        @Cached IsBuiltinClassProfile isClassProfile,
+                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
+            Object b = lib.lookupAttribute(source, frame, __BYTES__);
+            assert b != PNone.NO_VALUE;
+            Object bytes = lib.lookupAndCallRegularMethod(source, frame, __BYTES__);
+            if (errorProfile.profile(!(bytes instanceof PBytesLike))) {
+                throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", b);
+            }
+
+            if (isBytes.profile(bytes instanceof PBytes && isClassProfile.profileIsAnyBuiltinClass(cls))) {
+                return (PBytes) bytes;
+            }
+            return factory().createBytes(cls, toBytesNode.execute(frame, bytes));
+        }
+
+        @Specialization(guards = {"!isNone(source)", "!canUseByteAttr(frame, source, lib, encoding, errors)"}, limit = "3")
         public PBytes doInit(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Cached BytesNodes.BytesInitNode toBytesNode) {
+                        @Cached BytesNodes.BytesInitNode toBytesNode,
+                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
             return factory().createBytes(cls, new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
         }
 
         @Specialization(guards = "isNone(source)")
         public PBytes sourceNone(Object cls, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, cls);
+        }
+
+        protected static boolean canUseByteAttr(VirtualFrame frame, Object object, PythonObjectLibrary lib, Object encoding, Object errors) {
+            return PGuards.isNoValue(encoding) && PGuards.isNoValue(errors) && hasByteAttr(frame, object, lib);
+        }
+
+        protected static boolean hasByteAttr(VirtualFrame frame, Object object, PythonObjectLibrary lib) {
+            return lib.lookupAttribute(object, frame, __BYTES__) != PNone.NO_VALUE;
         }
     }
 
