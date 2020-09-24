@@ -39,6 +39,7 @@ public final class Signature {
     private final int positionalOnlyArgIndex;
     private final boolean isVarArgsMarker;
     private final boolean takesVarKeywordArgs;
+    private final boolean checkEnclosingType;
 
     @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
@@ -64,12 +65,18 @@ public final class Signature {
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, false);
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType) {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
         this.isVarArgsMarker = varArgsMarker;
         this.positionalParameterNames = (parameterIds != null) ? parameterIds : new String[0];
         this.keywordOnlyNames = (keywordNames != null) ? keywordNames : new String[0];
+        this.checkEnclosingType = checkEnclosingType;
     }
 
     public static Signature createOneArgumentWithVarKwArgs() {
@@ -148,5 +155,9 @@ public final class Signature {
 
     public final boolean takesOneArgument() {
         return positionalParameterNames.length == 1 && takesPositionalOnly();
+    }
+
+    public final boolean checkEnclosingType() {
+        return checkEnclosingType;
     }
 }

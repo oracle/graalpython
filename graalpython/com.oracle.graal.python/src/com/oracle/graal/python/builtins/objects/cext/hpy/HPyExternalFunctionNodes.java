@@ -252,7 +252,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0], true);
 
         public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable, HPyAllAsHandleNodeGen.create());
@@ -270,7 +270,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0], true);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -298,7 +298,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0], true);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -328,7 +328,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0], true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;

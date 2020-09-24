@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -52,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -67,24 +70,25 @@ import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooMa
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeMRONode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.ArrayList;
-import java.util.List;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
@@ -98,12 +102,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @Specialization(guards = {"isMethod(method)", "method == cachedMethod"}, limit = "getVariableArgumentInlineCacheLimit()")
-    Object[] doMethodCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
-                    @Cached("method") @SuppressWarnings("unused") PythonObject cachedMethod) {
+    Object[] doMethodCached(@SuppressWarnings("unused") PythonObject method, Object[] userArguments, PKeyword[] keywords,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached("method") PythonObject cachedMethod) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
         // getter check the appropriate assumptions.
@@ -111,17 +115,17 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         Object[] defaults = getDefaultsNode.execute(cachedMethod);
         PKeyword[] kwdefaults = getKwDefaultsNode.execute(cachedMethod);
         Object self = getSelf(cachedMethod);
-        return createAndCheckArgumentsNode.execute(method, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
+        return createAndCheckArgumentsNode.execute(cachedMethod, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
     }
 
     @Specialization(guards = {"isMethod(method)", "getFunction(method) == cachedFunction",
                     "getSelf(method) == cachedSelf"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodCached")
     Object[] doMethodFunctionAndSelfCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("getFunction(method)") @SuppressWarnings("unused") Object cachedFunction,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached("getFunction(method)") Object cachedFunction,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached("getSelf(method)") Object cachedSelf) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
@@ -195,7 +199,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract Object[] execute(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults,
                         boolean methodcall);
 
-        @Specialization(guards = {"userArguments.length == cachedLength", "signature.getMaxNumOfPositionalArgs() == cachedMaxPos",
+        @Specialization(guards = {"userArguments.length == cachedLength", //
+                        "signature.getMaxNumOfPositionalArgs() == cachedMaxPos", //
                         "signature.getNumOfRequiredKeywords() == cachedNumKwds"}, limit = "1")
         Object[] doCached0(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
                         @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
@@ -205,23 +210,25 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
                         @Cached("userArguments.length") int cachedLength,
                         @Cached("signature.getMaxNumOfPositionalArgs()") int cachedMaxPos,
-                        @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds) {
+                        @Cached("signature.getNumOfRequiredKeywords()") int cachedNumKwds,
+                        @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, cachedMaxPos, cachedNumKwds, applyPositional,
-                            applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
+                            applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
-        @Specialization(guards = "userArguments.length == cachedLength", replaces = "doCached0", limit = "1")
+        @Specialization(guards = {"userArguments.length == cachedLength"}, replaces = "doCached0", limit = "1")
         Object[] doCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object[] defaults, PKeyword[] kwdefaults, boolean methodcall,
                         @Shared("applyKeywords") @Cached ApplyKeywordsNode applyKeywords,
                         @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
                         @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
-                        @Cached("userArguments.length") int cachedLength) {
+                        @Cached("userArguments.length") int cachedLength,
+                        @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
 
             return createAndCheckArguments(callable, userArguments, cachedLength, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
-                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
+                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
         @Specialization(replaces = "doCached")
@@ -230,15 +237,20 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Shared("handleTooManyArgumentsNode") @Cached HandleTooManyArgumentsNode handleTooManyArgumentsNode,
                         @Shared("applyPositional") @Cached ApplyPositionalArguments applyPositional,
                         @Shared("fillDefaultsNode") @Cached FillDefaultsNode fillDefaultsNode,
-                        @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode) {
+                        @Shared("fillKwDefaultsNode") @Cached FillKwDefaultsNode fillKwDefaultsNode,
+                        @Shared("checkEnclosingTypeNode") @Cached CheckEnclosingTypeNode checkEnclosingTypeNode) {
             return createAndCheckArguments(callable, userArguments, userArguments.length, keywords, signature, self, defaults, kwdefaults, methodcall, signature.getMaxNumOfPositionalArgs(),
-                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode);
+                            signature.getNumOfRequiredKeywords(), applyPositional, applyKeywords, handleTooManyArgumentsNode, fillDefaultsNode, fillKwDefaultsNode, checkEnclosingTypeNode);
         }
 
         private static Object[] createAndCheckArguments(PythonObject callable, Object[] args_w, int num_args, PKeyword[] keywords, Signature signature, Object self, Object[] defaults,
-                        PKeyword[] kwdefaults,
-                        boolean methodcall, int co_argcount, int co_kwonlyargcount, ApplyPositionalArguments applyPositional, ApplyKeywordsNode applyKeywords, HandleTooManyArgumentsNode handleTooMany,
-                        FillDefaultsNode fillDefaults, FillKwDefaultsNode fillKwDefaults) {
+                        PKeyword[] kwdefaults, boolean methodcall, int co_argcount, int co_kwonlyargcount,
+                        ApplyPositionalArguments applyPositional,
+                        ApplyKeywordsNode applyKeywords,
+                        HandleTooManyArgumentsNode handleTooMany,
+                        FillDefaultsNode fillDefaults,
+                        FillKwDefaultsNode fillKwDefaults,
+                        CheckEnclosingTypeNode checkEnclosingTypeNode) {
             assert args_w.length == num_args;
 
             // see PyPy's Argument#_match_signature method
@@ -304,6 +316,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 // finally, fill kwonly arguments with w_kw_defs (if needed)
                 fillKwDefaults(callable, scope_w, signature, kwdefaults, co_argcount, co_kwonlyargcount, fillKwDefaults);
             }
+
+            // Now we know that everything is fine, so check compatibility of the enclosing type.
+            // If we are calling a built-in method and it's function has an enclosing type, we
+            // need to check if 'self' is a subtype of the function's enclosing type.
+            checkEnclosingTypeNode.execute(signature, callable, scope_w);
 
             return scope_w;
         }
@@ -416,6 +433,40 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         protected static HandleTooManyArgumentsNode getUncached() {
             return HandleTooManyArgumentsNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(PythonOptions.class)
+    abstract static class CheckEnclosingTypeNode extends Node {
+
+        public abstract void execute(Signature signature, Object callable, Object[] scope_w);
+
+        @Specialization(guards = "checkEnclosingType(signature, callable)", limit = "getVariableArgumentInlineCacheLimit()")
+        static void doEnclosingTypeCheck(@SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
+                        @Bind("getSelf(scope_w)") Object self,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached IsSubtypeMRONode isSubtypeMRONode,
+                        @Cached PRaiseNode raiseNode) {
+            if (!isSubtypeMRONode.execute(lib.getLazyPythonClass(self), callable.getEnclosingType())) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "descriptor '%s' for '%p' objects doesn't apply to a '%p' object",
+                                callable.getName(), callable.getEnclosingType(), self);
+            }
+        }
+
+        @Specialization(guards = "!checkEnclosingType(signature, callable)")
+        @SuppressWarnings("unused")
+        static void doNothing(Signature signature, Object callable, Object[] scope_w) {
+            // do nothing
+        }
+
+        static boolean checkEnclosingType(Signature signature, Object function) {
+            return signature.checkEnclosingType() && function instanceof PBuiltinFunction && ((PBuiltinFunction) function).getEnclosingType() != null;
+        }
+
+        static Object getSelf(Object[] scope_w) {
+            return PArguments.getArgument(scope_w, 0);
         }
     }
 

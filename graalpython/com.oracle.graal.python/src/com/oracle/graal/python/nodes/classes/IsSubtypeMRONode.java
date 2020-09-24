@@ -48,19 +48,15 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@GenerateUncached
 public abstract class IsSubtypeMRONode extends PNodeWithContext {
-
-    @Child private GetMroNode getMroNode;
-
-    private final ConditionProfile equalsProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile innerEqualsProfile = ConditionProfile.createBinaryProfile();
-    private final BranchProfile falseProfile = BranchProfile.create();
 
     public static IsSubtypeMRONode create() {
         return IsSubtypeMRONodeGen.create();
@@ -69,7 +65,10 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     public abstract boolean execute(Object derived, Object clazz);
 
     @Specialization
-    protected boolean isSubtype(PythonBuiltinClassType derived, PythonBuiltinClassType clazz) {
+    static boolean isSubtype(PythonBuiltinClassType derived, PythonBuiltinClassType clazz,
+                    @Shared("equalsProfile") @Cached ConditionProfile equalsProfile,
+                    @Shared("innerEqualsProfile") @Cached ConditionProfile innerEqualsProfile,
+                    @Shared("falseProfile") @Cached BranchProfile falseProfile) {
         if (equalsProfile.profile(derived == clazz)) {
             return true;
         }
@@ -85,13 +84,19 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     }
 
     @Specialization
-    protected boolean isSubtype(PythonBuiltinClass derived, PythonBuiltinClassType clazz) {
-        return isSubtype(derived.getType(), clazz);
+    static boolean isSubtype(PythonBuiltinClass derived, PythonBuiltinClassType clazz,
+                    @Shared("equalsProfile") @Cached ConditionProfile equalsProfile,
+                    @Shared("innerEqualsProfile") @Cached ConditionProfile innerEqualsProfile,
+                    @Shared("falseProfile") @Cached BranchProfile falseProfile) {
+        return isSubtype(derived.getType(), clazz, equalsProfile, innerEqualsProfile, falseProfile);
     }
 
     @Specialization
-    protected boolean isSubtype(PythonBuiltinClassType derived, PythonBuiltinClass clazz) {
-        return isSubtype(derived, clazz.getType());
+    static boolean isSubtype(PythonBuiltinClassType derived, PythonBuiltinClass clazz,
+                    @Shared("equalsProfile") @Cached ConditionProfile equalsProfile,
+                    @Shared("innerEqualsProfile") @Cached ConditionProfile innerEqualsProfile,
+                    @Shared("falseProfile") @Cached BranchProfile falseProfile) {
+        return isSubtype(derived, clazz.getType(), equalsProfile, innerEqualsProfile, falseProfile);
     }
 
     protected static boolean isBuiltinClass(PythonAbstractClass clazz) {
@@ -99,20 +104,24 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isBuiltinClass(clazz)")
-    protected static boolean isSubtype(@SuppressWarnings("unused") PythonBuiltinClassType derived, @SuppressWarnings("unused") PythonClass clazz) {
-        return false; // a builtin class never derives from a non-builtin class
+    static boolean isSubtype(@SuppressWarnings("unused") PythonBuiltinClassType derived, @SuppressWarnings("unused") PythonClass clazz) {
+        // a builtin class never derives from a non-builtin class
+        return false;
     }
 
     @Specialization(guards = "!isBuiltinClass(clazz)")
-    protected static boolean isSubtype(@SuppressWarnings("unused") PythonBuiltinClass derived, @SuppressWarnings("unused") PythonClass clazz) {
-        return false; // a builtin class never derives from a non-builtin class
+    static boolean isSubtype(@SuppressWarnings("unused") PythonBuiltinClass derived, @SuppressWarnings("unused") PythonClass clazz) {
+        // a builtin class never derives from a non-builtin class
+        return false;
     }
 
     @Specialization
-    protected boolean isSubtype(PythonClass derived, PythonBuiltinClassType clazz,
-                    @Cached("create()") IsBuiltinClassProfile profile) {
+    static boolean isSubtype(PythonClass derived, PythonBuiltinClassType clazz,
+                    @Cached IsBuiltinClassProfile profile,
+                    @Shared("getMroNode") @Cached GetMroNode getMroNode,
+                    @Shared("falseProfile") @Cached BranchProfile falseProfile) {
 
-        for (PythonAbstractClass mro : getMro(derived)) {
+        for (PythonAbstractClass mro : getMroNode.execute(derived)) {
             if (profile.profileClass(mro, clazz)) {
                 return true;
             }
@@ -122,22 +131,16 @@ public abstract class IsSubtypeMRONode extends PNodeWithContext {
     }
 
     @Specialization
-    protected boolean isSubtype(PythonClass derived, PythonClass clazz,
-                    @Cached("create()") TypeNodes.IsSameTypeNode isSameTypeNode) {
-        for (PythonAbstractClass mro : getMro(derived)) {
+    static boolean isSubtype(PythonClass derived, PythonClass clazz,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Shared("getMroNode") @Cached GetMroNode getMroNode,
+                    @Shared("falseProfile") @Cached BranchProfile falseProfile) {
+        for (PythonAbstractClass mro : getMroNode.execute(derived)) {
             if (isSameTypeNode.execute(mro, clazz)) {
                 return true;
             }
         }
         falseProfile.enter();
         return false;
-    }
-
-    private PythonAbstractClass[] getMro(PythonAbstractClass clazz) {
-        if (getMroNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroNode.create());
-        }
-        return getMroNode.execute(clazz);
     }
 }
