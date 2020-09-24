@@ -89,7 +89,7 @@ sys.__stdin__ = sys.stdin
 sys.stdout = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stdout), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
 sys.stdout.mode = "w"
 sys.__stdout__ = sys.stdout
-sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr), encoding=__graalpython__.stdio_encoding, errors="backslashreplace", line_buffering=True)
+sys.stderr = _pyio.TextIOWrapper(_pyio.BufferedWriter(sys.stderr.file_io), encoding=__graalpython__.stdio_encoding, errors="backslashreplace", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 
