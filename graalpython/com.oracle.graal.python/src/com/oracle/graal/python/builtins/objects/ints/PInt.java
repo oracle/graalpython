@@ -228,7 +228,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public int asFileDescriptor(
+    public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
         try {
@@ -284,6 +284,11 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public PInt asPInt() {
+        return this;
+    }
+
+    @ExportMessage
+    public PInt asPIntWithState(@SuppressWarnings("unused") ThreadState state) {
         return this;
     }
 
@@ -561,6 +566,11 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public long hash() {
         return hashBigInteger(value);
+    }
+
+    @ExportMessage
+    public long hashWithState(@SuppressWarnings("unused") ThreadState state) {
+        return hash();
     }
 
     @TruffleBoundary
