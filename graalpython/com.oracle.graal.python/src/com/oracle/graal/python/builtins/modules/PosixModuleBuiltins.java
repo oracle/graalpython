@@ -98,13 +98,10 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -143,7 +140,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1145,80 +1141,37 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", minNumOfPositionalArgs = 2)
+    @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "str"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "str", conversion = ClinicConversion.Buffer)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class WriteNode extends PythonFileNode {
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-        private final BranchProfile gotException = BranchProfile.create();
-        private final BranchProfile notWritable = BranchProfile.create();
-
-        public abstract Object executeWith(VirtualFrame frame, Object fd, Object data);
+    public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
+        }
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static Object writableOp(byte[] data, Object channel) throws IOException {
-            if (channel instanceof WritableByteChannel) {
-                return doWriteOp(data, channel);
-            }
-            return null;
+        private static int doWriteOp(byte[] data, WritableByteChannel channel) throws IOException {
+            return channel.write(ByteBuffer.wrap(data));
         }
 
         @Specialization
         Object write(VirtualFrame frame, int fd, byte[] data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            Channel channel = getResources().getFileChannel(fd, channelClassProfile);
+                        @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                        @Cached BranchProfile gotExceptionProfile,
+                        @Cached BranchProfile nonWritableChannelProfile) {
+            Channel channel = getContext().getResources().getFileChannel(fd, channelClassProfile);
+            if (!(channel instanceof WritableByteChannel)) {
+                nonWritableChannelProfile.enter();
+                throw raiseOSError(frame, OSErrorEnum.EBADF);
+            }
             try {
-                Object ret = writableOp(data, channel);
-                if (ret != null) {
-                    return ret;
-                }
+                return doWriteOp(data, (WritableByteChannel) channel);
             } catch (Exception e) {
-                gotException.enter();
+                gotExceptionProfile.enter();
                 throw raiseOSError(frame, e);
             }
-            notWritable.enter();
-            throw raiseOSError(frame, OSErrorEnum.EBADF);
-        }
-
-        @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
-        private static int doWriteOp(byte[] data, Object channel) throws IOException {
-            return ((WritableByteChannel) channel).write(ByteBuffer.wrap(data));
-        }
-
-        @Specialization
-        Object write(VirtualFrame frame, int fd, String data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(frame, fd, stringToBytes(data), channelClassProfile);
-        }
-
-        @TruffleBoundary
-        private static byte[] stringToBytes(String data) {
-            return data.getBytes();
-        }
-
-        @Specialization
-        Object write(VirtualFrame frame, int fd, PBytesLike data,
-                        @Cached("createClassProfile()") ValueProfile channelClassProfile) {
-            return write(frame, fd, getByteArray(data.getSequenceStorage()), channelClassProfile);
-        }
-
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object writePInt(VirtualFrame frame, Object fd, Object data,
-                        @CachedLibrary("fd") PythonObjectLibrary lib,
-                        @Cached("create()") WriteNode recursive) {
-            return recursive.executeWith(frame, lib.asSizeWithState(fd, PArguments.getThreadState(frame)), data);
-        }
-
-        private byte[] getByteArray(SequenceStorage storage) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(ToByteArrayNodeGen.create());
-            }
-            return toByteArrayNode.execute(storage);
-        }
-
-        public static WriteNode create() {
-            return PosixModuleBuiltinsFactory.WriteNodeFactory.create(null);
         }
     }
 

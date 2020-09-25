@@ -534,13 +534,24 @@ class FileIO(_RawIOBase):
             return size
 
 
+class StdPrinter:
+    def __init__(self, file_io):
+        self.file_io = file_io
+
+    def write(self, data):
+        return self.file_io.write(bytes(data, "utf-8"))
+
+    def __getattr__(self, attr):
+        return self.file_io.__getattribute__(attr)
+
+
 sys.stdin = FileIO(0, mode='r', closefd=False)
 sys.stdin.name = "<stdin>"
 sys.__stdin__ = sys.stdin
 sys.stdout = FileIO(1, mode='w', closefd=False)
 sys.stdout.name = "<stdout>"
 sys.__stdout__ = sys.stdout
-sys.stderr = FileIO(2, mode='w', closefd=False)
+sys.stderr = StdPrinter(FileIO(2, mode='w', closefd=False))
 sys.stderr.name = "<stderr>"
 sys.__stderr__ = sys.stderr
 

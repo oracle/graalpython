@@ -132,5 +132,9 @@ public @interface ArgumentClinic {
          * {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
         CodePoint,
+        /**
+         * Corresponds to CPython's {@code Py_buffer} convertor.
+         */
+        Buffer,
     }
 }
