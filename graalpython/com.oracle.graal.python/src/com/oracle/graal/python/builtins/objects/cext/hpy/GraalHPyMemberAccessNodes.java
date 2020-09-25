@@ -60,12 +60,14 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_ULONG;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_ULONGLONG;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPY_MEMBER_USHORT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -93,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -317,6 +320,7 @@ public class GraalHPyMemberAccessNodes {
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtAsPythonObjectNode asPythonObjectNode;
+        @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
         private final String accessor;
@@ -334,9 +338,15 @@ public class GraalHPyMemberAccessNodes {
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
 
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self, OBJECT_HPY_NATIVE_SPACE);
+            if (nativeSpacePtr == PNone.NO_VALUE) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raise(PythonBuiltinClassType.SystemError, "Attempting to read from offset %d but object '%s' has no associated native space.", offset, self);
+            }
+
             // This will call pure C functions that won't ever access the Python stack nor the
             // exception state. So, we don't need to setup an indirect call.
-            Object nativeResult = ensureCallHPyFunctionNode().call(hPyContext, accessor, self, (long) offset);
+            Object nativeResult = ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset);
             if (asPythonObjectNode != null) {
                 return asPythonObjectNode.execute(hPyContext, nativeResult);
             }
@@ -349,6 +359,14 @@ public class GraalHPyMemberAccessNodes {
                 callHPyFunctionNode = insert(PCallHPyFunctionNodeGen.create());
             }
             return callHPyFunctionNode;
+        }
+
+        private ReadAttributeFromObjectNode ensureReadNativeSpaceNode() {
+            if (readNativeSpaceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNativeSpaceNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readNativeSpaceNode;
         }
 
         @TruffleBoundary
@@ -367,6 +385,7 @@ public class GraalHPyMemberAccessNodes {
 
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
+        @Child private ReadAttributeFromObjectNode readNativeSpaceNode;
 
         /** The name of the native getter function. */
         private final String accessor;
@@ -383,6 +402,12 @@ public class GraalHPyMemberAccessNodes {
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object value) {
             GraalHPyContext hPyContext = getContext().getHPyContext();
+
+            Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self, OBJECT_HPY_NATIVE_SPACE);
+            if (nativeSpacePtr == PNone.NO_VALUE) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raise(PythonBuiltinClassType.SystemError, "Attempting to write to offset %d but object '%s' has no associated native space.", offset, self);
+            }
 
             // convert value if needed
             Object nativeValue;
@@ -401,7 +426,7 @@ public class GraalHPyMemberAccessNodes {
 
             // This will call pure C functions that won't ever access the Python stack nor the
             // exception state. So, we don't need to setup an indirect call.
-            ensureCallHPyFunctionNode().call(hPyContext, accessor, self, (long) offset, nativeValue);
+            ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset, nativeValue);
             return value;
         }
 
@@ -411,6 +436,14 @@ public class GraalHPyMemberAccessNodes {
                 callHPyFunctionNode = insert(PCallHPyFunctionNodeGen.create());
             }
             return callHPyFunctionNode;
+        }
+
+        private ReadAttributeFromObjectNode ensureReadNativeSpaceNode() {
+            if (readNativeSpaceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNativeSpaceNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readNativeSpaceNode;
         }
 
         @TruffleBoundary
