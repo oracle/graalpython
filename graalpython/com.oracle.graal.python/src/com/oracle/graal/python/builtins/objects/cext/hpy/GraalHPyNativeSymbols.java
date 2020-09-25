@@ -108,5 +108,6 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_WRITE_LL = "graal_hpy_write_ll";
     public static final String GRAAL_HPY_WRITE_ULL = "graal_hpy_write_ull";
     public static final String GRAAL_HPY_WRITE_HPY_SSIZE_T = "graal_hpy_write_HPy_ssize_t";
+    public static final String GRAAL_HPY_WRITE_PTR = "graal_hpy_write_ptr";
 
 }

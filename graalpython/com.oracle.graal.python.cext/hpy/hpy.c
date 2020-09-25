@@ -452,6 +452,10 @@ void graal_hpy_write_HPy_ssize_t(void* object, HPy_ssize_t offset, HPy_ssize_t v
     WriteMember(object, offset, value, HPy_ssize_t);
 }
 
+void graal_hpy_write_ptr(void* object, HPy_ssize_t offset, void* value) {
+    WriteMember(object, offset, value, void*);
+}
+
 #undef WriteMember
 
 #undef WRAP
