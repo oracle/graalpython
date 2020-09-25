@@ -140,7 +140,7 @@ public class PosixTest {
     @Test
     public void write() throws IOException {
         assertPrints("", open("posix.O_RDWR") +
-                        "posix.write(fd, 'hello')");
+                        "posix.write(fd, b'hello')");
         assertTrue(new String(Files.readAllBytes(tmpfile)).equals("hello"));
     }
 
@@ -148,9 +148,9 @@ public class PosixTest {
     public void close() throws IOException {
         assertLastLineErrorContains("OSError",
                         open("posix.O_RDWR") +
-                                        "posix.write(fd, 'hello')\n" +
+                                        "posix.write(fd, b'hello')\n" +
                                         "posix.close(fd)\n" +
-                                        "posix.write(fd, 'world')");
+                                        "posix.write(fd, b'world')");
         assertTrue(new String(Files.readAllBytes(tmpfile)).equals("hello"));
     }
 
@@ -179,7 +179,7 @@ public class PosixTest {
         assertPrints("", open("posix.O_CREAT") +
                         "import _io\n" +
                         "f = _io.FileIO(fd, mode='w')\n" +
-                        "print('hello', file=f)");
+                        "print('hello', file=_io.TextIOWrapper(f))");
         assertEquals("hello\n", new String(Files.readAllBytes(tmpfile)));
     }
 
