@@ -1145,4 +1145,24 @@ public abstract class GraalHPyContextFunctions {
             return asHandleNode.execute(pythonObject);
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCast extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode) throws ArityException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object receiver = asPythonObjectNode.execute(context, arguments[1]);
+
+            // we can also just return NO_VALUE since that will be interpreter as NULL
+            return readAttributeFromObjectNode.execute(receiver, OBJECT_HPY_NATIVE_SPACE);
+        }
+    }
 }
