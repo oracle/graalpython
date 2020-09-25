@@ -568,11 +568,6 @@ public final class PInt extends PythonBuiltinObject {
         return hashBigInteger(value);
     }
 
-    @ExportMessage
-    public long hashWithState(@SuppressWarnings("unused") ThreadState state) {
-        return hash();
-    }
-
     @TruffleBoundary
     public static long hashBigInteger(BigInteger i) {
         long h = i.remainder(BigInteger.valueOf(SysModuleBuiltins.HASH_MODULUS)).longValue();
