@@ -113,15 +113,17 @@ public abstract class HPyExternalFunctionNodes {
                 return new HPyMethNoargsRoot(language, name, callable);
             case GraalHPyDef.HPyFunc_O:
                 return new HPyMethORoot(language, name, callable);
+            case GraalHPyDef.HPyFunc_UNARYFUNC:
+            case GraalHPyDef.HPyFunc_REPRFUNC:
+                return new HPyMethUnaryRoot(language, name, callable);
             case GraalHPyDef.HPyFunc_KEYWORDS:
                 return new HPyMethKeywordsRoot(language, name, callable);
             case GraalHPyDef.HPyFunc_VARARGS:
                 return new HPyMethVarargsRoot(language, name, callable);
-
         }
         // TODO(fa): support remaining signatures
         if (signature <= GraalHPyDef.HPyFunc_SETTER) {
-            throw new IllegalStateException("unsupported HPy method signature");
+            throw new IllegalStateException("unsupported HPy method signature: " + signature);
         }
         throw new IllegalStateException("illegal HPy method signature");
     }
@@ -398,6 +400,24 @@ public abstract class HPyExternalFunctionNodes {
                 readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
             }
             return readKwargsNode.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethUnaryRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0], true);
+
+        public HPyMethUnaryRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame)};
         }
 
         @Override
