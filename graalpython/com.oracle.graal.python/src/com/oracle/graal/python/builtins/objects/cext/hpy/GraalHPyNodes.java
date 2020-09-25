@@ -548,10 +548,11 @@ public class GraalHPyNodes {
 
                 // read class 'property' from 'builtins/property.py'
                 Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, new Object[-1], new PKeyword[]{
+                Object propertyObject = callPropertyClassNode.execute(property, new Object[0], new PKeyword[]{
                                 new PKeyword("fget", getterObject),
                                 new PKeyword("fset", setterObject),
-                                new PKeyword("doc", memberDoc)
+                                new PKeyword("doc", memberDoc),
+                                new PKeyword("name", name)
                 });
 
                 return new HPyProperty(name, propertyObject);
