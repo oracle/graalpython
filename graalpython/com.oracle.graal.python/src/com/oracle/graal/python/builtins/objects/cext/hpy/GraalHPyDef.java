@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import java.util.Arrays;
+
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
@@ -121,4 +126,91 @@ public abstract class GraalHPyDef {
     public static final long HPy_TPFLAGS_BASETYPE = (1L << 10);
     public static final long HPy_TPFLAGS_DEFAULT = _Py_TPFLAGS_HEAPTYPE;
 
+    /* enum values for 'HPySlot_Slot' */
+    enum HPySlot {
+        HPY_NB_ABSOLUTE(6, SpecialMethodNames.__ABS__, HPyFunc_UNARYFUNC),
+        HPY_NB_ADD(7, SpecialMethodNames.__ADD__, HPyFunc_BINARYFUNC),
+        HPY_NB_AND(8, SpecialMethodNames.__AND__, HPyFunc_BINARYFUNC),
+        HPY_NB_BOOL(9, SpecialMethodNames.__BOOL__, HPyFunc_INQUIRY),
+        HPY_NB_DIVMOD(10, SpecialMethodNames.__DIVMOD__, HPyFunc_BINARYFUNC),
+        HPY_NB_FLOAT(11, SpecialMethodNames.__FLOAT__, HPyFunc_UNARYFUNC),
+        HPY_NB_FLOOR_DIVIDE(12, SpecialMethodNames.__FLOORDIV__, HPyFunc_BINARYFUNC),
+        HPY_NB_INDEX(13, SpecialMethodNames.__INDEX__, HPyFunc_UNARYFUNC),
+        HPY_NB_INPLACE_ADD(14, SpecialMethodNames.__IADD__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_AND(15, SpecialMethodNames.__IAND__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_FLOOR_DIVIDE(16, SpecialMethodNames.__IFLOORDIV__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_LSHIFT(17, SpecialMethodNames.__ILSHIFT__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_MULTIPLY(18, SpecialMethodNames.__IMUL__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_OR(19, SpecialMethodNames.__IOR__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_POWER(20, SpecialMethodNames.__IPOW__, HPyFunc_TERNARYFUNC),
+        HPY_NB_INPLACE_REMAINDER(21, SpecialMethodNames.__IMOD__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_RSHIFT(22, SpecialMethodNames.__IRSHIFT__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_SUBTRACT(23, SpecialMethodNames.__ISUB__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_TRUE_DIVIDE(24, SpecialMethodNames.__ITRUEDIV__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_XOR(25, SpecialMethodNames.__IXOR__, HPyFunc_BINARYFUNC),
+        HPY_NB_INT(26, SpecialMethodNames.__INT__, HPyFunc_UNARYFUNC),
+        HPY_NB_INVERT(27, SpecialMethodNames.__INVERT__, HPyFunc_UNARYFUNC),
+        HPY_NB_LSHIFT(28, SpecialMethodNames.__LSHIFT__, HPyFunc_BINARYFUNC),
+        HPY_NB_MULTIPLY(29, SpecialMethodNames.__MUL__, HPyFunc_BINARYFUNC),
+        HPY_NB_NEGATIVE(30, SpecialMethodNames.__NEG__, HPyFunc_UNARYFUNC),
+        HPY_NB_OR(31, SpecialMethodNames.__OR__, HPyFunc_BINARYFUNC),
+        HPY_NB_POSITIVE(32, SpecialMethodNames.__POS__, HPyFunc_UNARYFUNC),
+        HPY_NB_POWER(33, SpecialMethodNames.__POW__, HPyFunc_TERNARYFUNC),
+        HPY_NB_REMAINDER(34, SpecialMethodNames.__MOD__, HPyFunc_BINARYFUNC),
+        HPY_NB_RSHIFT(35, SpecialMethodNames.__RSHIFT__, HPyFunc_BINARYFUNC),
+        HPY_NB_SUBTRACT(36, SpecialMethodNames.__SUB__, HPyFunc_BINARYFUNC),
+        HPY_NB_TRUE_DIVIDE(37, SpecialMethodNames.__TRUEDIV__, HPyFunc_BINARYFUNC),
+        HPY_NB_XOR(38, SpecialMethodNames.__XOR__, HPyFunc_BINARYFUNC),
+        HPY_SQ_ITEM(44, SpecialMethodNames.__GETITEM__, HPyFunc_SSIZEARGFUNC),
+        HPY_TP_INIT(60, SpecialMethodNames.__INIT__, HPyFunc_INITPROC),
+        HPY_TP_NEW(65, SpecialMethodNames.__NEW__, HPyFunc_KEYWORDS),
+        HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFunc_REPRFUNC),
+        HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFunc_BINARYFUNC),
+        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFunc_BINARYFUNC),
+        // TODO(fa): use a hidden key ?
+        HPY_TP_DESTROY(1000, null, HPyFunc_DESTROYFUNC);
+
+        /** The corresponding C enum value. */
+        private final int value;
+
+        /**
+         * The corresponding attribute key (mostly a {@link String} which is the name of a magic
+         * method, or a {@link HiddenKey} if it's not exposed to the user, or {@code null} if
+         * unsupported).
+         */
+        private final Object attributeKey;
+
+        /** The signature of the slot function. */
+        private final int signature;
+
+        HPySlot(int value, Object attributeKey, int signature) {
+            this.value = value;
+            this.attributeKey = attributeKey;
+            this.signature = signature;
+        }
+
+        int getValue() {
+            return value;
+        }
+
+        Object getAttributeKey() {
+            return attributeKey;
+        }
+
+        int getSignature() {
+            return signature;
+        }
+
+        @CompilationFinal(dimensions = 1) private static final HPySlot[] VALUES = Arrays.copyOf(values(), values().length);
+
+        @ExplodeLoop
+        static HPySlot fromValue(int value) {
+            for (int i = 0; i < VALUES.length; i++) {
+                if (VALUES[i].value == value) {
+                    return VALUES[i];
+                }
+            }
+            return null;
+        }
+    }
 }

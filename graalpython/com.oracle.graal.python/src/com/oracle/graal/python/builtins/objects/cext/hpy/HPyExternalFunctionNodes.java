@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArr
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -70,6 +71,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -93,6 +95,44 @@ import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
+
+    /**
+     * Creates a root node that accepts the specified signatures, does appropriate argument and
+     * result conversion and calls the provided callable.
+     * 
+     * @param language The Python language object.
+     * @param signature The signature ID as defined in {@link GraalHPyDef}.
+     * @param name The name of the method.
+     * @param callable The native function pointer.
+     * @return A {@link PRootNode} that accepts the given signature.
+     */
+    @TruffleBoundary
+    static PRootNode createHPyWrapperRootNode(PythonLanguage language, int signature, String name, Object callable) {
+        switch (signature) {
+            case GraalHPyDef.HPyFunc_NOARGS:
+                return new HPyMethNoargsRoot(language, name, callable);
+            case GraalHPyDef.HPyFunc_O:
+                return new HPyMethORoot(language, name, callable);
+            case GraalHPyDef.HPyFunc_KEYWORDS:
+                return new HPyMethKeywordsRoot(language, name, callable);
+            case GraalHPyDef.HPyFunc_VARARGS:
+                return new HPyMethVarargsRoot(language, name, callable);
+
+        }
+        // TODO(fa): support remaining signatures
+        if (signature <= GraalHPyDef.HPyFunc_SETTER) {
+            throw new IllegalStateException("unsupported HPy method signature");
+        }
+        throw new IllegalStateException("illegal HPy method signature");
+    }
+
+    /**
+     * Helper function to create a built-in function.
+     */
+    @TruffleBoundary
+    static PBuiltinFunction createWrapperFunction(PythonObjectFactory factory, String name, Object enclosingType, PRootNode rootNode) {
+        return factory.createBuiltinFunction(name, enclosingType, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+    }
 
     /**
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes

@@ -1129,7 +1129,7 @@ public abstract class GraalHPyContextFunctions {
             if (attrObj != PNone.NO_VALUE) {
                 // we fully control this attribute; if it is there, it's always a long
                 long basicsize = (long) attrObj;
-                Object dataPtr = callMallocNode.call(context, "calloc", basicsize, 1L);
+                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_CALLOC, basicsize, 1L);
                 writeNativeSpaceNode.execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
 
                 // write data pointer to out var

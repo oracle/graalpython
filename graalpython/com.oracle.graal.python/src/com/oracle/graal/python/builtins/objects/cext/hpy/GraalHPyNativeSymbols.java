@@ -72,6 +72,8 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY = "graal_hpy_from_HPyType_SpecParam_array";
     public static final String GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT = "graal_hpy_HPyType_SpecParam_get_object";
     public static final String GRAAL_HPY_MEMBER_GET_TYPE = "graal_hpy_member_get_type";
+    public static final String GRAAL_HPY_SLOT_GET_SLOT = "graal_hpy_slot_get_slot";
+    public static final String GRAAL_HPY_CALLOC = "graal_hpy_calloc";
 
     /* C functions for reading native members by offset */
     public static final String GRAAL_HPY_READ_S = "graal_hpy_read_s";

@@ -84,6 +84,10 @@ int graal_hpy_init(void *initObject) {
 }
 
 
+void* graal_hpy_calloc(size_t count, size_t eltsize) {
+	return calloc(count, eltsize);
+}
+
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
 	return polyglot_from_HPy_array(arr, len);
 }
@@ -146,6 +150,12 @@ void* graal_hpy_get_ml_doc(HPyMeth *methodDef) {
 
 HPyFunc_Signature graal_hpy_meth_get_signature(HPyMeth *methodDef) {
 	return methodDef->signature;
+}
+
+/* getters for HPySlot */
+
+HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
+	return slot->slot;
 }
 
 /* getters for HPyDef */
