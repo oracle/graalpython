@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.logging.Level;
 
@@ -190,40 +189,20 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             this.name = name;
         }
 
-        @CompilationFinal(dimensions = 1) private static final String[] values;
+        @CompilationFinal(dimensions = 1) private static final HPyContextMembers[] VALUES;
         static {
-            Field[] declaredFields = HPyContextMembers.class.getDeclaredFields();
-            values = new String[declaredFields.length - 1]; // omit the values field
-            for (int i = 0; i < declaredFields.length; i++) {
-                Field s = declaredFields[i];
-                if (s.getType() == HPyContextMembers.class) {
-                    try {
-                        HPyContextMembers member = ((HPyContextMembers) s.get(HPyContextMembers.class));
-                        values[member.ordinal()] = member.name;
-                    } catch (IllegalArgumentException | IllegalAccessException e) {
-                    }
-                }
-            }
+            HPyContextMembers[] members = values();
+            VALUES = Arrays.copyOf(members, members.length);
         }
 
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        public static boolean isValid(String name) {
-            for (int i = 0; i < values.length; i++) {
-                if (values[i].equals(name)) {
-                    return true;
+        public static HPyContextMembers getByName(String name) {
+            for (int i = 0; i < VALUES.length; i++) {
+                if (VALUES[i].name.equals(name)) {
+                    return VALUES[i];
                 }
             }
-            return false;
-        }
-
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        public static int getOrdinal(String name) {
-            for (int i = 0; i < values.length; i++) {
-                if (values[i].equals(name)) {
-                    return i;
-                }
-            }
-            return -1;
+            return null;
         }
     }
 
@@ -322,26 +301,26 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
+    @ExplodeLoop
     @SuppressWarnings("static-method")
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(HPyContextMembers.values);
+        String[] names = new String[HPyContextMembers.VALUES.length];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = HPyContextMembers.VALUES[i].name;
+        }
+        return new PythonAbstractObject.Keys(names);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
-        return HPyContextMembers.isValid(key);
+        return HPyContextMembers.getByName(key) != null;
     }
 
     @ExportMessage
     Object readMember(String key,
                     @Cached GraalHPyReadMemberNode readMemberNode) {
-        Object result = readMemberNode.execute(this, key);
-        if (result == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException(String.format("context function %s not yet implemented: ", key));
-        }
-        return result;
+        return readMemberNode.execute(this, key);
     }
 
     @ExportMessage
@@ -362,7 +341,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         public abstract Object execute(GraalHPyContext hpyContext, String key);
 
         @Specialization(guards = "cachedKey.equals(key)")
-        static Object doMember(GraalHPyContext hpyContext, @SuppressWarnings("unused") String key,
+        static Object doMember(GraalHPyContext hpyContext, String key,
                         @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
                         @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
             // TODO(fa) once everything is implemented, remove this check
@@ -370,13 +349,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                 return hpyContext.hpyContextMembers[cachedIdx];
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("member not yet implemented");
+            throw CompilerDirectives.shouldNotReachHere(String.format("context function %s not yet implemented: ", key));
         }
 
         static int getIndex(String key) {
-            return HPyContextMembers.getOrdinal(key);
+            HPyContextMembers member = HPyContextMembers.getByName(key);
+            return member != null ? member.ordinal() : -1;
         }
-
     }
 
     private static Object[] createMembers(PythonContext context) {
