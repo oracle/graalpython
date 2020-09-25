@@ -284,7 +284,7 @@ public class GraalHPyNodes {
      * </pre>
      */
     @GenerateUncached
-    public abstract static class HPyAddFunctionNode extends PNodeWithContext {
+    public abstract static class HPyCreateFunctionNode extends PNodeWithContext {
 
         public abstract PBuiltinFunction execute(GraalHPyContext context, Object enclosingType, Object methodDef);
 
@@ -1124,7 +1124,7 @@ public class GraalHPyNodes {
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
                         @Cached CallNode callTypeNewNode,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode,
-                        @Cached HPyAddFunctionNode addFunctionNode,
+                        @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
                         @Cached HPyCreateSlotNode addSlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
