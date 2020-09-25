@@ -1165,4 +1165,43 @@ public abstract class GraalHPyContextFunctions {
             return readAttributeFromObjectNode.execute(receiver, OBJECT_HPY_NATIVE_SPACE);
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTypeGenericNew extends GraalHPyContextFunction {
+
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyTypeGenericNew.class);
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached ReadAttributeFromObjectNode readBasicsizeNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToObjectNode writeNativeSpaceNode,
+                        @Cached PCallHPyFunction callMallocNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 5) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(5, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object type = asPythonObjectNode.execute(context, arguments[1]);
+
+            // create the managed Python object
+            PythonObject pythonObject = factory.createPythonObject(type);
+
+            // allocate native space
+            Object attrObj = readBasicsizeNode.execute(type, TYPE_HPY_BASICSIZE);
+            if (attrObj != PNone.NO_VALUE) {
+                // we fully control this attribute; if it is there, it's always a long
+                long basicsize = (long) attrObj;
+                Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_CALLOC, basicsize, 1L);
+                writeNativeSpaceNode.execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
+
+                LOGGER.fine(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                // TODO(fa): add memory tracing
+            }
+            return asHandleNode.execute(pythonObject);
+        }
+    }
 }
