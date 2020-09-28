@@ -591,7 +591,7 @@ public class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert interopLibrary.hasMembers(memberDef);
