@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -143,17 +145,26 @@ public abstract class HPyExternalFunctionNodes {
     abstract static class HPyExternalFunctionInvokeNode extends Node implements IndirectCallNode {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
+        @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
 
         HPyExternalFunctionInvokeNode() {
             this.toSulongNode = HPyAllAsHandleNodeGen.create();
+            this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
         }
 
         HPyExternalFunctionInvokeNode(HPyConvertArgsToSulongNode convertArgsNode) {
             CompilerAsserts.neverPartOfCompilation();
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
+            this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
+        }
+
+        HPyExternalFunctionInvokeNode(HPyCheckFunctionResultNode checkFunctionResultNode, HPyConvertArgsToSulongNode convertArgsNode) {
+            CompilerAsserts.neverPartOfCompilation();
+            this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
+            this.checkFunctionResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : HPyCheckHandleResultNodeGen.create();
         }
 
         public abstract Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs);
@@ -162,9 +173,6 @@ public abstract class HPyExternalFunctionNodes {
         Object doIt(VirtualFrame frame, String name, Object callable, Object[] frameArgs,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached HPyEnsureHandleNode ensureHandleNode,
-                        @Cached HPyCheckFunctionResultNode checkFunctionResultNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
             Object[] arguments = new Object[frameArgs.length + 1];
             GraalHPyContext hPyContext = ctx.getHPyContext();
@@ -178,8 +186,7 @@ public abstract class HPyExternalFunctionNodes {
             Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
-                GraalHPyHandle resultHandle = ensureHandleNode.execute(hPyContext, lib.execute(callable, arguments));
-                return asPythonObjectNode.execute(hPyContext, checkFunctionResultNode.execute(hPyContext, name, resultHandle));
+                return checkFunctionResultNode.execute(hPyContext, name, lib.execute(callable, arguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
@@ -426,39 +433,11 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-    @ImportStatic(PGuards.class)
     abstract static class HPyCheckFunctionResultNode extends PNodeWithContext {
-        public abstract GraalHPyHandle execute(GraalHPyContext nativeContext, String name, GraalHPyHandle handle);
 
-        @Specialization(guards = "isNullHandle(nativeContext, handle)")
-        GraalHPyHandle doNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
-            return handle;
-        }
+        public abstract Object execute(GraalHPyContext nativeContext, String name, Object value);
 
-        @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
-        GraalHPyHandle doNonNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
-            return handle;
-        }
-
-        @Specialization(replaces = {"doNullHandle", "doNonNullHandle"})
-        GraalHPyHandle doGeneric(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
-            return handle;
-        }
-
-        private void checkFunctionResult(String name, boolean indicatesError, GraalHPyContext context, PRaiseNode raise, PythonObjectFactory factory, PythonLanguage language) {
+        protected final void checkFunctionResult(String name, boolean indicatesError, GraalHPyContext context, PRaiseNode raise, PythonObjectFactory factory, PythonLanguage language) {
             PException currentException = context.getCurrentException();
             boolean errOccurred = currentException != null;
             if (indicatesError) {
@@ -477,9 +456,135 @@ public abstract class HPyExternalFunctionNodes {
                 throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
         }
+    }
+
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @ImportStatic(PGuards.class)
+    abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
+
+        @Specialization(guards = "value == 0")
+        Object doIntegerNull(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") int value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
+            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
+        }
+
+        @Specialization(replaces = "doIntegerNull")
+        Object doInteger(GraalHPyContext nativeContext, String name, int value,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, value == 0, nativeContext, raiseNode, factory, language);
+            return asPythonObjectNode.execute(nativeContext, value);
+        }
+
+        @Specialization(guards = "value == 0")
+        Object doLongNull(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") long value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
+            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
+        }
+
+        @Specialization(replaces = "doLongNull")
+        Object doLong(GraalHPyContext nativeContext, String name, long value,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, value == 0, nativeContext, raiseNode, factory, language);
+            return asPythonObjectNode.execute(nativeContext, value);
+        }
+
+        @Specialization(guards = "isNullHandle(nativeContext, handle)")
+        Object doNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
+            return handle;
+        }
+
+        @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
+        Object doNonNullHandle(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
+            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
+        }
+
+        @Specialization(replaces = {"doIntegerNull", "doNonNullHandle"})
+        Object doHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
+            return asPythonObjectNode.execute(nativeContext, handle);
+        }
+
+        @Specialization(replaces = {"doIntegerNull", "doInteger", "doLongNull", "doLong", "doNullHandle", "doNonNullHandle", "doHandle"})
+        Object doGeneric(GraalHPyContext nativeContext, String name, Object value,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
+            checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
+            return asPythonObjectNode.execute(nativeContext, handle);
+        }
 
         protected static boolean isNullHandle(GraalHPyContext nativeContext, GraalHPyHandle handle) {
             return handle == nativeContext.getNullHandle();
+        }
+    }
+
+    /**
+     * Similar to {@link HPyCheckFunctionResultNode}, this node checks a primitive result of a
+     * native function.
+     */
+    @ImportStatic(PGuards.class)
+    abstract static class HPyCheckPrimitiveResultNode extends HPyCheckFunctionResultNode {
+        public abstract int executeInt(GraalHPyContext nativeContext, String name, int value);
+
+        public abstract long executeLong(GraalHPyContext nativeContext, String name, long value);
+
+        @Specialization
+        int doInteger(GraalHPyContext nativeContext, String name, int value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, value == -1, nativeContext, raiseNode, factory, language);
+            return value;
+        }
+
+        @Specialization(replaces = "doInteger")
+        long doLong(GraalHPyContext nativeContext, String name, long value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, value == -1, nativeContext, raiseNode, factory, language);
+            return value;
+        }
+
+        @Specialization(guards = "!isIntOrLong(value)")
+        Object doPointer(GraalHPyContext nativeContext, String name, Object value,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("fact") @Cached PythonObjectFactory factory,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            checkFunctionResult(name, lib.isNull(value), nativeContext, raiseNode, factory, language);
+            return value;
+        }
+
+        static boolean isIntOrLong(Object value) {
+            return value instanceof Integer || value instanceof Long;
         }
     }
 
