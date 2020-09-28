@@ -582,10 +582,10 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCreateGetSetDescriptorNode extends PNodeWithContext {
 
-        public abstract GetSetDescriptor execute(GraalHPyContext context, Object memberDef);
+        public abstract GetSetDescriptor execute(GraalHPyContext context, Object type, Object memberDef);
 
         @Specialization(limit = "1")
-        static GetSetDescriptor doIt(GraalHPyContext context, Object memberDef,
+        static GetSetDescriptor doIt(GraalHPyContext context, Object type, Object memberDef,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -633,7 +633,7 @@ public class GraalHPyNodes {
                     setterObject = HPyGetSetDescriptorSetterRootNode.createFunction(context.getContext(), name, setterFunctionPtr, closurePtr);
                 }
 
-                GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, null, !readOnly);
+                GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, name, type, !readOnly);
                 writeAttributeToObjectNode.execute(getSetDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
                 return getSetDescriptor;
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -1199,7 +1199,7 @@ public class GraalHPyNodes {
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_GETSET:
                                 Object getsetDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_GETSET, moduleDefine);
-                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, getsetDef);
+                                GetSetDescriptor getSetDescriptor = createGetSetDescriptorNode.execute(context, newType, getsetDef);
                                 property = new HPyProperty(getSetDescriptor.getName(), getSetDescriptor);
                                 break;
                             default:
