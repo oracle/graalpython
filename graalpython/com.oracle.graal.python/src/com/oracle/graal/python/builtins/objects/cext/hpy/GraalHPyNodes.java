@@ -1043,6 +1043,35 @@ public class GraalHPyNodes {
         }
     }
 
+    /**
+     * Argument converter for calling a native get/set descriptor getter function. The native
+     * signature is: {@code HPy getter(HPyContext ctx, HPy self, void* closure)}.
+     */
+    public abstract static class HPyGetSetGetterToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode selfAsHandleNode) {
+            dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+    }
+
+    /**
+     * Argument converter for calling a native get/set descriptor setter function. The native
+     * signature is: {@code HPy setter(HPyContext ctx, HPy self, HPy value, void* closure)}.
+     */
+    public abstract static class HPyGetSetSetterToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode) {
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+    }
+
     @GenerateUncached
     abstract static class HPyLongFromLong extends Node {
         public abstract Object execute(int value, boolean signed);

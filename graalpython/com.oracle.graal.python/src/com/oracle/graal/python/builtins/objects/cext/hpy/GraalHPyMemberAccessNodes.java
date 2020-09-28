@@ -75,15 +75,21 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNoneNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyUnsignedPrimitiveAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -508,6 +514,10 @@ public class GraalHPyMemberAccessNodes {
             return ensureInvokeNode().execute(frame, name, target, createArguments(frame, closure));
         }
 
+        protected abstract HPyConvertArgsToSulongNode createArgumentConversionNode();
+
+        protected abstract HPyCheckFunctionResultNode createResultConversionNode();
+
         protected abstract Object[] createArguments(VirtualFrame frame, Object closure);
 
         @Override
@@ -518,7 +528,7 @@ public class GraalHPyMemberAccessNodes {
         private HPyExternalFunctionInvokeNode ensureInvokeNode() {
             if (invokeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                invokeNode = insert(HPyExternalFunctionInvokeNodeGen.create());
+                invokeNode = insert(HPyExternalFunctionInvokeNodeGen.create(createResultConversionNode(), createArgumentConversionNode()));
             }
             return invokeNode;
         }
@@ -567,6 +577,16 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @Override
+        protected HPyConvertArgsToSulongNode createArgumentConversionNode() {
+            return HPyGetSetGetterToSulongNodeGen.create();
+        }
+
+        @Override
+        protected HPyCheckFunctionResultNode createResultConversionNode() {
+            return HPyCheckHandleResultNodeGen.create();
+        }
+
+        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -597,6 +617,16 @@ public class GraalHPyMemberAccessNodes {
         @Override
         protected Object[] createArguments(VirtualFrame frame, Object closure) {
             return new Object[]{PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), closure};
+        }
+
+        @Override
+        protected HPyConvertArgsToSulongNode createArgumentConversionNode() {
+            return HPyGetSetSetterToSulongNodeGen.create();
+        }
+
+        @Override
+        protected HPyCheckFunctionResultNode createResultConversionNode() {
+            return HPyCheckPrimitiveResultNodeGen.create();
         }
 
         @Override
@@ -640,6 +670,18 @@ public class GraalHPyMemberAccessNodes {
             }
             Object type = lib.getLazyPythonClass(PArguments.getArgument(frame, 0));
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, getName(), getNameNode.execute(type));
+        }
+
+        @Override
+        protected HPyConvertArgsToSulongNode createArgumentConversionNode() {
+            // not required since the 'createArguments' method will throw an error
+            return null;
+        }
+
+        @Override
+        protected HPyCheckFunctionResultNode createResultConversionNode() {
+            // not required since the 'createArguments' method will throw an error
+            return null;
         }
 
         @Override
