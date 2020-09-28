@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
@@ -189,7 +190,9 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_REPR("ctx_Repr"),
         CTX_STR("ctx_Str"),
         CTX_ASCII("ctx_ASCII"),
-        CTX_BYTES("ctx_Bytes");
+        CTX_BYTES("ctx_Bytes"),
+        CTX_RICHCOMPARE("ctx_RichCompare"),
+        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool");
 
         private final String name;
 
@@ -428,6 +431,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_STR.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.STR, 1);
         members[HPyContextMembers.CTX_ASCII.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ASCII, 1);
         members[HPyContextMembers.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.BYTES, 1);
+        members[HPyContextMembers.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
+        members[HPyContextMembers.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
         return members;
     }
 

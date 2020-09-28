@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -128,6 +129,7 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -1244,7 +1246,7 @@ public abstract class GraalHPyContextFunctions {
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            if (arguments.length < nPythonArguments + 1) {
+            if (arguments.length != nPythonArguments + 1) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(nPythonArguments + 1, arguments.length);
             }
@@ -1259,6 +1261,48 @@ public abstract class GraalHPyContextFunctions {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return nativeContext.getNullHandle();
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyRichcompare extends GraalHPyContextFunction {
+
+        private final boolean returnPrimitive;
+
+        public GraalHPyRichcompare(boolean returnPrimitive) {
+            this.returnPrimitive = returnPrimitive;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 4) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(4, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            Object[] pythonArguments = new Object[2];
+            pythonArguments[0] = asPythonObjectNode.execute(nativeContext, arguments[2]);
+            try {
+                pythonArguments[1] = SpecialMethodNames.getCompareOpString(castToJavaIntExactNode.execute(arguments[3]));
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "4th argument must fit into Java int");
+            }
+            try {
+                Object result = lib.lookupAndCallSpecialMethodWithState(receiver, null, SpecialMethodNames.RICHCMP, pythonArguments);
+                return returnPrimitive ? PInt.intValue(resultLib.isTrue(result)) : asHandleNode.execute(nativeContext, result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return returnPrimitive ? 0 : nativeContext.getNullHandle();
             }
         }
     }
