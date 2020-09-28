@@ -497,15 +497,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        public Object run(PythonObject moduleSpec) {
-            Object origin = moduleSpec.getAttribute("origin");
+        public Object run(PythonObject moduleSpec,
+                          @Cached CastToJavaStringNode toJavaStringNode) {
             Object name = moduleSpec.getAttribute("name");
-            if ("built-in".equals(origin)) {
-                for (String bm : getCore().builtinModuleNames()) {
-                    if (bm.equals(name)) {
-                        return getCore().lookupBuiltinModule(bm);
-                    }
-                }
+            PythonModule builtinModule = getCore().lookupBuiltinModule(toJavaStringNode.execute(name));
+            if (builtinModule != null) {
+                // TODO: builtin modules cannot be re-initialized (see is_builtin)
+                return builtinModule;
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
         }
