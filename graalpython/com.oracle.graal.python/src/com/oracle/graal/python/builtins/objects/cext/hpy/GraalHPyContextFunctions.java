@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGet
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptAssignNode;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
@@ -1221,6 +1221,45 @@ public abstract class GraalHPyContextFunctions {
                 // TODO(fa): add memory tracing
             }
             return asHandleNode.execute(pythonObject);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyCallBuiltinFunction extends GraalHPyContextFunction {
+
+        private final String key;
+        private final int nPythonArguments;
+
+        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments) {
+            this.key = key;
+            assert nPythonArguments >= 0 : "number of arguments cannot be negative";
+            this.nPythonArguments = nPythonArguments;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length < nPythonArguments + 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(nPythonArguments + 1, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object[] pythonArguments = new Object[nPythonArguments];
+            for (int i = 0; i < pythonArguments.length; i++) {
+                pythonArguments[i] = asPythonObjectNode.execute(nativeContext, arguments[i + 1]);
+            }
+            try {
+                Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), key);
+                return asHandleNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return nativeContext.getNullHandle();
+            }
         }
     }
 }
