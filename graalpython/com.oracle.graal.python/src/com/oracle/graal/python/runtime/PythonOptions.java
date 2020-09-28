@@ -120,6 +120,17 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> WarnOptions = new OptionKey<>("");
 
+    @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
+                    "- 'default' means the 'check_source' flag in hash-based pycs" +
+                    "  determines invalidation" +
+                    "- 'always' causes the interpreter to hash the source file for" +
+                    "  invalidation regardless of value of 'check_source' bit" +
+                    "- 'never' causes the interpreter to always assume hash-based pycs are" +
+                    "  valid" +
+                    "The default value is 'default'." +
+                    "See PEP 552 'Deterministic pycs' for more details.", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> CheckHashPycsMode = new OptionKey<>("default");
+
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 

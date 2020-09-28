@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -122,6 +123,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ImpModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonContext context = core.getContext();
+        PythonModule mod = core.lookupBuiltinModule("_imp");
+        mod.setAttribute("check_hash_based_pycs", context.getOption(PythonOptions.CheckHashPycsMode));
     }
 
     @Builtin(name = "acquire_lock")
@@ -498,7 +507,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PythonObject moduleSpec,
-                          @Cached CastToJavaStringNode toJavaStringNode) {
+                        @Cached CastToJavaStringNode toJavaStringNode) {
             Object name = moduleSpec.getAttribute("name");
             PythonModule builtinModule = getCore().lookupBuiltinModule(toJavaStringNode.execute(name));
             if (builtinModule != null) {
