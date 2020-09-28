@@ -48,6 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_KIND;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_METH;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_MODULE_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_TYPE_SPEC;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY;
@@ -258,13 +260,13 @@ public abstract class GraalHPyContextFunctions {
                     long nModuleDefines = ptrLib.getArraySize(moduleDefines);
                     for (long i = 0; i < nModuleDefines; i++) {
                         Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
-                        int kind = castToJavaIntNode.execute(ptrLib.readMember(moduleDefine, "kind"));
-
+                        int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
                         switch (kind) {
                             case GraalHPyDef.HPY_DEF_KIND_METH:
-                                PBuiltinFunction fun = addFunctionNode.execute(context, null, moduleDefine);
+                                Object methodDef = callGetterNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
+                                PBuiltinFunction fun = addFunctionNode.execute(context, null, methodDef);
                                 PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                                writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                                writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
                                 writeAttrNode.execute(module, fun.getName(), method);
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_SLOT:
