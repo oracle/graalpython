@@ -31,10 +31,11 @@ class ModuleLockAsRLockTests:
 LOCK_TYPES = {kind: splitinit._bootstrap._ModuleLock
               for kind, splitinit in init.items()}
 
-(Frozen_ModuleLockAsRLockTests,
- Source_ModuleLockAsRLockTests
- ) = test_util.test_both(ModuleLockAsRLockTests, lock_tests.RLockTests,
-                         LockType=LOCK_TYPES)
+# "GR-16579: support for multi-threading"
+# (Frozen_ModuleLockAsRLockTests,
+#  Source_ModuleLockAsRLockTests
+#  ) = test_util.test_both(ModuleLockAsRLockTests, lock_tests.RLockTests,
+#                          LockType=LOCK_TYPES)
 
 
 class DeadlockAvoidanceTests:
@@ -95,6 +96,7 @@ class DeadlockAvoidanceTests:
         self.assertGreaterEqual(nb_deadlocks, 1)
         self.assertEqual(results.count((True, True)), len(results) - nb_deadlocks)
 
+    @support.impl_detail("GR-16579: support for multi-threading", graalvm=False)
     def test_no_deadlock(self):
         results = self.run_deadlock_avoidance_test(False)
         self.assertEqual(results.count((True, False)), 0)
@@ -104,11 +106,12 @@ class DeadlockAvoidanceTests:
 DEADLOCK_ERRORS = {kind: splitinit._bootstrap._DeadlockError
                    for kind, splitinit in init.items()}
 
-(Frozen_DeadlockAvoidanceTests,
- Source_DeadlockAvoidanceTests
- ) = test_util.test_both(DeadlockAvoidanceTests,
-                         LockType=LOCK_TYPES,
-                         DeadlockError=DEADLOCK_ERRORS)
+# "GR-16579: support for multi-threading"
+# (Frozen_DeadlockAvoidanceTests,
+#  Source_DeadlockAvoidanceTests
+#  ) = test_util.test_both(DeadlockAvoidanceTests,
+#                          LockType=LOCK_TYPES,
+#                          DeadlockError=DEADLOCK_ERRORS)
 
 
 class LifetimeTests:
@@ -117,6 +120,7 @@ class LifetimeTests:
     def bootstrap(self):
         return self.init._bootstrap
 
+    @support.impl_detail("GR-16579: support for multi-threading", graalvm=False)
     def test_lock_lifetime(self):
         name = "xyzzy"
         self.assertNotIn(name, self.bootstrap._module_locks)
@@ -128,6 +132,7 @@ class LifetimeTests:
         self.assertNotIn(name, self.bootstrap._module_locks)
         self.assertIsNone(wr())
 
+    @support.impl_detail("GR-16579: support for multi-threading", graalvm=False)
     def test_all_locks(self):
         support.gc_collect()
         self.assertEqual(0, len(self.bootstrap._module_locks),
@@ -141,10 +146,10 @@ class LifetimeTests:
 
 @support.reap_threads
 def test_main():
-    support.run_unittest(Frozen_ModuleLockAsRLockTests,
-                         Source_ModuleLockAsRLockTests,
-                         Frozen_DeadlockAvoidanceTests,
-                         Source_DeadlockAvoidanceTests,
+    support.run_unittest(#Frozen_ModuleLockAsRLockTests,
+                         #Source_ModuleLockAsRLockTests,
+                         #Frozen_DeadlockAvoidanceTests,
+                         #Source_DeadlockAvoidanceTests,
                          Frozen_LifetimeTests,
                          Source_LifetimeTests)
 
