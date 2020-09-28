@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -81,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -2085,89 +2085,6 @@ public abstract class CExtNodes {
         @Specialization(guards = "object.isDouble()")
         double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
             return object.getDouble();
-        }
-    }
-
-    /**
-     * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
-     * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
-     * functions and does coercion and may raise a Python exception if coercion fails.
-     */
-    @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
-    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
-        public abstract double execute(boolean arg);
-
-        public abstract double execute(int arg);
-
-        public abstract double execute(long arg);
-
-        public abstract double execute(double arg);
-
-        public abstract double execute(Object arg);
-
-        @Specialization
-        double doBooleam(boolean value) {
-            return value ? 1.0 : 0.0;
-        }
-
-        @Specialization
-        double doInt(int value) {
-            return value;
-        }
-
-        @Specialization
-        double doLong(long value) {
-            return value;
-        }
-
-        @Specialization
-        double doDouble(double value) {
-            return value;
-        }
-
-        @Specialization
-        double doPInt(PInt value) {
-            return value.doubleValue();
-        }
-
-        @Specialization
-        double doPFloat(PFloat value) {
-            return value.getValue();
-        }
-
-        @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object) {
-            return object.getDouble();
-        }
-
-        @Specialization
-        double runGeneric(PythonAbstractObject value,
-                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile classProfile,
-                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
-                        @Cached PRaiseNode raiseNode) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
-            // is a
-            // float object, use the value and do *NOT* call '__float__'.
-            if (PGuards.isPFloat(value)) {
-                return ((PFloat) value).getValue();
-            }
-
-            Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
-            // of
-            // PFloat
-            if (classProfile.profileClass(lib.getLazyPythonClass(result), PythonBuiltinClassType.PFloat)) {
-                return castToJavaDoubleNode.execute(result);
-            }
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
         }
     }
 

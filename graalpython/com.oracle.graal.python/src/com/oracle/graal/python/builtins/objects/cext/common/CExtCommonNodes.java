@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -58,23 +59,31 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -619,6 +628,89 @@ public abstract class CExtCommonNodes {
 
         static boolean fitsInUInt64(PrimitiveNativeWrapper nativeWrapper) {
             return (nativeWrapper.isIntLike() || nativeWrapper.isBool()) && nativeWrapper.getLong() >= 0;
+        }
+    }
+
+    /**
+     * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
+     * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
+     * functions and does coercion and may raise a Python exception if coercion fails.
+     */
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
+        public abstract double execute(boolean arg);
+
+        public abstract double execute(int arg);
+
+        public abstract double execute(long arg);
+
+        public abstract double execute(double arg);
+
+        public abstract double execute(Object arg);
+
+        @Specialization
+        double doBooleam(boolean value) {
+            return value ? 1.0 : 0.0;
+        }
+
+        @Specialization
+        double doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        double doLong(long value) {
+            return value;
+        }
+
+        @Specialization
+        double doDouble(double value) {
+            return value;
+        }
+
+        @Specialization
+        double doPInt(PInt value) {
+            return value.doubleValue();
+        }
+
+        @Specialization
+        double doPFloat(PFloat value) {
+            return value.getValue();
+        }
+
+        @Specialization(guards = "!object.isDouble()")
+        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
+        }
+
+        @Specialization(guards = "object.isDouble()")
+        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getDouble();
+        }
+
+        @Specialization
+        double runGeneric(PythonAbstractObject value,
+                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached IsBuiltinClassProfile classProfile,
+                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
+                        @Cached PRaiseNode raiseNode) {
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
+            // is a
+            // float object, use the value and do *NOT* call '__float__'.
+            if (PGuards.isPFloat(value)) {
+                return ((PFloat) value).getValue();
+            }
+
+            Object result = callFloatFunc.executeObject(value, __FLOAT__);
+            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
+            // of
+            // PFloat
+            if (classProfile.profileClass(lib.getLazyPythonClass(result), PythonBuiltinClassType.PFloat)) {
+                return castToJavaDoubleNode.execute(result);
+            }
+            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
         }
     }
 }
