@@ -572,13 +572,13 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PFunction createFunction(PythonContext context, String propertyName, Object target, Object closure) {
+        public static PFunction createFunction(PythonContext context, String enclosingClassName, String propertyName, Object target, Object closure) {
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PCell[] pythonClosure = createPythonClosure(target, closure, factory);
 
             HPyGetSetDescriptorGetterRootNode rootNode = new HPyGetSetDescriptorGetterRootNode(context.getLanguage(), propertyName);
             PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
-            return factory.createFunction(propertyName, "", code, context.getBuiltins(), pythonClosure);
+            return factory.createFunction(propertyName, enclosingClassName, code, context.getBuiltins(), pythonClosure);
         }
 
     }
@@ -648,12 +648,12 @@ public class GraalHPyMemberAccessNodes {
         }
 
         @TruffleBoundary
-        public static PFunction createFunction(PythonContext context, String propertyName) {
+        public static PFunction createFunction(PythonContext context, String enclosingClassName, String propertyName) {
             HPyGetSetDescriptorNotWritableRootNode rootNode = new HPyGetSetDescriptorNotWritableRootNode(context.getLanguage(), propertyName);
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             PCode code = factory.createCode(PythonUtils.getOrCreateCallTarget(rootNode));
             // we don't need the closure
-            return factory.createFunction(propertyName, "", code, context.getBuiltins(), PythonUtils.NO_CLOSURE);
+            return factory.createFunction(propertyName, enclosingClassName, code, context.getBuiltins(), PythonUtils.NO_CLOSURE);
         }
     }
 }

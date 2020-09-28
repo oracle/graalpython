@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -588,6 +589,7 @@ public class GraalHPyNodes {
         static GetSetDescriptor doIt(GraalHPyContext context, Object type, Object memberDef,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
+                        @Cached GetNameNode getNameNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
@@ -601,6 +603,7 @@ public class GraalHPyNodes {
             assert interopLibrary.isMemberReadable(memberDef, "doc");
             assert interopLibrary.isMemberReadable(memberDef, "closure");
 
+            String enclosingClassName = getNameNode.execute(type);
             try {
                 String name;
                 try {
@@ -620,7 +623,7 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = interopLibrary.readMember(memberDef, "getter_impl");
-                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), name, getterFunctionPtr, closurePtr);
+                PFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context.getContext(), enclosingClassName, name, getterFunctionPtr, closurePtr);
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = interopLibrary.readMember(memberDef, "setter_impl");
@@ -628,7 +631,7 @@ public class GraalHPyNodes {
 
                 Object setterObject;
                 if (readOnly) {
-                    setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), name);
+                    setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), enclosingClassName, name);
                 } else {
                     setterObject = HPyGetSetDescriptorSetterRootNode.createFunction(context.getContext(), name, setterFunctionPtr, closurePtr);
                 }
