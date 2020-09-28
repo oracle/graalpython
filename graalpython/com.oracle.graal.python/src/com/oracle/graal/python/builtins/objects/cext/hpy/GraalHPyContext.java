@@ -155,7 +155,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_ADD("ctx_Add"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
-        CTX_OBJECT_ISTRUE("ctx_Object_IsTrue"),
+        CTX_ISTRUE("ctx_IsTrue"),
         CTX_TYPE_FROM_SPEC("ctx_Type_FromSpec"),
         CTX_GETATTR("ctx_GetAttr"),
         CTX_GETATTR_S("ctx_GetAttr_s"),
@@ -189,8 +189,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_REPR("ctx_Repr"),
         CTX_STR("ctx_Str"),
         CTX_ASCII("ctx_ASCII"),
-        CTX_BYTES("ctx_Bytes"),
-        CTX_ISTRUE("ctx_IsTrue");
+        CTX_BYTES("ctx_Bytes");
 
         private final String name;
 
@@ -408,7 +407,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
         members[HPyContextMembers.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
         members[HPyContextMembers.CTX_UNICODE_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PString);
-        members[HPyContextMembers.CTX_OBJECT_ISTRUE.ordinal()] = new GraalHPyIsTrue();
+        members[HPyContextMembers.CTX_ISTRUE.ordinal()] = new GraalHPyIsTrue();
         members[HPyContextMembers.CTX_UNICODE_ASUTF8STRING.ordinal()] = new GraalHPyUnicodeAsUTF8String();
         members[HPyContextMembers.CTX_UNICODE_FROMSTRING.ordinal()] = new GraalHPyUnicodeFromString();
         members[HPyContextMembers.CTX_UNICODE_FROMWIDECHAR.ordinal()] = new GraalHPyUnicodeFromWchar();
