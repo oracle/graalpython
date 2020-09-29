@@ -511,19 +511,19 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
         @SuppressWarnings("unused")
-        static long doLongToInt64(int value, int signed, long targetTypeSize) {
+        static long doLongToInt64(long value, int signed, long targetTypeSize) {
             return value;
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
         @SuppressWarnings("unused")
-        static long doLongToUInt64Pos(int value, int signed, long targetTypeSize) {
+        static long doLongToUInt64Pos(long value, int signed, long targetTypeSize) {
             return value;
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
-        static int doLongToUInt64(Frame frame, int value, int signed, long targetTypeSize,
+        static long doLongToUInt64(Frame frame, long value, int signed, long targetTypeSize,
                         @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             if (negativeProfile.profile(value < 0)) {
