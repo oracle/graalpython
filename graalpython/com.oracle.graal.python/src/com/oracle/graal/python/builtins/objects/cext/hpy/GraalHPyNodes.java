@@ -66,9 +66,9 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNod
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -968,6 +968,22 @@ public class GraalHPyNodes {
         }
     }
 
+    /**
+     * Converts a Python object to a native {@code int64_t} compatible value.
+     */
+    @GenerateUncached
+    public abstract static class HPyAsNativeInt64Node extends CExtToNativeNode {
+
+        // Adding specializations for primitives does not make a lot of sense just to avoid
+        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(null, value, 1, Long.BYTES);
+        }
+    }
+
+    @GenerateUncached
     public abstract static class HPyAsNativeDoubleNode extends CExtToNativeNode {
 
         // Adding specializations for primitives does not make a lot of sense just to avoid

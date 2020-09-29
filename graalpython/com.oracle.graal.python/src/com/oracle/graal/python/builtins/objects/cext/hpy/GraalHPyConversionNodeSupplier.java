@@ -45,42 +45,84 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsNativeInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public class GraalHPyConversionNodeSupplier extends ConversionNodeSupplier {
+public abstract class GraalHPyConversionNodeSupplier {
 
-    public static final GraalHPyConversionNodeSupplier INSTANCE = new GraalHPyConversionNodeSupplier();
+    /**
+     * A conversion node supplier for converting Python objects to native {@code HPy} compatible
+     * values and also the opposite direction, for converting native {@code HPy} values to Python
+     * objects.
+     */
+    public static final ConversionNodeSupplier HANDLE = new ConversionNodeSupplier() {
 
-    private GraalHPyConversionNodeSupplier() {
-    }
+        @Override
+        public CExtToNativeNode createToNativeNode() {
+            return HPyAsHandleNodeGen.create();
+        }
 
-    @Override
-    public CExtToNativeNode createToNativeNode() {
-        return HPyAsHandleNodeGen.create();
-    }
+        @Override
+        public CExtToNativeNode getUncachedToNativeNode() {
+            return HPyAsHandleNodeGen.getUncached();
+        }
 
-    @Override
-    public CExtToNativeNode getUncachedToNativeNode() {
-        return HPyAsHandleNodeGen.getUncached();
-    }
+        @Override
+        public CExtAsPythonObjectNode createAsPythonObjectNode() {
+            return HPyAsPythonObjectNodeGen.create();
+        }
 
-    @Override
-    public CExtAsPythonObjectNode createAsPythonObjectNode() {
-        return HPyAsPythonObjectNodeGen.create();
-    }
+        @Override
+        public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
+            return HPyAsPythonObjectNodeGen.getUncached();
+        }
 
-    @Override
-    public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
-        return HPyAsPythonObjectNodeGen.getUncached();
-    }
+        @Override
+        public CExtToJavaNode createToJavaNode() {
+            return HPyAsPythonObjectNodeGen.create();
+        }
 
-    @Override
-    public CExtToJavaNode createToJavaNode() {
-        return HPyAsPythonObjectNodeGen.create();
-    }
+        @Override
+        public CExtToJavaNode getUncachedToJavaNode() {
+            return HPyAsPythonObjectNodeGen.getUncached();
+        }
+    };
 
-    @Override
-    public CExtToJavaNode getUncachedToJavaNode() {
-        return HPyAsPythonObjectNodeGen.getUncached();
-    }
+    /**
+     * A conversion node supplier only for converting to native {@code int64_t} compatible values.
+     * The opposite direction (converting native values to Python objects) is not implemented.
+     */
+    public static final ConversionNodeSupplier TO_INT64 = new ConversionNodeSupplier() {
+
+        @Override
+        public CExtToNativeNode createToNativeNode() {
+            return HPyAsNativeInt64NodeGen.create();
+        }
+
+        @Override
+        public CExtToNativeNode getUncachedToNativeNode() {
+            return HPyAsNativeInt64NodeGen.getUncached();
+        }
+
+        @Override
+        public CExtAsPythonObjectNode createAsPythonObjectNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
+
+        @Override
+        public CExtAsPythonObjectNode getUncachedAsPythonObjectNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
+
+        @Override
+        public CExtToJavaNode createToJavaNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
+
+        @Override
+        public CExtToJavaNode getUncachedToJavaNode() {
+            throw CompilerDirectives.shouldNotReachHere("unsupported");
+        }
+    };
 }

@@ -234,7 +234,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @CompilationFinal private long wcharSize = -1;
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
-        super(context, hpyLibrary, GraalHPyConversionNodeSupplier.INSTANCE);
+        super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.hpyContextMembers = createMembers(context);
     }
 
