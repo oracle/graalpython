@@ -52,7 +52,11 @@ def decode(self, encoding="utf-8", errors="strict"):
       as well as any other name registered with codecs.register_error that
       can handle UnicodeDecodeErrors.
     """
-    return _codecs.decode(self, encoding=encoding, errors=errors)
+    result = _codecs.decode(self, encoding=encoding, errors=errors)
+    if not isinstance(result, str):
+        raise TypeError("'%s' encoder returned '%s' instead of 'str'; use codecs.decode() to decode to arbitrary types"
+                        % (encoding, type(result).__name__))
+    return result
 
 
 bytes.decode = __graalpython__.builtin_method(decode)

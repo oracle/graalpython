@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -132,7 +133,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -194,18 +194,18 @@ public final class StringBuiltins extends PythonBuiltins {
             // We cannot cast self via argument clinic, because we need to keep it as-is for the
             // empty format string case, which should call __str__, which may be overridden
             String str = castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __STR__, self);
-            return formatString(getCore(), getAndValidateSpec(formatString), str);
+            return formatString(getRaiseNode(), getAndValidateSpec(formatString), str);
         }
 
         @TruffleBoundary
-        private static Object formatString(PythonCore core, Spec spec, String str) {
-            TextFormatter formatter = new TextFormatter(core, spec.withDefaults(Spec.STRING));
+        private static Object formatString(PRaiseNode raiseNode, Spec spec, String str) {
+            TextFormatter formatter = new TextFormatter(raiseNode, spec.withDefaults(Spec.STRING));
             formatter.format(str);
             return formatter.pad().getResult();
         }
 
         private Spec getAndValidateSpec(String formatString) {
-            Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
+            Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, __FORMAT__);
             if (Spec.specified(spec.type) && spec.type != 's') {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNKNOWN_FORMAT_CODE, spec.type, "str");
             }
@@ -1809,7 +1809,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return new StringFormatProcessor(context.getCore(), getItemNode, getTupleItemNode, self).format(right);
+                return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

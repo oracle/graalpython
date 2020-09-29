@@ -626,12 +626,12 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            byte[] data = format(getBytes(selfLib, self), right, getItemNode, getTupleItemNode, context);
+            byte[] data = format(getBytes(selfLib, self), right, getItemNode, getTupleItemNode, context, getRaiseNode());
             return create.execute(factory(), self, data);
         }
 
-        protected static byte[] format(byte[] self, Object right, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, PythonContext context) {
-            BytesFormatProcessor formatter = new BytesFormatProcessor(context.getCore(), getItemNode, getTupleItemNode, self);
+        protected static byte[] format(byte[] self, Object right, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, PythonContext context, PRaiseNode raiseNode) {
+            BytesFormatProcessor formatter = new BytesFormatProcessor(context.getCore(), raiseNode, getItemNode, getTupleItemNode, self);
             return formatter.format(right);
         }
     }
