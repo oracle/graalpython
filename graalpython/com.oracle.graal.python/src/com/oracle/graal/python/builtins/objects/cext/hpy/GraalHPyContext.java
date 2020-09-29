@@ -192,7 +192,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_ASCII("ctx_ASCII"),
         CTX_BYTES("ctx_Bytes"),
         CTX_RICHCOMPARE("ctx_RichCompare"),
-        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool");
+        CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
+        CTX_HASH("ctx_Hash");
 
         private final String name;
 
@@ -433,6 +434,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_BYTES.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.BYTES, 1);
         members[HPyContextMembers.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
         members[HPyContextMembers.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
+        members[HPyContextMembers.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.HASH, 1);
         return members;
     }
 
