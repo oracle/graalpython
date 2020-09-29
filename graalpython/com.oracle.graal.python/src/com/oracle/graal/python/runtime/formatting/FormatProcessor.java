@@ -30,10 +30,11 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
@@ -130,27 +131,16 @@ abstract class FormatProcessor<T> {
     int getNumber() {
         char c = pop();
         if (c == '*') {
-            long value;
             Object o = getArg();
-            if (o instanceof Integer) {
-                return (int) o;
-            } else if (o instanceof Long) {
-                value = (long) o;
-            } else if (o instanceof PInt) {
-                try {
-                    return ((PInt) o).intValueExact();
-                } catch (OverflowException e) {
-                    value = Long.MAX_VALUE;
+            try {
+                long value = CastToJavaLongLossyNode.getUncached().execute(o);
+                if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
+                    throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
                 }
-            } else if (o instanceof Boolean) {
-                return (Boolean) o ? 1 : 0;
-            } else {
+                return (int) value;
+            } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.STAR_WANTS_INT);
             }
-            if (value > Integer.MAX_VALUE) {
-                throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "size");
-            }
-            return (int) value;
         } else {
             if (Character.isDigit(c)) {
                 int numStart = index - 1;
