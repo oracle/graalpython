@@ -418,6 +418,41 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class FindLoaderNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        public Object findLoader(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
+            PZipImporter.ModuleInfo mi = self.getModuleInfo(fullname);
+            if (mi != ModuleInfo.NOT_FOUND) {
+                return makeTuple(self, makeList());
+            }
+
+            String modPath = self.makeFilename(fullname);
+            if (self.isDir(modPath)) {
+                return makeTuple(makeList(self.getModulePath(modPath)));
+            }
+            return makeTuple(makeList());
+        }
+
+        private PTuple makeTuple(Object second) {
+            return makeTuple(null, second);
+        }
+
+        private PTuple makeTuple(Object first, Object second) {
+            return factory().createTuple(new Object[]{first != null ? first : PNone.NONE, second});
+        }
+
+        private PList makeList() {
+            return factory().createList();
+        }
+
+        private PList makeList(Object first) {
+            return factory().createList(new Object[]{first});
+        }
+    }
+
     @Builtin(name = "get_code", minNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
