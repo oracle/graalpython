@@ -2349,7 +2349,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             0, 0, 0,
                             new byte[0], new Object[0], new Object[0],
                             new Object[0], new Object[0], new Object[0],
-                            wrappedCode.getFilename(), wrappedCode.getName(), 0,
+                            wrappedCode.getName(), wrappedCode.getName(), 0,
                             new byte[0]);
             return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(),
                             wrapperCode, func.getGlobals(), func.getDefaults(), func.getKwDefaults(),
