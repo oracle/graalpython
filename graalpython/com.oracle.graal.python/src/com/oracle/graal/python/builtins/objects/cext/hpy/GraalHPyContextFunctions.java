@@ -317,21 +317,15 @@ public abstract class GraalHPyContextFunctions {
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyLongFromLong extends GraalHPyContextFunction {
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Cached CastToJavaLongExactNode castToJavaLongNode,
-                        @Cached HPyLongFromLong fromLongNode) throws ArityException {
-            if (arguments.length != 2) {
-                throw ArityException.create(2, arguments.length);
-            }
-            long left = castToJavaLongNode.execute(arguments[1]);
+        private final boolean signed;
 
-            return fromLongNode.execute(left, true);
+        public GraalHPyLongFromLong() {
+            this.signed = true;
         }
-    }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyLongFromUnsignedLongLong extends GraalHPyContextFunction {
+        public GraalHPyLongFromLong(boolean signed) {
+            this.signed = signed;
+        }
 
         @ExportMessage
         Object execute(Object[] arguments,
@@ -341,7 +335,8 @@ public abstract class GraalHPyContextFunctions {
                 throw ArityException.create(2, arguments.length);
             }
             long left = castToJavaLongNode.execute(arguments[1]);
-            return fromLongNode.execute(left, false);
+
+            return fromLongNode.execute(left, signed);
         }
     }
 
