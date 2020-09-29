@@ -73,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
@@ -599,6 +598,48 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
             return isSubtypeNode.execute(lib.getLazyPythonClass(object), expectedType);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyErrRaisePredefined extends GraalHPyContextFunction {
+
+        private final PythonBuiltinClassType errType;
+        private final Object errorMessage;
+        private final boolean primitiveErrorValue;
+
+        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType) {
+            this(errType, null, false);
+        }
+
+        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType, String errorMessage) {
+            this(errType, errorMessage, false);
+        }
+
+        public GraalHPyErrRaisePredefined(PythonBuiltinClassType errType, String errorMessage, boolean primitiveErrorValue) {
+            this.errType = errType;
+            this.errorMessage = errorMessage != null ? errorMessage : PNone.NO_VALUE;
+            this.primitiveErrorValue = primitiveErrorValue;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length != 1) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(1, arguments.length);
+            }
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+
+            // Unfortunately, the HPyRaiseNode is not suitable because it expects a String message.
+            try {
+                throw raiseNode.execute(errType, PNone.NO_VALUE, errorMessage, new Object[0]);
+            } catch (PException p) {
+                transformExceptionToNativeNode.execute(context, p);
+            }
+            return primitiveErrorValue ? 0 : context.getNullHandle();
         }
     }
 

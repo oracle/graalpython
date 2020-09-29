@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PInt;
@@ -59,6 +60,7 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -74,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDictSetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyDup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrOccurred;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrRaisePredefined;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyErrSetString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatAsDouble;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyFloatFromDouble;
@@ -155,6 +158,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
         CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
         CTX_ADD("ctx_Add"),
+        CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
         CTX_ISTRUE("ctx_IsTrue"),
@@ -412,6 +416,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_BYTES_SIZE.ordinal()] = new GraalHPyBytesGetSize();
         members[HPyContextMembers.CTX_BYTES_AS_STRING.ordinal()] = new GraalHPyBytesAsString();
         members[HPyContextMembers.CTX_BYTES_ASSTRING.ordinal()] = new GraalHPyBytesAsString();
+        members[HPyContextMembers.CTX_ERR_NOMEMORY.ordinal()] = new GraalHPyErrRaisePredefined(MemoryError);
         members[HPyContextMembers.CTX_ERR_SETSTRING.ordinal()] = new GraalHPyErrSetString();
         members[HPyContextMembers.CTX_ERR_OCCURRED.ordinal()] = new GraalHPyErrOccurred();
         members[HPyContextMembers.CTX_FROMPYOBJECT.ordinal()] = new GraalHPyFromPyObject();
