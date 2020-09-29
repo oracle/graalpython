@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBytes;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PInt;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PString;
@@ -181,6 +182,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_UNICODE_FROMWIDECHAR("ctx_Unicode_FromWideChar"),
         CTX_LIST_NEW("ctx_List_New"),
         CTX_LIST_APPEND("ctx_List_Append"),
+        CTX_DICT_CHECK("ctx_Dict_Check"),
         CTX_DICT_NEW("ctx_Dict_New"),
         CTX_DICT_SETITEM("ctx_Dict_SetItem"),
         CTX_DICT_GETITEM("ctx_Dict_GetItem"),
@@ -397,6 +399,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         members[HPyContextMembers.CTX_CAST.ordinal()] = new GraalHPyCast();
         members[HPyContextMembers.CTX_ADD.ordinal()] = new GraalHPyNumberAdd();
+        members[HPyContextMembers.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PDict);
         members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
         members[HPyContextMembers.CTX_DICT_GETITEM.ordinal()] = new GraalHPyDictGetItem();
