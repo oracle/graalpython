@@ -156,10 +156,14 @@ def __reduce_ex__(obj, proto=0):
 
 
 def __sizeof__(obj):
+    cls = type(obj)
     res = 0
-    if hasattr(obj, "__itemsize__"):
-        res = 0 if not obj.__itemsize__ else obj.__itemsize__ * len(obj)
-    res += obj.__basicsize__
+    if hasattr(cls, "__itemsize__"):
+        if not cls.__itemsize__ or not hasattr(obj, "__len__"):
+            res = 0
+        else:
+            res = cls.__itemsize__ * len(obj)
+    res += cls.__basicsize__
     return res
 
 
