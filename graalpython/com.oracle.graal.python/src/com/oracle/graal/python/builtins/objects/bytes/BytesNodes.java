@@ -584,8 +584,6 @@ public abstract class BytesNodes {
     @ImportStatic(PGuards.class)
     public abstract static class BytesInitNode extends Node {
 
-        @Child private IsBuiltinClassProfile isClassProfile = IsBuiltinClassProfile.create();
-
         public abstract byte[] execute(VirtualFrame frame, Object source, Object encoding, Object errors);
 
         @Specialization
@@ -593,24 +591,24 @@ public abstract class BytesNodes {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
 
-        @Specialization(guards = {"lib.canBeIndex(capObj)"})
-        byte[] size(VirtualFrame frame, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "5") PythonObjectLibrary lib) {
-            int cap = lib.asSizeWithState(capObj, PArguments.getThreadState(frame));
+        @Specialization(guards = "isByteStorage(source)")
+        byte[] byteslike(PBytesLike source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return (byte[]) ((ByteSequenceStorage) source.getSequenceStorage()).getCopyOfInternalArrayObject();
+        }
+
+        @Specialization(guards = "lib.canBeIndex(source)", limit = "3")
+        byte[] size(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary("source") PythonObjectLibrary lib) {
+            int cap = lib.asSizeWithState(source, PArguments.getThreadState(frame));
             return BytesUtils.fromSize(getCore(), cap);
         }
 
-        @Specialization(guards = {"isSimpleBytes(iterable)"})
-        byte[] byteslike(PBytesLike iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return (byte[]) ((ByteSequenceStorage) iterable.getSequenceStorage()).getCopyOfInternalArrayObject();
-        }
-
-        @Specialization(guards = {"!isString(iterable)", "!isNoValue(iterable)", "!lib.canBeIndex(iterable)"})
-        public byte[] iterable(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        @Specialization(guards = {"!isString(source)", "!isNoValue(source)", "!lib.canBeIndex(source)"}, limit = "3")
+        public byte[] iterable(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createCast()") IterableToByteNode toByteNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return toByteNode.execute(frame, iterable, lenNode.execute(frame, iterable));
+                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
+            return toByteNode.execute(frame, source, lenNode.execute(frame, source));
         }
 
         @Specialization
@@ -634,11 +632,6 @@ public abstract class BytesNodes {
                 throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
             }
             throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
-        }
-
-        protected boolean isSimpleBytes(PBytesLike iterable) {
-            return isClassProfile.profileIsAnyBuiltinObject(iterable) &&
-                            iterable.getSequenceStorage() instanceof ByteSequenceStorage;
         }
 
         protected static BytesNodes.IterableToByteNode createCast() {
@@ -806,5 +799,4 @@ public abstract class BytesNodes {
             return Arrays.copyOf(arr, len);
         }
     }
-
 }

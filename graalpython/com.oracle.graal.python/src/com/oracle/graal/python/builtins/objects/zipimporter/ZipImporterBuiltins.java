@@ -326,27 +326,16 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @TruffleBoundary
-        private static final StringBuilder newStringBuilder() {
-            return new StringBuilder();
-        }
-
-        @TruffleBoundary
-        private static final String stringBuilderToString(StringBuilder sb) {
-            return sb.toString();
-        }
-
         @Specialization
-        public PNone init(VirtualFrame frame, PZipImporter self, PBytes path,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+        public PNone init(PZipImporter self, PBytes path,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage store = path.getSequenceStorage();
+            byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = newStringBuilder();
-            for (int i = 0; i < len; i++) {
-                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(frame, store, i));
-            }
-            initZipImporter(self, stringBuilderToString(sb));
+            StringBuilder sb = BytesUtils.newStringBuilder();
+            BytesUtils.repr(sb, bytes, len);
+            initZipImporter(self, BytesUtils.sbToString(sb));
             return PNone.NONE;
         }
 

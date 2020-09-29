@@ -1548,6 +1548,7 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         from _testcapi import getbuffer_with_null_view
         self.assertRaises(BufferError, getbuffer_with_null_view, bytearray())
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_iterator_pickling2(self):
         orig = bytearray(b'abc')
         data = list(b'qwerty')
