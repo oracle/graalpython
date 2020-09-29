@@ -60,7 +60,6 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -152,6 +151,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LONG_FROMLONGLONG("ctx_Long_FromLongLong"),
         CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
+        CTX_LONG_FROMSIZE_T("ctx_Long_FromSize_t"),
         CTX_LONG_ASLONG("ctx_Long_AsLong"),
         CTX_NEW("ctx_New"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
@@ -393,11 +393,13 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMembers.CTX_CLOSE.ordinal()] = new GraalHPyClose();
         members[HPyContextMembers.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
-        GraalHPyLongFromLong graalHPyLongFromLong = new GraalHPyLongFromLong();
-        members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = graalHPyLongFromLong;
-        members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = graalHPyLongFromLong;
-        members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = new GraalHPyLongFromLong(false);
-        members[HPyContextMembers.CTX_LONG_FROMSSIZE_T.ordinal()] = graalHPyLongFromLong;
+        GraalHPyLongFromLong fromSignedLong = new GraalHPyLongFromLong();
+        GraalHPyLongFromLong fromUnsignedLong = new GraalHPyLongFromLong(false);
+        members[HPyContextMembers.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
+        members[HPyContextMembers.CTX_LONG_FROMLONGLONG.ordinal()] = fromSignedLong;
+        members[HPyContextMembers.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = fromUnsignedLong;
+        members[HPyContextMembers.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
+        members[HPyContextMembers.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
         members[HPyContextMembers.CTX_LONG_ASLONG.ordinal()] = new GraalHPyLongAsLong();
         members[HPyContextMembers.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMembers.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
