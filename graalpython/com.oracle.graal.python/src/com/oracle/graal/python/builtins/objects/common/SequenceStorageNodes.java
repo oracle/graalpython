@@ -1140,12 +1140,12 @@ public abstract class SequenceStorageNodes {
             int len = lenNode.execute(storage);
             SliceInfo info = adjustIndices.execute(len, unadjusted);
             try {
-                setItemSliceNode.execute(storage, info, sequence);
+                setItemSliceNode.execute(storage, info, sequence, true);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, sequence);
+                setItemSliceNode.execute(generalized, info, sequence, false);
                 return generalized;
             }
         }
@@ -1167,12 +1167,12 @@ public abstract class SequenceStorageNodes {
             // must not use iterable again. It could have sice-effects.
             PList values = constructListNode.execute(iterable);
             try {
-                setItemSliceNode.execute(storage, info, values);
+                setItemSliceNode.execute(storage, info, values, true);
                 return storage;
             } catch (SequenceStoreException e) {
                 generalizeProfile.enter();
                 SequenceStorage generalized = generalizeStore(storage, e.getIndicationValue());
-                setItemSliceNode.execute(generalized, info, values);
+                setItemSliceNode.execute(generalized, info, values, false);
                 return generalized;
             }
         }
@@ -1321,21 +1321,25 @@ public abstract class SequenceStorageNodes {
     @ImportStatic({ListStorageType.class, SequenceStorageBaseNode.class})
     public abstract static class SetItemSliceNode extends Node {
 
-        public abstract void execute(SequenceStorage s, SliceInfo info, Object iterable);
+        public abstract void execute(SequenceStorage s, SliceInfo info, Object iterable, boolean canGeneralize);
+
+        public final void execute(SequenceStorage s, SliceInfo info, Object iterable) {
+            execute(s, info, iterable, true);
+        }
 
         @Specialization(guards = "hasStorage(seq)")
-        static void doStorage(SequenceStorage s, SliceInfo info, PSequence seq,
+        static void doStorage(SequenceStorage s, SliceInfo info, PSequence seq, boolean canGeneralize,
                         @Shared("setStorageSliceNode") @Cached SetStorageSliceNode setStorageSliceNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode) {
-            setStorageSliceNode.execute(s, info, getSequenceStorageNode.execute(seq));
+            setStorageSliceNode.execute(s, info, getSequenceStorageNode.execute(seq), canGeneralize);
         }
 
         @Specialization
-        static void doGeneric(SequenceStorage s, SliceInfo info, Object iterable,
+        static void doGeneric(SequenceStorage s, SliceInfo info, Object iterable, boolean canGeneralize,
                         @Shared("setStorageSliceNode") @Cached SetStorageSliceNode setStorageSliceNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
             PList list = constructListNode.execute(iterable);
-            setStorageSliceNode.execute(s, info, list.getSequenceStorage());
+            setStorageSliceNode.execute(s, info, list.getSequenceStorage(), canGeneralize);
         }
 
         public static SetItemSliceNode create() {
@@ -1416,10 +1420,10 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(SequenceStorageBaseNode.class)
     abstract static class SetStorageSliceNode extends Node {
 
-        public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable);
+        public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable, boolean canGeneralize);
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"self.getClass() == cachedClass", "self.getClass() == sequence.getClass()", "replacesWholeSequence(cachedClass, self, info)"})
-        static void doWholeSequence(BasicSequenceStorage self, @SuppressWarnings("unused") SliceInfo info, BasicSequenceStorage sequence,
+        static void doWholeSequence(BasicSequenceStorage self, @SuppressWarnings("unused") SliceInfo info, BasicSequenceStorage sequence, @SuppressWarnings("unused") boolean canGeneralize,
                         @Cached("self.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             BasicSequenceStorage selfProfiled = cachedClass.cast(self);
             BasicSequenceStorage otherProfiled = cachedClass.cast(sequence);
@@ -1428,8 +1432,8 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(guards = {"isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"})
-        static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values,
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step == 1"})
+        static void singleStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
                         @Cached LenNode lenNode,
                         @Cached SetLenNode setLenNode,
@@ -1456,8 +1460,8 @@ public abstract class SequenceStorageNodes {
                             memoryError, negGrowth, posGrowth, raiseNode);
         }
 
-        @Specialization(guards = {"isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"})
-        static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values,
+        @Specialization(guards = {"!canGeneralize || isDataTypeCompatibleNode.execute(self, values)", "sinfo.step != 1"})
+        static void multiStep(SequenceStorage self, SliceInfo sinfo, SequenceStorage values, @SuppressWarnings("unused") boolean canGeneralize,
                         @Cached @SuppressWarnings("unused") IsDataTypeCompatibleNode isDataTypeCompatibleNode,
                         @Cached ConditionProfile wrongLength,
                         @Cached ConditionProfile deleteSlice,
@@ -1490,8 +1494,8 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!isAssignCompatibleNode.execute(self, sequence)")
-        static void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence,
+        @Specialization(guards = {"canGeneralize", "!isAssignCompatibleNode.execute(self, sequence)"})
+        static void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence, @SuppressWarnings("unused") boolean canGeneralize,
                         @Cached @SuppressWarnings("unused") IsAssignCompatibleNode isAssignCompatibleNode) {
             throw new SequenceStoreException(sequence.getIndicativeValue());
         }
@@ -2765,6 +2769,13 @@ public abstract class SequenceStorageNodes {
         }
     }
 
+    /**
+     * Generalization node must convert given storage to a storage that is able to be written any
+     * number of any valid elements. I.e., there must be a specialization handling that storage type
+     * in {@link SetItemScalarNode}. Note: it is possible that the RHS of the write may be invalid
+     * element, e.g., large integer when the storage is bytes array storage, but in such case the
+     * {@link SetItemScalarNode} will correctly raise Python level {@code ValueError}.
+     */
     public abstract static class GeneralizationNode extends Node {
         public abstract SequenceStorage execute(SequenceStorage toGeneralize, Object indicationValue);
 
@@ -2833,6 +2844,49 @@ public abstract class SequenceStorageNodes {
 
         public static NoGeneralizationCustomMessageNode create(String msg) {
             return NoGeneralizationCustomMessageNodeGen.create(msg);
+        }
+    }
+
+    /**
+     * Byte array is specific that it supports being written using slice from other iterables as
+     * long as the individual elements written can be converted to bytes. Arrays from the array
+     * module do not support this, they can be written only individual elements or slice from other
+     * array of the same type.
+     *
+     * This node works with the assumption that all storages of byte arrays support writing of any
+     * number of bytes. There is no actual generalization of the storage, but instead we tell the
+     * caller that it should try again with the same storage (in the second try, it should try to
+     * write whatever is in RHS no matter of the type of the storage of RHS).
+     *
+     * This is only limitation of this node. Shall we ever want to support byte arrays that can be
+     * backed by different types of storage, we'd only need to change this node to accommodate for
+     * that and return the most generic storage of those.
+     */
+    public static class ByteArrayGeneralizationNode extends GeneralizationNode {
+        public static ByteArrayGeneralizationNode UNCACHED = new ByteArrayGeneralizationNode();
+
+        public static final GenNodeSupplier SUPPLIER = new GenNodeSupplier() {
+            @Override
+            public GeneralizationNode getUncached() {
+                return UNCACHED;
+            }
+
+            @Override
+            public GeneralizationNode create() {
+                return new ByteArrayGeneralizationNode();
+            }
+        };
+
+        public static final Supplier<GeneralizationNode> CACHED_SUPPLIER = new Supplier<GeneralizationNode>() {
+            @Override
+            public GeneralizationNode get() {
+                return new ByteArrayGeneralizationNode();
+            }
+        };
+
+        @Override
+        public SequenceStorage execute(SequenceStorage toGeneralize, @SuppressWarnings("unused") Object indicationValue) {
+            return toGeneralize;
         }
     }
 
