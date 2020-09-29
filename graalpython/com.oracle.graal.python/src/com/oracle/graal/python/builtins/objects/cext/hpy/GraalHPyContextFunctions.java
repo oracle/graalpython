@@ -77,6 +77,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNa
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAddLegacyMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
@@ -124,6 +126,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -1227,35 +1230,57 @@ public abstract class GraalHPyContextFunctions {
         private final String key;
         private final int nPythonArguments;
 
+        private ConversionNodeSupplier toNativeNodeSupplier;
+
         public GraalHPyCallBuiltinFunction(String key, int nPythonArguments) {
             this.key = key;
             assert nPythonArguments >= 0 : "number of arguments cannot be negative";
             this.nPythonArguments = nPythonArguments;
+            this.toNativeNodeSupplier = GraalHPyConversionNodeSupplier.HANDLE;
+        }
+
+        public GraalHPyCallBuiltinFunction(String key, int nPythonArguments, ConversionNodeSupplier toNativeNodeSupplier) {
+            this.key = key;
+            assert nPythonArguments >= 0 : "number of arguments cannot be negative";
+            this.nPythonArguments = nPythonArguments;
+            this.toNativeNodeSupplier = toNativeNodeSupplier != null ? toNativeNodeSupplier : GraalHPyConversionNodeSupplier.HANDLE;
         }
 
         @ExportMessage
-        Object execute(Object[] arguments,
-                        @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached HPyAsHandleNode asHandleNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
-            if (arguments.length != nPythonArguments + 1) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(nPythonArguments + 1, arguments.length);
+        static class Execute {
+
+            @Specialization
+            static Object execute(GraalHPyCallBuiltinFunction receiver, Object[] arguments,
+                            @Cached HPyAsContextNode asContextNode,
+                            @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                            @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
+                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached(value = "createToNativeNode(receiver)", uncached = "getUncachedToNativeNode(receiver)") CExtToNativeNode toNativeNode,
+                            @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+                if (arguments.length != receiver.nPythonArguments + 1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(receiver.nPythonArguments + 1, arguments.length);
+                }
+                GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+                Object[] pythonArguments = new Object[receiver.nPythonArguments];
+                for (int i = 0; i < pythonArguments.length; i++) {
+                    pythonArguments[i] = asPythonObjectNode.execute(nativeContext, arguments[i + 1]);
+                }
+                try {
+                    Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), receiver.key);
+                    return toNativeNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
+                } catch (PException e) {
+                    transformExceptionToNativeNode.execute(nativeContext, e);
+                    return nativeContext.getNullHandle();
+                }
             }
-            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-            Object[] pythonArguments = new Object[nPythonArguments];
-            for (int i = 0; i < pythonArguments.length; i++) {
-                pythonArguments[i] = asPythonObjectNode.execute(nativeContext, arguments[i + 1]);
+
+            static CExtToNativeNode createToNativeNode(GraalHPyCallBuiltinFunction receiver) {
+                return receiver.toNativeNodeSupplier.createToNativeNode();
             }
-            try {
-                Object builtinFunction = readAttributeFromObjectNode.execute(nativeContext.getContext().getBuiltins(), key);
-                return asHandleNode.execute(nativeContext, lib.callObjectWithState(builtinFunction, null, pythonArguments));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(nativeContext, e);
-                return nativeContext.getNullHandle();
+
+            static CExtToNativeNode getUncachedToNativeNode(GraalHPyCallBuiltinFunction receiver) {
+                return receiver.toNativeNodeSupplier.getUncachedToNativeNode();
             }
         }
     }
