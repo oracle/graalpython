@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
@@ -109,25 +110,22 @@ public abstract class HPyExternalFunctionNodes {
      * @return A {@link PRootNode} that accepts the given signature.
      */
     @TruffleBoundary
-    static PRootNode createHPyWrapperRootNode(PythonLanguage language, int signature, String name, Object callable) {
+    static PRootNode createHPyWrapperRootNode(PythonLanguage language, HPyFuncSignature signature, String name, Object callable) {
         switch (signature) {
-            case GraalHPyDef.HPyFunc_NOARGS:
+            case NOARGS:
                 return new HPyMethNoargsRoot(language, name, callable);
-            case GraalHPyDef.HPyFunc_O:
+            case O:
                 return new HPyMethORoot(language, name, callable);
-            case GraalHPyDef.HPyFunc_UNARYFUNC:
-            case GraalHPyDef.HPyFunc_REPRFUNC:
+            case UNARYFUNC:
+            case REPRFUNC:
                 return new HPyMethUnaryRoot(language, name, callable);
-            case GraalHPyDef.HPyFunc_KEYWORDS:
+            case KEYWORDS:
                 return new HPyMethKeywordsRoot(language, name, callable);
-            case GraalHPyDef.HPyFunc_VARARGS:
+            case VARARGS:
                 return new HPyMethVarargsRoot(language, name, callable);
         }
         // TODO(fa): support remaining signatures
-        if (signature <= GraalHPyDef.HPyFunc_SETTER) {
-            throw new IllegalStateException("unsupported HPy method signature: " + signature);
-        }
-        throw new IllegalStateException("illegal HPy method signature");
+        throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
     }
 
     /**

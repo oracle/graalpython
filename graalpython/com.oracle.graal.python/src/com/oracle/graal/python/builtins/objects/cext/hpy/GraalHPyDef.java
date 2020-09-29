@@ -63,37 +63,66 @@ public abstract class GraalHPyDef {
     public static final int HPY_DEF_KIND_MEMBER = 3;
     public static final int HPY_DEF_KIND_GETSET = 4;
 
-    /* enum values of 'HPyFunc_Signature' */
-    public static final int HPyFunc_VARARGS = 1;  // METH_VARARGS
-    public static final int HPyFunc_KEYWORDS = 2;  // METH_VARARGS | METH_KEYWORDS
-    public static final int HPyFunc_NOARGS = 3;  // METH_NOARGS
-    public static final int HPyFunc_O = 4;  // METH_O
-    public static final int HPyFunc_DESTROYFUNC = 5;
-    public static final int HPyFunc_UNARYFUNC = 6;
-    public static final int HPyFunc_BINARYFUNC = 7;
-    public static final int HPyFunc_TERNARYFUNC = 8;
-    public static final int HPyFunc_INQUIRY = 9;
-    public static final int HPyFunc_LENFUNC = 10;
-    public static final int HPyFunc_SSIZEARGFUNC = 11;
-    public static final int HPyFunc_SSIZESSIZEARGFUNC = 12;
-    public static final int HPyFunc_SSIZEOBJARGPROC = 13;
-    public static final int HPyFunc_SSIZESSIZEOBJARGPROC = 14;
-    public static final int HPyFunc_OBJOBJARGPROC = 15;
-    public static final int HPyFunc_FREEFUNC = 16;
-    public static final int HPyFunc_GETATTRFUNC = 17;
-    public static final int HPyFunc_GETATTROFUNC = 18;
-    public static final int HPyFunc_SETATTRFUNC = 19;
-    public static final int HPyFunc_SETATTROFUNC = 20;
-    public static final int HPyFunc_REPRFUNC = 21;
-    public static final int HPyFunc_HASHFUNC = 22;
-    public static final int HPyFunc_RICHCMPFUNC = 23;
-    public static final int HPyFunc_GETITERFUNC = 24;
-    public static final int HPyFunc_ITERNEXTFUNC = 25;
-    public static final int HPyFunc_DESCRGETFUNC = 26;
-    public static final int HPyFunc_DESCRSETFUNC = 27;
-    public static final int HPyFunc_INITPROC = 28;
-    public static final int HPyFunc_GETTER = 29;
-    public static final int HPyFunc_SETTER = 30;
+    /** Same as {@code HPyFuncSignature.Signature} */
+    enum HPyFuncSignature {
+        VARARGS(1),   // METH_VARARGS
+        KEYWORDS(2),   // METH_VARARGS | METH_KEYWORDS
+        NOARGS(3),   // METH_NOARGS
+        O(4),   // METH_O
+        DESTROYFUNC(5),
+        UNARYFUNC(6),
+        BINARYFUNC(7),
+        TERNARYFUNC(8),
+        INQUIRY(9),
+        LENFUNC(10),
+        SSIZEARGFUNC(11),
+        SSIZESSIZEARGFUNC(12),
+        SSIZEOBJARGPROC(13),
+        SSIZESSIZEOBJARGPROC(14),
+        OBJOBJARGPROC(15),
+        FREEFUNC(16),
+        GETATTRFUNC(17),
+        GETATTROFUNC(18),
+        SETATTRFUNC(19),
+        SETATTROFUNC(20),
+        REPRFUNC(21),
+        HASHFUNC(22),
+        RICHCMPFUNC(23),
+        GETITERFUNC(24),
+        ITERNEXTFUNC(25),
+        DESCRGETFUNC(26),
+        DESCRSETFUNC(27),
+        INITPROC(28),
+        GETTER(29),
+        SETTER(30);
+
+        /** The corresponding C enum value. */
+        private final int value;
+
+        HPyFuncSignature(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        @CompilationFinal(dimensions = 1) private static final HPyFuncSignature[] VALUES = Arrays.copyOf(values(), values().length);
+
+        @ExplodeLoop
+        static HPyFuncSignature fromValue(int value) {
+            for (int i = 0; i < VALUES.length; i++) {
+                if (VALUES[i].value == value) {
+                    return VALUES[i];
+                }
+            }
+            return null;
+        }
+
+        static boolean isValid(int value) {
+            return fromValue(value) != null;
+        }
+    }
 
     /* enum values of 'HPyMember_FieldType' */
     public static final int HPY_MEMBER_SHORT = 0;
@@ -128,47 +157,47 @@ public abstract class GraalHPyDef {
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
-        HPY_NB_ABSOLUTE(6, SpecialMethodNames.__ABS__, HPyFunc_UNARYFUNC),
-        HPY_NB_ADD(7, SpecialMethodNames.__ADD__, HPyFunc_BINARYFUNC),
-        HPY_NB_AND(8, SpecialMethodNames.__AND__, HPyFunc_BINARYFUNC),
-        HPY_NB_BOOL(9, SpecialMethodNames.__BOOL__, HPyFunc_INQUIRY),
-        HPY_NB_DIVMOD(10, SpecialMethodNames.__DIVMOD__, HPyFunc_BINARYFUNC),
-        HPY_NB_FLOAT(11, SpecialMethodNames.__FLOAT__, HPyFunc_UNARYFUNC),
-        HPY_NB_FLOOR_DIVIDE(12, SpecialMethodNames.__FLOORDIV__, HPyFunc_BINARYFUNC),
-        HPY_NB_INDEX(13, SpecialMethodNames.__INDEX__, HPyFunc_UNARYFUNC),
-        HPY_NB_INPLACE_ADD(14, SpecialMethodNames.__IADD__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_AND(15, SpecialMethodNames.__IAND__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_FLOOR_DIVIDE(16, SpecialMethodNames.__IFLOORDIV__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_LSHIFT(17, SpecialMethodNames.__ILSHIFT__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_MULTIPLY(18, SpecialMethodNames.__IMUL__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_OR(19, SpecialMethodNames.__IOR__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_POWER(20, SpecialMethodNames.__IPOW__, HPyFunc_TERNARYFUNC),
-        HPY_NB_INPLACE_REMAINDER(21, SpecialMethodNames.__IMOD__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_RSHIFT(22, SpecialMethodNames.__IRSHIFT__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_SUBTRACT(23, SpecialMethodNames.__ISUB__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_TRUE_DIVIDE(24, SpecialMethodNames.__ITRUEDIV__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_XOR(25, SpecialMethodNames.__IXOR__, HPyFunc_BINARYFUNC),
-        HPY_NB_INT(26, SpecialMethodNames.__INT__, HPyFunc_UNARYFUNC),
-        HPY_NB_INVERT(27, SpecialMethodNames.__INVERT__, HPyFunc_UNARYFUNC),
-        HPY_NB_LSHIFT(28, SpecialMethodNames.__LSHIFT__, HPyFunc_BINARYFUNC),
-        HPY_NB_MULTIPLY(29, SpecialMethodNames.__MUL__, HPyFunc_BINARYFUNC),
-        HPY_NB_NEGATIVE(30, SpecialMethodNames.__NEG__, HPyFunc_UNARYFUNC),
-        HPY_NB_OR(31, SpecialMethodNames.__OR__, HPyFunc_BINARYFUNC),
-        HPY_NB_POSITIVE(32, SpecialMethodNames.__POS__, HPyFunc_UNARYFUNC),
-        HPY_NB_POWER(33, SpecialMethodNames.__POW__, HPyFunc_TERNARYFUNC),
-        HPY_NB_REMAINDER(34, SpecialMethodNames.__MOD__, HPyFunc_BINARYFUNC),
-        HPY_NB_RSHIFT(35, SpecialMethodNames.__RSHIFT__, HPyFunc_BINARYFUNC),
-        HPY_NB_SUBTRACT(36, SpecialMethodNames.__SUB__, HPyFunc_BINARYFUNC),
-        HPY_NB_TRUE_DIVIDE(37, SpecialMethodNames.__TRUEDIV__, HPyFunc_BINARYFUNC),
-        HPY_NB_XOR(38, SpecialMethodNames.__XOR__, HPyFunc_BINARYFUNC),
-        HPY_SQ_ITEM(44, SpecialMethodNames.__GETITEM__, HPyFunc_SSIZEARGFUNC),
-        HPY_TP_INIT(60, SpecialMethodNames.__INIT__, HPyFunc_INITPROC),
-        HPY_TP_NEW(65, SpecialMethodNames.__NEW__, HPyFunc_KEYWORDS),
-        HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFunc_REPRFUNC),
-        HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFunc_BINARYFUNC),
-        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFunc_BINARYFUNC),
+        HPY_NB_ABSOLUTE(6, SpecialMethodNames.__ABS__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_ADD(7, SpecialMethodNames.__ADD__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_AND(8, SpecialMethodNames.__AND__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_BOOL(9, SpecialMethodNames.__BOOL__, HPyFuncSignature.INQUIRY),
+        HPY_NB_DIVMOD(10, SpecialMethodNames.__DIVMOD__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_FLOAT(11, SpecialMethodNames.__FLOAT__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_FLOOR_DIVIDE(12, SpecialMethodNames.__FLOORDIV__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INDEX(13, SpecialMethodNames.__INDEX__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_INPLACE_ADD(14, SpecialMethodNames.__IADD__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_AND(15, SpecialMethodNames.__IAND__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_FLOOR_DIVIDE(16, SpecialMethodNames.__IFLOORDIV__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_LSHIFT(17, SpecialMethodNames.__ILSHIFT__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_MULTIPLY(18, SpecialMethodNames.__IMUL__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_OR(19, SpecialMethodNames.__IOR__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_POWER(20, SpecialMethodNames.__IPOW__, HPyFuncSignature.TERNARYFUNC),
+        HPY_NB_INPLACE_REMAINDER(21, SpecialMethodNames.__IMOD__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_RSHIFT(22, SpecialMethodNames.__IRSHIFT__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_SUBTRACT(23, SpecialMethodNames.__ISUB__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_TRUE_DIVIDE(24, SpecialMethodNames.__ITRUEDIV__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_XOR(25, SpecialMethodNames.__IXOR__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INT(26, SpecialMethodNames.__INT__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_INVERT(27, SpecialMethodNames.__INVERT__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_LSHIFT(28, SpecialMethodNames.__LSHIFT__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_MULTIPLY(29, SpecialMethodNames.__MUL__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_NEGATIVE(30, SpecialMethodNames.__NEG__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_OR(31, SpecialMethodNames.__OR__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_POSITIVE(32, SpecialMethodNames.__POS__, HPyFuncSignature.UNARYFUNC),
+        HPY_NB_POWER(33, SpecialMethodNames.__POW__, HPyFuncSignature.TERNARYFUNC),
+        HPY_NB_REMAINDER(34, SpecialMethodNames.__MOD__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_RSHIFT(35, SpecialMethodNames.__RSHIFT__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_SUBTRACT(36, SpecialMethodNames.__SUB__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_TRUE_DIVIDE(37, SpecialMethodNames.__TRUEDIV__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_XOR(38, SpecialMethodNames.__XOR__, HPyFuncSignature.BINARYFUNC),
+        HPY_SQ_ITEM(44, SpecialMethodNames.__GETITEM__, HPyFuncSignature.SSIZEARGFUNC),
+        HPY_TP_INIT(60, SpecialMethodNames.__INIT__, HPyFuncSignature.INITPROC),
+        HPY_TP_NEW(65, SpecialMethodNames.__NEW__, HPyFuncSignature.KEYWORDS),
+        HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFuncSignature.REPRFUNC),
+        HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFuncSignature.BINARYFUNC),
+        HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFuncSignature.BINARYFUNC),
         // TODO(fa): use a hidden key ?
-        HPY_TP_DESTROY(1000, null, HPyFunc_DESTROYFUNC);
+        HPY_TP_DESTROY(1000, null, HPyFuncSignature.DESTROYFUNC);
 
         /** The corresponding C enum value. */
         private final int value;
@@ -181,9 +210,9 @@ public abstract class GraalHPyDef {
         private final Object attributeKey;
 
         /** The signature of the slot function. */
-        private final int signature;
+        private final HPyFuncSignature signature;
 
-        HPySlot(int value, Object attributeKey, int signature) {
+        HPySlot(int value, Object attributeKey, HPyFuncSignature signature) {
             this.value = value;
             this.attributeKey = attributeKey;
             this.signature = signature;
@@ -197,7 +226,7 @@ public abstract class GraalHPyDef {
             return attributeKey;
         }
 
-        int getSignature() {
+        HPyFuncSignature getSignature() {
             return signature;
         }
 

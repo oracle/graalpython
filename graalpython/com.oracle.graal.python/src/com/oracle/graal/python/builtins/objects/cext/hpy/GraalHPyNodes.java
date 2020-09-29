@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
@@ -316,15 +317,18 @@ public class GraalHPyNodes {
             }
 
             Object methodSignatureObj;
-            int signature;
+            HPyFuncSignature signature;
             Object methodFunctionPointer;
             try {
                 methodSignatureObj = callHelperFunctionNode.call(context, GRAAL_HPY_METH_GET_SIGNATURE, methodDef);
                 if (!resultLib.fitsInInt(methodSignatureObj)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "signature of %s is not an integer", methodName);
                 }
-                signature = resultLib.asInt(methodSignatureObj);
+                signature = HPyFuncSignature.fromValue(resultLib.asInt(methodSignatureObj));
+                if (signature == null) {
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Unsupported HPyMeth signature");
+                }
 
                 methodFunctionPointer = interopLibrary.readMember(methodDef, "impl");
                 if (!resultLib.isExecutable(methodFunctionPointer)) {
