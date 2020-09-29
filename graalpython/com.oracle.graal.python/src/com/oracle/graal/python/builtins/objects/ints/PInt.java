@@ -55,6 +55,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -563,7 +564,8 @@ public final class PInt extends PythonBuiltinObject {
         return add(other.value);
     }
 
-    @ExportMessage
+    // We cannot export it as a message, because it can be overridden!
+    @Ignore
     public long hash() {
         return hashBigInteger(value);
     }

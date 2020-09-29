@@ -560,7 +560,7 @@ public abstract class HashingStorage {
     }
 
     @ExportMessage
-    public HashingStorage diff(HashingStorage other,
+    public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Exclusive @Cached DiffInjectNode diffNode) {
         HashingStorage newStore = EconomicMapStorage.create();
