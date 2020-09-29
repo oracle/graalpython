@@ -134,8 +134,12 @@ def setup(sre_compiler, error_class, flags_table):
     if engine_builder:
         global TREGEX_ENGINE_STR
         global TREGEX_ENGINE_BYTES
-        TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr", configure_fallback_compiler("str"))
-        TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes", configure_fallback_compiler("bytes"))
+        if _use_sre_fallback:
+            TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr", configure_fallback_compiler("str"))
+            TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes", configure_fallback_compiler("bytes"))
+        else:
+            TREGEX_ENGINE_STR = engine_builder("Flavor=PythonStr")
+            TREGEX_ENGINE_BYTES = engine_builder("Flavor=PythonBytes")
 
         def new_compile(p, flags=0):
             if isinstance(p, (str, bytes)):

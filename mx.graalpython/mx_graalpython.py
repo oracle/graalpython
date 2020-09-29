@@ -208,7 +208,7 @@ def punittest(ars):
         assert run_leak_launcher(["--lang", "python", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite"]) == 0
 
         # test leaks with shared engine Python code only
-        assert run_leak_launcher(["--lang", "python", "--shared-engine", "--code", "pass", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite"]) == 0
+        assert run_leak_launcher(["--lang", "python", "--shared-engine", "--code", "pass", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]) == 0
 
         # test leaks with shared engine when some C module code is involved
         # Not working due to GR-26175
