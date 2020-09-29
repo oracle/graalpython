@@ -71,17 +71,13 @@ public abstract class ConsoleHandler {
 
     public abstract void setPrompt(String prompt);
 
-    public void addCompleter(@SuppressWarnings("unused") Function<String, List<String>> completer) {
-        // ignore by default
-    }
-
     public void setContext(@SuppressWarnings("unused") Context context) {
         // ignore by default
     }
 
     @SuppressWarnings("unused")
-    public void setHistory(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
-                    Runnable clear) {
+    public void setupReader(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
+                    Runnable clear, Function<String, List<String>> completer) {
         // ignore by default
     }
 

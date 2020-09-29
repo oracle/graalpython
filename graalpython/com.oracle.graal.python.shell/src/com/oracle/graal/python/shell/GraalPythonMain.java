@@ -57,8 +57,8 @@ import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
 
 import com.oracle.truffle.llvm.toolchain.launchers.common.Driver;
-
-import jline.console.UserInterruptException;
+import java.util.function.Function;
+import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
@@ -81,7 +81,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean quietFlag = false;
     private boolean noUserSite = false;
     private boolean noSite = false;
-    private boolean stdinIsInteractive = System.console() != null;
+    private final boolean stdinIsInteractive = System.console() != null;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
     private VersionAction versionAction = VersionAction.None;
@@ -453,7 +453,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.UnbufferedIO", Boolean.toString(unbufferedIO));
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
-        contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
+        contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
+        contextBuilder.in(consoleHandler.createInputStream());
         contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
@@ -681,11 +682,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         options.add("--show-version");
     }
 
-    public ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
-        if (inputFile != null || commandString != null) {
-            return new DefaultConsoleHandler(inStream, outStream);
+    private ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
+        if (!stdinIsInteractive) {
+            return new DefaultConsoleHandler(inStream);
+        } else {
+            return new JLineConsoleHandler(inStream, outStream, false);
         }
-        return new JLineConsoleHandler(inStream, outStream, false);
     }
 
     /**
@@ -796,7 +798,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         // history feature
         evalInternal(context, "import sys\ngetattr(sys, '__interactivehook__', lambda: None)()\n");
         final Value readline = evalInternal(context, "import readline; readline");
-        final Value completer = readline.getMember("get_completer").execute();
+        final Value getCompleter = readline.getMember("get_completer").execute();
         final Value shouldRecord = readline.getMember("get_auto_history");
         final Value addHistory = readline.getMember("add_history");
         final Value getHistoryItem = readline.getMember("get_history_item");
@@ -804,26 +806,29 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         final Value deleteHistoryItem = readline.getMember("remove_history_item");
         final Value clearHistory = readline.getMember("clear_history");
         final Value getHistorySize = readline.getMember("get_current_history_length");
-        consoleHandler.setHistory(
+
+        Function<String, List<String>> completer = null;
+        if (getCompleter.canExecute()) {
+            completer = (buffer) -> {
+                List<String> candidates = new ArrayList<>();
+                Value candidate = getCompleter.execute(buffer, candidates.size());
+                while (candidate.isString()) {
+                    candidates.add(candidate.asString());
+                    candidate = getCompleter.execute(buffer, candidates.size());
+                }
+                return candidates;
+            };
+        }
+        consoleHandler.setupReader(
                         () -> shouldRecord.execute().asBoolean(),
                         () -> getHistorySize.execute().asInt(),
                         (item) -> addHistory.execute(item),
                         (pos) -> getHistoryItem.execute(pos).asString(),
                         (pos, item) -> setHistoryItem.execute(pos, item),
                         (pos) -> deleteHistoryItem.execute(pos),
-                        () -> clearHistory.execute());
+                        () -> clearHistory.execute(),
+                        completer);
 
-        if (completer.canExecute()) {
-            consoleHandler.addCompleter((buffer) -> {
-                List<String> candidates = new ArrayList<>();
-                Value candidate = completer.execute(buffer, candidates.size());
-                while (candidate.isString()) {
-                    candidates.add(candidate.asString());
-                    candidate = completer.execute(buffer, candidates.size());
-                }
-                return candidates;
-            });
-        }
     }
 
     /**

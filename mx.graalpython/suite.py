@@ -262,6 +262,7 @@ suite = {
                 "XZ-1.8",
                 "ICU4J-66.1",
                 "ICU4J-CHARSET-66.1",
+                "sdk:JLINE3",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",
