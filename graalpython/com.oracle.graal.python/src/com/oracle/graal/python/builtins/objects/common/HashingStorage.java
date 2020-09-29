@@ -236,7 +236,8 @@ public abstract class HashingStorage {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
-            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(lang, isStringKey, expectedSize), iterableLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
+            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(lang, isStringKey, expectedSize), iterableLib, nextNode, createListNode,
+                            seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
                             errorProfile, lib);
         }
 

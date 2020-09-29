@@ -2324,7 +2324,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         private static final RootCallTarget createWrapperCt(PFunction func, Object errorResult) {
             CompilerDirectives.transferToInterpreter();
-            assert errorResult instanceof Integer || errorResult instanceof Long || errorResult instanceof Double || errorResult == PNone.NONE || InteropLibrary.getUncached().isNull(errorResult) : "invalid wrap";
+            assert errorResult instanceof Integer || errorResult instanceof Long || errorResult instanceof Double || errorResult == PNone.NONE ||
+                            InteropLibrary.getUncached().isNull(errorResult) : "invalid wrap";
             PythonLanguage lang = PythonLanguage.getCurrent();
             RootNode rootNode = new MayRaiseNode(lang, func.getSignature(), func.getCallTarget(), errorResult);
             return PythonUtils.getOrCreateCallTarget(rootNode);

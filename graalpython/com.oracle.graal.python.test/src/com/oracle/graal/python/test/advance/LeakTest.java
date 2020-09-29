@@ -190,7 +190,7 @@ public class LeakTest extends AbstractLanguageLauncher {
                 server = ManagementFactory.getPlatformMBeanServer();
                 try {
                     ObjectName objectName = new ObjectName("com.sun.management:type=DiagnosticCommand");
-                    server.invoke(objectName, "gcRun", new Object[] { null }, new String[]{String[].class.getName()});
+                    server.invoke(objectName, "gcRun", new Object[]{null}, new String[]{String[].class.getName()});
                 } catch (MalformedObjectNameException | InstanceNotFoundException | ReflectionException | MBeanException e) {
                     throw new RuntimeException(e);
                 }
@@ -284,7 +284,7 @@ public class LeakTest extends AbstractLanguageLauncher {
 
     @Override
     protected String[] getDefaultLanguages() {
-        return new String[] { languageId };
+        return new String[]{languageId};
     }
 
     @Override

@@ -128,7 +128,8 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
+    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments,
+                    PCell[] closure, Object iterator) {
         super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
