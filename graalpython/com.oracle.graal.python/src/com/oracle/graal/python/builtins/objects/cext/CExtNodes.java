@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -2009,20 +2008,19 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         PComplex runGeneric(Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @Cached AsNativeDoubleNode asDoubleNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             Object result = callFloatFunc.executeObject(value, __COMPLEX__);
-            // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow
-            // subclasses
+            // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
             if (result == PNone.NO_VALUE) {
                 throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
             } else if (result instanceof PComplex) {
                 return (PComplex) result;
             }
-            return factory.createComplex(asDoubleNode.execute(value), 0.0);
+            return factory.createComplex(lib.asJavaDouble(value), 0.0);
         }
     }
 

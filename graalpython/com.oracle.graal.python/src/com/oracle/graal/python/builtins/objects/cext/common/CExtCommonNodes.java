@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -59,7 +58,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
@@ -83,7 +81,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -634,7 +631,10 @@ public abstract class CExtCommonNodes {
     /**
      * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
      * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
-     * functions and does coercion and may raise a Python exception if coercion fails.
+     * functions and does coercion and may raise a Python exception if coercion fails.<br/>
+     * Please note: In most cases, it is sufficient to use
+     * {@link PythonObjectLibrary#asJavaDouble(Object)}} but you might want to use this node if the
+     * argument can be an object of type {@link PrimitiveNativeWrapper}.
      */
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
@@ -650,67 +650,51 @@ public abstract class CExtCommonNodes {
         public abstract double execute(Object arg);
 
         @Specialization
-        double doBooleam(boolean value) {
+        static double doBooleam(boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        double doInt(int value) {
+        static double doInt(int value) {
             return value;
         }
 
         @Specialization
-        double doLong(long value) {
+        static double doLong(long value) {
             return value;
         }
 
         @Specialization
-        double doDouble(double value) {
+        static double doDouble(double value) {
             return value;
         }
 
         @Specialization
-        double doPInt(PInt value) {
+        static double doPInt(PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        double doPFloat(PFloat value) {
+        static double doPFloat(PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
-        @Specialization
-        double runGeneric(PythonAbstractObject value,
-                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile classProfile,
-                        @Cached CastToJavaDoubleNode castToJavaDoubleNode,
-                        @Cached PRaiseNode raiseNode) {
+        @Specialization(limit = "3")
+        static double runGeneric(Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
-            // is a
-            // float object, use the value and do *NOT* call '__float__'.
-            if (PGuards.isPFloat(value)) {
-                return ((PFloat) value).getValue();
-            }
-
-            Object result = callFloatFunc.executeObject(value, __FLOAT__);
-            // TODO(fa) according to CPython's 'PyFloat_AsDouble', they still allow subclasses
-            // of
-            // PFloat
-            if (classProfile.profileClass(lib.getLazyPythonClass(result), PythonBuiltinClassType.PFloat)) {
-                return castToJavaDoubleNode.execute(result);
-            }
-            throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_FLOAT, value, __FLOAT__, result);
+            // is a float object, use the value and do *NOT* call '__float__'.
+            return lib.asJavaDouble(value);
         }
     }
 }

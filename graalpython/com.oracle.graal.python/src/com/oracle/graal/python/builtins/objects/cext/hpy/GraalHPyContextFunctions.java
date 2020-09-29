@@ -568,12 +568,13 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached AsNativeDoubleNode asNativeDoubleNode) throws ArityException {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) throws ArityException {
             if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw ArityException.create(2, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            return asNativeDoubleNode.execute(asPythonObjectNode.execute(context, arguments[1]));
+            return lib.asJavaDouble(asPythonObjectNode.execute(context, arguments[1]));
         }
     }
 

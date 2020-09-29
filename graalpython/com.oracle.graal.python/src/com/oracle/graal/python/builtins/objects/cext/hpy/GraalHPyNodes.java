@@ -68,7 +68,6 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNo
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -86,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -992,10 +992,10 @@ public class GraalHPyNodes {
 
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
-        @Specialization
+        @Specialization(limit = "3")
         static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @Cached AsNativeDoubleNode asNativeDoubleNode) {
-            return asNativeDoubleNode.execute(value);
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            return lib.asJavaDouble(value);
         }
     }
 
