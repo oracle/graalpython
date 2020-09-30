@@ -1563,4 +1563,29 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyAsIndex extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            try {
+                return asHandleNode.execute(nativeContext, lib.asIndex(receiver));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return nativeContext.getNullHandle();
+            }
+        }
+    }
 }

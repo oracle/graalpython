@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
@@ -192,7 +193,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_INPLACEFLOORDIVIDE("ctx_InPlaceFloorDivide"),
         CTX_INPLACETRUEDIVIDE("ctx_InPlaceTrueDivide"),
         CTX_INPLACEREMAINDER("ctx_InPlaceRemainder"),
-        CTX_INPLACEDIVMOD("ctx_InPlaceDivmod"),
+        // TODO(fa): support IDivMod
+        // CTX_INPLACEDIVMOD("ctx_InPlaceDivmod"),
         CTX_INPLACELSHIFT("ctx_InPlaceLshift"),
         CTX_INPLACERSHIFT("ctx_InPlaceRshift"),
         CTX_INPLACEAND("ctx_InPlaceAnd"),
@@ -455,8 +457,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_POSITIVE.ordinal()] = new GraalHPyArithmetic(UnaryArithmetic.Pos);
         members[HPyContextMembers.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ABS, 1);
         members[HPyContextMembers.CTX_INVERT.ordinal()] = new GraalHPyArithmetic(UnaryArithmetic.Invert);
-        // TODO(fa): Index unsupported ?
-        members[HPyContextMembers.CTX_INDEX.ordinal()] = null;
+        members[HPyContextMembers.CTX_INDEX.ordinal()] = new GraalHPyAsIndex();
         members[HPyContextMembers.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.INT, 1);
         members[HPyContextMembers.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.FLOAT, 1);
 
@@ -481,8 +482,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_INPLACEFLOORDIVIDE.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IFloorDiv);
         members[HPyContextMembers.CTX_INPLACETRUEDIVIDE.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.ITrueDiv);
         members[HPyContextMembers.CTX_INPLACEREMAINDER.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IMod);
-        // TODO(fa): IDivMod unsupported ?
-        members[HPyContextMembers.CTX_INPLACEDIVMOD.ordinal()] = null;
         members[HPyContextMembers.CTX_INPLACELSHIFT.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.ILShift);
         members[HPyContextMembers.CTX_INPLACERSHIFT.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IRShift);
         members[HPyContextMembers.CTX_INPLACEAND.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IAnd);
