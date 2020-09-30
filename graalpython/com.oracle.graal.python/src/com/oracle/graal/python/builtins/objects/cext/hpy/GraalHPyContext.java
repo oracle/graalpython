@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyGetItem;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyHasAttr;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsNumber;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyIsTrue;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListAppend;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyListNew;
@@ -246,7 +247,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_BYTES("ctx_Bytes"),
         CTX_RICHCOMPARE("ctx_RichCompare"),
         CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
-        CTX_HASH("ctx_Hash");
+        CTX_HASH("ctx_Hash"),
+        CTX_NUMBER_CHECK("ctx_Number_Check");
 
         private final String name;
 
@@ -534,6 +536,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_RICHCOMPARE.ordinal()] = new GraalHPyRichcompare(false);
         members[HPyContextMembers.CTX_RICHCOMPAREBOOL.ordinal()] = new GraalHPyRichcompare(true);
         members[HPyContextMembers.CTX_HASH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.HASH, 1, GraalHPyConversionNodeSupplier.TO_INT64);
+        members[HPyContextMembers.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
         return members;
     }
 
