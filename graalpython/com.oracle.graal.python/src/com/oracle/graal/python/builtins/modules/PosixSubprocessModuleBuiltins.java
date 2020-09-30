@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
-import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.ProcessWrapper;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -262,20 +262,20 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             pb.directory(cwd);
             pb.environment().putAll(env);
 
-            Process process = pb.start();
+            ProcessWrapper process = new ProcessWrapper(pb.start(), p2cwrite != -1, c2pread != 1, errread != -1);
             try {
                 if (p2cwrite != -1) {
                     // user code is expected to close the unused ends of the pipes
                     resources.getFileChannel(p2cwrite).close();
-                    resources.fdopen(p2cwrite, Channels.newChannel(process.getOutputStream()));
+                    resources.fdopen(p2cwrite, process.getOutputChannel());
                 }
                 if (c2pread != -1) {
                     resources.getFileChannel(c2pread).close();
-                    resources.fdopen(c2pread, Channels.newChannel(process.getInputStream()));
+                    resources.fdopen(c2pread, process.getInputChannel());
                 }
                 if (errread != -1) {
                     resources.getFileChannel(errread).close();
-                    resources.fdopen(errread, Channels.newChannel(process.getErrorStream()));
+                    resources.fdopen(errread, process.getErrorChannel());
                 }
             } catch (IOException ex) {
                 // We only want to rethrow the IOException that may come out of pb.start()
