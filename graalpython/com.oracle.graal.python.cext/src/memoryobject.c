@@ -48,11 +48,29 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
 }
 
 PyObject * PyMemoryView_FromObject(PyObject *v) {
-	// TODO(fa): This needs to be fixed. The actual implementation is located in
-	// '_memoryview.c'. However, the current way we use it does not allow C exts
-	// to link to it. We need to restructure this.
-	return NULL;
+	// TODO resource management
+	// TODO special case memoryview
+	Py_buffer buffer;
+    if (PyObject_CheckBuffer(v)) {
+        PyObject *ret;
+        if (PyObject_GetBuffer(v, &buffer, PyBUF_FULL_RO) < 0) {
+            return NULL;
+        }
+        return PyMemoryView_FromBuffer(&buffer);
+    }
+
+    PyErr_Format(PyExc_TypeError,
+        "memoryview: a bytes-like object is required, not '%.200s'",
+        Py_TYPE(v)->tp_name);
+    return NULL;
 }
+
+#if SIZEOF_SIZE_T == 8
+#define polyglot_from_size_array polyglot_from_i64_array
+#elif SIZEOF_SIZE_T == 4
+#define polyglot_from_size_array polyglot_from_i32_array
+#endif
+
 
 PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
 	Py_ssize_t ndim = buffer->ndim;
@@ -65,8 +83,7 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
 			polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
 			buffer->ndim,
 			polyglot_from_i8_array(buffer->buf, buffer->len),
-			// TODO 32 bit?
-			buffer->shape ? polyglot_from_i64_array(buffer->shape, ndim) : NULL,
-			buffer->strides ? polyglot_from_i64_array(buffer->strides, ndim) : NULL,
-			buffer->suboffsets ? polyglot_from_i64_array(buffer->suboffsets, ndim) : NULL);
+			buffer->shape ? polyglot_from_size_array(buffer->shape, ndim) : NULL,
+			buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
+			buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
 }

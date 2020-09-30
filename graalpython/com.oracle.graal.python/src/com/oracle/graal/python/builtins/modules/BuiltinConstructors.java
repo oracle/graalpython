@@ -3318,6 +3318,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
     @GenerateNodeFactory
     public abstract static class ImemoryViewNode extends PythonBuiltinNode {
+        // TODO native
         @Specialization
         static IntrinsifiedPManagedMemoryView construct(@SuppressWarnings("unused") Object cls, Object delegate) {
             return new IntrinsifiedPManagedMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(), delegate);

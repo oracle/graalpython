@@ -229,6 +229,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1548,11 +1550,19 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_WrapBuffer extends NativeBuiltin {
 
         @Specialization
-        static Object wrap(Object bufferStructPointer, Object owner, long len, int readonly, long itemsize, Object format,
-                        int ndim, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+        static Object wrap(Object bufferStructPointer, Object ownerObj, Object lenObj, Object readonlyObj, Object itemsizeObj, Object formatObj,
+                        Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CastToJavaLongExactNode castToLongNode,
+                        @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode) {
+            int ndim = castToIntNode.execute(ndimObj);
+            int itemsize = castToIntNode.execute(itemsizeObj);
+            int len = castToIntNode.execute(lenObj);
+            boolean readonly = castToIntNode.execute(readonlyObj) != 0;
+            String format = (String) asPythonObjectNode.execute(formatObj);
+            Object owner = asPythonObjectNode.execute(ownerObj);
             try {
                 long[] shape = null;
                 long[] strides = null;
@@ -1562,7 +1572,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (!lib.isNull(shapePointer)) {
                         shape = new long[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            shape[i] = (long) lib.readArrayElement(shapePointer, i);
+                            shape[i] = castToLongNode.execute(lib.readArrayElement(shapePointer, i));
                         }
                     } else {
                         assert ndim == 1;
@@ -1573,7 +1583,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (!lib.isNull(stridesPointer)) {
                         strides = new long[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            strides[i] = (long) lib.readArrayElement(stridesPointer, i);
+                            strides[i] = castToLongNode.execute(lib.readArrayElement(stridesPointer, i));
                         }
                     } else {
                         // TODO do this lazily on demand
@@ -1587,17 +1597,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     if (!lib.isNull(suboffsetsPointer)) {
                         suboffsets = new long[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            suboffsets[i] = (long) lib.readArrayElement(suboffsetsPointer, i);
+                            suboffsets[i] = castToLongNode.execute(lib.readArrayElement(suboffsetsPointer, i));
                         }
                     }
                 }
-                // TODO overflow?
                 // TODO factory
                 IntrinsifiedPNativeMemoryView memoryview = new IntrinsifiedPNativeMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView,
                                 PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
-                                bufferStructPointer, asPythonObjectNode.execute(owner), (int) len,
-                                readonly != 0, (int) itemsize, (String) asPythonObjectNode.execute(format), ndim, bufPointer,
-                                shape, strides, suboffsets);
+                                bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, shape, strides, suboffsets);
                 return toNewRefNode.execute(memoryview);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
