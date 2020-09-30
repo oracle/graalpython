@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContextFactory.ForeignCallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -199,6 +200,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
+        @Child private ForeignCallContext foreignCallContext;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -249,7 +251,7 @@ public abstract class ExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
+            Object state = ensureForeignCallContext().enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, cArguments))));
@@ -263,7 +265,7 @@ public abstract class ExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
+                ensureForeignCallContext().exit(frame, ctx, state);
             }
         }
 
@@ -285,6 +287,14 @@ public abstract class ExternalFunctionNodes {
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
             return contextRef.get();
+        }
+
+        private ForeignCallContext ensureForeignCallContext() {
+            if (foreignCallContext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                foreignCallContext = insert(ForeignCallContextNodeGen.create());
+            }
+            return foreignCallContext;
         }
 
         public static ExternalFunctionInvokeNode create() {
