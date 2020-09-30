@@ -150,6 +150,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPManagedMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -3310,6 +3311,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 getSetItemNode = insert(LookupInheritedAttributeNode.create(__SETITEM__));
             }
             return getSetItemNode.execute(object) != PNone.NO_VALUE;
+        }
+    }
+
+    // imemoryview([iterable])
+    @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
+    @GenerateNodeFactory
+    public abstract static class ImemoryViewNode extends PythonBuiltinNode {
+        @Specialization
+        static IntrinsifiedPManagedMemoryView construct(@SuppressWarnings("unused") Object cls, Object delegate) {
+            return new IntrinsifiedPManagedMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(), delegate);
         }
     }
 

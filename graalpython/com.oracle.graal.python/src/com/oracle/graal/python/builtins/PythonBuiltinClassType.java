@@ -96,6 +96,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PList("list", BuiltinNames.BUILTINS),
     PMappingproxy("mappingproxy", false),
     PMemoryView("memoryview", BuiltinNames.BUILTINS),
+    IntrinsifiedPMemoryView("imemoryview", BuiltinNames.BUILTINS),
     PMethod("method", false),
     PMMap("mmap", "mmap"),
     PNone("NoneType", false),

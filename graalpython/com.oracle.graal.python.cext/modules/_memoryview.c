@@ -771,32 +771,32 @@ PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
    This function is the only entry point that can create a master buffer
    without full information. Because of this fact init_shape_strides()
    must be able to reconstruct missing values.  */
-PyObject *
-PyMemoryView_FromBuffer(Py_buffer *info)
-{
-    _PyManagedBufferObject *mbuf;
-    PyObject *mv;
-
-    if (info->buf == NULL) {
-        PyErr_SetString(PyExc_ValueError,
-            "PyMemoryView_FromBuffer(): info->buf must not be NULL");
-        return NULL;
-    }
-
-    mbuf = mbuf_alloc();
-    if (mbuf == NULL)
-        return NULL;
-
-    /* info->obj is either NULL or a borrowed reference. This reference
-       should not be decremented in PyBuffer_Release(). */
-    mbuf->master = *info;
-    mbuf->master.obj = NULL;
-
-    mv = mbuf_add_view(mbuf, NULL);
-    Py_DECREF(mbuf);
-
-    return mv;
-}
+//PyObject *
+//PyMemoryView_FromBuffer(Py_buffer *info)
+//{
+//    _PyManagedBufferObject *mbuf;
+//    PyObject *mv;
+//
+//    if (info->buf == NULL) {
+//        PyErr_SetString(PyExc_ValueError,
+//            "PyMemoryView_FromBuffer(): info->buf must not be NULL");
+//        return NULL;
+//    }
+//
+//    mbuf = mbuf_alloc();
+//    if (mbuf == NULL)
+//        return NULL;
+//
+//    /* info->obj is either NULL or a borrowed reference. This reference
+//       should not be decremented in PyBuffer_Release(). */
+//    mbuf->master = *info;
+//    mbuf->master.obj = NULL;
+//
+//    mv = mbuf_add_view(mbuf, NULL);
+//    Py_DECREF(mbuf);
+//
+//    return mv;
+//}
 
 /* Create a memoryview from an object that implements the buffer protocol.
    If the object is a memoryview, the new memoryview must be registered

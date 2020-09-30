@@ -180,6 +180,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPNativeMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -1539,6 +1540,68 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
             return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_WrapBuffer", minNumOfPositionalArgs = 11)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_WrapBuffer extends NativeBuiltin {
+
+        @Specialization
+        static Object wrap(Object bufferStructPointer, Object owner, long len, int readonly, long itemsize, Object format,
+                        int ndim, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            try {
+                long[] shape = null;
+                long[] strides = null;
+                long[] suboffsets = null;
+                // TODO profile
+                if (ndim > 0) {
+                    if (!lib.isNull(shapePointer)) {
+                        shape = new long[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            shape[i] = (long) lib.readArrayElement(shapePointer, i);
+                        }
+                    } else {
+                        assert ndim == 1;
+                        // TODO do this lazily on demand
+                        shape = new long[1];
+                        shape[0] = len / itemsize;
+                    }
+                    if (!lib.isNull(stridesPointer)) {
+                        strides = new long[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            strides[i] = (long) lib.readArrayElement(stridesPointer, i);
+                        }
+                    } else {
+                        // TODO do this lazily on demand
+                        // From CPython init_strides_from_shape
+                        strides = new long[ndim];
+                        strides[ndim - 1] = itemsize;
+                        for (int i = ndim - 2; i >= 0; i--) {
+                            strides[i] = strides[i + 1] * shape[i + 1];
+                        }
+                    }
+                    if (!lib.isNull(suboffsetsPointer)) {
+                        suboffsets = new long[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            suboffsets[i] = (long) lib.readArrayElement(suboffsetsPointer, i);
+                        }
+                    }
+                }
+                // TODO overflow?
+                // TODO factory
+                IntrinsifiedPNativeMemoryView memoryview = new IntrinsifiedPNativeMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView,
+                                PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+                                bufferStructPointer, asPythonObjectNode.execute(owner), (int) len,
+                                readonly != 0, (int) itemsize, (String) asPythonObjectNode.execute(format), ndim, bufPointer,
+                                shape, strides, suboffsets);
+                return toNewRefNode.execute(memoryview);
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 

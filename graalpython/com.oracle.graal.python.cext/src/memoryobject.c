@@ -53,3 +53,20 @@ PyObject * PyMemoryView_FromObject(PyObject *v) {
 	// to link to it. We need to restructure this.
 	return NULL;
 }
+
+PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
+	Py_ssize_t ndim = buffer->ndim;
+	return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_WrapBuffer",
+			buffer,
+			native_to_java(buffer->obj),
+			buffer->len,
+			buffer->readonly,
+			buffer->itemsize,
+			polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
+			buffer->ndim,
+			polyglot_from_i8_array(buffer->buf, buffer->len),
+			// TODO 32 bit?
+			buffer->shape ? polyglot_from_i64_array(buffer->shape, ndim) : NULL,
+			buffer->strides ? polyglot_from_i64_array(buffer->strides, ndim) : NULL,
+			buffer->suboffsets ? polyglot_from_i64_array(buffer->suboffsets, ndim) : NULL);
+}
