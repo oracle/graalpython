@@ -41,6 +41,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_tracebacklimit
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_version_info_no_instantiation
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_thread_info
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_attributes
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook_fail
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook

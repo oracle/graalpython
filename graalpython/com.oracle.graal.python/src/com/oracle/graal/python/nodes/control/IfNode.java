@@ -28,12 +28,14 @@ package com.oracle.graal.python.nodes.control;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IfNode extends StatementNode {
 
     @Child private CoerceToBooleanNode condition;
     @Child private StatementNode then;
     @Child private StatementNode orelse;
+    private final ConditionProfile conditionProfile = ConditionProfile.createCountingProfile();
 
     public IfNode(CoerceToBooleanNode condition, StatementNode then, StatementNode orelse) {
         this.condition = condition;
@@ -55,7 +57,7 @@ public final class IfNode extends StatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
-        if (condition.executeBoolean(frame)) {
+        if (conditionProfile.profile(condition.executeBoolean(frame))) {
             then.executeVoid(frame);
         } else if (orelse != null) {
             orelse.executeVoid(frame);

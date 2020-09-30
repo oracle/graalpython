@@ -150,6 +150,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("builtin_module_names", core.factory().createTuple(core.builtinModuleNames()));
         builtinConstants.put("maxsize", MAXSIZE);
         builtinConstants.put("version_info", core.factory().createTuple(new Object[]{PythonLanguage.MAJOR, PythonLanguage.MINOR, PythonLanguage.MICRO, PythonLanguage.RELEASE_LEVEL, 0}));
+        builtinConstants.put("api_version", PythonLanguage.API_VERSION);
         builtinConstants.put("version", PythonLanguage.VERSION +
                         " (" + COMPILE_TIME + ")" +
                         "\n[Graal, " + Truffle.getRuntime().getName() + ", Java " + System.getProperty("java.version") + "]");
