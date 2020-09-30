@@ -37,7 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+import sys
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare_with_message
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -46,25 +47,53 @@ class TestPyMemoryView(CPyExtTestCase):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyMemoryView, self).compile_module(name)
 
-
-    test_memoryview_member_flags = CPyExtFunction(
+    test_memoryview_read = CPyExtFunction(
         lambda args: args[1],
         lambda: (
-            (memoryview(b'helloworld'), 6),
+            ((0, 0, 0, 0), 258),
+            ((0, 1, 1, 0), 191),
+            ((1, 0, 0, 1), 344),
+            ((1, 1, 1, 1), 926),
+            ((1, 1, 1, "a"), TypeError("memoryview: invalid slice key")),
+            ((1, 1, 1, sys.maxsize + 1), IndexError("cannot fit 'int' into an index-sized integer")),
+            (5, NotImplementedError("multi-dimensional sub-views are not implemented")),
+            ((1, 2), NotImplementedError("sub-views are not implemented")),
+            ("a", TypeError("memoryview: invalid slice key")),
         ),
         code='''
-        static PyObject* test_flags(PyObject* obj, PyObject* expected) {
-            PyMemoryViewObject* mv = (PyMemoryViewObject*) obj;
-            if (mv->flags == 0) {
-                PyErr_Format(PyExc_ValueError, "invalid flags value");
-                return NULL;
+            const Py_ssize_t ndim = 4;
+            Py_ssize_t shape[] = {2, 2, 2, 2};
+            Py_ssize_t strides[] = {sizeof(void*), sizeof(void*) * 2, sizeof(short) * 2, sizeof(short)};
+            Py_ssize_t suboffsets[] = {-1, 0, -1, -1};
+            short s1[2][2] = {{258, 345}, {190, 924}};
+            short s2[2][2] = {{257, 344}, {189, 923}};
+            short s3[2][2] = {{259, 346}, {191, 925}};
+            short s4[2][2] = {{260, 347}, {192, 926}};
+            void* ptr_buf[2][2] = {{s1, s2}, {s3, s4}};
+            Py_buffer buffer = {
+                    ptr_buf,
+                    NULL,
+                    2 * sizeof(void*) + 6 * sizeof(short),
+                    sizeof(short),
+                    1,
+                    ndim,
+                    "h",
+                    shape,
+                    strides,
+                    suboffsets,
+                    NULL,
+            };
+    
+            static PyObject* test_read(PyObject *key, PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromBuffer(&buffer);
+                if (!mv)
+                    return NULL;
+                return PyObject_GetItem(mv, key);
             }
-            return PyLong_FromLong(mv->flags);
-        }
         ''',
-        resultspec="O",
+        resultspec='O',
         argspec='OO',
-        arguments=["PyObject* obj", "PyObject* expected"],
-        callfunction="test_flags",
-        cmpfunc=unhandled_error_compare
+        arguments=["PyObject* key", "PyObject* expected"],
+        callfunction="test_read",
+        cmpfunc=unhandled_error_compare_with_message,
     )
