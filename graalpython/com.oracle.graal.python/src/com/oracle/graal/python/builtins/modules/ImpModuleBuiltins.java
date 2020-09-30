@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -503,18 +504,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "create_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        @TruffleBoundary
-        public Object run(PythonObject moduleSpec,
-                        @Cached CastToJavaStringNode toJavaStringNode) {
-            Object name = moduleSpec.getAttribute("name");
-            PythonModule builtinModule = getCore().lookupBuiltinModule(toJavaStringNode.execute(name));
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object run(VirtualFrame frame, PythonObject moduleSpec,
+                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @CachedLibrary(value = "moduleSpec") PythonObjectLibrary pol) {
+            Object name = pol.lookupAttribute(moduleSpec, frame, "name");
+            PythonModule builtinModule = getBuiltinModule(toJavaStringNode.execute(name));
             if (builtinModule != null) {
                 // TODO: builtin modules cannot be re-initialized (see is_builtin)
                 return builtinModule;
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
+        }
+
+        @TruffleBoundary
+        private PythonModule getBuiltinModule(String name) {
+            return getCore().lookupBuiltinModule(name);
         }
     }
 
