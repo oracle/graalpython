@@ -57,7 +57,11 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_WRITE_PTR;
 
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
+import java.util.WeakHashMap;
+
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -71,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleN
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -93,7 +98,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -103,29 +110,46 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -367,30 +391,201 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
+    static final class CallArithmeticRootNode extends PRootNode {
+        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
+        private static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
+        private static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
+        private static final Signature SIGNATURE_INPLACE = new Signature(3, false, -1, false, new String[]{"x", "y"}, null);
+
+        @Child private LookupAndCallUnaryNode callUnaryNode;
+        @Child private LookupAndCallBinaryNode callBinaryNode;
+        @Child private LookupAndCallInplaceNode callInplaceNode;
+        @Child private LookupAndCallTernaryNode callTernaryNode;
+        @Child private CalleeContext calleeContext;
+
+        private final UnaryArithmetic unaryOperator;
+        private final BinaryArithmetic binaryOperator;
+        private final InplaceArithmetic inplaceOperator;
+        private final TernaryArithmetic ternaryOperator;
+
+        @CompilationFinal private ConditionProfile customLocalsProfile;
+
+        CallArithmeticRootNode(PythonLanguage language, UnaryArithmetic unaryOperator, BinaryArithmetic binaryOperator, InplaceArithmetic inplaceOperator,
+                        TernaryArithmetic ternaryOperator) {
+            super(language);
+            this.unaryOperator = unaryOperator;
+            this.binaryOperator = binaryOperator;
+            this.inplaceOperator = inplaceOperator;
+            this.ternaryOperator = ternaryOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            if (unaryOperator != null) {
+                return SIGNATURE_UNARY;
+            } else if (binaryOperator != null) {
+                return SIGNATURE_BINARY;
+            } else if (inplaceOperator != null) {
+                return SIGNATURE_INPLACE;
+            } else if (ternaryOperator != null) {
+                return SIGNATURE_TERNARY;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            ensureCallNode();
+            if (calleeContext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                calleeContext = insert(CalleeContext.create());
+            }
+            if (customLocalsProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                customLocalsProfile = ConditionProfile.create();
+            }
+
+            CalleeContext.enter(frame, customLocalsProfile);
+            try {
+                if (unaryOperator != null) {
+                    return callUnaryNode.executeObject(frame, PArguments.getArgument(frame, 0));
+                } else if (binaryOperator != null) {
+                    return callBinaryNode.executeObject(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+                } else if (inplaceOperator != null) {
+                    return callInplaceNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+                } else if (ternaryOperator != null) {
+                    return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+        }
+
+        private void ensureCallNode() {
+            if (callUnaryNode == null && callBinaryNode == null && callInplaceNode == null && callTernaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                if (unaryOperator != null) {
+                    callUnaryNode = insert(unaryOperator.create());
+                } else if (binaryOperator != null) {
+                    callBinaryNode = insert(binaryOperator.create());
+                } else if (inplaceOperator != null) {
+                    callInplaceNode = insert(inplaceOperator.create());
+                } else if (ternaryOperator != null) {
+                    callTernaryNode = insert(ternaryOperator.create());
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+        }
+    }
+
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyNumberAdd extends GraalHPyContextFunction {
+    public static final class GraalHPyArithmetic extends GraalHPyContextFunction {
+        // TODO(fa): move to PythonLanguage ?
+        private static final WeakHashMap<Pair<PythonLanguage, Object>, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
+
+        private final UnaryArithmetic unaryOperator;
+        private final BinaryArithmetic binaryOperator;
+        private final InplaceArithmetic inplaceOperator;
+        private final TernaryArithmetic ternaryOperator;
+
+        @CompilationFinal private RootCallTarget callTarget;
+
+        public GraalHPyArithmetic(UnaryArithmetic unaryOperator) {
+            this.unaryOperator = unaryOperator;
+            this.binaryOperator = null;
+            this.inplaceOperator = null;
+            this.ternaryOperator = null;
+        }
+
+        public GraalHPyArithmetic(BinaryArithmetic binaryOperator) {
+            this.unaryOperator = null;
+            this.binaryOperator = binaryOperator;
+            this.inplaceOperator = null;
+            this.ternaryOperator = null;
+        }
+
+        public GraalHPyArithmetic(InplaceArithmetic inplaceOperator) {
+            this.unaryOperator = null;
+            this.binaryOperator = null;
+            this.inplaceOperator = inplaceOperator;
+            this.ternaryOperator = null;
+        }
+
+        public GraalHPyArithmetic(TernaryArithmetic ternaryOperator) {
+            this.unaryOperator = null;
+            this.binaryOperator = null;
+            this.inplaceOperator = null;
+            this.ternaryOperator = ternaryOperator;
+        }
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @CachedLanguage @SuppressWarnings("unused") PythonLanguage language,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode leftAsPythonObjectNode,
-                        @Cached HPyAsPythonObjectNode rightAsPythonObjectNode,
-                        @Cached HPyAsHandleNode resultAsHandleNode,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupAddNode,
-                        @Cached CallBinaryMethodNode callBinaryMethodNode,
-                        @Cached PRaiseNode raiseNode) throws ArityException {
-            if (arguments.length != 3) {
-                throw ArityException.create(3, arguments.length);
-            }
-            GraalHPyContext context = asContextNode.execute(arguments[0]);
-            Object left = leftAsPythonObjectNode.execute(context, arguments[1]);
-            Object right = rightAsPythonObjectNode.execute(context, arguments[2]);
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached GenericInvokeNode invokeNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
 
-            Object addAttr = lookupAddNode.execute(left, SpecialMethodNames.__ADD__);
-            if (addAttr != PNone.NO_VALUE) {
-                return resultAsHandleNode.execute(context, callBinaryMethodNode.executeObject(null, addAttr, left, right));
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            Object[] pythonArguments = PArguments.create(arguments.length - 1);
+            // TODO(fa): cache len and explode loop
+            for (int i = 0; i < PArguments.getUserArgumentLength(pythonArguments); i++) {
+                PArguments.setArgument(pythonArguments, i, asPythonObjectNode.execute(context, arguments[i + 1]));
             }
-            throw raiseNode.raise(TypeError, "object of class %p has no __add__", left);
+
+            try {
+                Object result = invokeNode.execute(getCallTarget(this, language), pythonArguments);
+                return asHandleNode.execute(result);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return context.getNullHandle();
+            }
+        }
+
+        private RootCallTarget getCallTarget(GraalHPyArithmetic receiver, PythonLanguage language) {
+            RootCallTarget callTarget = receiver.callTarget;
+            if (callTarget == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callTarget = createCallTarget(language);
+                receiver.callTarget = callTarget;
+            }
+            return callTarget;
+        }
+
+        @TruffleBoundary
+        private RootCallTarget createCallTarget(PythonLanguage language) {
+            Pair<PythonLanguage, Object> key = Pair.create(language, getOp());
+            WeakReference<RootCallTarget> ctRef = weakCallTargetMap.get(key);
+            RootCallTarget callTarget = ctRef != null ? ctRef.get() : null;
+            if (callTarget == null) {
+                callTarget = PythonUtils.getOrCreateCallTarget(new CallArithmeticRootNode(language, unaryOperator, binaryOperator, inplaceOperator, ternaryOperator));
+                weakCallTargetMap.put(key, new WeakReference<>(callTarget));
+            }
+            assert callTarget != null;
+            return callTarget;
+        }
+
+        private Object getOp() {
+            if (unaryOperator != null) {
+                return unaryOperator;
+            } else if (binaryOperator != null) {
+                return binaryOperator;
+            } else if (inplaceOperator != null) {
+                return inplaceOperator;
+            } else if (ternaryOperator != null) {
+                return ternaryOperator;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 

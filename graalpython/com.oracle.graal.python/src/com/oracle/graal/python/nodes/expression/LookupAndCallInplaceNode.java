@@ -40,14 +40,13 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -104,6 +103,8 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
     protected boolean hasBinaryVersion() {
         return binaryOpName != null;
     }
+
+    public abstract Object execute(VirtualFrame frame, Object left, Object right);
 
     @Specialization(guards = "!hasBinaryVersion()")
     Object callObject(VirtualFrame frame, Object left, Object right,

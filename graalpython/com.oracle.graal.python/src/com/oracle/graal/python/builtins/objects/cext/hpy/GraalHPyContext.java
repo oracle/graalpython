@@ -63,6 +63,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyLongFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyModuleCreate;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNew;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyNumberAdd;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyRichcompare;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetAttr;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPySetItem;
@@ -101,6 +101,10 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -157,7 +161,48 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
         CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
+
+        // unary
+        CTX_NEGATIVE("ctx_Negative"),
+        CTX_POSITIVE("ctx_Positive"),
+        CTX_ABSOLUTE("ctx_Absolute"),
+        CTX_INVERT("ctx_Invert"),
+        CTX_INDEX("ctx_Index"),
+        CTX_LONG("ctx_Long"),
+        CTX_FLOAT("ctx_Float"),
+
+        // binary
         CTX_ADD("ctx_Add"),
+        CTX_SUB("ctx_Subtract"),
+        CTX_MULTIPLY("ctx_Multiply"),
+        CTX_MATRIXMULTIPLY("ctx_MatrixMultiply"),
+        CTX_FLOORDIVIDE("ctx_FloorDivide"),
+        CTX_TRUEDIVIDE("ctx_TrueDivide"),
+        CTX_REMAINDER("ctx_Remainder"),
+        CTX_DIVMOD("ctx_Divmod"),
+        CTX_LSHIFT("ctx_Lshift"),
+        CTX_RSHIFT("ctx_Rshift"),
+        CTX_AND("ctx_And"),
+        CTX_XOR("ctx_Xor"),
+        CTX_OR("ctx_Or"),
+        CTX_INPLACEADD("ctx_InPlaceAdd"),
+        CTX_INPLACESUBTRACT("ctx_InPlaceSubtract"),
+        CTX_INPLACEMULTIPLY("ctx_InPlaceMultiply"),
+        CTX_INPLACEMATRIXMULTIPLY("ctx_InPlaceMatrixMultiply"),
+        CTX_INPLACEFLOORDIVIDE("ctx_InPlaceFloorDivide"),
+        CTX_INPLACETRUEDIVIDE("ctx_InPlaceTrueDivide"),
+        CTX_INPLACEREMAINDER("ctx_InPlaceRemainder"),
+        CTX_INPLACEDIVMOD("ctx_InPlaceDivmod"),
+        CTX_INPLACELSHIFT("ctx_InPlaceLshift"),
+        CTX_INPLACERSHIFT("ctx_InPlaceRshift"),
+        CTX_INPLACEAND("ctx_InPlaceAnd"),
+        CTX_INPLACEXOR("ctx_InPlaceXor"),
+        CTX_INPLACEOR("ctx_InPlaceOr"),
+
+        // ternary
+        CTX_POWER("ctx_Power"),
+        CTX_INPLACEPOWER("ctx_InPlacePower"),
+
         CTX_ERR_NOMEMORY("ctx_Err_NoMemory"),
         CTX_ERR_SETSTRING("ctx_Err_SetString"),
         CTX_ERR_OCCURRED("ctx_Err_Occurred"),
@@ -404,7 +449,50 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMembers.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         members[HPyContextMembers.CTX_CAST.ordinal()] = new GraalHPyCast();
-        members[HPyContextMembers.CTX_ADD.ordinal()] = new GraalHPyNumberAdd();
+
+        // unary
+        members[HPyContextMembers.CTX_NEGATIVE.ordinal()] = new GraalHPyArithmetic(UnaryArithmetic.Neg);
+        members[HPyContextMembers.CTX_POSITIVE.ordinal()] = new GraalHPyArithmetic(UnaryArithmetic.Pos);
+        members[HPyContextMembers.CTX_ABSOLUTE.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.ABS, 1);
+        members[HPyContextMembers.CTX_INVERT.ordinal()] = new GraalHPyArithmetic(UnaryArithmetic.Invert);
+        // TODO(fa): Index unsupported ?
+        members[HPyContextMembers.CTX_INDEX.ordinal()] = null;
+        members[HPyContextMembers.CTX_LONG.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.INT, 1);
+        members[HPyContextMembers.CTX_FLOAT.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.FLOAT, 1);
+
+        // binary
+        members[HPyContextMembers.CTX_ADD.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Add);
+        members[HPyContextMembers.CTX_SUB.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Sub);
+        members[HPyContextMembers.CTX_MULTIPLY.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Mul);
+        members[HPyContextMembers.CTX_MATRIXMULTIPLY.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.MatMul);
+        members[HPyContextMembers.CTX_FLOORDIVIDE.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.FloorDiv);
+        members[HPyContextMembers.CTX_TRUEDIVIDE.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.TrueDiv);
+        members[HPyContextMembers.CTX_REMAINDER.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Mod);
+        members[HPyContextMembers.CTX_DIVMOD.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.DivMod);
+        members[HPyContextMembers.CTX_LSHIFT.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.LShift);
+        members[HPyContextMembers.CTX_RSHIFT.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.RShift);
+        members[HPyContextMembers.CTX_AND.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.And);
+        members[HPyContextMembers.CTX_XOR.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Xor);
+        members[HPyContextMembers.CTX_OR.ordinal()] = new GraalHPyArithmetic(BinaryArithmetic.Or);
+        members[HPyContextMembers.CTX_INPLACEADD.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IAdd);
+        members[HPyContextMembers.CTX_INPLACESUBTRACT.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.ISub);
+        members[HPyContextMembers.CTX_INPLACEMULTIPLY.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IMul);
+        members[HPyContextMembers.CTX_INPLACEMATRIXMULTIPLY.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IMatMul);
+        members[HPyContextMembers.CTX_INPLACEFLOORDIVIDE.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IFloorDiv);
+        members[HPyContextMembers.CTX_INPLACETRUEDIVIDE.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.ITrueDiv);
+        members[HPyContextMembers.CTX_INPLACEREMAINDER.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IMod);
+        // TODO(fa): IDivMod unsupported ?
+        members[HPyContextMembers.CTX_INPLACEDIVMOD.ordinal()] = null;
+        members[HPyContextMembers.CTX_INPLACELSHIFT.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.ILShift);
+        members[HPyContextMembers.CTX_INPLACERSHIFT.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IRShift);
+        members[HPyContextMembers.CTX_INPLACEAND.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IAnd);
+        members[HPyContextMembers.CTX_INPLACEXOR.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IXor);
+        members[HPyContextMembers.CTX_INPLACEOR.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IOr);
+
+        // ternary
+        members[HPyContextMembers.CTX_POWER.ordinal()] = new GraalHPyArithmetic(TernaryArithmetic.Pow);
+        members[HPyContextMembers.CTX_INPLACEPOWER.ordinal()] = new GraalHPyArithmetic(InplaceArithmetic.IPow);
+
         members[HPyContextMembers.CTX_DICT_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PDict);
         members[HPyContextMembers.CTX_DICT_NEW.ordinal()] = new GraalHPyDictNew();
         members[HPyContextMembers.CTX_DICT_SETITEM.ordinal()] = new GraalHPyDictSetItem();
