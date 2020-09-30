@@ -514,7 +514,8 @@ PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
 
     /* add one to size for the null character */
     int8_t* ptr = (int8_t*) calloc(size + 1, kind);
-    return _jls_PyUnicode_New(polyglot_from_i8_array((int8_t*)ptr, (size + 1) * kind), kind, is_ascii);
+    /* We intentionally reduce the size by one because interop users should not see the null character. */
+    return _jls_PyUnicode_New(polyglot_from_i8_array((int8_t*)ptr, size * kind), kind, is_ascii);
 }
 
 UPCALL_ID(PyUnicode_Compare);
