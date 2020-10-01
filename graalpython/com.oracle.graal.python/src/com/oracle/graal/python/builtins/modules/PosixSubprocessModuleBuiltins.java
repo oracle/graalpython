@@ -40,9 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.ProcessBuilder.Redirect;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.WritableByteChannel;
@@ -86,7 +84,9 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.io.TruffleProcessBuilder;
 import com.oracle.truffle.api.library.CachedLibrary;
+import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 @CoreFunctions(defineModule = "_posixsubprocess")
 public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
@@ -142,11 +142,9 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            File cwdFile;
             Env truffleEnv = context.getEnv();
-            if (getSafeTruffleFile(truffleEnv, cwd).exists()) {
-                cwdFile = new File(cwd);
-            } else {
+            TruffleFile cwdFile = getSafeTruffleFile(truffleEnv, cwd);
+            if (!cwdFile.exists()) {
                 throw raise(PythonBuiltinClassType.OSError, ErrorMessages.WORK_DIR_NOT_ACCESSIBLE, cwd);
             }
 
@@ -232,11 +230,11 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
         // Tries executing given arguments, throws IOException if the executable cannot be executed,
         // any other error is handled here
-        private int exec(ArrayList<String> argStrings, File cwd, Map<String, String> env,
+        private int exec(ArrayList<String> argStrings, TruffleFile cwd, Map<String, String> env,
                         int p2cwrite, int p2cread, int c2pwrite, int c2pread,
                         int errwrite, int errpipe_write, PosixResources resources, int errread) throws IOException {
             LOGGER.finest(() -> "_posixsubprocess.fork_exec trying to exec: " + String.join(" ", argStrings));
-            ProcessBuilder pb = new ProcessBuilder(argStrings);
+            TruffleProcessBuilder pb = getContext().getEnv().newProcessBuilder(argStrings.toArray(new String[argStrings.size()]));
             if (p2cread != -1 && p2cwrite != -1) {
                 pb.redirectInput(Redirect.PIPE);
             } else {
@@ -260,7 +258,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             }
 
             pb.directory(cwd);
-            pb.environment().putAll(env);
+            pb.environment(env);
 
             ProcessWrapper process = new ProcessWrapper(pb.start(), p2cwrite != -1, c2pread != 1, errread != -1);
             try {
