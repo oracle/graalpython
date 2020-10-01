@@ -997,6 +997,44 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_open", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "flags"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class NfiOpenNode extends PythonFileNode {
+
+        @Specialization
+        Object open(VirtualFrame frame, String pathname, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.open(getPosixSupport(), pathname, flags);
+        }
+    }
+
+    @Builtin(name = "nfi_close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class NfiCloseNode extends PythonFileNode {
+
+        @Specialization
+        Object close(VirtualFrame frame, int fd,
+                    @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.close(getPosixSupport(), fd);
+        }
+    }
+
+    @Builtin(name = "nfi_read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "count"})
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class NfiReadNode extends PythonFileNode {
+
+        @Specialization
+        Object read(VirtualFrame frame, int fd, int count,
+                     @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            byte[] buf = new byte[count];
+            long result = posixLib.read(getPosixSupport(), fd, buf);
+            return factory().createTuple(new Object[] { result, factory().createBytes(buf) });
+        }
+    }
+
     @Builtin(name = "lseek", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)

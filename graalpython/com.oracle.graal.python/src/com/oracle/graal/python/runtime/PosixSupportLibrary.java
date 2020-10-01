@@ -71,6 +71,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 public abstract class PosixSupportLibrary extends Library {
     public abstract long getpid(Object receiver);
     public abstract long umask(Object receiver, long mask);
+    public abstract int open(Object receiver, String pathname, int flags);
+    public abstract int close(Object receiver, int fd);
+    public abstract long read(Object receiver, int fd, byte[] buf);
 
     @ExportLibrary(PosixSupportLibrary.class)
     public static final class EmulatedPosixSupport {
@@ -112,6 +115,21 @@ public abstract class PosixSupportLibrary extends Library {
             }
         }
 
+        @ExportMessage
+        public int open(String pathname, int flags) {
+            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        }
+
+        @ExportMessage
+        public int close(int fd) {
+            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        }
+
+        @ExportMessage
+        public long read(int fd, byte[] buf) {
+            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        }
+
     }
 
     @ExportLibrary(PosixSupportLibrary.class)
@@ -120,6 +138,9 @@ public abstract class PosixSupportLibrary extends Library {
         private volatile Object library;
         private volatile Object getpidFunction;
         private volatile Object umaskFunction;
+        private volatile Object openFunction;
+        private volatile Object closeFunction;
+        private volatile Object readFunction;
 
         @ExportMessage
         public long getpid(@CachedLibrary(limit = "1") InteropLibrary funInterop,
@@ -145,6 +166,42 @@ public abstract class PosixSupportLibrary extends Library {
                 // create helper method for this (like CPython's  posix_error)
             }
             return result;
+        }
+
+        @ExportMessage
+        public int open(String pathname, int flags,
+                           @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                           @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+            if (openFunction == null) {
+                CompilerDirectives.transferToInterpreter();
+                openFunction = lookup("call_open");
+            }
+            // TODO error handling
+            return callInt(funInterop, resultInterop, openFunction, pathname, flags);
+        }
+
+        @ExportMessage
+        public int close(int fd,
+                         @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                         @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+            if (closeFunction == null) {
+                CompilerDirectives.transferToInterpreter();
+                closeFunction = lookup("call_close");
+            }
+            // TODO error handling
+            return callInt(funInterop, resultInterop, closeFunction, fd);
+        }
+
+        @ExportMessage
+        public long read(int fd, byte[] buf,
+                          @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                          @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+            if (readFunction == null) {
+                CompilerDirectives.transferToInterpreter();
+                readFunction = lookup("call_read");
+            }
+            // TODO error handling
+            return callLong(funInterop, resultInterop, readFunction, fd, buf, buf.length);
         }
 
         protected abstract Object loadLibrary(PythonContext ctxRef);
@@ -177,6 +234,15 @@ public abstract class PosixSupportLibrary extends Library {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
+
+        protected int callInt(InteropLibrary funInterop, InteropLibrary resInterop, Object fun, Object... args) {
+            try {
+                Object result = funInterop.execute(fun, args);
+                return resInterop.asInt(result);
+            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
     }
 
     @ExportLibrary(PosixSupportLibrary.class)
@@ -205,7 +271,7 @@ public abstract class PosixSupportLibrary extends Library {
             env.parseInternal(loadSupportSource).call();
             // Now the default should contain symbols from both the support library and libc with
             // which it links
-            Source loadDefaultSource = Source.newBuilder("nfi", withClause + " default { call_getpid():sint64; call_umask(sint64):sint64; }", "load-posix-support-default-lib").build();
+            Source loadDefaultSource = Source.newBuilder("nfi", withClause + " default { call_getpid():sint64; call_umask(sint64):sint64; call_open(string, sint32):sint32; call_close(sint32):sint32; call_read(sint32, [sint8], uint64):sint64; }", "load-posix-support-default-lib").build();
             return env.parseInternal(loadDefaultSource).call();
         }
 
