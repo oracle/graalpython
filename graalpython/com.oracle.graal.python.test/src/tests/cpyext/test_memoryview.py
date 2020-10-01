@@ -38,8 +38,12 @@
 # SOFTWARE.
 
 import sys
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare_with_message
+import itertools
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare_with_message, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
+
+indices = (-2, 0, 1, 2, 10)
+slices = list(itertools.starmap(slice, itertools.product(indices, indices, indices)))
 
 
 class TestPyMemoryView(CPyExtTestCase):
@@ -54,6 +58,7 @@ class TestPyMemoryView(CPyExtTestCase):
             ((0, 1, 1, 0), 191),
             ((1, 0, 0, 1), 344),
             ((1, 1, 1, 1), 926),
+            ((1, 1, 3, 1), IndexError("index out of bounds on dimension 3")),
             ((1, 1, 1, "a"), TypeError("memoryview: invalid slice key")),
             ((1, 1, 1, sys.maxsize + 1), IndexError("cannot fit 'int' into an index-sized integer")),
             (5, NotImplementedError("multi-dimensional sub-views are not implemented")),
@@ -73,7 +78,7 @@ class TestPyMemoryView(CPyExtTestCase):
             Py_buffer buffer = {
                     ptr_buf,
                     NULL,
-                    2 * sizeof(void*) + 6 * sizeof(short),
+                    2 * 2 * 2 * 2 * sizeof(short),
                     sizeof(short),
                     1,
                     ndim,
@@ -81,14 +86,15 @@ class TestPyMemoryView(CPyExtTestCase):
                     shape,
                     strides,
                     suboffsets,
-                    NULL,
             };
     
             static PyObject* test_read(PyObject *key, PyObject* expected) {
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
                     return NULL;
-                return PyObject_GetItem(mv, key);
+                PyObject *item = PyObject_GetItem(mv, key);
+                Py_DECREF(mv);
+                return item;
             }
         ''',
         resultspec='O',
@@ -96,4 +102,44 @@ class TestPyMemoryView(CPyExtTestCase):
         arguments=["PyObject* key", "PyObject* expected"],
         callfunction="test_read",
         cmpfunc=unhandled_error_compare_with_message,
+    )
+
+    test_memoryview_slice = CPyExtFunction(
+        lambda args: bytes((5, 6, 255, 128, 99))[args[0]][args[1]][args[2]],
+        lambda: list(itertools.product(slices, slices, range(-2, 5))),
+        code='''
+            uint8_t bytes[] = {5, 6, 255, 128, 99};
+            Py_buffer buffer = {
+                    bytes,
+                    NULL,
+                    5 * sizeof(uint8_t),
+                    sizeof(uint8_t),
+                    1,
+                    1,
+                    "B",
+            };
+            static PyObject* test_slice(PyObject *slice1, PyObject* slice2, PyObject* index) {
+                PyObject *mv = PyMemoryView_FromBuffer(&buffer);
+                if (!mv)
+                    return NULL;
+                PyObject *sub1 = PyObject_GetItem(mv, slice1);
+                Py_DECREF(mv);
+                if (!sub1) {
+                    return NULL;
+                }
+                PyObject *sub2 = PyObject_GetItem(sub1, slice2);
+                Py_DECREF(sub1);
+                if (!sub2) {
+                    return NULL;
+                }
+                PyObject *item = PyObject_GetItem(sub2, index);
+                Py_DECREF(sub2);
+                return item;
+            }
+        ''',
+        resultspec='O',
+        argspec='OOO',
+        arguments=['PyObject* slice1', 'PyObject* slice2', 'PyObject* index'],
+        callfunction="test_slice",
+        cmpfunc=unhandled_error_compare,
     )

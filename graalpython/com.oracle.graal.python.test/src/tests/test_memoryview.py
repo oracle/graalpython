@@ -50,3 +50,39 @@ def test_tobytes():
     b = b"\xff\x00\x00"
     v = memoryview(b)
     assert v.tobytes() == b
+
+
+def test_slice():
+    b = bytes(range(8))
+    m = memoryview(b)
+    for i in (-10, -5, -1, 0, 1, 5, 10):
+        for j in (-10, -5, -1, 0, 1, 5, 10):
+            for k in (-10, -2, -1, 0, 1, 2, 10):
+                for i2 in (-10, -5, -1, 0, 1, 5, 10):
+                    for j2 in (-10, -5, -1, 0, 1, 5, 10):
+                        for k2 in (-10, -2, -1, 0, 1, 2, 10):
+                            try:
+                                s1 = b[i:j:k][i2:j2:k2]
+                            except Exception as e1:
+                                try:
+                                    m[i:j:k][i2:j2:k2]
+                                except Exception as e2:
+                                    assert type(e1) == type(e2)
+                                else:
+                                    assert False
+                            else:
+                                s2 = m[i:j:k][i2:j2:k2]
+                                assert len(s1) == len(s2)
+                                for l in range(-len(s1) - 1, len(s1) + 2):
+                                    try:
+                                        e1 = s1[l]
+                                    except Exception as e1:
+                                        try:
+                                            s2[l]
+                                        except Exception as e2:
+                                            assert type(e1) == type(e2)
+                                        else:
+                                            assert False
+                                    else:
+                                        e2 = s2[l]
+                                        assert e1 == e2

@@ -1,9 +1,11 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IntrinsifiedPMemoryView;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import java.util.List;
 
@@ -12,18 +14,22 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -79,36 +85,48 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(IntrinsifiedMemoryviewBuiltins.class)
     static abstract class GetItemNode extends PythonBinaryBuiltinNode {
         @Child private SequenceStorageNodes.LenNode sequenceLenNode;
         @Child private SequenceStorageNodes.GetItemNode sequenceGetItemNode;
         @Child private PythonObjectLibrary plib;
 
         @Specialization
-        // TODO slices
         static Object getitem(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, int index,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached IndexNodes.NormalizeIndexNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage storage = getStorageNode.execute(self.getDelegate());
-            return getItemNode.execute(frame, storage, index);
+            int normalized = normalizeIndexNode.execute(index, self.getLength());
+            return getItemNode.execute(frame, storage, self.getSliceStart() + normalized * self.getSliceStep());
         }
 
         @Specialization
         Object getitemMulti(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached IndexNodes.NormalizeIndexNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             checkTupleLength(indicesStorage, 1);
             int index = getIndex(frame, indicesStorage, 0);
-            return getitem(frame, self, index, getSequenceStorageNode, getItemNode);
+            return getitem(frame, self, index, getSequenceStorageNode, normalizeIndexNode, getItemNode);
+        }
+
+        @Specialization
+        static Object getitemSlice(IntrinsifiedPManagedMemoryView self, PSlice slice,
+                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            // TODO factory
+            return new IntrinsifiedPManagedMemoryView(IntrinsifiedPMemoryView, IntrinsifiedPMemoryView.getInstanceShape(), self.getDelegate(),
+                            sliceInfo.sliceLength, self.getSliceStart() + sliceInfo.start * self.getSliceStep(), sliceInfo.step * self.getSliceStep());
         }
 
         @Specialization(guards = {"!isPSlice(indexObj)", "!isPTuple(indexObj)"})
         Object getitemObject(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, Object indexObj,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached IndexNodes.NormalizeIndexNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
-            return getitem(frame, self, convertIndex(frame, indexObj), getStorageNode, getItemNode);
+            return getitem(frame, self, convertIndex(frame, indexObj), getStorageNode, normalizeIndexNode, getItemNode);
         }
 
         @Specialization
@@ -121,7 +139,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
             }
             Object ptr = self.getBufferPointer();
-            long offset = 0;
+            long offset = self.getBufferPointerOffset();
             long itemsize = self.getItemSize();
             try {
                 for (int dim = 0; dim < self.getDimensions(); dim++) {
@@ -133,7 +151,75 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                         index += nitems;
                     }
                     if (index < 0 || index >= nitems) {
-                        throw raise(TypeError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                        throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                    }
+
+                    // TODO stride is allowed to be negative
+                    offset += self.getBufferStrides()[dim] * index;
+
+                    long[] suboffsets = self.getBufferSuboffsets();
+                    if (suboffsets != null && suboffsets[dim] >= 0) {
+                        // The length may be out of bounds, but sulong shouldn't care if we don't
+                        // access the out-of-bound part
+                        ptr = callCapiFunction.call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getLength());
+                    }
+                }
+
+                byte[] bytes = new byte[(int) itemsize];
+                for (int i = 0; i < itemsize; i++) {
+                    bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
+                }
+
+                return unpackValueNode.execute(self.getFormat(), bytes);
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Specialization
+        static Object getitemSlice(IntrinsifiedPNativeMemoryView self, PSlice slice,
+                        @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            // TODO ndim == 0
+            // TODO profile ndim == 1
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            long[] strides = self.getBufferStrides();
+            long[] newStrides = new long[strides.length];
+            newStrides[0] = strides[0] * sliceInfo.step;
+            PythonUtils.arraycopy(strides, 1, newStrides, 1, strides.length - 1);
+            long[] shape = self.getBufferShape();
+            long[] newShape = new long[shape.length];
+            newShape[0] = sliceInfo.sliceLength;
+            PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
+            int lenght = self.getLength() - (int) (shape[0] - newShape[0]) * self.getItemSize();
+            // TODO factory
+            return new IntrinsifiedPNativeMemoryView(IntrinsifiedPMemoryView, IntrinsifiedPMemoryView.getInstanceShape(), self.getBufferStructPointer(),
+                            self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormat(), self.getDimensions(), self.getBufferPointer(),
+                            self.getBufferPointerOffset() + sliceInfo.start * strides[0], newShape, newStrides, self.getBufferSuboffsets());
+        }
+
+        @Specialization
+        Object getitemNativeMulti(VirtualFrame frame, IntrinsifiedPNativeMemoryView self, PTuple indices,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached UnpackValueNode unpackValueNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            Object ptr = self.getBufferPointer();
+            long offset = self.getBufferPointerOffset();
+            long itemsize = self.getItemSize();
+            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
+            checkTupleLength(indicesStorage, self.getDimensions());
+            try {
+                for (int dim = 0; dim < self.getDimensions(); dim++) {
+                    long nitems;
+                    int index = getIndex(frame, indicesStorage, dim);
+                    long[] shape = self.getBufferShape();
+                    nitems = shape[dim];
+                    if (index < 0) {
+                        index += nitems;
+                    }
+                    if (index < 0 || index >= nitems) {
+                        throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
                     }
 
                     offset += self.getBufferStrides()[dim] * index;
@@ -142,7 +228,8 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                     if (suboffsets != null && suboffsets[dim] >= 0) {
                         // The length may be out of bounds, but sulong shouldn't care if we don't
                         // access the out-of-bound part
-                        ptr = callCapiFunction.call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getTotalLength());
+                        ptr = callCapiFunction.call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getLength());
+                        offset = 0;
                     }
                 }
 
@@ -163,52 +250,6 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             return getitemNative(self, convertIndex(frame, indexObj), unpackValueNode, callCapiFunction, lib);
-        }
-
-        @Specialization
-        Object getitemNativeMulti(VirtualFrame frame, IntrinsifiedPNativeMemoryView self, PTuple indices,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached UnpackValueNode unpackValueNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            Object ptr = self.getBufferPointer();
-            long offset = 0;
-            long itemsize = self.getItemSize();
-            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
-            checkTupleLength(indicesStorage, self.getDimensions());
-            try {
-                for (int dim = 0; dim < self.getDimensions(); dim++) {
-                    long nitems;
-                    int index = getIndex(frame, indicesStorage, dim);
-                    long[] shape = self.getBufferShape();
-                    nitems = shape[dim];
-                    if (index < 0) {
-                        index += nitems;
-                    }
-                    if (index < 0 || index >= nitems) {
-                        throw raise(TypeError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
-                    }
-
-                    offset += self.getBufferStrides()[dim] * index;
-
-                    long[] suboffsets = self.getBufferSuboffsets();
-                    if (suboffsets != null && suboffsets[dim] >= 0) {
-                        // The length may be out of bounds, but sulong shouldn't care if we don't
-                        // access the out-of-bound part
-                        ptr = callCapiFunction.call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getTotalLength());
-                        offset = 0;
-                    }
-                }
-
-                byte[] bytes = new byte[(int) itemsize];
-                for (int i = 0; i < itemsize; i++) {
-                    bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
-                }
-
-                return unpackValueNode.execute(self.getFormat(), bytes);
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
         }
 
         private int getIndex(VirtualFrame frame, SequenceStorage indicesStorage, int index) {
@@ -256,6 +297,20 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 plib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
             }
             return plib;
+        }
+    }
+
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class LenNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int managedLen(IntrinsifiedPManagedMemoryView self) {
+            return self.getLength();
+        }
+
+        @Specialization
+        static int nativeLen(IntrinsifiedPNativeMemoryView self) {
+            return self.getLength() / self.getItemSize();
         }
     }
 }

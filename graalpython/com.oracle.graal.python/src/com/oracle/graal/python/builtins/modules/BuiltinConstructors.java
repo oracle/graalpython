@@ -126,6 +126,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -3320,8 +3321,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ImemoryViewNode extends PythonBuiltinNode {
         // TODO native
         @Specialization
-        static IntrinsifiedPManagedMemoryView construct(@SuppressWarnings("unused") Object cls, Object delegate) {
-            return new IntrinsifiedPManagedMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(), delegate);
+        static IntrinsifiedPManagedMemoryView construct(@SuppressWarnings("unused") Object cls, Object delegate,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            int length = lenNode.execute(getSequenceStorageNode.execute(delegate));
+            // TODO factory
+            // TODO We should lock the underlying storage for resizing
+            return new IntrinsifiedPManagedMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(), delegate, length);
         }
     }
 
