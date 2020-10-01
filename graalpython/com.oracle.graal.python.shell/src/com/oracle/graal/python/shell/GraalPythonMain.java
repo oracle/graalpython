@@ -27,6 +27,8 @@ package com.oracle.graal.python.shell;
 
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -385,6 +387,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     @Override
     protected void launch(Builder contextBuilder) {
+        // prevent the use of System.out/err - they are PrintStreams which suppresses exceptions
+        contextBuilder.out(new FileOutputStream(FileDescriptor.out));
+        contextBuilder.err(new FileOutputStream(FileDescriptor.err));
         if (!ignoreEnv) {
             String pythonpath = System.getenv("PYTHONPATH");
             if (pythonpath != null) {
