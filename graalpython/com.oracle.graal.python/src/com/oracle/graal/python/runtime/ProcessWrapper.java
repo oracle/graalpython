@@ -79,7 +79,7 @@ public final class ProcessWrapper extends Process {
         this.process = process;
         if (pipeStdin) {
             inPipe = Pipe.open();
-            inThread = new ChannelPump(inPipe.source(), Channels.newChannel(process.getOutputStream()));
+            inThread = new ChannelPump("stdin", inPipe.source(), Channels.newChannel(process.getOutputStream()));
             inThread.start();
         } else {
             inPipe = null;
@@ -87,7 +87,7 @@ public final class ProcessWrapper extends Process {
         }
         if (pipeStdout) {
             outPipe = Pipe.open();
-            outThread = new ChannelPump(Channels.newChannel(process.getInputStream()), outPipe.sink());
+            outThread = new ChannelPump("stdout", Channels.newChannel(process.getInputStream()), outPipe.sink());
             outThread.start();
         } else {
             outPipe = null;
@@ -95,7 +95,7 @@ public final class ProcessWrapper extends Process {
         }
         if (pipeStderr) {
             errPipe = Pipe.open();
-            errThread = new ChannelPump(Channels.newChannel(process.getErrorStream()), errPipe.sink());
+            errThread = new ChannelPump("stderr", Channels.newChannel(process.getErrorStream()), errPipe.sink());
             errThread.start();
         } else {
             errPipe = null;
@@ -175,7 +175,8 @@ public final class ProcessWrapper extends Process {
         private final ReadableByteChannel source;
         private final WritableByteChannel sink;
 
-        ChannelPump(ReadableByteChannel source, WritableByteChannel sink) {
+        ChannelPump(String streamName, ReadableByteChannel source, WritableByteChannel sink) {
+            super("ChannelPump-" + streamName);
             this.source = source;
             this.sink = sink;
         }
