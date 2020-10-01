@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
@@ -467,6 +468,14 @@ public abstract class HPyExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object[] args = getVarargs(frame);
             return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length, getKwargs(frame)};
+        }
+
+        @Override
+        @SuppressWarnings("unused")
+        protected Object processResult(VirtualFrame frame, Object result) {
+            // If no error occurred, the init function always returns None.
+            // Possible errors are already handled in the HPyExternalFunctionInvokeNode.
+            return PNone.NONE;
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
