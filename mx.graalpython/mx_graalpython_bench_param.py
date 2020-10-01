@@ -198,6 +198,29 @@ INTEROP_JAVA_BENCHMARKS = {
     'fannkuchredux3': [_INTEROP_JAVA_PACKAGE + 'PyFannkuchredux'] + MESO_BENCHMARKS['fannkuchredux3'],
 }
 
+# -------------------------------------------------------
+# Parameters for parsing bench marks
+# Parameters for parsing bench marks
+# 1. full qualified name of class that define the benchmark
+# 2. -i number : is number of benchmark iterations (defualt 5)
+# 3. -w number : is number of warmup iterations, in these cases should not be necessary (default 0)
+# 4. -n number : is number of parsing cycles of on file in one iteration (default 1)
+# 5. -r : if it's present, then folders on the defined paths are parsed recursively
+# 6. : files or directories, that will be processed
+# 7. -e : after this mark all the listed files and directories are excluded from the benchmark
+# 8. : files or directories that will be excluded from the benchmark
+# -------------------------------------------------------
+_PARSER_JAVA_PACKAGE = 'com.oracle.graal.python.benchmarks.parser.'
+PATH_RUNTIME_FILES_PARSER_TESTS = os.path.join(_graalpython_suite.dir, 'graalpython', 'com.oracle.graal.python.test', 'testData', 'testFiles', 'RuntimeFileTests')
+PATH_PYTHON_LIB = os.path.join(_graalpython_suite.dir, 'graalpython', 'lib-python', '3')
+PARSER_JAVA_BENCHMARKS = {
+    'whole-parsing-test-files': [_PARSER_JAVA_PACKAGE + 'ParsingAndTranslating'] + ITER_10 + ['-n', '10'] + [PATH_RUNTIME_FILES_PARSER_TESTS],
+    'whole-parsing-lib-files': [_PARSER_JAVA_PACKAGE + 'ParsingAndTranslating'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
+    'antlr-parsing-lib-files': [_PARSER_JAVA_PACKAGE + 'AntlrParsing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
+    'sst-translating-lib-files': [_PARSER_JAVA_PACKAGE + 'SSTTranslating'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
+    'serializing-lib-files': [_PARSER_JAVA_PACKAGE + 'Serializing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
+    'deserializing-lib-files': [_PARSER_JAVA_PACKAGE + 'Deserializing'] + ITER_10 + ['-r'] + [PATH_PYTHON_LIB],
+}
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -214,4 +237,8 @@ BENCHMARKS = {
 
 JBENCHMARKS = {
     "pyjava": [INTEROP_JAVA_BENCHMARKS],
+}
+
+PARSER_BENCHMARKS = {
+    "python-parser" : [PARSER_JAVA_BENCHMARKS],
 }

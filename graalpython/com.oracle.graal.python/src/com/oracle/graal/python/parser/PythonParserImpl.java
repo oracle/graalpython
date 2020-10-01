@@ -108,41 +108,43 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                         null).antlrResult;
     }
 
-    @Override
-    @TruffleBoundary
-    public byte[] serialize(RootNode rootNode) {
-        Source source = rootNode.getSourceSection().getSource();
-        assert source != null;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(source.getLength() * 2);
+    public static byte[] serialize(SSTNode node, ScopeInfo scope, boolean isModule) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
-        CacheItem lastParserResult = cachedLastAntlrResult;
-        if (!source.equals(lastParserResult.source)) {
-            // we need to parse the source again
-            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
-            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
-        }
         try {
             dos.writeByte(SerializationUtils.VERSION);
-            if (rootNode instanceof ModuleRootNode) {
-                // serialize whole module
-                ScopeInfo.write(dos, lastParserResult.globalScope);
-                dos.writeInt(0);
-                lastParserResult.antlrResult.accept(new SSTSerializerVisitor(dos));
-            } else {
-                // serialize just the part
-                SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
-                SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
-                // store with parent scope
-                ScopeInfo.write(dos, rootSST.getScope().getParent());
-                dos.writeInt(rootSST.getStartOffset());
-                rootSST.accept(new SSTSerializerVisitor(dos));
-            }
+            ScopeInfo.write(dos, scope);
+            dos.writeInt(isModule ? 0 : node.getStartOffset());
+            node.accept(new SSTSerializerVisitor(dos));
             dos.close();
         } catch (IOException e) {
             throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
         }
 
         return baos.toByteArray();
+    }
+
+    @Override
+    @TruffleBoundary
+    public byte[] serialize(RootNode rootNode) {
+        Source source = rootNode.getSourceSection().getSource();
+        assert source != null;
+        CacheItem lastParserResult = cachedLastAntlrResult;
+        if (!source.equals(lastParserResult.source)) {
+            // we need to parse the source again
+            PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
+            lastParserResult = parseWithANTLR(ParserMode.File, PythonLanguage.getCore(), sstFactory, source, null, null);
+        }
+        if (rootNode instanceof ModuleRootNode) {
+            // serialize whole module
+            return serialize(lastParserResult.antlrResult, lastParserResult.globalScope, true);
+        } else {
+            // serialize just the part
+            SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
+            SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
+            // store with parent scope
+            return serialize(rootSST, rootSST.getScope().getParent(), false);
+        }
     }
 
     @Override
@@ -210,7 +212,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
     }
 
-    private static class CacheItem {
+    public static class CacheItem {
         Source source;
         SSTNode antlrResult;
         ScopeInfo globalScope;
@@ -220,6 +222,23 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             this.antlrResult = antlrResult;
             this.globalScope = globalScope;
         }
+
+        public Source getSource() {
+            return source;
+        }
+
+        public SSTNode getAntlrResult() {
+            return antlrResult;
+        }
+
+        public ScopeInfo getGlobalScope() {
+            return globalScope;
+        }
+
+        public CacheItem copy() {
+            return new CacheItem(source, antlrResult, globalScope);
+        }
+
     }
 
     private final CacheItem cachedLastAntlrResult = new CacheItem(null, null, null);
@@ -268,7 +287,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         return result;
     }
 
-    private CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
+    public CacheItem parseWithANTLR(ParserMode mode, ParserErrorCallback errors, PythonSSTNodeFactory sstFactory, Source source, Frame currentFrame, String[] argumentNames) {
         FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
         String sourceText = source.getCharacters().toString();
         // Preprocessing

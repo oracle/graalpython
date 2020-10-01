@@ -601,3 +601,42 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
+
+
+class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
+     
+    def get_vm_registry(self):
+        return java_vm_registry
+    
+    def get_bench_name(self, benchmarks):
+        return benchmarks[0]
+    
+    def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
+        vmArgs = self.vmArgs(bmSuiteArgs)
+        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        if mx.suite("tools", fatalIfMissing=False):
+            dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
+        if mx.suite("sulong", fatalIfMissing=False):
+            dists.append('SULONG')
+            if mx.suite("sulong-managed", fatalIfMissing=False):
+                dists.append('SULONG_MANAGED')
+
+        vmArgs += [
+            "-Dorg.graalvm.language.python.home=%s" % join(SUITE.dir, "graalpython"),
+        ]
+        vmArgs += mx.get_runtime_jvm_args(dists + ['com.oracle.graal.python.benchmarks'], jdk=mx.get_jdk())
+        jmh_entry = ["com.oracle.graal.python.benchmarks.parser.ParserBenchRunner"]
+        runArgs = self.runArgs(bmSuiteArgs)
+
+        bench_name = benchmarks[0]
+        bench_args = self._benchmarks[bench_name]
+        return vmArgs + jmh_entry + runArgs + [bench_name] + bench_args
+        
+    def get_arg(self, bench_name):
+        return " ".join(self._benchmarks[bench_name][1:])
+    
+    @classmethod
+    def get_benchmark_suites(cls, benchmarks):
+        assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
+        return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
+    

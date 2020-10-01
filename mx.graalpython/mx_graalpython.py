@@ -55,11 +55,11 @@ import mx_subst
 import mx_urlrewrites
 import mx_graalpython_bisect
 from mx_gate import Task
-from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
+from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS, PARSER_BENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
     CONFIGURATION_DEFAULT, CONFIGURATION_SANDBOXED, CONFIGURATION_NATIVE, \
     CONFIGURATION_DEFAULT_MULTI, CONFIGURATION_SANDBOXED_MULTI, CONFIGURATION_NATIVE_MULTI, \
-    PythonInteropBenchmarkSuite
+    PythonInteropBenchmarkSuite, PythonParserBenchmarkSuite
 
 
 if not sys.modules.get("__main__"):
@@ -1442,6 +1442,8 @@ def _register_bench_suites(namespace):
         mx_benchmark.add_bm_suite(py_bench_suite)
     for java_bench_suite in PythonInteropBenchmarkSuite.get_benchmark_suites(JBENCHMARKS):
         mx_benchmark.add_bm_suite(java_bench_suite)
+    for parser_bench_suite in PythonParserBenchmarkSuite.get_benchmark_suites(PARSER_BENCHMARKS):
+        mx_benchmark.add_bm_suite(parser_bench_suite)
 
 
 class CharsetFilteringPariticpant:
