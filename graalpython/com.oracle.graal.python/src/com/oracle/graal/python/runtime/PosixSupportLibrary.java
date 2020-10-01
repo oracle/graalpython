@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.dsl.Cached;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -63,9 +65,12 @@ import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.source.Source;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+
 @GenerateLibrary
 public abstract class PosixSupportLibrary extends Library {
     public abstract long getpid(Object receiver);
+    public abstract long umask(Object receiver, long mask);
 
     @ExportLibrary(PosixSupportLibrary.class)
     public static final class EmulatedPosixSupport {
@@ -91,6 +96,22 @@ public abstract class PosixSupportLibrary extends Library {
                 return Long.parseLong(info.split("@")[0]);
             }
         }
+
+        @ExportMessage
+        public long umask(long umask,
+                        @Cached PRaiseNode raiseNode) { // TODO get the raise node only if actually needed like getRaiseNode() in PythonBuiltinBaseNode / specialize on the value of umask
+            if (umask == 0022) {
+                return 0022;
+            }
+            if (umask == 0) {
+                // TODO: change me, this does not really set the umask, workaround needed for pip
+                // it returns the previous mask (which in our case is always 0022)
+                return 0022;
+            } else {
+                throw raiseNode.raise(NotImplementedError, "setting the umask to anything other than the default");
+            }
+        }
+
     }
 
     @ExportLibrary(PosixSupportLibrary.class)
@@ -98,15 +119,32 @@ public abstract class PosixSupportLibrary extends Library {
 
         private volatile Object library;
         private volatile Object getpidFunction;
+        private volatile Object umaskFunction;
 
         @ExportMessage
         public long getpid(@CachedLibrary(limit = "1") InteropLibrary funInterop,
                            @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (getpidFunction == null) {
                 CompilerDirectives.transferToInterpreter();
-                getpidFunction = lookup("getpid");
+                getpidFunction = lookup("call_getpid");
             }
             return callLong(funInterop, resultInterop, getpidFunction);
+        }
+
+        @ExportMessage
+        public long umask(long mask,
+                           @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                           @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+            if (umaskFunction == null) {
+                CompilerDirectives.transferToInterpreter();
+                umaskFunction = lookup("call_umask");
+            }
+            long result = callLong(funInterop, resultInterop, umaskFunction, mask);
+            if (result < 0) {
+                // TODO call errno() and raise OS error
+                // create helper method for this (like CPython's  posix_error)
+            }
+            return result;
         }
 
         protected abstract Object loadLibrary(PythonContext ctxRef);
@@ -167,13 +205,13 @@ public abstract class PosixSupportLibrary extends Library {
             env.parseInternal(loadSupportSource).call();
             // Now the default should contain symbols from both the support library and libc with
             // which it links
-            Source loadDefaultSource = Source.newBuilder("nfi", withClause + " default { getpid():sint64; }", "load-posix-support-default-lib").build();
+            Source loadDefaultSource = Source.newBuilder("nfi", withClause + " default { call_getpid():sint64; call_umask(sint64):sint64; }", "load-posix-support-default-lib").build();
             return env.parseInternal(loadDefaultSource).call();
         }
 
         private static String getSupportLibraryPath() {
             // TODO: hard-coded for now
-            return "/home/steve/dev/Graal5/graalpython/posix/graalvm-posix-support.so";
+            return "/home/otethal/graalvm/graalpython/posix/graalvm-posix-support.so";
         }
     }
 }

@@ -1737,19 +1737,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "umask", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UmaskNode extends PythonBuiltinNode {
+
         @Specialization
-        int getAndSetUmask(int umask) {
-            if (umask == 0022) {
-                return 0022;
-            }
-            if (umask == 0) {
-                // TODO: change me, this does not really set the umask, workaround needed for pip
-                // it returns the previous mask (which in our case is always 0022)
-                return 0022;
-            } else {
-                throw raise(NotImplementedError, "setting the umask to anything other than the default");
-            }
+        long umask(long mask,   // TODO handle arg types properly (extend arg clinic to support pid_t, fd etc.)
+                  @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.umask(getPosixSupport(), mask);
         }
     }
 
