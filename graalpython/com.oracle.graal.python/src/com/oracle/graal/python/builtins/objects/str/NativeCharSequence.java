@@ -42,11 +42,19 @@ package com.oracle.graal.python.builtins.objects.str;
 
 import java.util.Objects;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
-public final class NativeCharSequence implements PCharSequence {
+public final class NativeCharSequence implements CharSequence {
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeCharSequence.class);
 
     /**
      * Pointer to the native buffer (most like a {@code char*} containing ASCII characters but could
@@ -68,6 +76,7 @@ public final class NativeCharSequence implements PCharSequence {
     private String materialized;
 
     public NativeCharSequence(Object ptr, int elementSize, boolean asciiOnly) {
+        assert elementSize == 1 || elementSize == 2 || elementSize == 4;
         this.ptr = ptr;
         this.elementSize = elementSize;
         this.asciiOnly = asciiOnly;
@@ -76,6 +85,17 @@ public final class NativeCharSequence implements PCharSequence {
     @Override
     public int length() {
         return materialize().length();
+    }
+
+    int length(InteropLibrary lib, CastToJavaIntExactNode castToJavaIntNode) {
+        try {
+            int arraySize = castToJavaIntNode.execute(lib.getArraySize(ptr));
+            assert arraySize % elementSize == 0;
+            // we need to subtract the terminating null character
+            return arraySize / elementSize;
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("pointer of NativeCharSequence is not an array");
+        }
     }
 
     @Override
@@ -88,22 +108,18 @@ public final class NativeCharSequence implements PCharSequence {
         return materialize().subSequence(start, end);
     }
 
-    @Override
-    public boolean isMaterialized() {
+    boolean isMaterialized() {
         return materialized != null;
     }
 
-    @Override
-    public final String materialize() {
-        if (!isMaterialized()) {
-            materialized = (String) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
-        }
+    String getMaterialized() {
         return materialized;
     }
 
-    public String materialize(PCallCapiFunction node) {
+    private String materialize() {
         if (!isMaterialized()) {
-            materialized = (String) node.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, ptr);
+            LOGGER.warning("uncached materialization of NativeCharSequence");
+            materialized = StringMaterializeNode.materializeNativeCharSequence(this, PCallCapiFunction.getUncached(), UnicodeFromWcharNodeGen.getUncached());
         }
         return materialized;
     }

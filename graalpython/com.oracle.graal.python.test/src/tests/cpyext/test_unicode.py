@@ -544,4 +544,37 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_New = CPyExtFunction(
+        lambda args: args[3],
+        lambda: (
+            (134818, bytearray([0xA2, 0x0E, 0x02, 0x00]), 1, "𠺢"),
+            (134988, bytearray([0xA2, 0x0E, 0x02, 0x00, 0x4C, 0x0F, 0x02, 0x00]), 2, "𠺢𠽌"),
+            (8240, bytearray([0x30, 0x20]), 1, "‰"),
+            (8252, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
+            (127, bytearray([0x61, 0x62, 0x63, 0x64]), 4, "abcd"),
+            (127, bytearray([0x61, 0x62, 0x63, 0x64]), 2, "ab"),
+        ),
+        code='''PyObject* wrap_PyUnicode_New(Py_ssize_t maxchar, Py_buffer buffer, Py_ssize_t nchars, PyObject* dummy) {
+            PyObject* obj = PyUnicode_New(nchars, (Py_UCS4) maxchar);
+            void* data = PyUnicode_DATA(obj);
+            size_t char_size;
+            if (maxchar < 256) {
+                char_size = 1;
+            } else if (maxchar < 65536) {
+                char_size = 2;
+            } else {
+                char_size = 4;
+            }
+            memcpy(data, buffer.buf, nchars * char_size);
+            PyUnicode_READY(obj);
+            return obj;
+        }
+        ''',
+        resultspec="O",
+        argspec='ny*nO',
+        arguments=["Py_ssize_t maxchar", "Py_buffer buffer", "Py_ssize_t nchars", "PyObject* dummy"],
+        callfunction="wrap_PyUnicode_New",
+        cmpfunc=unhandled_error_compare
+    )
+
 
