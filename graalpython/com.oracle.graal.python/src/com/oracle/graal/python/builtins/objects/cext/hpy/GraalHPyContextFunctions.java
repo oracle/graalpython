@@ -61,6 +61,7 @@ import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.WeakHashMap;
 
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1651,13 +1652,20 @@ public abstract class GraalHPyContextFunctions {
                 Object[] elements = new Object[n];
                 try {
                     for (int i = 0; i < elements.length; i++) {
-                        elements[i] = asPythonObjectNode.execute(nativeContext, lib.readArrayElement(typedArrayPtr, i));
+                        // This will read an element of a 'HPy arr[]' and the returned value will be
+                        // an HPy "structure". So, we also need to read element "_i" to get the
+                        // internal handle value.
+                        Object hpyStructPtr = lib.readArrayElement(typedArrayPtr, i);
+                        elements[i] = asPythonObjectNode.execute(nativeContext, lib.readMember(hpyStructPtr, GraalHPyHandle.I));
                     }
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 } catch (InvalidArrayIndexException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raiseNode.raise(SystemError, "Cannot access index %d although array should have size %d ", e.getInvalidIndex(), n);
+                } catch (UnknownIdentifierException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(SystemError, "Cannot read handle value");
                 }
 
                 return asHandleNode.execute(nativeContext, factory.createTuple(elements));
