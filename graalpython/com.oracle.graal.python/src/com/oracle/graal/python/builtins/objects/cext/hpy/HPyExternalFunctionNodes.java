@@ -42,16 +42,17 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -100,40 +102,62 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class HPyExternalFunctionNodes {
 
     /**
-     * Creates a root node that accepts the specified signatures, does appropriate argument and
-     * result conversion and calls the provided callable.
-     * 
+     * Creates a built-in function that accepts the specified signatures, does appropriate argument
+     * and result conversion and calls the provided callable.
+     *
      * @param language The Python language object.
      * @param signature The signature ID as defined in {@link GraalHPyDef}.
      * @param name The name of the method.
      * @param callable The native function pointer.
-     * @return A {@link PRootNode} that accepts the given signature.
+     * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
+     * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
+     * @return A {@link PBuiltinFunction} that accepts the given signature.
      */
     @TruffleBoundary
-    static PRootNode createHPyWrapperRootNode(PythonLanguage language, HPyFuncSignature signature, String name, Object callable) {
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPyFuncSignature signature, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+        PRootNode rootNode;
+        int numDefaults = 0;
         switch (signature) {
             case NOARGS:
-                return new HPyMethNoargsRoot(language, name, callable);
-            case O:
-                return new HPyMethORoot(language, name, callable);
             case UNARYFUNC:
             case REPRFUNC:
-                return new HPyMethUnaryRoot(language, name, callable);
+            case GETITERFUNC:
+            case ITERNEXTFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, callable, false);
+                break;
+            case O:
+            case BINARYFUNC:
+                rootNode = new HPyMethORoot(language, name, callable, false);
+                break;
             case KEYWORDS:
-                return new HPyMethKeywordsRoot(language, name, callable);
+                rootNode = new HPyMethKeywordsRoot(language, name, callable);
+                break;
+            case INITPROC:
+                rootNode = new HPyMethInitProcRoot(language, name, callable);
+                break;
             case VARARGS:
-                return new HPyMethVarargsRoot(language, name, callable);
+                rootNode = new HPyMethVarargsRoot(language, name, callable);
+                break;
+            case TERNARYFUNC:
+                rootNode = new HPyMethTernaryRoot(language, name, callable);
+                // the third argument is optional
+                // so it has a default value (this implicitly is 'None')
+                numDefaults = 1;
+                break;
+            case LENFUNC:
+                rootNode = new HPyMethNoargsRoot(language, name, callable, true);
+                break;
+            case INQUIRY:
+                rootNode = new HPyMethInquiryRoot(language, name, callable);
+                break;
+            case SSIZEARGFUNC:
+                rootNode = new HPyMethSSizeArgFuncRoot(language, name, callable);
+                break;
+            default:
+                // TODO(fa): support remaining signatures
+                throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
         }
-        // TODO(fa): support remaining signatures
-        throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
-    }
-
-    /**
-     * Helper function to create a built-in function.
-     */
-    @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonObjectFactory factory, String name, Object enclosingType, PRootNode rootNode) {
-        return factory.createBuiltinFunction(name, enclosingType, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+        return factory.createBuiltinFunction(name, enclosingType, numDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
     }
 
     /**
@@ -168,23 +192,23 @@ public abstract class HPyExternalFunctionNodes {
         public abstract Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs);
 
         @Specialization(limit = "1")
-        Object doIt(VirtualFrame frame, String name, Object callable, Object[] frameArgs,
+        Object doIt(VirtualFrame frame, String name, Object callable, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
-            Object[] arguments = new Object[frameArgs.length + 1];
+            Object[] convertedArguments = new Object[arguments.length + 1];
             GraalHPyContext hPyContext = ctx.getHPyContext();
-            toSulongNode.executeInto(hPyContext, frameArgs, 0, arguments, 1);
+            toSulongNode.executeInto(frame, hPyContext, arguments, 0, convertedArguments, 1);
 
             // first arg is always the HPyContext
-            arguments[0] = hPyContext;
+            convertedArguments[0] = hPyContext;
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
             Object state = ForeignCallContext.enter(frame, ctx, this);
 
             try {
-                return checkFunctionResultNode.execute(hPyContext, name, lib.execute(callable, arguments));
+                return checkFunctionResultNode.execute(hPyContext, name, lib.execute(callable, convertedArguments));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
@@ -235,17 +259,32 @@ public abstract class HPyExternalFunctionNodes {
             this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(convertArgsToSulongNode);
         }
 
+        @TruffleBoundary
+        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, Object callable,
+                        HPyCheckFunctionResultNode checkFunctionResultNode,
+                        HPyConvertArgsToSulongNode convertArgsToSulongNode) {
+            super(language);
+            assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
+            this.name = name;
+            this.callable = callable;
+            this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(checkFunctionResultNode, convertArgsToSulongNode);
+        }
+
         @Override
         public Object execute(VirtualFrame frame) {
             CalleeContext.enter(frame, getCustomLocalsProfile());
             try {
-                return invokeNode.execute(frame, name, callable, prepareCArguments(frame));
+                return processResult(frame, invokeNode.execute(frame, name, callable, prepareCArguments(frame)));
             } finally {
                 getCalleeContext().exit(frame, this);
             }
         }
 
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
+
+        protected Object processResult(@SuppressWarnings("unused") VirtualFrame frame, Object result) {
+            return result;
+        }
 
         protected final Object getSelf(VirtualFrame frame) {
             if (readSelfNode == null) {
@@ -299,15 +338,15 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, new String[0], true);
 
-        public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyAllAsHandleNodeGen.create());
+        public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable, boolean nativePrimitiveResult) {
+            super(language, name, callable, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            return new Object[]{getSelf(frame), PNone.NONE};
+            return new Object[]{getSelf(frame)};
         }
 
         @Override
@@ -321,8 +360,8 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        public HPyMethORoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyAllAsHandleNodeGen.create());
+        public HPyMethORoot(PythonLanguage language, String name, Object callable, boolean nativePrimitiveResult) {
+            super(language, name, callable, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
 
         @Override
@@ -413,16 +452,171 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    static final class HPyMethUnaryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0], true);
+    static final class HPyMethInitProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0], true);
 
-        public HPyMethUnaryRoot(PythonLanguage language, String name, Object callable) {
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+
+        @TruffleBoundary
+        public HPyMethInitProcRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyCheckPrimitiveResultNodeGen.create(), HPyKeywordsToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object[] args = getVarargs(frame);
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length, getKwargs(frame)};
+        }
+
+        private Object[] getVarargs(VirtualFrame frame) {
+            if (readVarargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+            }
+            return readVarargsNode.executeObjectArray(frame);
+        }
+
+        private Object getKwargs(VirtualFrame frame) {
+            if (readKwargsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
+            }
+            return readKwargsNode.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethTernaryRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, new String[0], true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+
+        public HPyMethTernaryRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable, HPyAllAsHandleNodeGen.create());
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        private Object getArg2(VirtualFrame frame) {
+            if (readArg2Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
+            }
+            return readArg2Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, new String[0], true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+
+        public HPyMethSSizeArgFuncRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPySSizeArgFuncToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethSSizeSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "n", "m"}, new String[0], true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+
+        public HPyMethSSizeSSizeArgFuncRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPySSizeArgFuncToSulongNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        private Object getArg2(VirtualFrame frame) {
+            if (readArg2Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
+            }
+            return readArg2Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
+     */
+    static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
+
+        @Child private CastToJavaIntExactNode castToJavaIntExactNode;
+
+        public HPyMethInquiryRoot(PythonLanguage language, String name, Object callable) {
+            super(language, name, callable, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
             return new Object[]{getSelf(frame)};
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            if (castToJavaIntExactNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToJavaIntExactNode = insert(CastToJavaIntExactNode.create());
+            }
+            return castToJavaIntExactNode.execute(result) != 0;
         }
 
         @Override

@@ -107,6 +107,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -117,6 +118,7 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -343,8 +345,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PRootNode rootNode = HPyExternalFunctionNodes.createHPyWrapperRootNode(language, signature, methodName, methodFunctionPointer);
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(factory, methodName, enclosingType, rootNode);
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, signature, methodName, methodFunctionPointer, enclosingType, factory);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
@@ -722,9 +723,8 @@ public class GraalHPyNodes {
 
             String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
 
-            PRootNode rootNode = HPyExternalFunctionNodes.createHPyWrapperRootNode(language, slot.getSignature(), methodNameStr, methodFunctionPointer);
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(factory, methodNameStr, HPY_TP_NEW.equals(slot) ? null : enclosingType, rootNode);
-
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, slot.getSignature(), methodNameStr, methodFunctionPointer,
+                            HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
             return new HPyProperty(methodName, function);
         }
 
@@ -1001,7 +1001,7 @@ public class GraalHPyNodes {
 
     public abstract static class HPyConvertArgsToSulongNode extends PNodeWithContext {
 
-        public abstract void executeInto(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset);
+        public abstract void executeInto(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset);
     }
 
     public abstract static class HPyVarargsToSulongNode extends HPyConvertArgsToSulongNode {
@@ -1089,6 +1089,47 @@ public class GraalHPyNodes {
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
             dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
+        }
+    }
+
+    /**
+     * Converts {@code self} to an HPy handle and any other argument to {@code HPy_ssize_t}.
+     */
+    public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
+        @ExplodeLoop
+        static void doHandleSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+        }
+
+        @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
+        @ExplodeLoop
+        static void doHandleSsizeTSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = asSsizeTNode.execute(frame, args[argsOffset + 2], 1, Long.BYTES);
+        }
+
+        @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
+        static void doGeneric(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            for (int i = 1; i < args.length - argsOffset; i++) {
+                dest[destOffset + i] = asSsizeTNode.execute(frame, args[argsOffset + i], 1, Long.BYTES);
+            }
+        }
+
+        static boolean isArity(int len, int off, int expected) {
+            return len - off == expected;
         }
     }
 
