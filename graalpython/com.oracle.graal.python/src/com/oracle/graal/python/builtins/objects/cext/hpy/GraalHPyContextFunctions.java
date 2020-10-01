@@ -153,6 +153,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -1606,6 +1607,60 @@ public abstract class GraalHPyContextFunctions {
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
                 return lib.canBePInt(receiver) || lib.canBeJavaDouble(receiver);
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(nativeContext, e);
+                return nativeContext.getNullHandle();
+            }
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTupleFromArray extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(3, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object arrayPtr = arguments[1];
+            int n;
+            try {
+                n = castToJavaIntExactNode.execute(arguments[2]);
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "third argument must fit into int");
+            }
+
+            Object typedArrayPtr = callHelperNode.call(nativeContext, GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_ARRAY, arrayPtr, n);
+            if (!lib.hasArrayElements(typedArrayPtr)) {
+                throw CompilerDirectives.shouldNotReachHere("returned pointer object must have array type");
+            }
+
+            try {
+                Object[] elements = new Object[n];
+                try {
+                    for (int i = 0; i < elements.length; i++) {
+                        elements[i] = asPythonObjectNode.execute(nativeContext, lib.readArrayElement(typedArrayPtr, i));
+                    }
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                } catch (InvalidArrayIndexException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(SystemError, "Cannot access index %d although array should have size %d ", e.getInvalidIndex(), n);
+                }
+
+                return asHandleNode.execute(nativeContext, factory.createTuple(elements));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return nativeContext.getNullHandle();
