@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -13,11 +14,11 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -38,10 +39,6 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IntrinsifiedMemoryviewBuiltinsFactory.getFactories();
-    }
-
-    public static boolean hasNativeBuffer(IntrinsifiedPManagedMemoryView obj) {
-        return obj.getDelegate() instanceof IntrinsifiedPNativeMemoryView;
     }
 
     static abstract class UnpackValueNode extends Node {
@@ -84,9 +81,12 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(IntrinsifiedMemoryviewBuiltins.class)
     static abstract class GetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "!hasNativeBuffer(self)")
-        // TODO Object index?
-        // TODO complex indexing
+        @Child private SequenceStorageNodes.LenNode sequenceLenNode;
+        @Child private SequenceStorageNodes.GetItemNode sequenceGetItemNode;
+        @Child private PythonObjectLibrary plib;
+
+        @Specialization
+        // TODO slices
         static Object getitem(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, int index,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode) {
@@ -95,10 +95,31 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object getitemMulti(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, PTuple indices,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
+            checkTupleLength(indicesStorage, 1);
+            int index = getIndex(frame, indicesStorage, 0);
+            return getitem(frame, self, index, getSequenceStorageNode, getItemNode);
+        }
+
+        @Specialization(guards = {"!isPSlice(indexObj)", "!isPTuple(indexObj)"})
+        Object getitemObject(VirtualFrame frame, IntrinsifiedPManagedMemoryView self, Object indexObj,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+            return getitem(frame, self, convertIndex(frame, indexObj), getStorageNode, getItemNode);
+        }
+
+        @Specialization
         Object getitemNative(IntrinsifiedPNativeMemoryView self, int index,
                         @Cached UnpackValueNode unpackValueNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
+            if (self.getDimensions() > 1) {
+                // CPython doesn't implement this either, as of 3.8
+                throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            }
             Object ptr = self.getBufferPointer();
             long offset = 0;
             long itemsize = self.getItemSize();
@@ -119,7 +140,6 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
                     long[] suboffsets = self.getBufferSuboffsets();
                     if (suboffsets != null && suboffsets[dim] >= 0) {
-                        // TODO test this code-path
                         // The length may be out of bounds, but sulong shouldn't care if we don't
                         // access the out-of-bound part
                         ptr = callCapiFunction.call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getTotalLength());
@@ -137,13 +157,17 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization(guards = {"!isPTuple(indexObj)", "!isPSlice(indexObj)"})
+        Object getitemNativeObject(VirtualFrame frame, IntrinsifiedPNativeMemoryView self, Object indexObj,
+                        @Cached UnpackValueNode unpackValueNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            return getitemNative(self, convertIndex(frame, indexObj), unpackValueNode, callCapiFunction, lib);
+        }
+
         @Specialization
         Object getitemNativeMulti(VirtualFrame frame, IntrinsifiedPNativeMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        // TODO really exact?
-                        @Cached CastToJavaLongExactNode castToLongNode,
                         @Cached UnpackValueNode unpackValueNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
@@ -151,15 +175,11 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             long offset = 0;
             long itemsize = self.getItemSize();
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
-            if (lenNode.execute(indicesStorage) != self.getDimensions()) {
-                // CPython doesn't implement this either, as of 3.8
-                // TODO msg
-                throw raise(NotImplementedError, "multi-dimensional sub-views are not implemented");
-            }
+            checkTupleLength(indicesStorage, self.getDimensions());
             try {
                 for (int dim = 0; dim < self.getDimensions(); dim++) {
                     long nitems;
-                    long index = castToLongNode.execute(getItemNode.execute(frame, indicesStorage, dim));
+                    int index = getIndex(frame, indicesStorage, dim);
                     long[] shape = self.getBufferShape();
                     nitems = shape[dim];
                     if (index < 0) {
@@ -189,6 +209,53 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        private int getIndex(VirtualFrame frame, SequenceStorage indicesStorage, int index) {
+            Object indexObj = getSequenceGetItemNode().execute(frame, indicesStorage, index);
+            return convertIndex(frame, indexObj);
+        }
+
+        private int convertIndex(@SuppressWarnings("unused") VirtualFrame frame, Object indexObj) {
+            if (!getPlib().canBeIndex(indexObj)) {
+                throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+            }
+            // FIXME use asSizeWithFrame when GR-26456 is fixed
+            return getPlib().asSize(indexObj, IndexError);
+        }
+
+        private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
+            int length = getSequenceLenNode().execute(indicesStorage);
+            if (length > ndim) {
+                throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
+            } else if (length < ndim) {
+                // CPython doesn't implement this either, as of 3.8
+                throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
+            }
+        }
+
+        private SequenceStorageNodes.LenNode getSequenceLenNode() {
+            if (sequenceLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sequenceLenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return sequenceLenNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getSequenceGetItemNode() {
+            if (sequenceGetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sequenceGetItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return sequenceGetItemNode;
+        }
+
+        private PythonObjectLibrary getPlib() {
+            if (plib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                plib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return plib;
         }
     }
 }

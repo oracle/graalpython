@@ -130,6 +130,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
+    public static final String CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D = "cannot index %d-dimension view with %d-element tuple";
     public static final String IMPORT_NOT_FOUND = "__import__ not found";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s' from '%s' (%s)";
     public static final String CANNOT_IMPORT_NAME_CIRCULAR = "cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)";
@@ -347,6 +348,7 @@ public abstract class ErrorMessages {
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
+    public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
@@ -355,6 +357,7 @@ public abstract class ErrorMessages {
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
+    public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
     public static final String MULTIPLE_BASES_LAYOUT_CONFLICT = "multiple bases have instance lay-out conflict";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
@@ -496,6 +499,7 @@ public abstract class ErrorMessages {
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
+    public static final String SUB_VIEWS_NOT_IMPLEMENTED = "sub-views are not implemented";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";
