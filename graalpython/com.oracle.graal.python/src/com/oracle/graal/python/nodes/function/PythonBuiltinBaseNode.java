@@ -143,6 +143,10 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getContextRef().get();
     }
 
+    public final Object getPosixSupport() {
+        return getContext().getPosixSupport();
+    }
+
     public PException raise(PythonBuiltinClassType type, String string) {
         return getRaiseNode().raise(type, string);
     }

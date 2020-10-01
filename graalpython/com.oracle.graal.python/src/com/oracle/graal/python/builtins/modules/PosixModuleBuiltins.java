@@ -83,9 +83,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.graalvm.nativeimage.ImageInfo;
-import org.graalvm.nativeimage.ProcessProperties;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
@@ -132,6 +129,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -421,21 +419,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getpid", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
-        @Specialization(rewriteOn = Exception.class)
-        @TruffleBoundary
-        long getPid() throws Exception {
-            if (ImageInfo.inImageRuntimeCode()) {
-                return ProcessProperties.getProcessID();
-            }
-            TruffleFile statFile = getContext().getPublicTruffleFileRelaxed("/proc/self/stat");
-            return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
-        }
-
         @Specialization
-        @TruffleBoundary
-        static long getPidFallback() {
-            String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
-            return Long.parseLong(info.split("@")[0]);
+        long getPid(@CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.getpid(getPosixSupport());
         }
     }
 

@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.NFIPosixSupport;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Consumer;
@@ -182,6 +183,10 @@ public final class PythonContext {
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+
+    // TODO: initialize depending on Options and/or whether native access is allowed
+    // TODO: make this engine option so that we can cache the specialized library in AST
+    private final Object posixSupport = NFIPosixSupport.createNative();
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -290,6 +295,10 @@ public final class PythonContext {
 
     public PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public Object getPosixSupport() {
+        return posixSupport;
     }
 
     public TruffleLanguage.Env getEnv() {
