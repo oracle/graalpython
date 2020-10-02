@@ -1211,6 +1211,11 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        protected static void doByteSimple(ByteSequenceStorage storage, int idx, byte value) {
+            storage.setByteItemNormalized(idx, value);
+        }
+
+        @Specialization(replaces = "doByteSimple")
         protected static void doByte(ByteSequenceStorage storage, int idx, Object value,
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             // TODO: clean this up, we really might need a frame

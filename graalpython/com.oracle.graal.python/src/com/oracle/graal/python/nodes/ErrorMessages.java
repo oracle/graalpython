@@ -126,6 +126,8 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
+    public static final String CANNOT_DELETE_MEMORY = "cannot delete memory";
+    public static final String CANNOT_MODIFY_READONLY_MEMORY = "cannot modify read-only memory";
     public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
@@ -351,6 +353,7 @@ public abstract class ErrorMessages {
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
+    public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
