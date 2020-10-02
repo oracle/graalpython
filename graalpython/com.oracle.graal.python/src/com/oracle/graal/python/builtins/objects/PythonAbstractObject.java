@@ -1148,9 +1148,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
         assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
 
-        Object func = lib.lookupAttributeOnType(this, __INT__);
+        Object func = lib.lookupAttributeOnType(this, __INDEX__);
         if (func == PNone.NO_VALUE) {
-            throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
+            func = lib.lookupAttributeOnType(this, __INT__);
+            if (func == PNone.NO_VALUE) {
+                throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
+            }
         }
         Object result = methodLib.callUnboundMethodWithState(func, state, this);
         try {
