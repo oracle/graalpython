@@ -260,6 +260,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
         CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
         CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
+        CTX_LIST_CHECK("ctx_List_Check"),
         CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
         CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
         CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
@@ -563,6 +564,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_TUPLE_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PTuple);
         members[HPyContextMembers.CTX_TUPLE_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
 
+        members[HPyContextMembers.CTX_LIST_CHECK.ordinal()] = new GraalHPyCheckBuiltinType(PList);
         members[HPyContextMembers.CTX_LIST_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
         members[HPyContextMembers.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
         members[HPyContextMembers.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PList);
