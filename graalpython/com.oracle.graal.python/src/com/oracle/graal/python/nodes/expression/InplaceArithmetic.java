@@ -47,6 +47,7 @@ import com.oracle.graal.python.util.Supplier;
 
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.nodes.Node.Child;
 
 public enum InplaceArithmetic {
     IAdd(SpecialMethodNames.__IADD__, "+="),
@@ -65,13 +66,20 @@ public enum InplaceArithmetic {
 
     private final String methodName;
     private final String operator;
+    private final boolean isTernary;
     private final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
 
     InplaceArithmetic(String methodName, String operator) {
+        this(methodName, operator, false);
+    }
+
+    InplaceArithmetic(String methodName, String operator, boolean isTernary) {
         this.methodName = methodName;
         this.operator = operator;
+        this.isTernary = isTernary;
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
-            @Child private PRaiseNode raiseNode = PRaiseNode.create();
+            @Child
+            private PRaiseNode raiseNode = PRaiseNode.create();
 
             @Override
             public Object execute(Object arg, Object arg2) {
@@ -93,6 +101,9 @@ public enum InplaceArithmetic {
     }
 
     public LookupAndCallInplaceNode create() {
+        if (isTernary) {
+            return LookupAndCallInplaceNode.createWithTernary(methodName, null, null, null, notImplementedHandler);
+        }
         return LookupAndCallInplaceNode.createWithBinary(methodName, null, null, notImplementedHandler);
     }
 }
