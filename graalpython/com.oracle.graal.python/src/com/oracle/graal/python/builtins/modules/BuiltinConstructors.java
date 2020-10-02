@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -3316,34 +3317,57 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // imemoryview([iterable])
-    @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
+    @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
     @GenerateNodeFactory
-    public abstract static class ImemoryViewNode extends PythonBuiltinNode {
-        // TODO native
+    public abstract static class IMemoryViewNode extends PythonBuiltinNode {
+        public abstract Object execute(Object cls, Object object);
+
+        // TODO arrays should support buffer protocol too, but their implementation would be
+        // complex, because they don't have an underlying byte array
         @Specialization
-        Object construct(@SuppressWarnings("unused") Object cls, Object delegate,
+        static Object fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetElementType elementType,
-                        @Cached("createIdentityProfile()") ValueProfile typeProfile,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(delegate);
-            int itemsize;
-            SequenceStorage.ListStorageType type = typeProfile.profile(elementType.execute(storage));
-            switch (type) {
-                case Byte:
-                case Empty:
-                    itemsize = 1;
-                    break;
-                // TODO non-byte arrays
-                default:
-                    throw raise(NotImplementedError, "memoryview not implemented for array type %s", type);
-            }
-            int length = lenNode.execute(storage);
+            SequenceStorage storage = getSequenceStorageNode.execute(object);
+            return fromManaged(object, 1, lenNode.execute(storage), true, "B");
+        }
+
+        @Specialization
+        static Object fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(object);
+            return fromManaged(object, 1, lenNode.execute(storage), false, "B");
+        }
+
+        @Specialization
+        static Object fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
+            // TODO CPython makes a copy, do we need to do that too?
+            return object;
+        }
+
+        @Specialization
+        static Object fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction) {
+            return asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
+        }
+
+        @Fallback
+        Object error(@SuppressWarnings("unused") Object cls, Object object) {
+            throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+        }
+
+        private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format) {
             // TODO factory
             // TODO We should lock the underlying storage for resizing
-            boolean readonly = delegate instanceof PBytes;
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
-                            null, delegate, length * itemsize, readonly, itemsize, "B", 1, null, new int[]{length}, new int[]{itemsize}, null);
+                            null, object, length * itemsize, readonly, itemsize, format, 1, null, new int[]{length}, new int[]{itemsize}, null);
+        }
+
+        public static IMemoryViewNode create() {
+            return BuiltinConstructorsFactory.IMemoryViewNodeFactory.create(null);
         }
     }
 

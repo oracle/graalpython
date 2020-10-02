@@ -349,6 +349,7 @@ public abstract class ErrorMessages {
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
+    public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";

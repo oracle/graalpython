@@ -1544,9 +1544,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_WrapBuffer", minNumOfPositionalArgs = 11)
+    @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_WrapBuffer extends NativeBuiltin {
+    abstract static class PyTruffle_MemoryViewFromObject extends NativeBuiltin {
+        @Specialization
+        static Object wrap(Object object,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached BuiltinConstructors.IMemoryViewNode memoryViewNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(memoryViewNode.execute(PythonBuiltinClassType.IntrinsifiedPMemoryView, asPythonObjectNode.execute(object)));
+        }
+    }
+
+    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 
         @Specialization
         static Object wrap(Object bufferStructPointer, Object ownerObj, Object lenObj, Object readonlyObj, Object itemsizeObj, Object formatObj,
@@ -1574,7 +1586,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         }
                     } else {
                         assert ndim == 1;
-                        // TODO do this lazily on demand
                         shape = new int[1];
                         shape[0] = len / itemsize;
                     }
@@ -1584,7 +1595,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
                         }
                     } else {
-                        // TODO do this lazily on demand
                         // From CPython init_strides_from_shape
                         strides = new int[ndim];
                         strides[ndim - 1] = itemsize;

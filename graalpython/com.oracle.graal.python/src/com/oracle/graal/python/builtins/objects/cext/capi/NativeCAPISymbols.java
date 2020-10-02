@@ -104,6 +104,9 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_POINTS_TO_HANDLE_SPACE = "_graalvm_llvm_points_to_handle_space";
     public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
     public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
+    public static final String FUN_TRUFFLE_ADD_SUBOFFSET = "truffle_add_suboffset";
+    public static final String FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER = "PyTruffle_MemoryViewFromBuffer";
+    public static final String FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT = "PyTruffle_MemoryViewFromObject";
     private static final String FUN_GET_INT8_T_TYPEID = "get_int8_t_typeid";
     private static final String FUN_GET_INT16_T_TYPEID = "get_int16_t_typeid";
     private static final String FUN_GET_INT32_T_TYPEID = "get_int32_t_typeid";

@@ -755,8 +755,3 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
         polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
     }
 }
-
-/* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
-int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset, Py_ssize_t remaining_length) {
-	return polyglot_from_i8_array(*(int8_t**)(ptr + offset) + suboffset, remaining_length);
-}

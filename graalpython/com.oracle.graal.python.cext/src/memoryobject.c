@@ -47,9 +47,19 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
     return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self) * sizeof(PyObject*), self->readonly, flags);
 }
 
-PyObject * PyMemoryView_FromObject(PyObject *v) {
+/* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
+int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset, Py_ssize_t remaining_length) {
+	return polyglot_from_i8_array(*(int8_t**)(ptr + offset) + suboffset, remaining_length);
+}
+
+UPCALL_ID(PyMemoryView_FromObject)
+PyObject* PyMemoryView_FromObject(PyObject *v) {
+	return UPCALL_CEXT_O(_jls_PyMemoryView_FromObject, native_to_java(v));
+}
+
+/* called back from the above upcall only if the object was native */
+PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
 	// TODO resource management
-	// TODO special case memoryview
 	Py_buffer buffer;
     if (PyObject_CheckBuffer(v)) {
         PyObject *ret;
@@ -74,7 +84,7 @@ PyObject * PyMemoryView_FromObject(PyObject *v) {
 
 PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
 	Py_ssize_t ndim = buffer->ndim;
-	return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_WrapBuffer",
+	return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
 			buffer,
 			native_to_java(buffer->obj),
 			buffer->len,

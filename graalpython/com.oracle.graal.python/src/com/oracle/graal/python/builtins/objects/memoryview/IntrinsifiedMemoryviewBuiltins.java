@@ -14,6 +14,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -146,7 +147,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 if (suboffsets != null && suboffsets[dim] >= 0) {
                     // The length may be out of bounds, but sulong shouldn't care if we don't
                     // access the out-of-bound part
-                    ptr = getCallCapiFunction().call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getLength());
+                    ptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, suboffsets[dim], self.getLength());
                 }
             }
 
@@ -201,7 +202,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 if (suboffsets != null && suboffsets[dim] >= 0) {
                     // The length may be out of bounds, but sulong shouldn't care if we don't
                     // access the out-of-bound part
-                    ptr = getCallCapiFunction().call("truffle_add_suboffset", ptr, offset, suboffsets[dim], self.getLength());
+                    ptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, suboffsets[dim], self.getLength());
                     offset = 0;
                 }
             }
