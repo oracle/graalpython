@@ -66,6 +66,10 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderBuild;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderCancel;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderNew;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderSet;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesAsString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBytesGetSize;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyCallBuiltinFunction;
@@ -251,7 +255,15 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_HASH("ctx_Hash"),
         CTX_NUMBER_CHECK("ctx_Number_Check"),
         CTX_LENGTH("ctx_Length"),
-        CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray");
+        CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
+        CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
+        CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
+        CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
+        CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
+        CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
+        CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
+        CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
+        CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel");
 
         private final String name;
 
@@ -542,6 +554,19 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMembers.CTX_NUMBER_CHECK.ordinal()] = new GraalHPyIsNumber();
         members[HPyContextMembers.CTX_LENGTH.ordinal()] = new GraalHPyCallBuiltinFunction(BuiltinNames.LEN, 1, GraalHPyConversionNodeSupplier.TO_INT64);
         members[HPyContextMembers.CTX_TUPLE_FROMARRAY.ordinal()] = new GraalHPyTupleFromArray();
+
+        GraalHPyBuilderNew graalHPyBuilderNew = new GraalHPyBuilderNew();
+        GraalHPyBuilderSet graalHPyBuilderSet = new GraalHPyBuilderSet();
+        GraalHPyBuilderCancel graalHPyBuilderCancel = new GraalHPyBuilderCancel();
+        members[HPyContextMembers.CTX_TUPLE_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
+        members[HPyContextMembers.CTX_TUPLE_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
+        members[HPyContextMembers.CTX_TUPLE_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PTuple);
+        members[HPyContextMembers.CTX_TUPLE_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
+
+        members[HPyContextMembers.CTX_LIST_BUILDER_NEW.ordinal()] = graalHPyBuilderNew;
+        members[HPyContextMembers.CTX_LIST_BUILDER_SET.ordinal()] = graalHPyBuilderSet;
+        members[HPyContextMembers.CTX_LIST_BUILDER_BUILD.ordinal()] = new GraalHPyBuilderBuild(PList);
+        members[HPyContextMembers.CTX_LIST_BUILDER_CANCEL.ordinal()] = graalHPyBuilderCancel;
         return members;
     }
 

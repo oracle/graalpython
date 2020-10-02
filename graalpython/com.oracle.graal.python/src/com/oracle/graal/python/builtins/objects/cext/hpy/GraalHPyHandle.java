@@ -175,4 +175,16 @@ public final class GraalHPyHandle implements TruffleObject {
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
     }
+
+    public void close(GraalHPyContext hpyContext) {
+        if (isPointer()) {
+            try {
+                hpyContext.releaseHPyHandleForObject((int) asPointer());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("trying to release non-native handle that claims to be native");
+            }
+        }
+        // nothing to do if the handle never got 'toNative'
+    }
 }

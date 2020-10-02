@@ -61,7 +61,6 @@ import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.WeakHashMap;
 
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -98,6 +97,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyF
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -140,6 +141,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -156,6 +158,7 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -230,15 +233,7 @@ public abstract class GraalHPyContextFunctions {
             }
             GraalHPyContext hpyContext = asContextNode.execute(arguments[0]);
             GraalHPyHandle handle = ensureHandleNode.execute(hpyContext, arguments[1]);
-            if (handle.isNative()) {
-                try {
-                    hpyContext.releaseHPyHandleForObject((int) handle.asPointer());
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("trying to release non-native handle that claims to be native");
-                }
-            }
-            // nothing to do if the handle never got 'toNative'
+            handle.close(hpyContext);
             return 0;
         }
     }
@@ -1675,4 +1670,165 @@ public abstract class GraalHPyContextFunctions {
             }
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBuilderNew extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            try {
+                int capacity = castToJavaIntExactNode.execute(arguments[1]);
+                if (capacity >= 0) {
+                    Object[] data = new Object[capacity];
+                    for (int i = 0; i < data.length; i++) {
+                        data[i] = PNone.NONE;
+                    }
+                    return asHandleNode.execute(nativeContext, new ObjectSequenceStorage(data));
+                }
+            } catch (CannotCastException e) {
+                // fall through
+            }
+            return nativeContext.getNullHandle();
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBuilderSet extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached SequenceStorageNodes.SetItemDynamicNode setItemNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 4) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(4, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            Object builder = asPythonObjectNode.execute(nativeContext, arguments[1]);
+            if (!isValid(builder)) {
+                // that's really unexpected since the C signature should enforce a valid builder but
+                // someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+            ObjectSequenceStorage storage = (ObjectSequenceStorage) builder;
+
+            try {
+                int idx = castToJavaIntExactNode.execute(arguments[2]);
+                Object value = asPythonObjectNode.execute(nativeContext, arguments[3]);
+                setItemNode.execute(NoGeneralizationNode.DEFAULT, storage, idx, value);
+            } catch (CannotCastException e) {
+                // fall through
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+            }
+            return 0;
+        }
+
+        private boolean isValid(Object object) {
+            return object instanceof ObjectSequenceStorage;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBuilderBuild extends GraalHPyContextFunction {
+
+        private final PythonBuiltinClassType type;
+
+        public GraalHPyBuilderBuild(PythonBuiltinClassType type) {
+            assert type == PythonBuiltinClassType.PTuple || type == PythonBuiltinClassType.PList;
+            this.type = type;
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            ObjectSequenceStorage builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            if (builder == null) {
+                // that's really unexpected since the C signature should enforce a valid builder but
+                // someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+
+            Object sequence;
+            switch (type) {
+                case PTuple:
+                    sequence = factory.createTuple(builder);
+                    break;
+                case PList:
+                    sequence = factory.createList(builder);
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+            return asHandleNode.execute(sequence);
+        }
+
+        private static ObjectSequenceStorage cast(Object object) {
+            if (object instanceof ObjectSequenceStorage) {
+                return (ObjectSequenceStorage) object;
+            }
+            return null;
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBuilderCancel extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
+            }
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            GraalHPyHandle hpyHandle = ensureHandleNode.execute(nativeContext, arguments[1]);
+            hpyHandle.close(nativeContext);
+
+            // be pedantic and also check what we are cancelling
+            ObjectSequenceStorage builder = cast(asPythonObjectNode.execute(nativeContext, hpyHandle));
+            if (builder == null) {
+                // that's really unexpected since the C signature should enforce a valid builder but
+                // someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+
+            return 0;
+        }
+
+        private static ObjectSequenceStorage cast(Object object) {
+            if (object instanceof ObjectSequenceStorage) {
+                return (ObjectSequenceStorage) object;
+            }
+            return null;
+        }
+
+    }
+
 }
