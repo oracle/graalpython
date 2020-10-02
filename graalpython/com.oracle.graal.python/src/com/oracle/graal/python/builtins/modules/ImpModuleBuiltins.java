@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -507,11 +508,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached("create(__LOADER__)") SetAttributeNode setAttributeNode,
                         @CachedLibrary(value = "moduleSpec") PythonObjectLibrary pol) {
             Object name = pol.lookupAttribute(moduleSpec, frame, "name");
             PythonModule builtinModule = getBuiltinModule(toJavaStringNode.execute(name));
             if (builtinModule != null) {
-                // TODO: builtin modules cannot be re-initialized (see is_builtin)
+                // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
+                // We are setting the loader to the spec loader (since this is the loader that is
+                // set during bootstrap); this, however, should be handled be the builtin module
+                // reinitialization (if reinit is possible)
+                Object loader = pol.lookupAttribute(moduleSpec, frame, "loader");
+                if (loader != PNone.NO_VALUE) {
+                    setAttributeNode.executeVoid(frame, builtinModule, loader);
+                }
                 return builtinModule;
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
