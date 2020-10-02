@@ -13,6 +13,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -38,6 +39,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.IntrinsifiedPMemoryView)
 public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
@@ -120,11 +122,13 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
         @Specialization
-        Object getitemNative(VirtualFrame frame, IntrinsifiedPMemoryView self, int index,
+        Object getitem(VirtualFrame frame, IntrinsifiedPMemoryView self, int index,
                         @Cached ReadItemAtNode readItemAtNode) {
             if (self.getDimensions() > 1) {
                 // CPython doesn't implement this either, as of 3.8
                 throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            } else if (self.getDimensions() == 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             Object ptr = self.getBufferPointer();
             int offset = self.getOffset();
@@ -177,7 +181,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getitemNativeMulti(VirtualFrame frame, IntrinsifiedPMemoryView self, PTuple indices,
+        Object getitemMulti(VirtualFrame frame, IntrinsifiedPMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached ReadItemAtNode readItemAtNode) {
             Object ptr = self.getBufferPointer();
@@ -210,10 +214,19 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             return readItemAtNode.execute(frame, self, ptr, offset);
         }
 
-        @Specialization(guards = {"!isPTuple(indexObj)", "!isPSlice(indexObj)"})
+        @Specialization(guards = {"!isPTuple(indexObj)", "!isPSlice(indexObj)", "!isEllipsis(indexObj)"})
         Object getitemNativeObject(VirtualFrame frame, IntrinsifiedPMemoryView self, Object indexObj,
                         @Cached ReadItemAtNode readItemAtNode) {
-            return getitemNative(frame, self, convertIndex(frame, indexObj), readItemAtNode);
+            return getitem(frame, self, convertIndex(frame, indexObj), readItemAtNode);
+        }
+
+        @Specialization
+        Object getitemEllipsis(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
+                        @Cached ConditionProfile zeroDimProfile) {
+            if (zeroDimProfile.profile(self.getDimensions() == 0)) {
+                return self;
+            }
+            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
         }
 
         private int getIndex(VirtualFrame frame, SequenceStorage indicesStorage, int index) {
@@ -231,7 +244,9 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
         private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
             int length = getSequenceLenNode().execute(indicesStorage);
-            if (length > ndim) {
+            if (ndim == 0 && length != 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            } else if (length > ndim) {
                 throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
             } else if (length < ndim) {
                 // CPython doesn't implement this either, as of 3.8
@@ -276,8 +291,9 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public static abstract class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int nativeLen(IntrinsifiedPMemoryView self) {
-            return self.getLength() / self.getItemSize();
+        static int nativeLen(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile zeroDimProfile) {
+            return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
         }
     }
 }

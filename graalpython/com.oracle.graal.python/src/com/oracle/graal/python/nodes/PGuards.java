@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -127,6 +128,10 @@ public abstract class PGuards {
 
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
+    }
+
+    public static boolean isEllipsis(Object object) {
+        return object == PEllipsis.INSTANCE;
     }
 
     public static boolean isDeleteMarker(Object object) {

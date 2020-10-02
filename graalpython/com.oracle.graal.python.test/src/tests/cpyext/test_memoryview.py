@@ -143,3 +143,38 @@ class TestPyMemoryView(CPyExtTestCase):
         callfunction="test_slice",
         cmpfunc=unhandled_error_compare,
     )
+
+    test_memoryview_read_0dim = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            ((), 123456),
+            (1, TypeError("invalid indexing of 0-dim memory")),
+            ((1,), TypeError("invalid indexing of 0-dim memory")),
+        ),
+        code='''
+            long number = 123456;
+            Py_buffer buffer = {
+                    &number,
+                    NULL,
+                    sizeof(long),
+                    sizeof(long),
+                    1,
+                    0,
+                    "l",
+            };
+    
+            static PyObject* test_read(PyObject *key, PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromBuffer(&buffer);
+                if (!mv)
+                    return NULL;
+                PyObject *item = PyObject_GetItem(mv, key);
+                Py_DECREF(mv);
+                return item;
+            }
+        ''',
+        resultspec='O',
+        argspec='OO',
+        arguments=["PyObject* key", "PyObject* expected"],
+        callfunction="test_read",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
