@@ -3,7 +3,9 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
+// TODO POL
+// TODO interop lib
+public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final Object bufferStructPointer;
     private final Object owner;
     private final int len;
@@ -12,16 +14,16 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
     private final String format;
     private final int ndim;
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
-    // bufPointerOffset
+    // offset
     private final Object bufPointer;
-    private final int bufPointerOffset;
+    private final int offset;
     private final int[] shape;
     private final int[] strides;
     private final int[] suboffsets;
 
-    public IntrinsifiedPNativeMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
+    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
                     int len, boolean readonly, int itemsize, String format, int ndim, Object bufPointer,
-                    int bufPointerOffset, int[] shape, int[] strides, int[] suboffsets) {
+                    int offset, int[] shape, int[] strides, int[] suboffsets) {
         super(cls, instanceShape);
         this.bufferStructPointer = bufferStructPointer;
         this.owner = owner;
@@ -31,13 +33,13 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
         this.format = format;
         this.ndim = ndim;
         this.bufPointer = bufPointer;
-        this.bufPointerOffset = bufPointerOffset;
+        this.offset = offset;
         this.shape = shape;
         this.strides = strides;
         this.suboffsets = suboffsets;
     }
 
-    public IntrinsifiedPNativeMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner, int len, boolean readonly, int itemsize, String format,
+    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner, int len, boolean readonly, int itemsize, String format,
                     int ndim, Object bufPointer, int[] shape, int[] strides, int[] suboffsets) {
         this(cls, instanceShape, bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets);
     }
@@ -74,8 +76,8 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
         return bufPointer;
     }
 
-    public int getBufferPointerOffset() {
-        return bufPointerOffset;
+    public int getOffset() {
+        return offset;
     }
 
     public int[] getBufferShape() {

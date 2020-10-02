@@ -180,7 +180,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPNativeMemoryView;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -1600,7 +1600,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     }
                 }
                 // TODO factory
-                IntrinsifiedPNativeMemoryView memoryview = new IntrinsifiedPNativeMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView,
+                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView,
                                 PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
                                 bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, shape, strides, suboffsets);
                 return toNewRefNode.execute(memoryview);

@@ -151,7 +151,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPManagedMemoryView;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -3321,13 +3321,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ImemoryViewNode extends PythonBuiltinNode {
         // TODO native
         @Specialization
-        static IntrinsifiedPManagedMemoryView construct(@SuppressWarnings("unused") Object cls, Object delegate,
+        Object construct(@SuppressWarnings("unused") Object cls, Object delegate,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetElementType elementType,
+                        @Cached("createIdentityProfile()") ValueProfile typeProfile,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
-            int length = lenNode.execute(getSequenceStorageNode.execute(delegate));
+            SequenceStorage storage = getSequenceStorageNode.execute(delegate);
+            int itemsize;
+            SequenceStorage.ListStorageType type = typeProfile.profile(elementType.execute(storage));
+            switch (type) {
+                case Byte:
+                case Empty:
+                    itemsize = 1;
+                    break;
+                // TODO non-byte arrays
+                default:
+                    throw raise(NotImplementedError, "memoryview not implemented for array type %s", type);
+            }
+            int length = lenNode.execute(storage);
             // TODO factory
             // TODO We should lock the underlying storage for resizing
-            return new IntrinsifiedPManagedMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(), delegate, length);
+            boolean readonly = delegate instanceof PBytes;
+            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+                            null, delegate, length * itemsize, readonly, itemsize, "B", 1, null, new int[]{length}, new int[]{itemsize}, null);
         }
     }
 
