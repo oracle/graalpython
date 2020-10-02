@@ -528,7 +528,8 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readArg2Node = insert(ReadIndexedArgumentNode.create(2));
             }
-            return readArg2Node.execute(frame);
+            Object arg2 = readArg2Node.execute(frame);
+            return arg2 != PNone.NO_VALUE ? arg2 : PNone.NONE;
         }
 
         @Override
