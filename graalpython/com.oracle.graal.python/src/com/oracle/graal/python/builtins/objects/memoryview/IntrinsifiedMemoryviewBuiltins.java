@@ -139,13 +139,13 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
             }
             Object ptr = self.getBufferPointer();
-            long offset = self.getBufferPointerOffset();
-            long itemsize = self.getItemSize();
+            int offset = self.getBufferPointerOffset();
+            int itemsize = self.getItemSize();
             try {
                 for (int dim = 0; dim < self.getDimensions(); dim++) {
-                    long nitems;
+                    int nitems;
 
-                    long[] shape = self.getBufferShape();
+                    int[] shape = self.getBufferShape();
                     nitems = shape[dim];
                     if (index < 0) {
                         index += nitems;
@@ -157,7 +157,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                     // TODO stride is allowed to be negative
                     offset += self.getBufferStrides()[dim] * index;
 
-                    long[] suboffsets = self.getBufferSuboffsets();
+                    int[] suboffsets = self.getBufferSuboffsets();
                     if (suboffsets != null && suboffsets[dim] >= 0) {
                         // The length may be out of bounds, but sulong shouldn't care if we don't
                         // access the out-of-bound part
@@ -165,7 +165,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                     }
                 }
 
-                byte[] bytes = new byte[(int) itemsize];
+                byte[] bytes = new byte[itemsize];
                 for (int i = 0; i < itemsize; i++) {
                     bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
                 }
@@ -183,15 +183,15 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             // TODO ndim == 0
             // TODO profile ndim == 1
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
-            long[] strides = self.getBufferStrides();
-            long[] newStrides = new long[strides.length];
+            int[] strides = self.getBufferStrides();
+            int[] newStrides = new int[strides.length];
             newStrides[0] = strides[0] * sliceInfo.step;
             PythonUtils.arraycopy(strides, 1, newStrides, 1, strides.length - 1);
-            long[] shape = self.getBufferShape();
-            long[] newShape = new long[shape.length];
+            int[] shape = self.getBufferShape();
+            int[] newShape = new int[shape.length];
             newShape[0] = sliceInfo.sliceLength;
             PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
-            int lenght = self.getLength() - (int) (shape[0] - newShape[0]) * self.getItemSize();
+            int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             // TODO factory
             return new IntrinsifiedPNativeMemoryView(IntrinsifiedPMemoryView, IntrinsifiedPMemoryView.getInstanceShape(), self.getBufferStructPointer(),
                             self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormat(), self.getDimensions(), self.getBufferPointer(),
@@ -205,15 +205,15 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object ptr = self.getBufferPointer();
-            long offset = self.getBufferPointerOffset();
-            long itemsize = self.getItemSize();
+            int offset = self.getBufferPointerOffset();
+            int itemsize = self.getItemSize();
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             checkTupleLength(indicesStorage, self.getDimensions());
             try {
                 for (int dim = 0; dim < self.getDimensions(); dim++) {
-                    long nitems;
+                    int nitems;
                     int index = getIndex(frame, indicesStorage, dim);
-                    long[] shape = self.getBufferShape();
+                    int[] shape = self.getBufferShape();
                     nitems = shape[dim];
                     if (index < 0) {
                         index += nitems;
@@ -224,7 +224,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
                     offset += self.getBufferStrides()[dim] * index;
 
-                    long[] suboffsets = self.getBufferSuboffsets();
+                    int[] suboffsets = self.getBufferSuboffsets();
                     if (suboffsets != null && suboffsets[dim] >= 0) {
                         // The length may be out of bounds, but sulong shouldn't care if we don't
                         // access the out-of-bound part
@@ -233,7 +233,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                     }
                 }
 
-                byte[] bytes = new byte[(int) itemsize];
+                byte[] bytes = new byte[itemsize];
                 for (int i = 0; i < itemsize; i++) {
                     bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
                 }

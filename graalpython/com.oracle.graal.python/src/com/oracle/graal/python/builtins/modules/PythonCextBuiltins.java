@@ -230,7 +230,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1553,7 +1552,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object wrap(Object bufferStructPointer, Object ownerObj, Object lenObj, Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CastToJavaLongExactNode castToLongNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode) {
@@ -1564,40 +1562,40 @@ public class PythonCextBuiltins extends PythonBuiltins {
             String format = (String) asPythonObjectNode.execute(formatObj);
             Object owner = asPythonObjectNode.execute(ownerObj);
             try {
-                long[] shape = null;
-                long[] strides = null;
-                long[] suboffsets = null;
+                int[] shape = null;
+                int[] strides = null;
+                int[] suboffsets = null;
                 // TODO profile
                 if (ndim > 0) {
                     if (!lib.isNull(shapePointer)) {
-                        shape = new long[ndim];
+                        shape = new int[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            shape[i] = castToLongNode.execute(lib.readArrayElement(shapePointer, i));
+                            shape[i] = castToIntNode.execute(lib.readArrayElement(shapePointer, i));
                         }
                     } else {
                         assert ndim == 1;
                         // TODO do this lazily on demand
-                        shape = new long[1];
+                        shape = new int[1];
                         shape[0] = len / itemsize;
                     }
                     if (!lib.isNull(stridesPointer)) {
-                        strides = new long[ndim];
+                        strides = new int[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            strides[i] = castToLongNode.execute(lib.readArrayElement(stridesPointer, i));
+                            strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
                         }
                     } else {
                         // TODO do this lazily on demand
                         // From CPython init_strides_from_shape
-                        strides = new long[ndim];
+                        strides = new int[ndim];
                         strides[ndim - 1] = itemsize;
                         for (int i = ndim - 2; i >= 0; i--) {
                             strides[i] = strides[i + 1] * shape[i + 1];
                         }
                     }
                     if (!lib.isNull(suboffsetsPointer)) {
-                        suboffsets = new long[ndim];
+                        suboffsets = new int[ndim];
                         for (int i = 0; i < ndim; i++) {
-                            suboffsets[i] = castToLongNode.execute(lib.readArrayElement(suboffsetsPointer, i));
+                            suboffsets[i] = castToIntNode.execute(lib.readArrayElement(suboffsetsPointer, i));
                         }
                     }
                 }

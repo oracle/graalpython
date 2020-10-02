@@ -14,14 +14,14 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
     // bufPointerOffset
     private final Object bufPointer;
-    private final long bufPointerOffset;
-    private final long[] shape;
-    private final long[] strides;
-    private final long[] suboffsets;
+    private final int bufPointerOffset;
+    private final int[] shape;
+    private final int[] strides;
+    private final int[] suboffsets;
 
     public IntrinsifiedPNativeMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
                     int len, boolean readonly, int itemsize, String format, int ndim, Object bufPointer,
-                    long bufPointerOffset, long[] shape, long[] strides, long[] suboffsets) {
+                    int bufPointerOffset, int[] shape, int[] strides, int[] suboffsets) {
         super(cls, instanceShape);
         this.bufferStructPointer = bufferStructPointer;
         this.owner = owner;
@@ -38,7 +38,7 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
     }
 
     public IntrinsifiedPNativeMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner, int len, boolean readonly, int itemsize, String format,
-                    int ndim, Object bufPointer, long[] shape, long[] strides, long[] suboffsets) {
+                    int ndim, Object bufPointer, int[] shape, int[] strides, int[] suboffsets) {
         this(cls, instanceShape, bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets);
     }
 
@@ -74,19 +74,19 @@ public class IntrinsifiedPNativeMemoryView extends PythonBuiltinObject {
         return bufPointer;
     }
 
-    public long getBufferPointerOffset() {
+    public int getBufferPointerOffset() {
         return bufPointerOffset;
     }
 
-    public long[] getBufferShape() {
+    public int[] getBufferShape() {
         return shape;
     }
 
-    public long[] getBufferStrides() {
+    public int[] getBufferStrides() {
         return strides;
     }
 
-    public long[] getBufferSuboffsets() {
+    public int[] getBufferSuboffsets() {
         return suboffsets;
     }
 }
