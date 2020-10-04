@@ -25,6 +25,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -37,7 +38,9 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -209,11 +212,13 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
     }
 
-    static abstract class PointerFromIndexNode extends Node {
+    @ImportStatic(PGuards.class)
+    static abstract class PointerLookupNode extends Node {
         @Child private PRaiseNode raiseNode;
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
-        public abstract MemoryPointer execute(IntrinsifiedPMemoryView self, int index);
+        // index can be a tuple, int or int-convertible
+        public abstract MemoryPointer execute(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index);
 
         private void lookupDimension(IntrinsifiedPMemoryView self, MemoryPointer ptr, int dim, int index) {
             int[] shape = self.getBufferShape();
@@ -237,10 +242,60 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        MemoryPointer resolve(IntrinsifiedPMemoryView self, int index) {
+        MemoryPointer resolveInt(IntrinsifiedPMemoryView self, int index) {
+            if (self.getDimensions() > 1) {
+                // CPython doesn't implement this either, as of 3.8
+                throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+            } else if (self.getDimensions() == 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            }
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             lookupDimension(self, ptr, 0, index);
             return ptr;
+        }
+
+        // TODO explode loop
+        @Specialization
+        MemoryPointer resolveTuple(VirtualFrame frame, IntrinsifiedPMemoryView self, PTuple indices,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
+            int ndim = self.getDimensions();
+            checkTupleLength(lenNode, indicesStorage, ndim);
+            MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
+            for (int dim = 0; dim < ndim; dim++) {
+                Object indexObj = getItemNode.execute(frame, indicesStorage, dim);
+                int index = convertIndex(lib, indexObj);
+                lookupDimension(self, ptr, dim, index);
+            }
+            return ptr;
+        }
+
+        @Specialization(guards = "!isPTuple(indexObj)")
+        MemoryPointer resolveInt(IntrinsifiedPMemoryView self, Object indexObj,
+                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            return resolveInt(self, convertIndex(lib, indexObj));
+        }
+
+        private void checkTupleLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage indicesStorage, int ndim) {
+            int length = lenNode.execute(indicesStorage);
+            if (ndim == 0 && length != 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            } else if (length > ndim) {
+                throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
+            } else if (length < ndim) {
+                // CPython doesn't implement this either, as of 3.8
+                throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
+            }
+        }
+
+        private int convertIndex(PythonObjectLibrary lib, Object indexObj) {
+            if (!lib.canBeIndex(indexObj)) {
+                throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
+            }
+            return lib.asSize(indexObj, IndexError);
         }
 
         private PException raise(PythonBuiltinClassType type, String message, Object... args) {
@@ -263,23 +318,12 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     static abstract class GetItemNode extends PythonBinaryBuiltinNode {
-        @Child private SequenceStorageNodes.LenNode sequenceLenNode;
-        @Child private SequenceStorageNodes.GetItemNode sequenceGetItemNode;
-        @Child private PythonObjectLibrary plib;
-        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
-        @Specialization
-        Object getitem(VirtualFrame frame, IntrinsifiedPMemoryView self, int index,
-                        @Cached PointerFromIndexNode pointerFromIndexNode,
+        @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
+        static Object getitem(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index,
+                        @Cached PointerLookupNode pointerFromIndexNode,
                         @Cached ReadItemAtNode readItemAtNode) {
-            if (self.getDimensions() > 1) {
-                // CPython doesn't implement this either, as of 3.8
-                throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
-            } else if (self.getDimensions() == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
-            }
-
-            MemoryPointer ptr = pointerFromIndexNode.execute(self, index);
+            MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
             return readItemAtNode.execute(frame, self, ptr.ptr, ptr.offset);
         }
 
@@ -306,46 +350,6 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getitemMulti(VirtualFrame frame, IntrinsifiedPMemoryView self, PTuple indices,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached ReadItemAtNode readItemAtNode) {
-            Object ptr = self.getBufferPointer();
-            int offset = self.getOffset();
-            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
-            checkTupleLength(indicesStorage, self.getDimensions());
-            for (int dim = 0; dim < self.getDimensions(); dim++) {
-                int index = getIndex(frame, indicesStorage, dim);
-                int[] shape = self.getBufferShape();
-                int nitems = shape[dim];
-                if (index < 0) {
-                    index += nitems;
-                }
-                if (index < 0 || index >= nitems) {
-                    throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
-                }
-
-                offset += self.getBufferStrides()[dim] * index;
-
-                int[] suboffsets = self.getBufferSuboffsets();
-                if (suboffsets != null && suboffsets[dim] >= 0) {
-                    // The length may be out of bounds, but sulong shouldn't care if we don't
-                    // access the out-of-bound part
-                    ptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, suboffsets[dim], self.getLength());
-                    offset = 0;
-                }
-            }
-
-            return readItemAtNode.execute(frame, self, ptr, offset);
-        }
-
-        @Specialization(guards = {"!isPTuple(indexObj)", "!isPSlice(indexObj)", "!isEllipsis(indexObj)"})
-        Object getitemNativeObject(VirtualFrame frame, IntrinsifiedPMemoryView self, Object indexObj,
-                        @Cached PointerFromIndexNode pointerFromIndexNode,
-                        @Cached ReadItemAtNode readItemAtNode) {
-            return getitem(frame, self, convertIndex(frame, indexObj), pointerFromIndexNode, readItemAtNode);
-        }
-
-        @Specialization
         Object getitemEllipsis(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
                         @Cached ConditionProfile zeroDimProfile) {
             if (zeroDimProfile.profile(self.getDimensions() == 0)) {
@@ -353,75 +357,18 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             }
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
         }
-
-        private int getIndex(VirtualFrame frame, SequenceStorage indicesStorage, int index) {
-            Object indexObj = getSequenceGetItemNode().execute(frame, indicesStorage, index);
-            return convertIndex(frame, indexObj);
-        }
-
-        private int convertIndex(@SuppressWarnings("unused") VirtualFrame frame, Object indexObj) {
-            if (!getPlib().canBeIndex(indexObj)) {
-                throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
-            }
-            // FIXME use asSizeWithFrame when GR-26456 is fixed
-            return getPlib().asSize(indexObj, IndexError);
-        }
-
-        private void checkTupleLength(SequenceStorage indicesStorage, int ndim) {
-            int length = getSequenceLenNode().execute(indicesStorage);
-            if (ndim == 0 && length != 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
-            } else if (length > ndim) {
-                throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
-            } else if (length < ndim) {
-                // CPython doesn't implement this either, as of 3.8
-                throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
-            }
-        }
-
-        private SequenceStorageNodes.LenNode getSequenceLenNode() {
-            if (sequenceLenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sequenceLenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return sequenceLenNode;
-        }
-
-        private SequenceStorageNodes.GetItemNode getSequenceGetItemNode() {
-            if (sequenceGetItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                sequenceGetItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return sequenceGetItemNode;
-        }
-
-        private PythonObjectLibrary getPlib() {
-            if (plib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                plib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
-            }
-            return plib;
-        }
-
-        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
-            }
-            return callCapiFunction;
-        }
     }
 
     @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public static abstract class SetItemNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object setitem(VirtualFrame frame, IntrinsifiedPMemoryView self, int index, Object object,
-                        @Cached PointerFromIndexNode pointerFromIndexNode,
+        @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
+        Object setitem(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index, Object object,
+                        @Cached PointerLookupNode pointerFromIndexNode,
                         @Cached WriteItemAtNode writeItemAtNode) {
             checkReadonly(self);
 
-            MemoryPointer ptr = pointerFromIndexNode.execute(self, index);
+            MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
             writeItemAtNode.execute(frame, self, ptr.ptr, ptr.offset, object);
 
             return PNone.NONE;
