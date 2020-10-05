@@ -49,6 +49,7 @@ ModuleRootNode Name: <module 'yeild03'> SourceSection: [0,19]`def f(): x += yiel
                           flagSlot: 0
                           EmptyNode SourceSection: None
                           GeneratorAccessNode SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                   ReadGeneratorFrameVariableNode SourceSection: None
                     Frame: [1,<return_val>,Illegal]
                     ReadVariableFromFrameNodeGen SourceSection: None

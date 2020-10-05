@@ -467,6 +467,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNode SourceSection: [2424,2434]`TYPE_FLAGS`
                               Frame: [3,TYPE_FLAGS,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                          ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [2439,2478]`return (flags | add_...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -3692,6 +3693,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [11491,11497]`0xff00`
                                                         Value: 65280
+                                                    ObjectLiteralNode SourceSection: None
                                                 ContinueNode SourceSection: [11518,11526]`continue`
                                               BlockNode SourceSection: None
                                             IfNode SourceSection: [11609,11971]`if fixup:↵          ...`
@@ -4004,6 +4006,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNode SourceSection: [12583,12587]`tail`
                               Frame: [5,tail,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         IfNode SourceSection: [12668,12802]`if hascased or len(o...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
@@ -4118,6 +4121,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNode SourceSection: [12959,12963]`tail`
                               Frame: [5,tail,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         FrameReturnNode SourceSection: [12972,12992]`return out, hascased...`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -4286,6 +4290,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [14480,14481]`1`
                                       Value: 1
+                                    ObjectLiteralNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: [14494,14507]`data += chunk`
                                   Identifier: data
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -4297,6 +4302,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadLocalVariableNode SourceSection: [14502,14507]`chunk`
                                       Frame: [21,chunk,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                    ObjectLiteralNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [14262,14282]`range(0, 65536, 256)...`
                           PythonCallTernary SourceSection: [14262,14282]`range(0, 65536, 256)...`
                             CallTernaryMethodNodeGen SourceSection: None
@@ -4375,6 +4381,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         ReadLocalVariableNode SourceSection: [14633,14637]`tail`
                           Frame: [5,tail,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [14642,14662]`return out, hascased...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -7393,6 +7400,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                               PythonObjectFactoryNodeGen SourceSection: None
                                                           PythonObjectFactoryNodeGen SourceSection: None
+                                                        ObjectLiteralNode SourceSection: None
                                                   BlockNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [21278,21388]`print('%*d%s ' % (of...`
                                                   PythonCallNodeGen SourceSection: [21278,21388]`print('%*d%s ' % (of...`
@@ -7588,6 +7596,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadFromCellNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [21607,21608]`1`
                                         Value: 1
+                                      ObjectLiteralNode SourceSection: None
                                   WriteLocalVariableNodeGen SourceSection: [21617,21626]`i = start`
                                     Identifier: i
                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7646,6 +7655,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [21714,21715]`1`
                                                 Value: 1
+                                              ObjectLiteralNode SourceSection: None
                                           WriteLocalVariableNodeGen SourceSection: [21728,21744]`op = OPCODES[op]`
                                             Identifier: op
                                             WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7765,6 +7775,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [22173,22174]`1`
                                                       Value: 1
+                                                    ObjectLiteralNode SourceSection: None
                                                 ExpressionStatementNode SourceSection: [22191,22233]`print_(op, '%#02x (%...`
                                                   PythonCallBinary SourceSection: [22191,22233]`print_(op, '%#02x (%...`
                                                     CallBinaryMethodNodeGen SourceSection: None
@@ -7826,6 +7837,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [22312,22313]`1`
                                                         Value: 1
+                                                      ObjectLiteralNode SourceSection: None
                                                   WriteLocalVariableNodeGen SourceSection: [22330,22353]`arg = str(ATCODES[ar...`
                                                     Identifier: arg
                                                     WriteLocalFrameSlotNodeGen SourceSection: None
@@ -7914,6 +7926,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                         IntegerLiteralNode SourceSection: [22514,22515]`1`
                                                           Value: 1
+                                                        ObjectLiteralNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [22532,22555]`arg = str(CHCODES[ar...`
                                                       Identifier: arg
                                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8070,6 +8083,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           ReadLocalVariableNode SourceSection: [22838,22842]`skip`
                                                             Frame: [7,skip,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                                          ObjectLiteralNode SourceSection: None
                                                     IfNode SourceSection: [22855,26234]`elif op in (RANGE, R...`
                                                       YesNodeGen SourceSection: None
                                                         IsBuiltinClassProfile SourceSection: None
@@ -8145,6 +8159,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                             IntegerLiteralNode SourceSection: [22952,22953]`2`
                                                               Value: 2
+                                                            ObjectLiteralNode SourceSection: None
                                                         ExpressionStatementNode SourceSection: [22970,23032]`print_(op, '%#02x %#...`
                                                           PythonCallBinary SourceSection: [22970,23032]`print_(op, '%#02x %#...`
                                                             CallBinaryMethodNodeGen SourceSection: None
@@ -8250,6 +8265,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23158,23167]`_CODEBITS`
                                                                   Identifier: _CODEBITS
                                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                              ObjectLiteralNode SourceSection: None
                                                         IfNode SourceSection: [23180,26234]`elif op is BIGCHARSE...`
                                                           YesNodeGen SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
@@ -8285,6 +8301,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [23254,23255]`1`
                                                                   Value: 1
+                                                                ObjectLiteralNode SourceSection: None
                                                             WriteLocalVariableNodeGen SourceSection: [23272,23419]`mapping = list(b''.j...`
                                                               Identifier: mapping
                                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8450,6 +8467,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [23487,23491]`_sre`
                                                                       Identifier: _sre
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                ObjectLiteralNode SourceSection: None
                                                             WriteLocalCellNodeGen SourceSection: [23517,23527]`level += 1`
                                                               Identifier: level
                                                               ReadLocalVariableNode SourceSection: None
@@ -8463,6 +8481,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadFromCellNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [23526,23527]`1`
                                                                   Value: 1
+                                                                ObjectLiteralNode SourceSection: None
                                                             ElseNode SourceSection: [23544,23689]`for j in range(arg):...`
                                                               ForNode SourceSection: None
                                                                 ForRepeatingNode SourceSection: None
@@ -8525,6 +8544,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23663,23672]`_CODEBITS`
                                                                             Identifier: _CODEBITS
                                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                                        ObjectLiteralNode SourceSection: None
                                                                 GetIteratorExpressionNodeGen SourceSection: [23553,23563]`range(arg)`
                                                                   PythonCallUnary SourceSection: [23553,23563]`range(arg)`
                                                                     CallUnaryMethodNodeGen SourceSection: None
@@ -8548,6 +8568,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                   ReadFromCellNodeGen SourceSection: None
                                                                 IntegerLiteralNode SourceSection: [23698,23699]`1`
                                                                   Value: 1
+                                                                ObjectLiteralNode SourceSection: None
                                                           IfNode SourceSection: [23712,26234]`elif op in (MARK, GR...`
                                                             YesNodeGen SourceSection: None
                                                               IsBuiltinClassProfile SourceSection: None
@@ -8602,6 +8623,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                                   IntegerLiteralNode SourceSection: [23875,23876]`1`
                                                                     Value: 1
+                                                                  ObjectLiteralNode SourceSection: None
                                                               ExpressionStatementNode SourceSection: [23893,23908]`print_(op, arg)`
                                                                 PythonCallBinary SourceSection: [23893,23908]`print_(op, arg)`
                                                                   CallBinaryMethodNodeGen SourceSection: None
@@ -8675,6 +8697,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     IntegerLiteralNode SourceSection: [24034,24035]`1`
                                                                       Value: 1
+                                                                    ObjectLiteralNode SourceSection: None
                                                               IfNode SourceSection: [24048,26234]`elif op is BRANCH:↵ ...`
                                                                 YesNodeGen SourceSection: None
                                                                   IsBuiltinClassProfile SourceSection: None
@@ -8772,6 +8795,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               ReadLocalVariableNode SourceSection: [24233,24237]`skip`
                                                                                 Frame: [7,skip,Illegal]
                                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                                              ObjectLiteralNode SourceSection: None
                                                                           WriteLocalCellNodeGen SourceSection: [24258,24267]`start = i`
                                                                             Identifier: start
                                                                             ReadLocalVariableNode SourceSection: None
@@ -8844,6 +8868,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       IntegerLiteralNode SourceSection: [24477,24478]`1`
                                                                         Value: 1
+                                                                      ObjectLiteralNode SourceSection: None
                                                                 IfNode SourceSection: [24491,26234]`elif op in (REPEAT, ...`
                                                                   YesNodeGen SourceSection: None
                                                                     IsBuiltinClassProfile SourceSection: None
@@ -9010,6 +9035,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         ReadLocalVariableNode SourceSection: [24770,24774]`skip`
                                                                           Frame: [7,skip,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        ObjectLiteralNode SourceSection: None
                                                                   IfNode SourceSection: [24787,26234]`elif op is GROUPREF_...`
                                                                     YesNodeGen SourceSection: None
                                                                       IsBuiltinClassProfile SourceSection: None
@@ -9104,6 +9130,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           IntegerLiteralNode SourceSection: [24926,24927]`2`
                                                                             Value: 2
+                                                                          ObjectLiteralNode SourceSection: None
                                                                     IfNode SourceSection: [24940,26234]`elif op in (ASSERT, ...`
                                                                       YesNodeGen SourceSection: None
                                                                         IsBuiltinClassProfile SourceSection: None
@@ -9234,6 +9261,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             ReadLocalVariableNode SourceSection: [25118,25122]`skip`
                                                                               Frame: [7,skip,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                                                            ObjectLiteralNode SourceSection: None
                                                                       IfNode SourceSection: [25135,26234]`elif op is INFO:↵   ...`
                                                                         YesNodeGen SourceSection: None
                                                                           IsBuiltinClassProfile SourceSection: None
@@ -9603,6 +9631,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                   ReadLocalVariableNode SourceSection: [25840,25850]`prefix_len`
                                                                                     Frame: [15,prefix_len,Illegal]
                                                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                  ObjectLiteralNode SourceSection: None
                                                                               ExpressionStatementNode SourceSection: [25871,25922]`print_2('  overlap',...`
                                                                                 PythonCallBinary SourceSection: [25871,25922]`print_2('  overlap',...`
                                                                                   CallBinaryMethodNodeGen SourceSection: None
@@ -9649,6 +9678,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                   ReadLocalVariableNode SourceSection: [25952,25962]`prefix_len`
                                                                                     Frame: [15,prefix_len,Illegal]
                                                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                  ObjectLiteralNode SourceSection: None
                                                                             BlockNode SourceSection: None
                                                                           IfNode SourceSection: [25979,26160]`if flags & SRE_INFO_...`
                                                                             YesNodeGen SourceSection: None
@@ -9677,6 +9707,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadFromCellNodeGen SourceSection: None
                                                                                   IntegerLiteralNode SourceSection: [26037,26038]`1`
                                                                                     Value: 1
+                                                                                  ObjectLiteralNode SourceSection: None
                                                                               ExpressionStatementNode SourceSection: [26059,26072]`print_2('in')`
                                                                                 PythonCallUnary SourceSection: [26059,26072]`print_2('in')`
                                                                                   CallUnaryMethodNodeGen SourceSection: None
@@ -9719,6 +9750,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadFromCellNodeGen SourceSection: None
                                                                                   IntegerLiteralNode SourceSection: [26142,26143]`1`
                                                                                     Value: 1
+                                                                                  ObjectLiteralNode SourceSection: None
                                                                             BlockNode SourceSection: None
                                                                           WriteLocalVariableNodeGen SourceSection: [26160,26169]`i += skip`
                                                                             Identifier: i
@@ -9731,6 +9763,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               ReadLocalVariableNode SourceSection: [26165,26169]`skip`
                                                                                 Frame: [7,skip,Illegal]
                                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                                              ObjectLiteralNode SourceSection: None
                                                                         RaiseNodeGen SourceSection: [26204,26224]`raise ValueError(op)...`
                                                                           PythonCallUnary SourceSection: [26210,26224]`ValueError(op)`
                                                                             CallUnaryMethodNodeGen SourceSection: None
@@ -9755,6 +9788,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         ReadFromCellNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [26243,26244]`1`
                                         Value: 1
+                                      ObjectLiteralNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNode SourceSection: None
                                 Frame: [39,<return_val>,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None

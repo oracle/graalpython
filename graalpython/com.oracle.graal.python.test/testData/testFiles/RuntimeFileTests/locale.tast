@@ -1119,6 +1119,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [5013,5014]`1`
                                   Value: 1
+                                ObjectLiteralNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [5023,5034]`amount -= 1`
                               Identifier: amount
                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1129,6 +1130,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [5033,5034]`1`
                                   Value: 1
+                                ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [5039,5056]`rpos = len(s) - 1`
                       Identifier: rpos
@@ -1182,6 +1184,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [5110,5111]`1`
                                   Value: 1
+                                ObjectLiteralNode SourceSection: None
                             WriteLocalVariableNodeGen SourceSection: [5120,5131]`amount -= 1`
                               Identifier: amount
                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -1192,6 +1195,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [5130,5131]`1`
                                   Value: 1
+                                ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [5136,5157]`return s[lpos:rpos+1...`
                       WriteLocalVariableNodeGen SourceSection: None
@@ -1933,6 +1937,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                         ReadLocalVariableNode SourceSection: [7476,7485]`starcount`
                                           Frame: [9,starcount,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                      ObjectLiteralNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [7026,7034]`percents`
                               ReadLocalVariableNode SourceSection: [7026,7034]`percents`
                                 Frame: [4,percents,Illegal]
@@ -3735,6 +3740,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadLocalVariableNode SourceSection: [13380,13393]`norm_encoding`
                                 Frame: [6,norm_encoding,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13398,13420]`lookup_name = lang_e...`
                       Identifier: lookup_name
@@ -3765,6 +3771,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             ReadLocalVariableNode SourceSection: [13467,13475]`modifier`
                               Frame: [2,modifier,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                          ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [13480,13522]`code = locale_alias....`
                       Identifier: code
@@ -3934,6 +3941,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadLocalVariableNode SourceSection: [14215,14223]`modifier`
                                   Frame: [2,modifier,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: None
                           BlockNode SourceSection: None
                         WriteLocalVariableNodeGen SourceSection: [14232,14274]`code = locale_alias....`
                           Identifier: code

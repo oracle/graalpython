@@ -3505,6 +3505,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [7650,7651]`1`
                                               Value: 1
+                                            ObjectLiteralNode SourceSection: None
                                         TryFinallyNode SourceSection: [7664,7891]`try:↵               ...`
                                           TryExceptNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [7685,7719]`char += self.decoded...`
@@ -3530,6 +3531,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [7713,7718]`index`
                                                     Frame: [1,index,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                             ExceptNode SourceSection: None
                                               RaiseNodeGen SourceSection: [7767,7882]`raise error("bad esc...`
                                                 PythonCallTernary SourceSection: [7773,7872]`error("bad escape (e...`
@@ -3864,6 +3866,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [8339,8340]`c`
                                                   Frame: [4,c,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                             ExpressionStatementNode SourceSection: [8353,8366]`self.__next()`
                                               PythonCallNodeGen SourceSection: [8353,8366]`self.__next()`
                                                 CallNodeGen SourceSection: None
@@ -4067,6 +4070,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [8927,8928]`c`
                                                   Frame: [3,c,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [8937,8950]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -4561,6 +4565,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [9658,9667]`HEXDIGITS`
                                       Identifier: HEXDIGITS
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                               IfNode SourceSection: [9681,9795]`if len(escape) != 4:...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
@@ -4675,6 +4680,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [9964,9973]`HEXDIGITS`
                                         Identifier: HEXDIGITS
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ObjectLiteralNode SourceSection: None
                                 IfNode SourceSection: [9987,10101]`if len(escape) != 6:...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
@@ -4789,6 +4795,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [10271,10280]`HEXDIGITS`
                                           Identifier: HEXDIGITS
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      ObjectLiteralNode SourceSection: None
                                   IfNode SourceSection: [10294,10409]`if len(escape) != 10...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
@@ -4909,6 +4916,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [10636,10645]`OCTDIGITS`
                                             Identifier: OCTDIGITS
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [10659,10681]`c = int(escape[1:], ...`
                                       Identifier: c
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -5268,6 +5276,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [11551,11560]`HEXDIGITS`
                                       Identifier: HEXDIGITS
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                               IfNode SourceSection: [11574,11688]`if len(escape) != 4:...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
@@ -5382,6 +5391,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [11857,11866]`HEXDIGITS`
                                         Identifier: HEXDIGITS
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                    ObjectLiteralNode SourceSection: None
                                 IfNode SourceSection: [11880,11994]`if len(escape) != 6:...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
@@ -5496,6 +5506,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [12164,12173]`HEXDIGITS`
                                           Identifier: HEXDIGITS
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      ObjectLiteralNode SourceSection: None
                                   IfNode SourceSection: [12187,12302]`if len(escape) != 10...`
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
@@ -5611,6 +5622,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [12502,12511]`OCTDIGITS`
                                             Identifier: OCTDIGITS
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [12525,12559]`return LITERAL, int(...`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -5694,6 +5706,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [12713,12719]`source`
                                                     Frame: [0,source,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                              ObjectLiteralNode SourceSection: None
                                           IfNode SourceSection: [12742,13355]`if (escape[1] in OCT...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
@@ -5771,6 +5784,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [12947,12953]`source`
                                                         Frame: [0,source,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ObjectLiteralNode SourceSection: None
                                               WriteLocalVariableNodeGen SourceSection: [12980,13002]`c = int(escape[1:], ...`
                                                 Identifier: c
                                                 WriteLocalFrameSlotNodeGen SourceSection: None
@@ -8291,6 +8305,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               ReadLocalVariableNode SourceSection: [21427,21436]`sourceget`
                                                                 Frame: [7,sourceget,Illegal]
                                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                                            ObjectLiteralNode SourceSection: None
                                                     BlockNode SourceSection: None
                                                   IfNode SourceSection: [21455,21633]`if sourcematch(","):...`
                                                     YesNodeGen SourceSection: None
@@ -8341,6 +8356,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 ReadLocalVariableNode SourceSection: [21555,21564]`sourceget`
                                                                   Frame: [7,sourceget,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                              ObjectLiteralNode SourceSection: None
                                                       BlockNode SourceSection: None
                                                     WriteLocalVariableNodeGen SourceSection: [21609,21616]`hi = lo`
                                                       Identifier: hi
@@ -10988,6 +11004,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   ReadLocalVariableNode SourceSection: [32246,32250]`flag`
                                     Frame: [6,flag,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                               IfNode SourceSection: [32263,32458]`if (flag & TYPE_FLAG...`
                                 YesNodeGen SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
@@ -11169,6 +11186,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             ReadLocalVariableNode SourceSection: [32822,32831]`add_flags`
                               Frame: [4,add_flags,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         FrameReturnNode SourceSection: [32840,32851]`return None`
                           WriteLocalVariableNodeGen SourceSection: None
                             Identifier: <return_val>
@@ -11355,6 +11373,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     ReadLocalVariableNode SourceSection: [33461,33465]`flag`
                                       Frame: [6,flag,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                    ObjectLiteralNode SourceSection: None
                                 WriteLocalVariableNodeGen SourceSection: [33478,33496]`char = sourceget()`
                                   Identifier: char
                                   WriteLocalFrameSlotNodeGen SourceSection: None
@@ -11630,6 +11649,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ReadGlobalOrBuiltinNodeGen SourceSection: [34353,34369]`SRE_FLAG_UNICODE`
                                 Identifier: SRE_FLAG_UNICODE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: None
                           IfNode SourceSection: [34378,34486]`elif flags & SRE_FLA...`
                             YesNodeGen SourceSection: None
                               IsBuiltinClassProfile SourceSection: None
@@ -12655,6 +12675,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 ReadLocalVariableNode SourceSection: [37470,37474]`sget`
                                                   Frame: [3,sget,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                              ObjectLiteralNode SourceSection: None
                                           IfNode SourceSection: [37497,37576]`if s.next in OCTDIGI...`
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
@@ -12694,6 +12715,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [37553,37557]`sget`
                                                     Frame: [3,sget,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                             BlockNode SourceSection: None
                                         BlockNode SourceSection: None
                                       ExpressionStatementNode SourceSection: [37576,37613]`lappend(chr(int(this...`
@@ -12791,6 +12813,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   ReadLocalVariableNode SourceSection: [37741,37745]`sget`
                                                     Frame: [3,sget,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                             IfNode SourceSection: [37768,38234]`if (c in OCTDIGITS a...`
                                               YesNodeGen SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
@@ -12866,6 +12889,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       ReadLocalVariableNode SourceSection: [37894,37898]`sget`
                                                         Frame: [3,sget,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ObjectLiteralNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [37925,37939]`isoctal = True`
                                                   Identifier: isoctal
                                                   WriteLocalFrameSlotNodeGen SourceSection: None

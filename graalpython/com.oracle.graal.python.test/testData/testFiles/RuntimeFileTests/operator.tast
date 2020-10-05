@@ -1849,6 +1849,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [3362,3363]`1`
                                   Value: 1
+                                ObjectLiteralNode SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [3319,3320]`a`
                           ReadLocalVariableNode SourceSection: [3319,3320]`a`
@@ -4433,6 +4434,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [8825,8826]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [8831,8839]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4495,6 +4497,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [8888,8889]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [8894,8902]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4606,6 +4609,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9113,9114]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9119,9127]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4668,6 +4672,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9183,9184]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9189,9197]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4730,6 +4735,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9251,9252]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9257,9265]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4792,6 +4798,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9314,9315]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9320,9328]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4854,6 +4861,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9377,9378]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9383,9391]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4916,6 +4924,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9443,9444]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9449,9457]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -4978,6 +4987,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9505,9506]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9511,9519]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5040,6 +5050,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9569,9570]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9575,9583]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5102,6 +5113,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9637,9638]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9643,9651]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5164,6 +5176,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9700,9701]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9706,9714]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5226,6 +5239,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9767,9768]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9773,9781]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -5288,6 +5302,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         ReadLocalVariableNode SourceSection: [9830,9831]`b`
                           Frame: [1,b,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
+                        ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [9836,9844]`return a`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>

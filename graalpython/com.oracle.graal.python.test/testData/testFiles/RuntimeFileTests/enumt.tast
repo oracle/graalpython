@@ -9261,6 +9261,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ReadLocalVariableNode SourceSection: [31105,31115]`flag_value`
                                                           Frame: [7,flag_value,Illegal]
                                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ObjectLiteralNode SourceSection: None
                                             BlockNode SourceSection: None
                                           ElseNode SourceSection: [31128,31580]`for value in reverse...`
                                             ForNode SourceSection: None
@@ -10574,6 +10575,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     ReadLocalVariableNode SourceSection: [34094,34106]`member_value`
                                       Frame: [7,member_value,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                             BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [33949,33963]`flags_to_check`
                           ReadLocalVariableNode SourceSection: [33949,33963]`flags_to_check`

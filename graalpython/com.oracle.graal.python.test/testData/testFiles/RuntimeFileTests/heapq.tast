@@ -2873,6 +2873,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [20237,20238]`1`
                                         Value: 1
+                                      ObjectLiteralNode SourceSection: None
                                 BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [20089,20091]`it`
                               ReadLocalVariableNode SourceSection: [20089,20091]`it`
@@ -3251,6 +3252,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [20756,20757]`1`
                                       Value: 1
+                                    ObjectLiteralNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [20595,20597]`it`
                           ReadLocalVariableNode SourceSection: [20595,20597]`it`
@@ -3861,6 +3863,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       IntegerLiteralNode SourceSection: [22016,22017]`1`
                                         Value: 1
+                                      ObjectLiteralNode SourceSection: None
                                 BlockNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [21868,21870]`it`
                               ReadLocalVariableNode SourceSection: [21868,21870]`it`
@@ -4255,6 +4258,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [22546,22547]`1`
                                       Value: 1
+                                    ObjectLiteralNode SourceSection: None
                               BlockNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [22385,22387]`it`
                           ReadLocalVariableNode SourceSection: [22385,22387]`it`

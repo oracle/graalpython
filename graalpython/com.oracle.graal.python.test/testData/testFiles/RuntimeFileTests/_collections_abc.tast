@@ -6330,6 +6330,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ReadLocalVariableNode SourceSection: [14502,14506]`MASK`
                                           Frame: [2,MASK,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     ElseNode SourceSection: [14515,14645]`for x in self:↵     ...`
                                       ForNode SourceSection: None
                                         ForRepeatingNode SourceSection: None
@@ -6383,6 +6384,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Value: 89869747
                                                   LongLiteralNode SourceSection: [14604,14614]`3644798167`
                                                     Value: 3644798167
+                                                ObjectLiteralNode SourceSection: None
                                             WriteLocalVariableNodeGen SourceSection: [14627,14636]`h &= MASK`
                                               Identifier: h
                                               WriteLocalFrameSlotNodeGen SourceSection: None
@@ -6394,6 +6396,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 ReadLocalVariableNode SourceSection: [14632,14636]`MASK`
                                                   Frame: [2,MASK,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
+                                                ObjectLiteralNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [14524,14528]`self`
                                           ReadLocalVariableNode SourceSection: [14524,14528]`self`
                                             Frame: [0,self,Illegal]
@@ -6427,6 +6430,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         ReadLocalVariableNode SourceSection: [14684,14688]`MASK`
                                           Frame: [2,MASK,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     IfNode SourceSection: [14697,14743]`if h > MAX:↵        ...`
                                       YesNodeGen SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
@@ -6456,6 +6460,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             IntegerLiteralNode SourceSection: [14733,14734]`1`
                                               Value: 1
+                                          ObjectLiteralNode SourceSection: None
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [14743,14789]`if h == -1:↵        ...`
                                       YesNodeGen SourceSection: None
@@ -10105,6 +10110,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [23072,23073]`1`
                                                     Value: 1
+                                                  ObjectLiteralNode SourceSection: None
                                               GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
                                               IsBuiltinClassProfile SourceSection: None
@@ -10466,6 +10472,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadLocalVariableNode SourceSection: [23819,23823]`self`
                                               Frame: [0,self,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                          ObjectLiteralNode SourceSection: None
                                       BlockNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [23834,23843]`i = start`
                                       Identifier: i
@@ -10562,6 +10569,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 IntegerLiteralNode SourceSection: [24073,24074]`1`
                                                   Value: 1
+                                                ObjectLiteralNode SourceSection: None
                                       BlockNode SourceSection: None
                                     RaiseNodeGen SourceSection: [24083,24099]`raise ValueError`
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [24089,24099]`ValueError`

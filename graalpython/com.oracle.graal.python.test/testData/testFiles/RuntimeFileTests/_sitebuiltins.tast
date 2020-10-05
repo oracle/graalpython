@@ -984,6 +984,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       ReadLocalVariableNode SourceSection: [2283,2287]`self`
                                                         Frame: [0,self,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ObjectLiteralNode SourceSection: None
                                                 WriteLocalVariableNodeGen SourceSection: [2313,2323]`key = None`
                                                   Identifier: key
                                                   WriteLocalFrameSlotNodeGen SourceSection: None

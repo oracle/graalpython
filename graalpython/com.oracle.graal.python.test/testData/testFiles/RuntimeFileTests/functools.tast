@@ -5345,6 +5345,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalVariableNode SourceSection: [16532,16540]`kwd_mark`
                               Frame: [3,kwd_mark,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         ElseNode SourceSection: [16549,16603]`for item in kwds.ite...`
                           ForNode SourceSection: None
                             ForRepeatingNode SourceSection: None
@@ -5364,6 +5365,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadLocalVariableNode SourceSection: [16594,16598]`item`
                                     Frame: [9,item,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [16561,16573]`kwds.items()`
                               PythonCallNodeGen SourceSection: [16561,16573]`kwds.items()`
                                 CallNodeGen SourceSection: None
@@ -5455,6 +5457,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     Frame: [0,args,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         IfNode SourceSection: [16665,16735]`if kwds:↵           ...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
@@ -5539,6 +5542,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [1,kwds,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: None
                           BlockNode SourceSection: None
                       IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
@@ -6130,6 +6134,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [19354,19355]`1`
                                           Value: 1
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [19368,19381]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -6264,6 +6269,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [19695,19696]`1`
                                                 Value: 1
+                                              ObjectLiteralNode SourceSection: None
                                           FrameReturnNode SourceSection: [19713,19726]`return result`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -6320,6 +6326,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadFromCellNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [19831,19832]`1`
                                             Value: 1
+                                          ObjectLiteralNode SourceSection: None
                                       FrameReturnNode SourceSection: [19845,19858]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -6583,6 +6590,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadFromCellNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20586,20587]`1`
                                                     Value: 1
+                                                  ObjectLiteralNode SourceSection: None
                                               FrameReturnNode SourceSection: [20608,20621]`return result`
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
@@ -6912,6 +6920,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [22677,22678]`1`
                                                 Value: 1
+                                              ObjectLiteralNode SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [20689,20693]`lock`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [26,lock,Illegal]
