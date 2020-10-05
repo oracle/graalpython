@@ -47,6 +47,31 @@ indices = (-2, 2, 10)
 slices = list(itertools.starmap(slice, itertools.product(indices, indices, indices)))
 
 
+suboffsets_buf = '''\
+    const Py_ssize_t ndim = 4;
+    Py_ssize_t shape[] = {2, 2, 2, 2};
+    Py_ssize_t strides[] = {sizeof(void*), sizeof(void*) * 2, sizeof(short) * 2, sizeof(short)};
+    Py_ssize_t suboffsets[] = {-1, 0, -1, -1};
+    short s1[2][2] = {{258, 345}, {190, 924}};
+    short s2[2][2] = {{257, 344}, {189, 923}};
+    short s3[2][2] = {{259, 346}, {191, 925}};
+    short s4[2][2] = {{260, 347}, {192, 926}};
+    void* ptr_buf[2][2] = {{s1, s2}, {s3, s4}};
+    Py_buffer buffer = {
+            ptr_buf,
+            NULL,
+            2 * 2 * 2 * 2 * sizeof(short),
+            sizeof(short),
+            1,
+            ndim,
+            "h",
+            shape,
+            strides,
+            suboffsets,
+    };
+    '''
+
+
 class TestPyMemoryView(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -66,29 +91,7 @@ class TestPyMemoryView(CPyExtTestCase):
             ((1, 2), NotImplementedError("sub-views are not implemented")),
             ("a", TypeError("memoryview: invalid slice key")),
         ),
-        code='''
-            const Py_ssize_t ndim = 4;
-            Py_ssize_t shape[] = {2, 2, 2, 2};
-            Py_ssize_t strides[] = {sizeof(void*), sizeof(void*) * 2, sizeof(short) * 2, sizeof(short)};
-            Py_ssize_t suboffsets[] = {-1, 0, -1, -1};
-            short s1[2][2] = {{258, 345}, {190, 924}};
-            short s2[2][2] = {{257, 344}, {189, 923}};
-            short s3[2][2] = {{259, 346}, {191, 925}};
-            short s4[2][2] = {{260, 347}, {192, 926}};
-            void* ptr_buf[2][2] = {{s1, s2}, {s3, s4}};
-            Py_buffer buffer = {
-                    ptr_buf,
-                    NULL,
-                    2 * 2 * 2 * 2 * sizeof(short),
-                    sizeof(short),
-                    1,
-                    ndim,
-                    "h",
-                    shape,
-                    strides,
-                    suboffsets,
-            };
-    
+        code=suboffsets_buf + '''
             static PyObject* test_read(PyObject *key, PyObject* expected) {
                 PyObject *mv = PyMemoryView_FromBuffer(&buffer);
                 if (!mv)
@@ -101,6 +104,37 @@ class TestPyMemoryView(CPyExtTestCase):
         resultspec='O',
         argspec='OO',
         arguments=["PyObject* key", "PyObject* expected"],
+        callfunction="test_read",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
+    test_memoryview_tolist = CPyExtFunction(
+        lambda args: args[0],
+        lambda: [
+            ([
+                [
+                    [[258, 345], [190, 924]],
+                    [[259, 346], [191, 925]],
+                ],
+                [
+                    [[257, 344], [189, 923]],
+                    [[260, 347], [192, 926]],
+                ],
+            ],),
+        ],
+        code=suboffsets_buf + '''
+            static PyObject* test_read(PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromBuffer(&buffer);
+                if (!mv)
+                    return NULL;
+                PyObject *list = PyObject_CallMethod(mv, "tolist", NULL);
+                Py_DECREF(mv);
+                return list;
+            }
+        ''',
+        resultspec='O',
+        argspec='O',
+        arguments=["PyObject* expected"],
         callfunction="test_read",
         cmpfunc=unhandled_error_compare_with_message,
     )

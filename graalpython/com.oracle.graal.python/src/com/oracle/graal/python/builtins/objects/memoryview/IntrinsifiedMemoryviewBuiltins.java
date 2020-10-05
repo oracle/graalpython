@@ -22,6 +22,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -289,6 +291,8 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         // index can be a tuple, int or int-convertible
         public abstract MemoryPointer execute(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index);
 
+        public abstract MemoryPointer execute(VirtualFrame frame, IntrinsifiedPMemoryView self, int index);
+
         private void lookupDimension(IntrinsifiedPMemoryView self, MemoryPointer ptr, int dim, int index) {
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
@@ -500,6 +504,68 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization
         Object error(@SuppressWarnings("unused") IntrinsifiedPMemoryView self) {
             throw raise(TypeError, ErrorMessages.CANNOT_DELETE_MEMORY);
+        }
+    }
+
+    @Builtin(name = "tolist", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class ToListNode extends PythonUnaryBuiltinNode {
+        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
+
+        @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
+        Object tolistCached(IntrinsifiedPMemoryView self,
+                        @Cached("self.getDimensions()") int cachedDimensions,
+                        @Cached ReadItemAtNode readItemAtNode) {
+            self.checkReleased(this);
+            if (cachedDimensions == 0) {
+                // That's not a list but CPython does it this way
+                return readItemAtNode.execute(self, self.getBufferPointer(), self.getOffset());
+            } else {
+                return recursive(self, readItemAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
+            }
+        }
+
+        @Specialization(replaces = "tolistCached")
+        Object tolist(IntrinsifiedPMemoryView self,
+                        @Cached ReadItemAtNode readItemAtNode) {
+            self.checkReleased(this);
+            if (self.getDimensions() == 0) {
+                return readItemAtNode.execute(self, self.getBufferPointer(), self.getOffset());
+            } else {
+                return recursiveBoundary(self, readItemAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
+            }
+        }
+
+        @TruffleBoundary
+        private PList recursiveBoundary(IntrinsifiedPMemoryView self, ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset) {
+            return recursive(self, readItemAtNode, dim, ndim, ptr, offset);
+        }
+
+        private PList recursive(IntrinsifiedPMemoryView self, ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset) {
+            Object[] objects = new Object[self.getBufferShape()[dim]];
+            for (int i = 0; i < self.getBufferShape()[dim]; i++) {
+                Object xptr = ptr;
+                int xoffset = offset;
+                if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
+                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xoffset = 0;
+                }
+                if (dim == ndim - 1) {
+                    objects[i] = readItemAtNode.execute(self, xptr, xoffset);
+                } else {
+                    objects[i] = recursive(self, readItemAtNode, dim + 1, ndim, xptr, xoffset);
+                }
+                offset += self.getBufferStrides()[dim];
+            }
+            return factory().createList(objects);
+        }
+
+        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
+            if (callCapiFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
+            }
+            return callCapiFunction;
         }
     }
 
