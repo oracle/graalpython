@@ -69,11 +69,16 @@ public abstract class GraalHPyNativeSymbols {
     public static final String GRAAL_HPY_MODULE_GET_LEGACY_METHODS = "graal_hpy_module_get_legacy_methods";
     public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC = "graal_hpy_from_HPyType_Spec";
     public static final String GRAAL_HPY_TYPE_SPEC_GET_DEFINES = "graal_hpy_type_spec_get_defines";
+    public static final String GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS = "graal_hpy_type_spec_get_legacy_slots";
     public static final String GRAAL_HPY_FROM_HPY_TYPE_SPEC_PARAM_ARRAY = "graal_hpy_from_HPyType_SpecParam_array";
     public static final String GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT = "graal_hpy_HPyType_SpecParam_get_object";
     public static final String GRAAL_HPY_MEMBER_GET_TYPE = "graal_hpy_member_get_type";
     public static final String GRAAL_HPY_SLOT_GET_SLOT = "graal_hpy_slot_get_slot";
     public static final String GRAAL_HPY_CALLOC = "graal_hpy_calloc";
+    public static final String GRAAL_HPY_LEGACY_SLOT_GET_SLOT = "graal_hpy_legacy_slot_get_slot";
+    public static final String GRAAL_HPY_LEGACY_SLOT_GET_METHODS = "graal_hpy_legacy_slot_get_methods";
+    public static final String GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS = "graal_hpy_legacy_slot_get_members";
+    public static final String GRAAL_HPY_LEGACY_SLOT_GET_DESCRS = "graal_hpy_legacy_slot_get_descrs";
 
     /* C functions for reading native members by offset */
     public static final String GRAAL_HPY_READ_S = "graal_hpy_read_s";

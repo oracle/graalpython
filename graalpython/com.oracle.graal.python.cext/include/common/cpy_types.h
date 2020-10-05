@@ -11,6 +11,9 @@
 typedef struct _object cpy_PyObject;
 typedef cpy_PyObject *(*cpy_PyCFunction)(cpy_PyObject *, cpy_PyObject *);
 typedef struct PyMethodDef cpy_PyMethodDef;
+typedef PyType_Slot cpy_PyTypeSlot;
+typedef PyGetSetDef cpy_PyGetSetDef;
+typedef PyMemberDef cpy_PyMemberDef;
 
 
 #endif /* HPY_UNIVERSAL_CPY_TYPES_H */

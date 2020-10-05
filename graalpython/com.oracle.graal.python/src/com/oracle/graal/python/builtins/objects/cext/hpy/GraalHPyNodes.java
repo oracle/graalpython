@@ -74,12 +74,12 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -492,6 +492,85 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    public abstract static class HPyCreateLegacyMemberNode extends PNodeWithContext {
+
+        public abstract HPyProperty execute(GraalHPyContext context, Object memberDef);
+
+        /**
+         * <pre>
+         * typedef struct PyMemberDef {
+         *     const char *name;
+         *     int type;
+         *     Py_ssize_t offset;
+         *     int flags;
+         *     const char *doc;
+         * } PyMemberDef;
+         * </pre>
+         */
+        @Specialization(limit = "1")
+        static HPyProperty doIt(GraalHPyContext context, Object memberDef,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedLibrary("memberDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary valueLib,
+                        @Cached PCallHPyFunction callHelperNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeNode,
+                        @Cached CallNode callPropertyClassNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert interopLibrary.hasMembers(memberDef);
+            assert interopLibrary.isMemberReadable(memberDef, "name");
+            assert interopLibrary.isMemberReadable(memberDef, "type");
+            assert interopLibrary.isMemberReadable(memberDef, "offset");
+            assert interopLibrary.isMemberReadable(memberDef, "flags");
+            assert interopLibrary.isMemberReadable(memberDef, "doc");
+
+            try {
+                String name;
+                try {
+                    name = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLibrary.readMember(memberDef, "name")));
+                } catch (CannotCastException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+                }
+
+                // note: 'doc' may be NULL; in this case, we would store 'None'
+                Object memberDoc = PNone.NONE;
+                Object doc = interopLibrary.readMember(memberDef, "doc");
+                if (!valueLib.isNull(doc)) {
+                    memberDoc = fromCharPointerNode.execute(doc);
+                }
+
+                int flags = valueLib.asInt(interopLibrary.readMember(memberDef, "flags"));
+                int type = valueLib.asInt(interopLibrary.readMember(memberDef, "type"));
+                int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
+
+                PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
+
+                Object setterObject = PNone.NONE;
+                if ((flags & GraalHPyLegacyDef.MEMBER_FLAG_READONLY) == 0) {
+                    setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
+                }
+
+                // read class 'property' from 'builtins/property.py'
+                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
+                Object propertyObject = callPropertyClassNode.execute(property, new Object[0], new PKeyword[]{
+                                new PKeyword("fget", getterObject),
+                                new PKeyword("fset", setterObject),
+                                new PKeyword("doc", memberDoc),
+                                new PKeyword("name", name)
+                });
+
+                return new HPyProperty(name, propertyObject);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
+            }
+        }
+
+    }
+
+    @GenerateUncached
     public abstract static class HPyAddMemberNode extends PNodeWithContext {
 
         public abstract HPyProperty execute(GraalHPyContext context, Object memberDef);
@@ -655,7 +734,7 @@ public class GraalHPyNodes {
     /**
      * Parser an {@code HPySlot} structure, creates and adds the appropriate function as magic
      * method.
-     * 
+     *
      * <pre>
      * typedef struct {
      *     HPySlot_Slot slot;     // The slot to fill
@@ -731,6 +810,103 @@ public class GraalHPyNodes {
         @TruffleBoundary
         private static boolean checkLayout(Object slotDef) {
             String[] members = new String[]{"slot", "impl", "cpy_trampoline"};
+            InteropLibrary lib = InteropLibrary.getUncached(slotDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(slotDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Parses a {@code PyType_Slot} structure
+     * 
+     * <pre>
+     * typedef struct{
+     *     int slot;
+     *     void *pfunc; 
+     * } PyType_Slot;
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class HPyCreateLegacySlotNode extends PNodeWithContext {
+
+        public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object slotDef);
+
+        @Specialization(limit = "1")
+        static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
+                        @CachedLibrary(limit = "3") InteropLibrary resultLib,
+                        @Cached HPyAddLegacyMethodNode legacyMethodNode,
+                        @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
+                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
+                        @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached PRaiseNode raiseNode) {
+            assert checkLayout(slotDef) : "invalid layout of legacy slot definition";
+
+            int slotId;
+            Object slotObj = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_SLOT, slotDef);
+            if (resultLib.fitsInInt(slotObj)) {
+                try {
+                    slotId = resultLib.asInt(slotObj);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'slot' of %s is not an integer", slotDef);
+            }
+
+            HPyLegacySlot slot = HPyLegacySlot.fromValue(slotId);
+            if (slot == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "invalid slot value %d", slotId);
+            }
+
+            // treatment for special slots 'Py_tp_members', 'Py_tp_getset', 'Py_tp_methods'
+            switch (slot) {
+                case Py_tp_members:
+                    Object memberDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_MEMBERS, slotDef);
+                    try {
+                        int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(memberDefArrayPtr));
+                        for (int i = 0; i < nLegacyMemberDefs; i++) {
+                            Object legacyMemberDef = resultLib.readArrayElement(memberDefArrayPtr, i);
+                            HPyProperty property = createLegacyMemberNode.execute(context, legacyMemberDef);
+                            writeAttributeToObjectNode.execute(enclosingType, property.key, property.value);
+                        }
+                    } catch (InteropException | OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
+                    }
+                    break;
+                case Py_tp_methods:
+                    Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
+                    try {
+                        int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
+                        for (int i = 0; i < nLegacyMemberDefs; i++) {
+                            Object legacyMethodDef = resultLib.readArrayElement(methodDefArrayPtr, i);
+                            PBuiltinFunction method = legacyMethodNode.execute(context, legacyMethodDef);
+                            writeAttributeToObjectNode.execute(enclosingType, method.getName(), method);
+                        }
+                    } catch (InteropException | OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "error when reading legacy method definition for type %s", enclosingType);
+                    }
+                    break;
+                case Py_tp_getset:
+                    // intentionally fall-through as long as this is not implemented
+                default:
+                    // TODO(fa): implement support for remaining legacy slot kinds
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere(String.format("support for legacy slot %s not yet implemented", slot.name()));
+            }
+            return null;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object slotDef) {
+            String[] members = new String[]{"slot", "pfunc"};
             InteropLibrary lib = InteropLibrary.getUncached(slotDef);
             for (String member : members) {
                 if (!lib.isMemberReadable(slotDef, member)) {
@@ -1212,7 +1388,6 @@ public class GraalHPyNodes {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
@@ -1221,6 +1396,7 @@ public class GraalHPyNodes {
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached HPyAddMemberNode addMemberNode,
                         @Cached HPyCreateSlotNode addSlotNode,
+                        @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1305,8 +1481,18 @@ public class GraalHPyNodes {
                     }
                 }
 
-                // process legacy slots
-                // TODO
+                // process legacy slots; this is of type 'cpy_PyTypeSlot legacy_slots[]'
+                Object legacySlots = callHelperFunctionNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_TYPE_SPEC_GET_LEGECY_SLOTS, typeSpec);
+                if (!ptrLib.isNull(legacySlots)) {
+                    int nLegacySlots = PInt.intValueExact(ptrLib.getArraySize(legacySlots));
+                    for (int i = 0; i < nLegacySlots; i++) {
+                        Object legacySlotDef = ptrLib.readArrayElement(legacySlots, i);
+                        HPyProperty property = createLegacySlotNode.execute(context, newType, legacySlotDef);
+                        if (property != null) {
+                            writeAttributeToObjectNode.execute(newType, property.key, property.value);
+                        }
+                    }
+                }
 
                 return newType;
             } catch (CannotCastException | InteropException e) {

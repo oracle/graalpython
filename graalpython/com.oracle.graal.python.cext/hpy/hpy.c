@@ -60,6 +60,9 @@ POLYGLOT_DECLARE_TYPE(HPySlot);
 POLYGLOT_DECLARE_TYPE(HPyMeth);
 POLYGLOT_DECLARE_TYPE(HPyFunc_Signature);
 POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef);
+POLYGLOT_DECLARE_TYPE(cpy_PyMemberDef);
+POLYGLOT_DECLARE_TYPE(cpy_PyTypeSlot);
+POLYGLOT_DECLARE_TYPE(cpy_PyGetSetDef);
 POLYGLOT_DECLARE_TYPE(HPyMember_FieldType);
 POLYGLOT_DECLARE_TYPE(HPyMember);
 POLYGLOT_DECLARE_TYPE(HPyGetSet);
@@ -158,6 +161,48 @@ HPySlot_Slot graal_hpy_slot_get_slot(HPySlot *slot) {
 	return slot->slot;
 }
 
+/* getters for PyType_Slot */
+
+int graal_hpy_legacy_slot_get_slot(cpy_PyTypeSlot *slot) {
+	return slot->slot;
+}
+
+void* graal_hpy_legacy_slot_get_methods(cpy_PyTypeSlot *slot) {
+	uint64_t len=0;
+	cpy_PyMethodDef *legacy_methods = (cpy_PyMethodDef *) slot->pfunc;
+	if (legacy_methods != NULL) {
+		while ((legacy_methods[len]).ml_name != NULL) {
+			len++;
+		}
+		return polyglot_from_cpy_PyMethodDef_array(legacy_methods, len);
+	}
+	return NULL;
+}
+
+void* graal_hpy_legacy_slot_get_members(cpy_PyTypeSlot *slot) {
+	uint64_t len=0;
+	cpy_PyMemberDef *legacy_members = (cpy_PyMemberDef *) slot->pfunc;
+	if (legacy_members != NULL) {
+		while ((legacy_members[len]).name != NULL) {
+			len++;
+		}
+		return polyglot_from_cpy_PyMemberDef_array(legacy_members, len);
+	}
+	return NULL;
+}
+
+void* graal_hpy_legacy_slot_get_descrs(cpy_PyTypeSlot *slot) {
+	uint64_t len=0;
+	cpy_PyGetSetDef *legacy_getset = (cpy_PyGetSetDef *) slot->pfunc;
+	if (legacy_getset != NULL) {
+		while (legacy_getset[len].name != NULL) {
+			len++;
+		}
+		return polyglot_from_cpy_PyGetSetDef_array(legacy_getset, len);
+	}
+	return NULL;
+}
+
 /* getters for HPyDef */
 
 int graal_hpy_def_get_kind(HPyDef *def) {
@@ -229,6 +274,18 @@ void* graal_hpy_type_spec_get_defines(HPyType_Spec *type_spec) {
 		    len++;
 	    }
 	    return polyglot_from_HPyDefPtr_array(type_spec->defines, len);
+	}
+	return NULL;
+}
+
+void* graal_hpy_type_spec_get_legacy_slots(HPyType_Spec *type_spec) {
+	uint64_t len=0;
+	cpy_PyTypeSlot *legacy_slots = (cpy_PyTypeSlot *) type_spec->legacy_slots;
+	if (legacy_slots) {
+	    while (legacy_slots[len].slot != 0) {
+		    len++;
+	    }
+	    return polyglot_from_cpy_PyTypeSlot_array(legacy_slots, len);
 	}
 	return NULL;
 }
