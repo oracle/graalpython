@@ -7,6 +7,7 @@ to be able to use e.g. pytest.raises (which on PyPy will be implemented by a
 "fake pytest module")
 """
 from .support import HPyTest, DefaultExtensionTemplate
+import pytest
 
 
 class PointTemplate(DefaultExtensionTemplate):
@@ -289,6 +290,8 @@ class TestType(HPyTest):
         p.z = 1075
         assert p.y == 5
 
+    # TODO: enable test once supported
+    @pytest.mark.xfail
     def test_specparam_base(self):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {
@@ -324,6 +327,8 @@ class TestType(HPyTest):
             pass
         assert isinstance(Sub(), mod.Dummy)
 
+    # TODO: enable test once supported
+    @pytest.mark.xfail
     def test_specparam_basestuple(self):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {

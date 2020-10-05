@@ -1,5 +1,6 @@
 from .support import HPyTest, DefaultExtensionTemplate
 from .test_hpytype import PointTemplate
+import pytest
 
 class TestSlots(HPyTest):
 
@@ -49,6 +50,8 @@ class TestSlots(HPyTest):
         assert p[4] == 8
         assert p[21] == 42
 
+    # TODO: enable test once supported
+    @pytest.mark.xfail
     def test_tp_destroy(self):
         import gc
         mod = self.make_module("""

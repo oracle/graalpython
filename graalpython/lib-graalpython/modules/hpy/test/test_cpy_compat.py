@@ -22,6 +22,7 @@
 # SOFTWARE.
 
 from .support import HPyTest
+import pytest
 
 
 class TestCPythonCompatibility(HPyTest):
@@ -226,6 +227,8 @@ class TestCPythonCompatibility(HPyTest):
         assert mod.h(4, 5, 6) == 456
         assert mod.k(c=6, b=5, a=4) == 456
 
+    # TODO: enable test once supported
+    @pytest.mark.xfail
     def test_legacy_slots_repr(self):
         mod = self.make_module("""
             #include <Python.h>
@@ -366,6 +369,8 @@ class TestCPythonCompatibility(HPyTest):
         assert p.x == 123
         assert p.y == 456
 
+    # TODO: enable test once supported
+    @pytest.mark.xfail
     def test_legacy_slots_getsets(self):
         mod = self.make_module("""
             #include <Python.h>

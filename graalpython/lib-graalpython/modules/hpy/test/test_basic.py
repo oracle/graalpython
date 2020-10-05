@@ -140,6 +140,7 @@ class TestBasic(HPyTest):
         """)
         assert mod.f(41.5) == 42.5
 
+    # TODO: enable test once supported
     @pytest.mark.xfail
     def test_bool(self):
         mod = self.make_module("""
@@ -350,6 +351,7 @@ class TestBasic(HPyTest):
         assert mod.f3("\u1234") == "'\\u1234'"
         assert mod.f4(bytearray(b"foo")) == b"foo"
 
+    @pytest.mark.xfail
     def test_is_true(self):
         mod = self.make_module("""
             HPyDef_METH(f, "f", f_impl, HPyFunc_O)
