@@ -1,35 +1,40 @@
 # GraalVM Implementation of Python
 
 This is an early-stage experimental implementation of Python. A primary goal is
-to support SciPy and its constituent libraries. This Python implementation
-currently aims to be compatible with Python 3.8, but it is a long way from
-there, and it is very likely that any Python program that requires any packages
-at all will hit something unsupported. At this point, the Python implementation
-is made available for experimentation and curious end-users.
+to support SciPy and its constituent libraries. GraalPython can usually execute
+pure Python code faster than CPython (but not when C extensions are
+involved). The GraalVM Python implementation currently aims to be compatible
+with Python 3.8, but it is a long way from there, and it is very likely that any
+Python program that uses more features of standard library modules or external
+packages will hit something unsupported. At this point, the Python
+implementation is made available for experimentation and curious end-users.
 
 ### Trying it
 
-To try it, you can use the bundled releases from
-[www.graalvm.org](https://www.graalvm.org/downloads/). For more information and
-some examples of what you can do with it, check out the
-[reference](https://www.graalvm.org/reference-manual/python/).
+The easiest option to try GraalPython is
+[Pyenv](https://github.com/pyenv/pyenv/), the Python version manager. It allows
+you to easily install different GraalPython releases. To get version 20.2, for
+example, just run `pyenv install graalpython-20.2`.
+
+To try GraalPython with a full GraalVM, including the support for Java embedding
+and interop with other languages, you can use the bundled releases from
+[www.graalvm.org](https://www.graalvm.org/downloads/).
+
+If you want to build GraalPython from source, checkout this repository and the
+[mx](https://github.com/graalvm/mx) build tool, and run `mx --dy /compiler
+python-gvm` in the `graalpython` repository root. If the build is fine, it will
+print the full path to the `graalpython` executable as the last line of output.
+
+For more information and some examples of what you can do with GraalPython,
+check out the [reference](https://www.graalvm.org/reference-manual/python/).
 
 ### Create a virtual environment
 
-The best way of using the GraalVM implementation of Python is out of a virtual environment. This generates
-wrapper scripts and makes the implementation usable from shell as standard Python interpreter. To do so
-execute the following in the project directory:
-
-Build GraalPython:
+The best way of using the GraalVM implementation of Python is out of a virtual
+environment. To create the venv, run the following:
 
 ```
-mx build
-```
-
-Create the venv:
-
-```
-mx python -m venv <dir-to-venv>
+graalpython -m venv <dir-to-venv>
 ```
 
 To activate the environment in your shell session call:
@@ -47,28 +52,28 @@ At the moment not enough of the standard library is implemented to run the
 standard package installers for many packages. As a convenience, we provide a
 simple module to install packages that we know to be working (including
 potential patches required for those packages). Try the following to find out
-more:
+which packages are at least partially supported and tested by us in our CI:
 
 ```
-graalpython -m ginstall --help
+graalpython -m ginstall install --help
 ```
 
-As a slightly more exciting example, try:
+As a slightly exciting example, try:
 
 ```
-graalpython -m ginstall install numpy
+graalpython -m ginstall install pandas
 ```
 
-If all goes well (also consider native dependencies of NumPy), you should be 
-able to `import numpy` afterwards.
+If all goes well (also consider native dependencies of NumPy), you should be
+able to `import numpy` and `import pandas` afterwards.
 
 Support for more extension modules is high priority for us. We are actively
 building out our support for the Python C API to make extensions such as NumPy,
-SciPy, Scikit-learn, Pandas, Tensorflow and the like work. This work means that
-some other extensions might also already work, but we're not actively testing
-other extensions right now and cannot promise anything. Note that to try
-extensions on this implementation, you have to download, build, and install them
-manually for now. 
+SciPy, Scikit-learn, Pandas, Tensorflow and the like work fully. This work means
+that some other extensions might also already work, but we're not actively
+testing other extensions right now and cannot promise anything. Note that to try
+other extensions on this implementation, you have to download, build, and
+install them manually for now.
 
 ### Polyglot Usage
 
