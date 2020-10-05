@@ -1,6 +1,10 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO POL
@@ -20,6 +24,8 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final int[] shape;
     private final int[] strides;
     private final int[] suboffsets;
+
+    boolean released = false;
 
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
                     int len, boolean readonly, int itemsize, String format, int ndim, Object bufPointer,
@@ -90,5 +96,16 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
 
     public int[] getBufferSuboffsets() {
         return suboffsets;
+    }
+
+    public boolean isReleased() {
+        return released;
+    }
+
+    // TODO add releasing logic
+    public void checkReleased(PythonBuiltinBaseNode node) {
+        if (released) {
+            throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
+        }
     }
 }

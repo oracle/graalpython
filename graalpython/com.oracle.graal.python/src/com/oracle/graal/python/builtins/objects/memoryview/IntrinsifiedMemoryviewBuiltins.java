@@ -389,17 +389,19 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     static abstract class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
-        static Object getitem(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index,
+        Object getitem(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index,
                         @Cached PointerLookupNode pointerFromIndexNode,
                         @Cached ReadItemAtNode readItemAtNode) {
+            self.checkReleased(this);
             MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
             return readItemAtNode.execute(self, ptr.ptr, ptr.offset);
         }
 
         @Specialization
-        static Object getitemSlice(IntrinsifiedPMemoryView self, PSlice slice,
+        Object getitemSlice(IntrinsifiedPMemoryView self, PSlice slice,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            self.checkReleased(this);
             // TODO ndim == 0
             // TODO profile ndim == 1
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
@@ -421,6 +423,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization
         Object getitemEllipsis(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
                         @Cached ConditionProfile zeroDimProfile) {
+            self.checkReleased(this);
             if (zeroDimProfile.profile(self.getDimensions() == 0)) {
                 return self;
             }
@@ -435,6 +438,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         Object setitem(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index, Object object,
                         @Cached PointerLookupNode pointerFromIndexNode,
                         @Cached WriteItemAtNode writeItemAtNode) {
+            self.checkReleased(this);
             checkReadonly(self);
 
             MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
@@ -449,6 +453,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                         @Cached BuiltinConstructors.IMemoryViewNode createMemoryView,
                         @Cached PointerLookupNode pointerLookupNode,
                         @Cached CopyBytesNode copyBytesNode) {
+            self.checkReleased(this);
             if (self.getDimensions() != 1) {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
@@ -471,6 +476,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         Object setitem(VirtualFrame frame, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis, Object object,
                         @Cached ConditionProfile zeroDimProfile,
                         @Cached WriteItemAtNode writeItemAtNode) {
+            self.checkReleased(this);
             checkReadonly(self);
 
             if (zeroDimProfile.profile(self.getDimensions() == 0)) {
@@ -501,8 +507,9 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public static abstract class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static int nativeLen(IntrinsifiedPMemoryView self,
+        int nativeLen(IntrinsifiedPMemoryView self,
                         @Cached ConditionProfile zeroDimProfile) {
+            self.checkReleased(this);
             return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
         }
     }
