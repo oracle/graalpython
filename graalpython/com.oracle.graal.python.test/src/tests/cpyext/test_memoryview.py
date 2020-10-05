@@ -42,7 +42,8 @@ import itertools
 from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare_with_message, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
 
-indices = (-2, 0, 1, 2, 10)
+indices = (-2, 2, 10)
+# indices = (-2, 0, 1, 2, 10)
 slices = list(itertools.starmap(slice, itertools.product(indices, indices, indices)))
 
 
@@ -176,5 +177,50 @@ class TestPyMemoryView(CPyExtTestCase):
         argspec='OO',
         arguments=["PyObject* key", "PyObject* expected"],
         callfunction="test_read",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
+    test_memoryview_write = CPyExtFunction(
+        lambda args: args[3],
+        lambda: [l + (v,) for l in [
+            (bytearray(b'12345678'), 5, ord('0'), b'12345078'),
+            (bytearray(b'12345678'), 10, ord('0'), IndexError("index out of bounds on dimension 1")),
+            (bytearray(b'12345678'), "a", ord('0'), TypeError("memoryview: invalid slice key")),
+            (bytearray(b'12345678'), slice(2, 5), b'abc', b'12abc678'),
+            (bytearray(b'12345678'), slice(2, 5), imemoryview(b'abcdef')[::2], b'12ace678'),
+            (bytearray(b'12345678'), slice(None, None, 2), b'abcd', b'a2b4c6d8'),
+            (bytearray(b'12345678'), slice(2, 5), b'1', ValueError("memoryview assignment: lvalue and rvalue have different structures")),
+            (bytearray(b'12345678'), slice(2, 5), b'1111', ValueError("memoryview assignment: lvalue and rvalue have different structures")),
+        ] for v in [True, False]],
+        # TODO test slice copy from native source
+        code='''
+            static PyObject* test_write(PyObject *dest, PyObject *key, PyObject *value, PyObject *expected, int destNative) {
+                PyObject *ret = NULL;
+                PyObject *mv;
+                Py_buffer buffer;
+                if (destNative) {
+                    if (PyObject_GetBuffer(dest, &buffer, PyBUF_FULL_RO) != 0)
+                        return NULL;
+                    mv = PyMemoryView_FromBuffer(&buffer);
+                } else {
+                    mv = PyMemoryView_FromObject(dest);
+                }
+                if (!mv)
+                    goto error_buf;
+                if (PyObject_SetItem(mv, key, value) != 0)
+                    goto error_mv;
+                ret = dest;
+            error_mv:
+                Py_DECREF(mv);
+            error_buf:
+                if (destNative)
+                    PyBuffer_Release(&buffer);
+                return ret;
+            }
+        ''',
+        resultspec='O',
+        argspec='OOOOp',
+        arguments=["PyObject* dest", "PyObject* key", "PyObject* value", "PyObject* expected", "int destNative"],
+        callfunction="test_write",
         cmpfunc=unhandled_error_compare_with_message,
     )

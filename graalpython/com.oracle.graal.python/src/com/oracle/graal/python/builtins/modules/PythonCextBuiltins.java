@@ -1552,7 +1552,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached BuiltinConstructors.IMemoryViewNode memoryViewNode,
                         @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.execute(memoryViewNode.execute(PythonBuiltinClassType.IntrinsifiedPMemoryView, asPythonObjectNode.execute(object)));
+            return toNewRefNode.execute(memoryViewNode.create(asPythonObjectNode.execute(object)));
         }
     }
 

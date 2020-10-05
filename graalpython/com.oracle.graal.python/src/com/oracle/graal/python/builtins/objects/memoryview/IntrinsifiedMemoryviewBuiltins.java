@@ -15,6 +15,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -141,7 +142,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     }
 
     static abstract class ReadItemAtNode extends Node {
-        public abstract Object execute(VirtualFrame frame, IntrinsifiedPMemoryView self, Object ptr, int offset);
+        public abstract Object execute(IntrinsifiedPMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
         static Object doNative(IntrinsifiedPMemoryView self, Object ptr, int offset,
@@ -160,11 +161,11 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "ptr == null")
-        static Object doManaged(VirtualFrame frame, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        static Object doManaged(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             // TODO cast can change the format
-            return getItemNode.executeInt(frame, getStorageNode.execute(self.getOwner()), offset / self.getItemSize());
+            return getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset / self.getItemSize());
         }
     }
 
@@ -198,6 +199,74 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             byte[] bytes = new byte[1];
             packValueNode.execute(self.getFormat(), object, bytes);
             setItemNode.execute(getStorageNode.execute(self.getOwner()), offset / self.getItemSize(), bytes[0]);
+        }
+    }
+
+    static abstract class CopyBytesNode extends Node {
+        public abstract void execute(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes);
+
+        @Specialization(guards = {"destPtr == null", "srcPtr == null"})
+        @SuppressWarnings("unused")
+        static void managedToManaged(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.MemCopyNode memCopyNode) {
+            // TODO assumes bytes storage
+            SequenceStorage destStorage = getSequenceStorageNode.execute(dest.getOwner());
+            SequenceStorage srcStorage = getSequenceStorageNode.execute(src.getOwner());
+            memCopyNode.execute(destStorage, destOffset, srcStorage, srcOffset, nbytes);
+        }
+
+        @Specialization(guards = {"destPtr != null", "srcPtr == null"})
+        @SuppressWarnings("unused")
+        static void managedToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            // TODO assumes bytes storage
+            // TODO avoid byte->int conversion
+            // TODO explode?
+            SequenceStorage srcStorage = getSequenceStorageNode.execute(src.getOwner());
+            try {
+                for (int i = 0; i < nbytes; i++) {
+                    lib.writeArrayElement(destPtr, destOffset + i, (byte) getItemNode.executeInt(srcStorage, srcOffset + i));
+                }
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = {"destPtr == null", "srcPtr != null"})
+        @SuppressWarnings("unused")
+        static void nativeToManaged(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            // TODO assumes bytes storage
+            // TODO avoid byte->int conversion
+            // TODO explode?
+            SequenceStorage destStorage = getSequenceStorageNode.execute(dest.getOwner());
+            try {
+                for (int i = 0; i < nbytes; i++) {
+                    setItemNode.execute(destStorage, (byte) lib.readArrayElement(srcPtr, srcOffset + i) & 0xFF, destOffset + i);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = {"destPtr != null", "srcPtr != null"})
+        @SuppressWarnings("unused")
+        static void nativeToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+            // TODO call native memcpy?
+            // TODO explode?
+            try {
+                for (int i = 0; i < nbytes; i++) {
+                    lib.writeArrayElement(destPtr, destOffset + i, (byte) lib.readArrayElement(srcPtr, srcOffset + i));
+                }
+            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
@@ -256,17 +325,17 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
         // TODO explode loop
         @Specialization
-        MemoryPointer resolveTuple(VirtualFrame frame, IntrinsifiedPMemoryView self, PTuple indices,
+        MemoryPointer resolveTuple(IntrinsifiedPMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             int ndim = self.getDimensions();
             checkTupleLength(lenNode, indicesStorage, ndim);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
-                Object indexObj = getItemNode.execute(frame, indicesStorage, dim);
+                Object indexObj = getItemNode.execute(indicesStorage, dim);
                 int index = convertIndex(lib, indexObj);
                 lookupDimension(self, ptr, dim, index);
             }
@@ -324,7 +393,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                         @Cached PointerLookupNode pointerFromIndexNode,
                         @Cached ReadItemAtNode readItemAtNode) {
             MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
-            return readItemAtNode.execute(frame, self, ptr.ptr, ptr.offset);
+            return readItemAtNode.execute(self, ptr.ptr, ptr.offset);
         }
 
         @Specialization
@@ -371,6 +440,30 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
             writeItemAtNode.execute(frame, self, ptr.ptr, ptr.offset, object);
 
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object setitem(VirtualFrame frame, IntrinsifiedPMemoryView self, PSlice slice, Object object,
+                        @Cached GetItemNode getItemNode,
+                        @Cached BuiltinConstructors.IMemoryViewNode createMemoryView,
+                        @Cached PointerLookupNode pointerLookupNode,
+                        @Cached CopyBytesNode copyBytesNode) {
+            if (self.getDimensions() != 1) {
+                throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
+            }
+            IntrinsifiedPMemoryView srcView = createMemoryView.create(object);
+            IntrinsifiedPMemoryView destView = (IntrinsifiedPMemoryView) getItemNode.execute(frame, self, slice);
+            // TODO format skip @
+            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormat().equals(destView.getFormat())) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
+            }
+            for (int i = 0; i < destView.getBufferShape()[0]; i++) {
+                // TODO doesn't look very efficient
+                MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
+                MemoryPointer srcPtr = pointerLookupNode.execute(frame, srcView, i);
+                copyBytesNode.execute(destView, destPtr.ptr, destPtr.offset, srcView, srcPtr.ptr, srcPtr.offset, destView.getItemSize());
+            }
             return PNone.NONE;
         }
 

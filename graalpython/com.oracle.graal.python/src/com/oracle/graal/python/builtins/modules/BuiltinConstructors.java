@@ -3320,12 +3320,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
     @GenerateNodeFactory
     public abstract static class IMemoryViewNode extends PythonBuiltinNode {
-        public abstract Object execute(Object cls, Object object);
+        public abstract IntrinsifiedPMemoryView execute(Object cls, Object object);
+
+        public final IntrinsifiedPMemoryView create(Object object) {
+            return execute(PythonBuiltinClassType.IntrinsifiedPMemoryView, object);
+        }
 
         // TODO arrays should support buffer protocol too, but their implementation would be
         // complex, because they don't have an underlying byte array
         @Specialization
-        static Object fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
+        static IntrinsifiedPMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
@@ -3333,7 +3337,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        static Object fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
+        static IntrinsifiedPMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
@@ -3341,21 +3345,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        static Object fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
+        static IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
             // TODO CPython makes a copy, do we need to do that too?
             return object;
         }
 
         @Specialization
-        static Object fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+        static IntrinsifiedPMemoryView fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction) {
-            return asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
+            return (IntrinsifiedPMemoryView) asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
         }
 
         @Fallback
-        Object error(@SuppressWarnings("unused") Object cls, Object object) {
+        IntrinsifiedPMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
 
