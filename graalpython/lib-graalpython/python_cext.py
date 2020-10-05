@@ -1100,7 +1100,7 @@ def PyObject_DelItem(obj, key):
     return 0
 
 
-@may_raise(1)
+@may_raise(-1)
 def PyObject_SetItem(obj, key, value):
     obj[key] = value
     return 0
