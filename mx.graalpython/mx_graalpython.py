@@ -582,6 +582,17 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
 
 
+def run_hpy_unittests(python_binary, args=[]):
+    with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
+        env = os.environ.copy()
+        prefix = str(d)
+        env.update(PYTHONUSERBASE=prefix)
+        mx.log("Ensure 'setuptools' is installed")
+        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "setuptools"], nonZeroIsFatal=True, env=env)
+
+        return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env)
+
+
 def run_tagged_unittests(python_binary, env=None):
     if env is None:
         env = os.environ
@@ -635,11 +646,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_python_unittests(python_gvm(), paths=[_hpy_test_root()])
+            run_hpy_unittests(python_gvm())
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"], paths=[_hpy_test_root()])
+            run_hpy_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
