@@ -392,7 +392,6 @@ public abstract class GraalHPyContextFunctions {
         private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
         private static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
         private static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
-        private static final Signature SIGNATURE_INPLACE = new Signature(3, false, -1, false, new String[]{"x", "y"}, null);
 
         @Child private LookupAndCallUnaryNode callUnaryNode;
         @Child private LookupAndCallBinaryNode callBinaryNode;
@@ -422,9 +421,7 @@ public abstract class GraalHPyContextFunctions {
                 return SIGNATURE_UNARY;
             } else if (binaryOperator != null) {
                 return SIGNATURE_BINARY;
-            } else if (inplaceOperator != null) {
-                return SIGNATURE_INPLACE;
-            } else if (ternaryOperator != null) {
+            } else if (inplaceOperator != null || ternaryOperator != null) {
                 return SIGNATURE_TERNARY;
             } else {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -455,7 +452,13 @@ public abstract class GraalHPyContextFunctions {
                 } else if (binaryOperator != null) {
                     return callBinaryNode.executeObject(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
                 } else if (inplaceOperator != null) {
-                    return callInplaceNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+                    // most of the in-place operators are binary but there can also be ternary
+                    if (PArguments.getUserArgumentLength(frame) == 2) {
+                        return callInplaceNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+                    } else if (PArguments.getUserArgumentLength(frame) == 3) {
+                        return callInplaceNode.executeTernary(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
+                    }
+                    throw CompilerDirectives.shouldNotReachHere();
                 } else if (ternaryOperator != null) {
                     return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
                 } else {
@@ -531,7 +534,13 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached GenericInvokeNode invokeNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+
+            // We need to do argument checking at this position because our helper root node that
+            // just dispatches to the appropriate 'LookupAndCallXXXNode' won't do any arguemnt
+            // checking. So it would just crash if there are too few arguments or just ignore if
+            // there are too many.
+            checkArguments(arguments);
 
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object[] pythonArguments = PArguments.create(arguments.length - 1);
@@ -546,6 +555,29 @@ public abstract class GraalHPyContextFunctions {
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return context.getNullHandle();
+            }
+        }
+
+        private void checkArguments(Object[] arguments) throws ArityException {
+            // note: we always add 1 for the context
+            int min;
+            int max;
+            if (unaryOperator != null) {
+                min = max = 2;
+            } else if (binaryOperator != null) {
+                min = max = 3;
+            } else if (inplaceOperator != null) {
+                min = 3;
+                max = 4;
+            } else if (ternaryOperator != null) {
+                min = max = 4;
+            } else {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            if (min > arguments.length || max < arguments.length) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                int expected = min > arguments.length ? min : max;
+                throw ArityException.create(expected, arguments.length);
             }
         }
 

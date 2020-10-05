@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -173,21 +174,19 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
     @Specialization(guards = "hasNonInplaceOperator()")
     Object doBinary(VirtualFrame frame, Object left, Object right, Object z,
                     @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace) {
-        Object result = PNotImplemented.NOT_IMPLEMENTED;
+        Object result;
         Object inplaceCallable = getattrInplace.execute(left);
-        boolean isBinary = z == PNone.NO_VALUE;
         if (inplaceCallable != PNone.NO_VALUE) {
-            if (isBinary) {
-                result = ensureBinaryCallNode().executeObject(frame, inplaceCallable, left, right);
-            } else {
-                result = ensureTernaryCallNode().execute(frame, inplaceCallable, left, right, z);
-            }
+            // nb.: The only ternary in-place operator is '__ipow__' but according to 'typeobject.c:
+            // slot_nb_inplace_power', this is always called as binary.
+            result = ensureBinaryCallNode().executeObject(frame, inplaceCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
 
         // try non-inplace variant
+        boolean isBinary = PGuards.isPNone(z);
         if (isBinary) {
             result = ensureLookupAndCallBinaryNode().executeObject(frame, left, right);
         } else {
