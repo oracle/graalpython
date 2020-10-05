@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
@@ -143,8 +144,9 @@ public abstract class PosixSupportLibrary extends Library {
         private volatile Object readFunction;
 
         @ExportMessage
-        public long getpid(@CachedLibrary(limit = "1") InteropLibrary funInterop,
-                           @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+        public long getpid(
+                    @Shared("fun") @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                    @Shared("res") @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (getpidFunction == null) {
                 CompilerDirectives.transferToInterpreter();
                 getpidFunction = lookup("call_getpid");
@@ -154,8 +156,8 @@ public abstract class PosixSupportLibrary extends Library {
 
         @ExportMessage
         public long umask(long mask,
-                           @CachedLibrary(limit = "1") InteropLibrary funInterop,
-                           @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+                    @Shared("fun") @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                    @Shared("res") @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (umaskFunction == null) {
                 CompilerDirectives.transferToInterpreter();
                 umaskFunction = lookup("call_umask");
@@ -170,8 +172,8 @@ public abstract class PosixSupportLibrary extends Library {
 
         @ExportMessage
         public int open(String pathname, int flags,
-                           @CachedLibrary(limit = "1") InteropLibrary funInterop,
-                           @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+                    @Shared("fun") @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                    @Shared("res") @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (openFunction == null) {
                 CompilerDirectives.transferToInterpreter();
                 openFunction = lookup("call_open");
@@ -182,8 +184,8 @@ public abstract class PosixSupportLibrary extends Library {
 
         @ExportMessage
         public int close(int fd,
-                         @CachedLibrary(limit = "1") InteropLibrary funInterop,
-                         @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+                    @Shared("fun") @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                    @Shared("res") @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (closeFunction == null) {
                 CompilerDirectives.transferToInterpreter();
                 closeFunction = lookup("call_close");
@@ -194,14 +196,14 @@ public abstract class PosixSupportLibrary extends Library {
 
         @ExportMessage
         public long read(int fd, byte[] buf,
-                          @CachedLibrary(limit = "1") InteropLibrary funInterop,
-                          @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
+                    @Shared("fun") @CachedLibrary(limit = "1") InteropLibrary funInterop,
+                    @Shared("res") @CachedLibrary(limit = "1") InteropLibrary resultInterop) {
             if (readFunction == null) {
                 CompilerDirectives.transferToInterpreter();
                 readFunction = lookup("call_read");
             }
             // TODO error handling
-            return callLong(funInterop, resultInterop, readFunction, fd, buf, buf.length);
+            return callLong(funInterop, resultInterop, readFunction, fd, PythonLanguage.getContext().getEnv().asGuestValue(buf), buf.length);
         }
 
         protected abstract Object loadLibrary(PythonContext ctxRef);
