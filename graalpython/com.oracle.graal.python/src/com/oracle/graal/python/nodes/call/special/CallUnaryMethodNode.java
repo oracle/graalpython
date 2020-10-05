@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -47,6 +48,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -219,13 +221,44 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, func.getSelf(), arg);
     }
 
+    @Specialization(guards = { //
+                    "func == cachedFunc", //
+                    "builtinNode != null", //
+                    "!takesSelfArg", //
+                    "minArgs == 1", //
+                    "frame != null || unusedFrame"}, //
+                    limit = "getCallSiteInlineCacheMaxDepth()", //
+                    assumptions = "singleContextAssumption()")
+    static Object callBinaryMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
+                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
+                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.call(frame, receiver, PNone.NO_VALUE);
+    }
+
+    /**
+     * In case the function takes at least 1 argument (so is <it>at least</it> unary) we also try
+     * higher orders.
+     */
+    @Specialization(guards = {"builtinNode != null", "minArgs == 1", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callBinaryMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
+                    @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.call(frame, arg, PNone.NO_VALUE);
+    }
+
     @Specialization(replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingleContext",
-                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
     static Object call(VirtualFrame frame, Object func, Object receiver,
                     @Cached("create()") CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
-            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, new Object[0], PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, ((BoundDescriptor) func).descriptor, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         } else {
             return callNode.execute(frame, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
         }

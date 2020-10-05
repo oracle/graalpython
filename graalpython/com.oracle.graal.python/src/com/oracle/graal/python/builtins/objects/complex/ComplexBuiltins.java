@@ -86,23 +86,22 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CoerceToComplexNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ComplexFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -723,12 +722,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         String repr(PComplex self) {
-            return repr(self, getCore());
+            return repr(self, getRaiseNode());
         }
 
         @TruffleBoundary
-        private static String repr(PComplex self, PythonCore core) {
-            ComplexFormatter formatter = new ComplexFormatter(core, new Spec(-1, Spec.NONE));
+        private static String repr(PComplex self, PRaiseNode raiseNode) {
+            ComplexFormatter formatter = new ComplexFormatter(raiseNode, new Spec(-1, Spec.NONE));
             formatter.format(self);
             return formatter.pad().getResult();
         }
@@ -743,29 +742,22 @@ public class ComplexBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class FormatNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class FormatNode extends FormatNodeBase {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return FormatNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "formatString.isEmpty()")
-        Object format(VirtualFrame frame, PComplex self, @SuppressWarnings("unused") String formatString,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode lookupAndCallNode) {
-            return lookupAndCallNode.executeObject(frame, self);
-        }
-
         @Specialization(guards = "!formatString.isEmpty()")
         Object format(PComplex self, String formatString) {
-            PythonCore core = getCore();
-            InternalFormat.Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+            InternalFormat.Spec spec = InternalFormat.fromText(getRaiseNode(), formatString, __FORMAT__);
             validateSpec(spec);
-            return doFormat(self, spec, core);
+            return doFormat(getRaiseNode(), self, spec);
         }
 
         @TruffleBoundary
-        private static Object doFormat(PComplex self, Spec spec, PythonCore core) {
-            ComplexFormatter formatter = new ComplexFormatter(core, validateAndPrepareForFloat(spec, core, "complex"));
+        private static Object doFormat(PRaiseNode raiseNode, PComplex self, Spec spec) {
+            ComplexFormatter formatter = new ComplexFormatter(raiseNode, validateAndPrepareForFloat(raiseNode, spec, "complex"));
             formatter.format(self);
             return formatter.pad().getResult();
         }

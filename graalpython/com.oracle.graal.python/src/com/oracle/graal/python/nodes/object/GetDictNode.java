@@ -50,12 +50,14 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @ImportStatic(PGuards.class)
+@GenerateUncached
 public abstract class GetDictNode extends PNodeWithContext {
 
     public abstract Object execute(Object o);
@@ -89,5 +91,9 @@ public abstract class GetDictNode extends PNodeWithContext {
 
     public static GetDictNode create() {
         return GetDictNodeGen.create();
+    }
+
+    public static GetDictNode getUncached() {
+        return GetDictNodeGen.getUncached();
     }
 }

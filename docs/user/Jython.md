@@ -22,7 +22,10 @@ command line flag on Graal: `--python.EmulateJython`.
 
 ### Importing
 Import statements allow you to import Java classes, but (unlike Jython), only
-packages in the `java` namespace can be directly imported. This will work:
+packages in the `java` namespace can be directly imported. Importing classes
+from packages outside `java` namespace also requires the
+`--python.EmulateJython` option to be active.
+This will work:
 ```
 import java.lang as lang
 ```
@@ -33,7 +36,7 @@ from javax.swing import *
 ```
 Instead, you will have to import one of the classes you are interested in directly:
 ```
-import javax.swing.Window as Window
+import javax.swing.JWindow as JWindow
 ```
 
 ### Basic Object Usage
@@ -47,7 +50,7 @@ methods:
     >>> boundNextInt = rg.nextInt
     >>> rg.nextInt()
     1491444859
-    >>> boundNextInt = rg.nextInt
+    >>> boundNextInt()
     1672896916
 
 ### Java-to-Python Types: Automatic Conversion
@@ -60,18 +63,18 @@ more dynamic approach to matching &mdash; Python types emulating `int` or
 example, to use Pandas frames as `double[][]` or NumPy array elements as `int[]`
 when the elements fit into those Java primitive types.
 
-| Java type              | Python type                                                                       |
-|:-----------------------|:----------------------------------------------------------------------------------|
-| null                   | None                                                                              |
-| boolean                | bool                                                                              |
-| byte, short, int, long | int, any object that has an `__int__` method                                      |
-| float                  | float, any object that has a `__float__` method                                   |
-| char                   | str of length 1                                                                   |
-| java.lang.String       | str                                                                               |
-| byte[]                 | bytes, bytearray, wrapped Java array, Python list with only the appropriate types |
-| Java arrays            | Wrapped Java array or Python list with only the appropriate types                 |
-| Java objects           | Wrapped Java object of the appropriate type                                       |
-| java.lang.Object       | Any object                                                                        |
+| Java type                       | Python type                                                                           |
+|:--------------------------------|:--------------------------------------------------------------------------------------|
+| `null`                          | `None`                                                                                |
+| `boolean`                       | `bool`                                                                                |
+| `byte`, `short`, `int` , `long` | `int`, any object that has an `__int__` method                                        |
+| `float`, `double`               | `float`, any object that has a `__float__` method                                     |
+| `char`                          | `str` of length 1                                                                     |
+| `java.lang.String`              | `str`                                                                                 |
+| `byte[]`                        | `bytes`, `bytearray`, wrapped Java array, Python list with only the appropriate types |
+| Java arrays                     | Wrapped Java array or Python list with only the appropriate types                     |
+| Java objects                    | Wrapped Java object of the appropriate type                                           |
+| `java.lang.Object`              | Any object                                                                            |
 
 ### Special Jython Modules
 Any of the special Jython modules are not available. For example, the `jarray`
@@ -85,6 +88,8 @@ The code that only needs to pass a Java array can also use Python types. However
 implicitly, this may entail a copy of the array data, which can be deceiving when
 using Java arrays as output parameters:
 
+    >>> # This example needs the --python.EmulateJython flag for the java.io import
+    >>> import java
     >>> i = java.io.ByteArrayInputStream(b"foobar")
     >>> buf = [0, 0, 0]
     >>> i.read(buf) # buf is automatically converted to a byte[] array
@@ -115,6 +120,8 @@ There is no automatic mapping of the Python syntax for accessing dictionary
 elements to the `java.util` mapping and list classes' ` get`, `set`, or `put`
 methods. To use these mapping and list clases, you must call the Java methods:
 
+    >>> # This example needs the --python.EmulateJython flag for the java.util import
+    >>> import java
     >>> ht = java.util.Hashtable()
     >>> ht.put("foo", "bar")
     >>> ht.get("foo")
@@ -153,6 +160,7 @@ public class PythonHandler extends Handler {
 ```
 Then you can use it like this in Python:
 ```
+# This example needs the --python.EmulateJython flag for the java.util import
 from java.util.logging import LogManager, Logger
 
 class MyHandler():

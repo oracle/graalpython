@@ -60,6 +60,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_UNICODE = "%s argument %d must be a unicode character, not %p";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
+    public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
@@ -67,6 +68,8 @@ public abstract class ErrorMessages {
     public static final String ARRAY_SIZE_TOO_LARGE = "array size too large";
     public static final String ATTEMP_TO_RELEASE_RECURSIVE_LOCK = "attempt to release recursive lock not owned by thread";
     public static final String ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE = "attempt to assign sequence of size %d to extended slice of size %d";
+    public static final String KEY_IN_S_MUST_BE_STRING = "Key in %s.%s must be str, not %p";
+    public static final String ITEM_IN_S_MUST_BE_STRING = "Item in %s.%s must be str, not %p";
     public static final String ATTR_NAME_MUST_BE_STRING = "attribute name must be string, not '%p'";
     public static final String ATTR_S_OF_S_IS_NOT_READABLE = "attribute %s of %s objects is not readable";
     public static final String ATTR_S_OF_S_IS_NOT_WRITABLE = "attribute %s of %s is not writable";
@@ -93,6 +96,8 @@ public abstract class ErrorMessages {
     public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
     public static final String BYTEORDER_MUST_BE_LITTLE_OR_BIG = "byteorder must be either 'little' or 'big'";
     public static final String BYTESLIKE_OBJ_REQUIRED = "a bytes-like object is required, not '%p'";
+    public static final String BYTE_STRING_OF_LEN_ONE_ONLY = "%s argument 2 must be a byte string of length 1, not %s";
+    public static final String BYTE_MUST_BE_IN_RANGE = "byte must be in range(0, 256)";
     public static final String C_ARG_NOT_IN_RANGE = "%%c arg not in range(0x%s)";
     public static final String CALL_STACK_NOT_DEEP_ENOUGH = "call stack is not deep enough";
     public static final String CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P = "calling argument converter failed; expected %d but got %d parameters.";
@@ -112,7 +117,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
-    public static final String CANNOT_CONVERT_S_OBJ_TO_BYTES = "cannot convert '%p' object to bytes";
+    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %p";
     public static final String CANNOT_CONVERT_S_TO_INT = "cannot convert %s to integer";
     public static final String CANNOT_CONVERT_S_TO_INT_RATIO = "cannot convert %s to integer ratio";
     public static final String CANNOT_CONVERT_TO = "cannot convert %s to %s";
@@ -125,7 +130,9 @@ public abstract class ErrorMessages {
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
-    public static final String CANNOT_IMPORT_NAME = "cannot import name '%s'";
+    public static final String IMPORT_NOT_FOUND = "__import__ not found";
+    public static final String CANNOT_IMPORT_NAME = "cannot import name '%s' from '%s' (%s)";
+    public static final String CANNOT_IMPORT_NAME_CIRCULAR = "cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)";
     public static final String CANNOT_INITIALIZE_WITH = "cannot initialize %s with %s%s";
     public static final String CANNOT_LOAD = "cannot load %s: %s";
     public static final String CANNOT_LOAD_M = "cannot load %s: %m";
@@ -141,6 +148,7 @@ public abstract class ErrorMessages {
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
+    public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
@@ -155,7 +163,8 @@ public abstract class ErrorMessages {
     public static final String CHARACTER_MAPPING_MUST_RETURN_INT_NONE_OR_STR = "character mapping must return integer, None or str";
     public static final String CHR_DOES_NOT_SUPPORT = "chr does not support PInt ";
     public static final String CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S = "__class__ assignment: '%s' object layout differs from '%s'";
-    public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
+    public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES = "__class__ assignment only supported for heap types or ModuleType subclasses";
+    public static final String CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P = "__class__ assignment only supported for heap types or ModuleType subclasses, not '%p'";
     public static final String CLASS_MUST_BE_SET_TO_CLASS = "__class__ must be set to a class, not '%p' object";
     public static final String MUST_BE_SET_TO_S_NOT_P = "%s must be set to a %s, not a '%p'";
     public static final String CLASSPATH_ARG_MUST_BE_STRING = "classpath argument %d must be string, not %p";
@@ -180,6 +189,7 @@ public abstract class ErrorMessages {
     public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
+    public static final String DESCRIPTOR_NEED_OBJ = "descriptor '%s' of '%s' object needs an argument";
     public static final String DICT_CHANGED_DURING_COMPARISON = "dictionary changed during comparison operation";
     public static final String CHANGED_SIZE_DURING_ITERATION = "%s changed size during iteration";
     public static final String DICT_MUST_BE_SET_TO_DICT = "__dict__ must be set to a dictionary, not a '%p'";
@@ -199,6 +209,7 @@ public abstract class ErrorMessages {
     public static final String ERROR_WRITING_FORKEXEC = "there was an error writing the fork_exec error to the error pipe";
     public static final String ERROR_CALLING_SET_NAME = "Error calling __set_name__ on '%p' instance '%s' in '%N'";
     public static final String ERRORS_WITHOUT_STR_ARG = "errors without a string argument";
+    public static final String EXPORTS_CANNOT_RESIZE = "Existing exports of data: object cannot be re-sized";
     public static final String ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED = "'e*' format specifiers are not supported";
     public static final String EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = "exception cause must be None or derive from BaseException";
     public static final String EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = "exception causes must derive from BaseException";
@@ -329,6 +340,7 @@ public abstract class ErrorMessages {
     public static final String LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT = "local variable '%s' referenced before assignment";
     public static final String LOCALS_MUST_BE_MAPPING = "%s() locals must be a mapping or None, not %p";
     public static final String LOST_SYSBREAKPOINTHOOK = "lost sys.breakpointhook";
+    public static final String LOST_SYSDISPLAYHOOK = "lost sys.displayhook";
     public static final String LENGTH_SHOULD_NOT_BE_NEG = "length should not be negative";
     public static final String MATH_DOMAIN_ERROR = "math domain error";
     public static final String MATH_RANGE_ERROR = "math range error";
@@ -360,6 +372,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
+    public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_NONLOCAL = "name '%s' is assigned to before nonlocal declaration";
     public static final String NAME_NOT_DEFINED = "name '%s' is not defined";
@@ -379,6 +392,7 @@ public abstract class ErrorMessages {
     public static final String NO_FUNCTION_FOUND = "no function %s%s found in %s";
     public static final String NO_SUCH_FILE_OR_DIR = "No such file or directory: '%s:/%s'";
     public static final String NO_SUCH_NAME = "no such name";
+    public static final String NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S = "nonempty __slots__ not supported for subtype of '%s'";
     public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
     public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
@@ -413,6 +427,7 @@ public abstract class ErrorMessages {
     public static final String POLYGLOT_EVAL_MUST_PASS_STRINGS = "polyglot.eval must pass strings as either 'path' or a 'string' keyword";
     public static final String POLYGLOT_EVAL_WITH_STRING_MUST_PASS_LANG = "polyglot.eval with a string argument must pass a language or mime-type";
     public static final String POP_FROM_EMPTY_SET = "pop from an emtpy set";
+    public static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
     public static final String PORT_PROTO_NOT_FOUND = "port/proto not found";
     public static final String PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED = "private identifier too large to be mangled";
     public static final String PROVIDED_OBJ_NOT_ARRAY = "provided object is not an array";
@@ -447,11 +462,14 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
-    public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "%s in %s conflicts with class variable";
+    public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
     public static final String SEP_MUST_BE_NONE_OR_STRING = "sep must be None or a string, not %p";
+    public static final String SEP_MUST_BE_STR_OR_BYTES = "sep must be str or bytes.";
+    public static final String SEP_MUST_BE_LENGTH_1 = "sep must be length 1.";
+    public static final String SEP_MUST_BE_ASCII = "sep must be ASCII.";
     public static final String SET_DOES_NOT_SUPPORT_ITERABLE_OBJ = "set does not support iterable object %s";
     public static final String SHOULD_RETURN = "%s should return %s";
     public static final String SHOULD_RETURN_NONE = "%s should return None";
@@ -464,12 +482,16 @@ public abstract class ErrorMessages {
     public static final String SIZE_MUST_BE_D_OR_S = "size must be %d or %s";
     public static final String SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = "slice indices must be integers or None or have an __index__ method";
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
-    public static final String SLOT_DISALLOWED_WE_GOT_ONE = "%s slot disallowed: we already got one";
+    public static final String DICT_SLOT_DISALLOWED_WE_GOT_ONE = "__dict__ slot disallowed: we already got one";
+    public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
+    public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";
     public static final String STATE_VECTOR_INVALID = "state vector invalid.";
+    public static final String STATE_VECTOR_MUST_BE_A_TUPLE = "state vector must be a tuple";
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
+    public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
@@ -542,6 +564,7 @@ public abstract class ErrorMessages {
     public static final String POW_ZERO_CANNOT_RAISE_TO_NEGATIVE_POWER = "0.0 cannot be raised to a negative power";
     public static final String S_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_COMPLEX_FMT = "'%c' alignment flag is not allowed in complex format specifier";
     public static final String EQUALS_ALIGNMENT_FLAG_NOT_ALLOWED_FOR_STRING_FMT = "'=' alignment not allowed in string format specifier";
+    public static final String SIGN_NOT_ALLOWED_FOR_STRING_FMT = "Sign not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
@@ -558,4 +581,12 @@ public abstract class ErrorMessages {
     public static final String ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED = "only single target (not %s) can be annotated";
     public static final String ILLEGAL_TARGET_FOR_ANNOTATION = "illegal target for annotation";
     public static final String SLICE_INDICES_TYPE_ERROR = "slice indices must be integers or have an __index__ method";
+    public static final String UNMAPPABLE_CHARACTER = "unmappable character";
+    public static final String MALFORMED_INPUT = "malformed input";
+    public static final String SHOULD_HAVE_RETURNED_EXCEPTION = "calling %N should have returned an instance of BaseException, not %p";
+    public static final String STRING_KEYS_MUST_BE_LENGHT_1 = "string keys in translate table must be of length 1";
+    public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
+    public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
+    public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
+    public static final String CANNOT_INTERN_P = "can't intern %p";
 }

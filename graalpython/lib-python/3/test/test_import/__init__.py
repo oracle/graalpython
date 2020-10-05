@@ -22,7 +22,7 @@ import glob
 
 import test.support
 from test.support import (
-    TESTFN, forget, is_jython,
+    TESTFN, forget, is_jython, impl_detail,
     make_legacy_pyc, rmtree, swap_attr, swap_item, temp_umask,
     unlink, unload, cpython_only, TESTFN_UNENCODABLE,
     temp_dir, DirsOnSysPath)
@@ -512,6 +512,7 @@ class ImportTests(unittest.TestCase):
 class FilePermissionTests(unittest.TestCase):
     # tests for file mode on cached .pyc files
 
+    @impl_detail("GR-25941: truffle umask support", graalvm=False)
     @unittest.skipUnless(os.name == 'posix',
                          "test meaningful only on posix systems")
     def test_creation_mode(self):
@@ -664,6 +665,7 @@ func_filename = func.__code__.co_filename
         self.assertEqual(mod.code_filename, target)
         self.assertEqual(mod.func_filename, target)
 
+    @impl_detail("GR-26007: code changes do not yet permeate to the AST", graalvm=False)
     def test_foreign_code(self):
         py_compile.compile(self.file_name)
         with open(self.compiled_name, "rb") as f:
@@ -854,6 +856,7 @@ class PycacheTests(unittest.TestCase):
                         'bytecode file {!r} for {!r} does not '
                         'exist'.format(pyc_path, TESTFN))
 
+    @impl_detail("GR-25941: truffle umask support", graalvm=False)
     @unittest.skipUnless(os.name == 'posix',
                          "test meaningful only on posix systems")
     @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
@@ -1138,6 +1141,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ImportError should have been raised")
         self.assert_traceback(tb, [__file__])
 
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
     def test_nonexistent_module_nested(self):
         self.create_module("foo", "import nonexistent_xyzzy")
         try:
@@ -1158,6 +1162,7 @@ class ImportTracebackTests(unittest.TestCase):
             self.fail("ZeroDivisionError should have been raised")
         self.assert_traceback(tb, [__file__, 'foo.py'])
 
+    @impl_detail("GR-25894: cannot access unwound portion of stacktrace", graalvm=False)
     def test_exec_failure_nested(self):
         self.create_module("foo", "import bar")
         self.create_module("bar", "1/0")

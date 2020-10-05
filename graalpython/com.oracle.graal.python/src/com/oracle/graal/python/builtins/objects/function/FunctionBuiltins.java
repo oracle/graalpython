@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -149,13 +150,13 @@ public class FunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDeleteMarker(defaults)")
         Object setDefaults(PFunction self, @SuppressWarnings("unused") Object defaults) {
-            self.setDefaults(new Object[0]);
+            self.setDefaults(PythonUtils.EMPTY_OBJECT_ARRAY);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(defaults)")
         Object setDefaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
-            self.setDefaults(new Object[0]);
+            self.setDefaults(PythonUtils.EMPTY_OBJECT_ARRAY);
             return PNone.NONE;
         }
 

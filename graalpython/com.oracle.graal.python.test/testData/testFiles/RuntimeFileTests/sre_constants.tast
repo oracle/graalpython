@@ -22,12 +22,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
         WriteNameNodeGen SourceSection: None
           Identifier: MAXGROUPS
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [515,1619]`class error(Exceptio...`
@@ -662,7 +658,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [2020,2051]`for i, name in enume...`
+                        GeneratorExpressionNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                           Name: <genexpr>
                           FrameDescriptor: 5 slots [i, name, <>temp2, <>temp3, <return_val>]
                           Enclosing
@@ -671,7 +667,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [2020,2051]`for i, name in enume...`
+                          FunctionRootNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -681,10 +677,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             ExecutionSlots:
                               FreeVarsSlots: None
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [2020,2051]`for i, name in enume...`
-                              GeneratorReturnTargetNode SourceSection: [2020,2051]`for i, name in enume...`
+                            InnerRootNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
+                              GeneratorReturnTargetNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [2020,2051]`for i, name in enume...`
+                                GeneratorForNode SourceSection: [1993,2051]`_NamedIntConstant(i,...`
                                   ExpressionStatementNode SourceSection: [1993,2019]`_NamedIntConstant(i,...`
                                     YieldNode SourceSection: [1993,2019]`_NamedIntConstant(i,...`
                                       flagSlot: 0
@@ -762,7 +758,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: dict
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [2091,2108]`for item in items`
+                          GeneratorExpressionNode SourceSection: [2075,2108]`item.name: item for ...`
                             Name: <genexpr>
                             FrameDescriptor: 2 slots [item, <return_val>]
                             Enclosing
@@ -771,7 +767,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [2091,2108]`for item in items`
+                            FunctionRootNode SourceSection: [2075,2108]`item.name: item for ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -781,10 +777,10 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [2091,2108]`for item in items`
-                                GeneratorReturnTargetNode SourceSection: [2091,2108]`for item in items`
+                              InnerRootNode SourceSection: [2075,2108]`item.name: item for ...`
+                                GeneratorReturnTargetNode SourceSection: [2075,2108]`item.name: item for ...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [2091,2108]`for item in items`
+                                  GeneratorForNode SourceSection: [2075,2108]`item.name: item for ...`
                                     ExpressionStatementNode SourceSection: None
                                       YieldNode SourceSection: None
                                         flagSlot: 0

@@ -96,7 +96,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(AndSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.values != null && isSubNode(node)) {
             return visitNodes(node.values);
         }
         return null;
@@ -129,7 +129,9 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.rhs.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.lhs);
+            if (node.lhs != null) {
+                return visitNodes(node.lhs);
+            }
         }
         return null;
     }
@@ -146,7 +148,10 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(BlockSSTNode node) {
-        return visitNodes(node.statements);
+        if (node.statements != null && isSubNode(node)) {
+            return visitNodes(node.statements);
+        }
+        return null;
     }
 
     @Override
@@ -163,7 +168,19 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
                     return result;
                 }
             }
-            return node.target.accept(this);
+            for (SSTNode param : node.parameters.getNameArgNodes()) {
+                if ((result = param.accept(this)) != null) {
+                    return result;
+                }
+            }
+            for (SSTNode param : node.parameters.getKwArg()) {
+                if ((result = param.accept(this)) != null) {
+                    return result;
+                }
+            }
+            if (node.target != null) {
+                return node.target.accept(this);
+            }
         }
         return null;
     }
@@ -181,7 +198,10 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(CollectionSSTNode node) {
-        return visitNodes(node.values);
+        if (node.values != null && isSubNode(node)) {
+            return visitNodes(node.values);
+        }
+        return null;
     }
 
     @Override
@@ -191,7 +211,9 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.firstValue.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.otherValues);
+            if (node.otherValues != null) {
+                return visitNodes(node.otherValues);
+            }
         }
         return null;
     }
@@ -199,19 +221,47 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     @Override
     public SSTNodeWithScope visit(DecoratedSSTNode node) {
         if (isSubNode(node)) {
-            return node.decorated.accept(this);
+            SSTNodeWithScope result;
+            for (DecoratorSSTNode decoratorSSTNode : node.decorators) {
+                if ((result = decoratorSSTNode.accept(this)) != null) {
+                    return result;
+                }
+            }
+            if (node.decorated != null) {
+                return node.decorated.accept(this);
+            }
         }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(DecoratorSSTNode node) {
+        if (isSubNode(node)) {
+            SSTNodeWithScope result;
+            if (node.arg != null) {
+                for (SSTNode param : node.arg.getArgs()) {
+                    if ((result = param.accept(this)) != null) {
+                        return result;
+                    }
+                }
+                for (SSTNode param : node.arg.getNameArgNodes()) {
+                    if ((result = param.accept(this)) != null) {
+                        return result;
+                    }
+                }
+                for (SSTNode param : node.arg.getKwArg()) {
+                    if ((result = param.accept(this)) != null) {
+                        return result;
+                    }
+                }
+            }
+        }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(DelSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.expressions != null && isSubNode(node)) {
             return visitNodes(node.expressions);
         }
         return null;
@@ -221,7 +271,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(ExceptSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.test.accept(this)) != null) {
+            if (node.test != null && (result = node.test.accept(this)) != null) {
                 return result;
             }
             return node.body.accept(this);
@@ -231,7 +281,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(ExpressionStatementSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.expression != null && isSubNode(node)) {
             return node.expression.accept(this);
         }
         return null;
@@ -249,16 +299,18 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.iterator.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.name.accept(this)) != null) {
+            if (node.name != null && (result = node.name.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.target.accept(this)) != null) {
+            if (node.target != null && (result = node.target.accept(this)) != null) {
                 return result;
             }
-            if ((result = visitNodes(node.variables)) != null) {
+            if (node.variables != null && (result = visitNodes(node.variables)) != null) {
                 return result;
             }
-            return visitNodes(node.conditions);
+            if (node.conditions != null && (result = visitNodes(node.conditions)) != null) {
+                return result;
+            }
         }
         return null;
     }
@@ -270,13 +322,15 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.body.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.iterator.accept(this)) != null) {
+            if (node.iterator != null && (result = node.iterator.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.elseStatement.accept(this)) != null) {
+            if (node.elseStatement != null && (result = node.elseStatement.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.targets);
+            if (node.targets != null && (result = visitNodes(node.targets)) != null) {
+                return result;
+            }
         }
         return null;
     }
@@ -286,6 +340,11 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
         if (isSubNode(node)) {
             if (isNode(node)) {
                 return node;
+            }
+            SSTNodeWithScope result;
+            if (node.argBuilder != null && ((result = checkParametersWithDefaultValue(node.argBuilder.getArgsWithDefValue())) != null ||
+                            (result = checkParametersWithDefaultValue(node.argBuilder.getKWArgsWithDefValue())) != null)) {
+                return result;
             }
             return node.body.accept(this);
         }
@@ -310,7 +369,9 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.thenStatement.accept(this)) != null) {
                 return result;
             }
-            return node.elseStatement.accept(this);
+            if (node.elseStatement != null) {
+                return node.elseStatement.accept(this);
+            }
         }
         return null;
     }
@@ -330,6 +391,11 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
         if (isSubNode(node)) {
             if (isNode(node)) {
                 return node;
+            }
+            SSTNodeWithScope result;
+            if (node.args != null && ((result = checkParametersWithDefaultValue(node.args.getArgsWithDefValue())) != null ||
+                            (result = checkParametersWithDefaultValue(node.args.getKWArgsWithDefValue())) != null)) {
+                return result;
             }
             return node.body.accept(this);
         }
@@ -356,7 +422,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
 
     @Override
     public SSTNodeWithScope visit(OrSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.values != null && isSubNode(node)) {
             return visitNodes(node.values);
         }
         return null;
@@ -366,17 +432,19 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(RaiseSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.from.accept(this)) != null) {
+            if (node.from != null && (result = node.from.accept(this)) != null) {
                 return result;
             }
-            return node.value.accept(this);
+            if (node.value != null) {
+                return node.value.accept(this);
+            }
         }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(ReturnSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.value != null && isSubNode(node)) {
             return node.value.accept(this);
         }
         return null;
@@ -391,20 +459,22 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(SliceSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.start.accept(this)) != null) {
+            if (node.start != null && (result = node.start.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.step.accept(this)) != null) {
+            if (node.step != null && (result = node.step.accept(this)) != null) {
                 return result;
             }
-            return node.stop.accept(this);
+            if (node.stop != null && (result = node.stop.accept(this)) != null) {
+                return result;
+            }
         }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(StarSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.value != null && isSubNode(node)) {
             return node.value.accept(this);
         }
         return null;
@@ -429,7 +499,7 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
     public SSTNodeWithScope visit(SubscriptSSTNode node) {
         if (isSubNode(node)) {
             SSTNodeWithScope result;
-            if ((result = node.receiver.accept(this)) != null) {
+            if (node.receiver != null && (result = node.receiver.accept(this)) != null) {
                 return result;
             }
             return node.subscript.accept(this);
@@ -447,7 +517,9 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.thenStatement.accept(this)) != null) {
                 return result;
             }
-            return node.elseStatement.accept(this);
+            if (node.elseStatement != null && (result = node.elseStatement.accept(this)) != null) {
+                return result;
+            }
         }
         return null;
     }
@@ -465,14 +537,16 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if (node.finallyStatement != null && (result = node.finallyStatement.accept(this)) != null) {
                 return result;
             }
-            return visitNodes(node.exceptNodes);
+            if (node.exceptNodes != null && (result = visitNodes(node.exceptNodes)) != null) {
+                return result;
+            }
         }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(UnarySSTNode node) {
-        if (isSubNode(node)) {
+        if (node.value != null && isSubNode(node)) {
             return node.value.accept(this);
         }
         return null;
@@ -490,10 +564,12 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.body.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.test.accept(this)) != null) {
+            if (node.test != null && (result = node.test.accept(this)) != null) {
                 return result;
             }
-            return node.elseStatement.accept(this);
+            if (node.elseStatement != null && (result = node.elseStatement.accept(this)) != null) {
+                return result;
+            }
         }
         return null;
     }
@@ -505,20 +581,36 @@ public class SSTNodeWithScopeFinder implements SSTreeVisitor<SSTNodeWithScope> {
             if ((result = node.body.accept(this)) != null) {
                 return result;
             }
-            if ((result = node.target.accept(this)) != null) {
+            if (node.expression != null && (result = node.target.accept(this)) != null) {
                 return result;
             }
-            return node.expression.accept(this);
+            if (node.target != null && (result = node.target.accept(this)) != null) {
+                return result;
+            }
+            if (node.expression != null && (result = node.expression.accept(this)) != null) {
+                return result;
+            }
         }
         return null;
     }
 
     @Override
     public SSTNodeWithScope visit(YieldExpressionSSTNode node) {
-        if (isSubNode(node)) {
+        if (node.value != null && isSubNode(node)) {
             return node.value.accept(this);
         }
         return null;
     }
 
+    private SSTNodeWithScope checkParametersWithDefaultValue(ArgDefListBuilder.ParameterWithDefValue[] parametersWithDefautValue) {
+        if (parametersWithDefautValue != null) {
+            SSTNodeWithScope result;
+            for (ArgDefListBuilder.ParameterWithDefValue param : parametersWithDefautValue) {
+                if ((result = param.value.accept(this)) != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
 }

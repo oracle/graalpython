@@ -94,6 +94,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONPATH environment variable for the standard launcher. ':'-separated list of directories prefixed to the default module search path.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PythonPath = new OptionKey<>("");
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher. Format: Encoding[:errors]", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> StandardStreamEncoding = new OptionKey<>("");
+
     @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 

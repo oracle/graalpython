@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.range;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -70,7 +71,7 @@ public abstract class PRange extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public String asPString() {
+    public String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
         return toString();
     }
 

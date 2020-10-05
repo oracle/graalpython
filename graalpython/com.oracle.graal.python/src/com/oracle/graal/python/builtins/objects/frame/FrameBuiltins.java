@@ -40,15 +40,17 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.DictNode;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -99,7 +101,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 if (globals instanceof PythonModule) {
                     if (getDictNode == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getDictNode = insert(DictNodeFactory.create());
+                        getDictNode = insert(ObjectBuiltinsFactory.DictNodeGen.create());
                     }
                     return getDictNode.call(curFrame, globals, PNone.NO_VALUE);
                 } else {
@@ -113,7 +115,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     @Builtin(name = "f_builtins", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
-        @Child private DictNode dictNode = DictNodeFactory.create();
+        @Child private DictNode dictNode = ObjectBuiltinsFactory.DictNodeGen.create();
 
         @Specialization
         Object get(VirtualFrame frame, @SuppressWarnings("unused") PFrame self) {
@@ -181,9 +183,10 @@ public final class FrameBuiltins extends PythonBuiltins {
             }
             // TODO: frames: this just shouldn't happen anymore
             assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, new byte[0], new Object[0], new Object[0], new Object[0], new Object[0], new Object[0],
+            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, PythonUtils.EMPTY_BYTE_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
+                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
                             "<internal>",
-                            "<internal>", -1, new byte[0]);
+                            "<internal>", -1, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         public static GetCodeNode create() {
@@ -231,7 +234,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), false, 0);
+                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.

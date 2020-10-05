@@ -45,6 +45,8 @@ PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DE
 /* The empty Unicode object is shared to improve performance. */
 static PyObject *unicode_empty = NULL;
 
+#define MAX_UNICODE 0x10ffff
+
 #define _Py_RETURN_UNICODE_EMPTY()                      \
     do {                                                \
         _Py_INCREF_UNICODE_EMPTY();                     \
@@ -489,8 +491,31 @@ PyObject* PyUnicode_Join(PyObject *separator, PyObject *seq) {
     return UPCALL_CEXT_O(_jls_PyUnicode_Join, native_to_java(separator), native_to_java(seq));
 }
 
+typedef PyObject* (*unicode_new_fun_t)(void* data, int elementSize, int is_ascii);
+UPCALL_TYPED_ID(PyUnicode_New, unicode_new_fun_t);
 PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
-    return to_sulong(polyglot_from_string("", "ascii"));
+	enum PyUnicode_Kind kind;
+	int is_ascii = 0;
+    if (maxchar < 128) {
+        kind = PyUnicode_1BYTE_KIND;
+        is_ascii = 1;
+    } else if (maxchar < 256) {
+        kind = PyUnicode_1BYTE_KIND;
+    } else if (maxchar < 65536) {
+        kind = PyUnicode_2BYTE_KIND;
+    } else {
+        if (maxchar > MAX_UNICODE) {
+            PyErr_SetString(PyExc_SystemError,
+                            "invalid maximum character passed to PyUnicode_New");
+            return NULL;
+        }
+        kind = PyUnicode_4BYTE_KIND;
+    }
+
+    /* add one to size for the null character */
+    int8_t* ptr = (int8_t*) calloc(size + 1, kind);
+    /* We intentionally reduce the size by one because interop users should not see the null character. */
+    return _jls_PyUnicode_New(polyglot_from_i8_array((int8_t*)ptr, size * kind), kind, is_ascii);
 }
 
 UPCALL_ID(PyUnicode_Compare);

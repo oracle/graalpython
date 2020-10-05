@@ -32,12 +32,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: reduce
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -55,12 +51,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: get_cache_token
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [749,783]`from collections imp...`
@@ -70,12 +62,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: namedtuple
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [841,875]`from reprlib import ...`
@@ -85,12 +73,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: recursive_repr
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       ImportFromNode SourceSection: [876,901]`from _thread import ...`
@@ -100,12 +84,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
         WriteNameNodeGen SourceSection: None
           Identifier: RLock
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [1222,1339]`WRAPPER_ASSIGNMENTS ...`
@@ -1752,7 +1732,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [7460,7537]`for op in _convert i...`
+                        GeneratorExpressionNode SourceSection: [7457,7537]`op for op in _conver...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [op, cls, <return_val>]
                           Enclosing
@@ -1761,7 +1741,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [7460,7537]`for op in _convert i...`
+                          FunctionRootNode SourceSection: [7457,7537]`op for op in _conver...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -1771,10 +1751,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: cls, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [7460,7537]`for op in _convert i...`
-                              GeneratorReturnTargetNode SourceSection: [7460,7537]`for op in _convert i...`
+                            InnerRootNode SourceSection: [7457,7537]`op for op in _conver...`
+                              GeneratorReturnTargetNode SourceSection: [7457,7537]`op for op in _conver...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [7460,7537]`for op in _convert i...`
+                                GeneratorForNode SourceSection: [7457,7537]`op for op in _conver...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -2553,12 +2533,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: cmp_to_key
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -3181,7 +3157,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalVariableNode SourceSection: [10436,10440]`args`
                                               Frame: [2,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [10456,10474]`for x in self.args`
+                                          GeneratorExpressionNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                             Name: <genexpr>
                                             FrameDescriptor: 2 slots [x, <return_val>]
                                             Enclosing
@@ -3190,7 +3166,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [10456,10474]`for x in self.args`
+                                            FunctionRootNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -3200,10 +3176,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [10456,10474]`for x in self.args`
-                                                GeneratorReturnTargetNode SourceSection: [10456,10474]`for x in self.args`
+                                              InnerRootNode SourceSection: [10448,10474]`repr(x) for x in sel...`
+                                                GeneratorReturnTargetNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                                   flagSlot: 1
-                                                  GeneratorForNode SourceSection: [10456,10474]`for x in self.args`
+                                                  GeneratorForNode SourceSection: [10448,10474]`repr(x) for x in sel...`
                                                     ExpressionStatementNode SourceSection: [10448,10455]`repr(x)`
                                                       YieldNode SourceSection: [10448,10455]`repr(x)`
                                                         flagSlot: 0
@@ -3255,7 +3231,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalVariableNode SourceSection: [10484,10488]`args`
                                               Frame: [2,args,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [10509,10544]`for (k, v) in self.k...`
+                                          GeneratorExpressionNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                             Name: <genexpr>
                                             FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                             Enclosing
@@ -3264,7 +3240,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [10509,10544]`for (k, v) in self.k...`
+                                            FunctionRootNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -3274,10 +3250,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ExecutionSlots:
                                                 FreeVarsSlots: None
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [10509,10544]`for (k, v) in self.k...`
-                                                GeneratorReturnTargetNode SourceSection: [10509,10544]`for (k, v) in self.k...`
+                                              InnerRootNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
+                                                GeneratorReturnTargetNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                                   flagSlot: 1
-                                                  GeneratorForNode SourceSection: [10509,10544]`for (k, v) in self.k...`
+                                                  GeneratorForNode SourceSection: [10496,10544]`f"{k}={v!r}" for (k,...`
                                                     ExpressionStatementNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                       YieldNode SourceSection: [10496,10508]`f"{k}={v!r}"`
                                                         flagSlot: 0
@@ -3942,12 +3918,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: partial
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -4295,7 +4267,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CallUnaryMethodNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           StringLiteralNode SourceSection: [13095,13099]`", "`
-                                        GeneratorExpressionNode SourceSection: [13161,13194]`for k, v in self.key...`
+                                        GeneratorExpressionNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                           Name: <genexpr>
                                           FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                                           Enclosing
@@ -4304,7 +4276,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           For Nodes: 1
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [13161,13194]`for k, v in self.key...`
+                                          FunctionRootNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -4314,10 +4286,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [13161,13194]`for k, v in self.key...`
-                                              GeneratorReturnTargetNode SourceSection: [13161,13194]`for k, v in self.key...`
+                                            InnerRootNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
+                                              GeneratorReturnTargetNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [13161,13194]`for k, v in self.key...`
+                                                GeneratorForNode SourceSection: [13105,13194]`"{}={!r}".format(k, ...`
                                                   ExpressionStatementNode SourceSection: [13105,13127]`"{}={!r}".format(k, ...`
                                                     YieldNode SourceSection: [13105,13127]`"{}={!r}".format(k, ...`
                                                       flagSlot: 0
@@ -5422,7 +5394,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ReadLocalVariableNode SourceSection: [16628,16633]`tuple`
                                 Frame: [5,tuple,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [16642,16655]`for v in args`
+                              GeneratorExpressionNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                 Name: <genexpr>
                                 FrameDescriptor: 3 slots [v, type, <return_val>]
                                 Enclosing
@@ -5431,7 +5403,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 For Nodes: 1
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [16642,16655]`for v in args`
+                                FunctionRootNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                   Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
@@ -5441,10 +5413,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ExecutionSlots:
                                     FreeVarsSlots: type, 
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [16642,16655]`for v in args`
-                                    GeneratorReturnTargetNode SourceSection: [16642,16655]`for v in args`
+                                  InnerRootNode SourceSection: [16634,16655]`type(v) for v in arg...`
+                                    GeneratorReturnTargetNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                       flagSlot: 1
-                                      GeneratorForNode SourceSection: [16642,16655]`for v in args`
+                                      GeneratorForNode SourceSection: [16634,16655]`type(v) for v in arg...`
                                         ExpressionStatementNode SourceSection: [16634,16641]`type(v)`
                                           YieldNode SourceSection: [16634,16641]`type(v)`
                                             flagSlot: 0
@@ -5503,7 +5475,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadLocalVariableNode SourceSection: [16693,16698]`tuple`
                                   Frame: [5,tuple,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                GeneratorExpressionNode SourceSection: [16707,16729]`for v in kwds.values...`
+                                GeneratorExpressionNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                   Name: <genexpr>
                                   FrameDescriptor: 3 slots [v, type, <return_val>]
                                   Enclosing
@@ -5512,7 +5484,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   For Nodes: 1
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: false
-                                  FunctionRootNode SourceSection: [16707,16729]`for v in kwds.values...`
+                                  FunctionRootNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                     Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
@@ -5522,10 +5494,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ExecutionSlots:
                                       FreeVarsSlots: type, 
                                       CellVarsSlots: None
-                                    InnerRootNode SourceSection: [16707,16729]`for v in kwds.values...`
-                                      GeneratorReturnTargetNode SourceSection: [16707,16729]`for v in kwds.values...`
+                                    InnerRootNode SourceSection: [16699,16729]`type(v) for v in kwd...`
+                                      GeneratorReturnTargetNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                         flagSlot: 1
-                                        GeneratorForNode SourceSection: [16707,16729]`for v in kwds.values...`
+                                        GeneratorForNode SourceSection: [16699,16729]`type(v) for v in kwd...`
                                           ExpressionStatementNode SourceSection: [16699,16706]`type(v)`
                                             YieldNode SourceSection: [16699,16706]`type(v)`
                                               flagSlot: 0
@@ -7206,12 +7178,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
             WriteNameNodeGen SourceSection: None
               Identifier: _lru_cache_wrapper
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -7277,7 +7245,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                   Identifier: list
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                GeneratorExpressionNode SourceSection: [23747,23770]`for s in sequences i...`
+                                GeneratorExpressionNode SourceSection: [23745,23770]`s for s in sequences...`
                                   Name: <genexpr>
                                   FrameDescriptor: 2 slots [s, <return_val>]
                                   Enclosing
@@ -7286,7 +7254,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   For Nodes: 1
                                   Block Nodes: 0
                                   Is Enclosing Frame Generator: false
-                                  FunctionRootNode SourceSection: [23747,23770]`for s in sequences i...`
+                                  FunctionRootNode SourceSection: [23745,23770]`s for s in sequences...`
                                     Name: <genexpr>
                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                     CelVars: None
@@ -7296,10 +7264,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ExecutionSlots:
                                       FreeVarsSlots: None
                                       CellVarsSlots: None
-                                    InnerRootNode SourceSection: [23747,23770]`for s in sequences i...`
-                                      GeneratorReturnTargetNode SourceSection: [23747,23770]`for s in sequences i...`
+                                    InnerRootNode SourceSection: [23745,23770]`s for s in sequences...`
+                                      GeneratorReturnTargetNode SourceSection: [23745,23770]`s for s in sequences...`
                                         flagSlot: 3
-                                        GeneratorForNode SourceSection: [23747,23770]`for s in sequences i...`
+                                        GeneratorForNode SourceSection: [23745,23770]`s for s in sequences...`
                                           GeneratorIfNode SourceSection: None
                                             GeneratorAccessNode SourceSection: None
                                             YesNodeGen SourceSection: None
@@ -7757,7 +7725,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25852,25855]`any`
                                       Identifier: any
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    GeneratorExpressionNode SourceSection: [25893,25915]`for b in cls.__bases...`
+                                    GeneratorExpressionNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                       Name: <genexpr>
                                       FrameDescriptor: 3 slots [b, base, <return_val>]
                                       Enclosing
@@ -7766,7 +7734,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       For Nodes: 1
                                       Block Nodes: 0
                                       Is Enclosing Frame Generator: false
-                                      FunctionRootNode SourceSection: [25893,25915]`for b in cls.__bases...`
+                                      FunctionRootNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                         Name: <genexpr>
                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                         CelVars: None
@@ -7776,10 +7744,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         ExecutionSlots:
                                           FreeVarsSlots: base, 
                                           CellVarsSlots: None
-                                        InnerRootNode SourceSection: [25893,25915]`for b in cls.__bases...`
-                                          GeneratorReturnTargetNode SourceSection: [25893,25915]`for b in cls.__bases...`
+                                        InnerRootNode SourceSection: [25873,25915]`issubclass(b, base) ...`
+                                          GeneratorReturnTargetNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                             flagSlot: 1
-                                            GeneratorForNode SourceSection: [25893,25915]`for b in cls.__bases...`
+                                            GeneratorForNode SourceSection: [25873,25915]`issubclass(b, base) ...`
                                               ExpressionStatementNode SourceSection: [25873,25892]`issubclass(b, base)`
                                                 YieldNode SourceSection: [25873,25892]`issubclass(b, base)`
                                                   flagSlot: 0
@@ -7889,7 +7857,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [26210,26236]`for base in explicit...`
+                        GeneratorExpressionNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
@@ -7898,7 +7866,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [26210,26236]`for base in explicit...`
+                          FunctionRootNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -7908,10 +7876,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [26210,26236]`for base in explicit...`
-                              GeneratorReturnTargetNode SourceSection: [26210,26236]`for base in explicit...`
+                            InnerRootNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
+                              GeneratorReturnTargetNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [26210,26236]`for base in explicit...`
+                                GeneratorForNode SourceSection: [26185,26236]`_c3_mro(base, abcs=a...`
                                   ExpressionStatementNode SourceSection: [26185,26209]`_c3_mro(base, abcs=a...`
                                     YieldNode SourceSection: [26185,26209]`_c3_mro(base, abcs=a...`
                                       flagSlot: 0
@@ -7967,7 +7935,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [26287,26313]`for base in abstract...`
+                        GeneratorExpressionNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
@@ -7976,7 +7944,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [26287,26313]`for base in abstract...`
+                          FunctionRootNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -7986,10 +7954,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [26287,26313]`for base in abstract...`
-                              GeneratorReturnTargetNode SourceSection: [26287,26313]`for base in abstract...`
+                            InnerRootNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
+                              GeneratorReturnTargetNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [26287,26313]`for base in abstract...`
+                                GeneratorForNode SourceSection: [26262,26313]`_c3_mro(base, abcs=a...`
                                   ExpressionStatementNode SourceSection: [26262,26286]`_c3_mro(base, abcs=a...`
                                     YieldNode SourceSection: [26262,26286]`_c3_mro(base, abcs=a...`
                                       flagSlot: 0
@@ -8045,7 +8013,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [26361,26384]`for base in other_ba...`
+                        GeneratorExpressionNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [base, abcs, <return_val>]
                           Enclosing
@@ -8054,7 +8022,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [26361,26384]`for base in other_ba...`
+                          FunctionRootNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -8064,10 +8032,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: abcs, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [26361,26384]`for base in other_ba...`
-                              GeneratorReturnTargetNode SourceSection: [26361,26384]`for base in other_ba...`
+                            InnerRootNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
+                              GeneratorReturnTargetNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [26361,26384]`for base in other_ba...`
+                                GeneratorForNode SourceSection: [26336,26384]`_c3_mro(base, abcs=a...`
                                   ExpressionStatementNode SourceSection: [26336,26360]`_c3_mro(base, abcs=a...`
                                     YieldNode SourceSection: [26336,26360]`_c3_mro(base, abcs=a...`
                                       flagSlot: 0
@@ -8341,7 +8309,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [27080,27111]`for n in types if is...`
+                        GeneratorExpressionNode SourceSection: [27078,27111]`n for n in types if ...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [n, is_related, <return_val>]
                           Enclosing
@@ -8350,7 +8318,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [27080,27111]`for n in types if is...`
+                          FunctionRootNode SourceSection: [27078,27111]`n for n in types if ...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -8360,10 +8328,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: is_related, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [27080,27111]`for n in types if is...`
-                              GeneratorReturnTargetNode SourceSection: [27080,27111]`for n in types if is...`
+                            InnerRootNode SourceSection: [27078,27111]`n for n in types if ...`
+                              GeneratorReturnTargetNode SourceSection: [27078,27111]`n for n in types if ...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [27080,27111]`for n in types if is...`
+                                GeneratorForNode SourceSection: [27078,27111]`n for n in types if ...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -8526,7 +8494,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [27392,27431]`for n in types if no...`
+                        GeneratorExpressionNode SourceSection: [27390,27431]`n for n in types if ...`
                           Name: <genexpr>
                           FrameDescriptor: 3 slots [n, is_strict_base, <return_val>]
                           Enclosing
@@ -8535,7 +8503,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [27392,27431]`for n in types if no...`
+                          FunctionRootNode SourceSection: [27390,27431]`n for n in types if ...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -8545,10 +8513,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ExecutionSlots:
                               FreeVarsSlots: is_strict_base, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [27392,27431]`for n in types if no...`
-                              GeneratorReturnTargetNode SourceSection: [27392,27431]`for n in types if no...`
+                            InnerRootNode SourceSection: [27390,27431]`n for n in types if ...`
+                              GeneratorReturnTargetNode SourceSection: [27390,27431]`n for n in types if ...`
                                 flagSlot: 3
-                                GeneratorForNode SourceSection: [27392,27431]`for n in types if no...`
+                                GeneratorForNode SourceSection: [27390,27431]`n for n in types if ...`
                                   GeneratorIfNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -8696,7 +8664,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                                               Identifier: list
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            GeneratorExpressionNode SourceSection: [27765,27802]`for s in sub.__mro__...`
+                                            GeneratorExpressionNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                               Name: <genexpr>
                                               FrameDescriptor: 3 slots [s, type_set, <return_val>]
                                               Enclosing
@@ -8705,7 +8673,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               For Nodes: 1
                                               Block Nodes: 0
                                               Is Enclosing Frame Generator: false
-                                              FunctionRootNode SourceSection: [27765,27802]`for s in sub.__mro__...`
+                                              FunctionRootNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                                 Name: <genexpr>
                                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                 CelVars: None
@@ -8715,10 +8683,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ExecutionSlots:
                                                   FreeVarsSlots: type_set, 
                                                   CellVarsSlots: None
-                                                InnerRootNode SourceSection: [27765,27802]`for s in sub.__mro__...`
-                                                  GeneratorReturnTargetNode SourceSection: [27765,27802]`for s in sub.__mro__...`
+                                                InnerRootNode SourceSection: [27763,27802]`s for s in sub.__mro...`
+                                                  GeneratorReturnTargetNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                                     flagSlot: 3
-                                                    GeneratorForNode SourceSection: [27765,27802]`for s in sub.__mro__...`
+                                                    GeneratorForNode SourceSection: [27763,27802]`s for s in sub.__mro...`
                                                       GeneratorIfNode SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
                                                         YesNodeGen SourceSection: None
@@ -9593,12 +9561,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               WriteLocalFrameSlotNodeGen SourceSection: None
                                                 Frame: [3,get_type_hints,Illegal]
                                               EmptyNode SourceSection: None
-                                            GetAnyAttributeNodeGen SourceSection: None
+                                            IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
                                             IsBuiltinClassProfile SourceSection: None
                                               CachedDispatchFirst SourceSection: None
                                           DestructuringAssignmentNodeGen SourceSection: [31472,31527]`argname, cls = next(...`

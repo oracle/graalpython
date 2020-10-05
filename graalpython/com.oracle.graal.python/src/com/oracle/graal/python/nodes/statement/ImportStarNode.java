@@ -25,9 +25,10 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ALL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.frame.ReadLocalsNode.fastGetCustomLocalsOrGlobals;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -36,21 +37,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -66,12 +62,11 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private SetItemNode dictWriteNode;
     @Child private SetAttributeNode.Dynamic setAttributeNode;
     @Child private GetItemNode getItemNode;
-    @Child private PythonObjectLibrary pythonLibrary;
     @Child private CastToJavaStringNode castToStringNode;
-    @Child private GetAnyAttributeNode readNode;
-    @Child private PRaiseNode raiseNode;
+    @Child private GetNextNode nextNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
+    @Child private IsBuiltinClassProfile isStopIterationProfile;
 
     private final String moduleName;
     private final int level;
@@ -92,14 +87,6 @@ public class ImportStarNode extends AbstractImportNode {
             }
             setAttributeNode.execute(frame, globals, name, value);
         }
-    }
-
-    private Object readAttribute(VirtualFrame frame, Object object, String name) {
-        if (readNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            readNode = insert(GetAttributeNode.GetAnyAttributeNode.create());
-        }
-        return readNode.executeObject(frame, object, name);
     }
 
     public ImportStarNode(String moduleName, int level) {
@@ -128,44 +115,44 @@ public class ImportStarNode extends AbstractImportNode {
                 throw new IllegalStateException(e);
             }
         } else {
+            PythonObjectLibrary pol = ensurePythonLibrary();
             try {
-                Object attrAll = readAttribute(frame, importedModule, SpecialAttributeNames.__ALL__);
+                Object attrAll = pol.lookupAttributeStrict(importedModule, frame, __ALL__);
                 int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
-                    Object attrNameObj = ensureGetItemNode().executeWith(frame, attrAll, i);
-                    String attrName;
-                    try {
-                        attrName = ensureCastToStringNode().execute(attrNameObj);
-                    } catch (CannotCastException e) {
-                        // TODO(fa): this error should be raised by the ReadAttributeFromObjectNode;
-                        // but that needs some refactoring first.
-                        throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, attrNameObj);
-                    }
-                    Object attr = readAttribute(frame, importedModule, attrName);
-                    writeAttribute(frame, locals, attrName, attr);
+                    Object attrName = ensureGetItemNode().executeWith(frame, attrAll, i);
+                    writeAttributeToLocals(frame, pol, (PythonModule) importedModule, locals, attrName, true);
                 }
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
                 assert importedModule instanceof PythonModule;
-                String[] exportedModuleAttrs = getModuleAttrs(importedModule);
-                for (String name : exportedModuleAttrs) {
-                    // skip attributes with leading '__' if there was no '__all__' attribute (see
-                    // 'ceval.c: import_all_from')
-                    if (!PString.startsWith(name, "__")) {
-                        Object attr = readAttribute(frame, importedModule, name);
-                        writeAttribute(frame, locals, name, attr);
+                Object keysIterator = pol.getIterator(pol.getDict(importedModule));
+                while (true) {
+                    try {
+                        Object key = ensureGetNextNode().execute(frame, keysIterator);
+                        writeAttributeToLocals(frame, pol, (PythonModule) importedModule, locals, key, false);
+                    } catch (PException iterException) {
+                        iterException.expectStopIteration(ensureIsStopIterationErrorProfile());
+                        break;
                     }
                 }
             }
         }
     }
 
-    private PythonObjectLibrary ensurePythonLibrary() {
-        if (pythonLibrary == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
+    private void writeAttributeToLocals(VirtualFrame frame, PythonObjectLibrary pol, PythonModule importedModule, PythonObject locals, Object attrName, boolean fromAll) {
+        try {
+            String name = ensureCastToStringNode().execute(attrName);
+            // skip attributes with leading '__' if there was no '__all__' attribute (see
+            // 'ceval.c: import_all_from')
+            if (fromAll || !PString.startsWith(name, "__")) {
+                Object moduleAttr = pol.lookupAttribute(importedModule, frame, name);
+                writeAttribute(frame, locals, name, moduleAttr);
+            }
+        } catch (CannotCastException cce) {
+            throw raiseTypeError(fromAll ? ErrorMessages.ITEM_IN_S_MUST_BE_STRING : ErrorMessages.KEY_IN_S_MUST_BE_STRING,
+                            moduleName, fromAll ? __ALL__ : __DICT__, attrName);
         }
-        return pythonLibrary;
     }
 
     private GetItemNode ensureGetItemNode() {
@@ -192,16 +179,19 @@ public class ImportStarNode extends AbstractImportNode {
         return isAttributeErrorProfile;
     }
 
-    private PException raise(PythonBuiltinClassType errType, String format, Object arg) {
-        if (raiseNode == null) {
+    private IsBuiltinClassProfile ensureIsStopIterationErrorProfile() {
+        if (isStopIterationProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
+            isStopIterationProfile = insert(IsBuiltinClassProfile.create());
         }
-        throw raiseNode.raise(errType, format, arg);
+        return isStopIterationProfile;
     }
 
-    @TruffleBoundary
-    private static String[] getModuleAttrs(Object importedModule) {
-        return ((PythonModule) importedModule).getAttributeNames().toArray(new String[0]);
+    private GetNextNode ensureGetNextNode() {
+        if (nextNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nextNode = insert(GetNextNode.create());
+        }
+        return nextNode;
     }
 }

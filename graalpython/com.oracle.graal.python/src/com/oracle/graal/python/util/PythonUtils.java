@@ -67,6 +67,12 @@ public final class PythonUtils {
         // no instances
     }
 
+    public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final int[] EMPTY_INT_ARRAY = new int[0];
+    public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
+
     /**
      * Executes System.arraycopy and puts all exceptions on the slow path.
      */

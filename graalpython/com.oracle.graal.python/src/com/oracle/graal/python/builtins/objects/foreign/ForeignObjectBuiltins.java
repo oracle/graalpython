@@ -590,6 +590,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ForeignCallContext foreignCallContext,
                         @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
@@ -598,7 +599,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = null;
-                Object state = ForeignCallContext.enter(frame, context, this);
+                Object state = foreignCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
                         res = lib.execute(callee, convertedArgs);
@@ -608,7 +609,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
-                    ForeignCallContext.exit(frame, context, state);
+                    foreignCallContext.exit(frame, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);

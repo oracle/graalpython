@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -151,8 +151,7 @@ class UnicodeEscapeTest(unittest.TestCase):
         for b in range(127, 256):
             check(chr(b), ('\\x%02x' % b).encode())
         check('\u20ac', br'\u20ac')
-        # TODO Truffle: not working yet
-        # check('\U0001d120', br'\U0001d120')
+        check('\U0001d120', br'\U0001d120')
 
     def test_escape_decode(self):
         decode = codecs.unicode_escape_decode

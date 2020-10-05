@@ -372,9 +372,9 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     int f = fileno(fd);
     PyTuple_SetItem(args, 0, PyLong_FromLong(f));
     kwargs = PyDict_New();
-    int buffering = 0;
+    int buffering = 1;
     PyDict_SetItemString(kwargs, "buffering", PyLong_FromLong(buffering));
-    PyDict_SetItemString(kwargs, "mode", polyglot_from_string("wb", SRC_CS));
+    PyDict_SetItemString(kwargs, "mode", polyglot_from_string("w", SRC_CS));
     file = PyObject_Call(openFunc, args, kwargs);
 
     printfunc = UPCALL_CEXT_O(_jls_PyTruffle_GetBuiltin, polyglot_from_string("print", SRC_CS));

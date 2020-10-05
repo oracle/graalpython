@@ -95,7 +95,7 @@ abstract class CallSpecialMethodNode extends Node {
         if (builtinNodeFactory == null) {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
-        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0;
+        assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
         if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
             return null;
         }
@@ -178,6 +178,23 @@ abstract class CallSpecialMethodNode extends Node {
             return takesSelfArg(((PBuiltinMethod) func).getFunction());
         }
         return true;
+    }
+
+    /**
+     * Determines the minimum number of positional arguments accepted by the given built-in function
+     * or method.
+     */
+    protected static int getMinArgs(Object func) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (func instanceof PBuiltinFunction) {
+            RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
+            if (functionRootNode instanceof BuiltinFunctionRootNode) {
+                return ((BuiltinFunctionRootNode) functionRootNode).getBuiltin().minNumOfPositionalArgs();
+            }
+        } else if (func instanceof PBuiltinMethod) {
+            return getMinArgs(((PBuiltinMethod) func).getFunction());
+        }
+        return 0;
     }
 
     protected static RootCallTarget getCallTarget(PMethod meth) {

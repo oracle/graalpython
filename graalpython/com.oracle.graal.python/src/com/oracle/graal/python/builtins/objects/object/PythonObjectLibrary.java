@@ -122,6 +122,14 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
+     * Delete the {@code __dict__} attribute of the object
+     */
+    @Abstract(ifExported = "hasDict")
+    public void deleteDict(Object receiver) throws UnsupportedMessageException {
+        throw UnsupportedMessageException.create();
+    }
+
+    /**
      * @return the Python type of the receiver
      */
     @Abstract
@@ -146,7 +154,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, Object cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES, receiver);
+        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
     }
 
     /**
@@ -526,7 +534,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
+    public final Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return asIndexWithState(receiver, PArguments.getThreadState(frame));
         } else {
@@ -1017,7 +1025,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asIndexWithState
      */
-    public int lengthWithFrame(Object receiver, VirtualFrame frame) {
+    public final int lengthWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return lengthWithState(receiver, PArguments.getThreadState(frame));
         } else {
@@ -1152,7 +1160,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #getIteratorWithState
      */
-    public Object getIteratorWithFrame(Object receiver, VirtualFrame frame) {
+    public final Object getIteratorWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {
             return getIteratorWithState(receiver, PArguments.getThreadState(frame));
         } else {

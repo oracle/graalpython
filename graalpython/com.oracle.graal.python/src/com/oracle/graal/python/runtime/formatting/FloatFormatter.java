@@ -14,7 +14,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -49,8 +49,8 @@ public class FloatFormatter extends InternalFormat.Formatter {
      * @param addDot0 reflects flag {@code Py_DTSF_ADD_DOT_0} in CPython, applicable only for 'r'
      *            specifier
      */
-    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec, boolean addDot0) {
-        super(core, result, spec);
+    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec, boolean addDot0) {
+        super(raiseNode, result, spec);
         if (!addDot0 && spec.type == 'r') {
             minFracDigits = 0;
         } else if (spec.alternate) {
@@ -69,12 +69,12 @@ public class FloatFormatter extends InternalFormat.Formatter {
         }
     }
 
-    public FloatFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
-        this(core, result, spec, true);
+    public FloatFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+        this(raiseNode, result, spec, true);
     }
 
-    public FloatFormatter(PythonCore core, Spec spec) {
-        this(core, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
+    public FloatFormatter(PRaiseNode raiseNode, Spec spec) {
+        this(raiseNode, new FormattingBuffer.StringFormattingBuffer(size(spec)), spec);
     }
 
     /**
@@ -231,7 +231,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             default:
                 // Should never get here, since this was checked in PyFloat.
-                throw unknownFormat(errors, spec.type, "float");
+                throw unknownFormat(raiseNode, spec.type, "float");
         }
 
         // If the format type is an upper-case letter, convert the result to upper case.

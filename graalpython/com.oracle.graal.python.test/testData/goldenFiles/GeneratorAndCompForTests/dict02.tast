@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                   Identifier: dict
                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                GeneratorExpressionNode SourceSection: [71,97]`for (k,v) in dict1.i...`
+                GeneratorExpressionNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                   Name: <genexpr>
                   FrameDescriptor: 5 slots [k, v, <>temp2, <>temp3, <return_val>]
                   Enclosing
@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                   For Nodes: 1
                   Block Nodes: 0
                   Is Enclosing Frame Generator: false
-                  FunctionRootNode SourceSection: [71,97]`for (k,v) in dict1.i...`
+                  FunctionRootNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                     Name: <genexpr>
                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                     CelVars: None
@@ -37,10 +37,10 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                     ExecutionSlots:
                       FreeVarsSlots: None
                       CellVarsSlots: None
-                    InnerRootNode SourceSection: [71,97]`for (k,v) in dict1.i...`
-                      GeneratorReturnTargetNode SourceSection: [71,97]`for (k,v) in dict1.i...`
+                    InnerRootNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
+                      GeneratorReturnTargetNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                         flagSlot: 1
-                        GeneratorForNode SourceSection: [71,97]`for (k,v) in dict1.i...`
+                        GeneratorForNode SourceSection: [65,97]`k:v*2 for (k,v) in d...`
                           ExpressionStatementNode SourceSection: None
                             YieldNode SourceSection: None
                               flagSlot: 0

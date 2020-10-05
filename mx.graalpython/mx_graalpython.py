@@ -53,6 +53,7 @@ import mx_unittest
 import mx_sdk
 import mx_subst
 import mx_urlrewrites
+import mx_graalpython_bisect
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO, BENCHMARKS, JBENCHMARKS
 from mx_graalpython_benchmark import PythonBenchmarkSuite, python_vm_registry, CPythonVm, PyPyVm, JythonVm, GraalPythonVm, \
@@ -1264,8 +1265,13 @@ def import_python_sources(args):
        This will apply copyrights to files that we're newly added from
        python-import.
 
-    7. Run the tests and fix any remaining issues.
-    8. You should push the python-import branch using:
+    7. Adjust some constants in the source code:
+
+            version information in PythonLanguage (e.g., PythonLanguage#MINOR)
+
+    8. Run the tests and fix any remaining issues.
+
+    9. You should push the python-import branch using:
 
            git push origin python-import:python-import
 
@@ -1985,4 +1991,5 @@ mx.update_commands(SUITE, {
     'graalpytest': [graalpytest, '[-h] [-v] [--python PYTHON] [-k TEST_PATTERN] [TESTS]'],
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
+    'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
 })

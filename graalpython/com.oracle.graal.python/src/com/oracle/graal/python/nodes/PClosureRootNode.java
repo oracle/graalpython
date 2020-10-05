@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
+    private String fileName;
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
@@ -122,10 +123,18 @@ public abstract class PClosureRootNode extends PRootNode {
             }
             return freeVars;
         }
-        return new String[0];
+        return PythonUtils.EMPTY_STRING_ARRAY;
     }
 
     public boolean hasAnnotations() {
         return annotationsAvailable;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 }

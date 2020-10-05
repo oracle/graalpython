@@ -22,19 +22,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import _codecs
-
-
-def expandtabs(self, tabsize=8):
-    """
-    S.expandtabs(tabsize=8) -> str
-
-    Return a copy of S where all tab characters are expanded using spaces.
-    If tabsize is not given, a tab size of 8 characters is assumed.
-    """
-    return self.replace("\t", " " * tabsize)
-
-
-str.expandtabs = expandtabs
+import sys
 
 
 # Auto number state
@@ -190,16 +178,14 @@ class TemplateFormatter(object):
         if index == -1:
             kwarg = name[:i]
             arg = self.kwargs[kwarg]
+        elif index > sys.maxsize:
+            raise ValueError("Too many decimal digits in format string")
         else:
             if self.args is None:
                 raise ValueError("Format string contains positional fields")
-            try:
-                arg = self.args[index]
-            except IndexError:
-                raise IndexError(
-                            "out of range: index %d but only %d argument%s",
-                            index, len(self.args),
-                            "s" if len(self.args) != 1 else "")
+            if index >= len(self.args):
+                raise IndexError("Replacement index %d out of range for positional args tuple" % index)
+            arg = self.args[index]
         return self._resolve_lookups(arg, name, i, end)
 
     def _resolve_lookups(self, obj, name, start, end):
@@ -239,6 +225,8 @@ class TemplateFormatter(object):
                 except ValueError:
                     item = name[start:i]
                 else:
+                    if index > sys.maxsize:
+                        raise ValueError("Too many decimal digits in format string")
                     item = index
                 i += 1 # Skip "]"
                 if obj is not None:
@@ -328,15 +316,22 @@ class TemplateFormatter(object):
         return iter(self.parser_list)
 
 
-def strformat(___self, *___args, **___kwargs):
+def strformat(___self, *args, **kwargs):
     template = TemplateFormatter(___self)
-    return template.build(___args, ___kwargs)
+    return template.build(args, kwargs)
 
 
+def format_map(___self, mapping):
+    template = TemplateFormatter(___self)
+    return template.build(None, mapping)
+
+
+strformat.__name__ = 'format'
 str.format = strformat
+str.format_map = format_map
 
 
-def strcount(self, sub, start=None, end=None):
+def count(self, sub, start=None, end=None):
     selfLeng = len(self)
     subLeng = len(sub)
     if start == None:
@@ -365,7 +360,7 @@ def strcount(self, sub, start=None, end=None):
     return cnt
 
 
-str.count = strcount
+str.count = count
 
 
 def encode(self, encoding="utf-8", errors="strict"):
@@ -380,7 +375,13 @@ def encode(self, encoding="utf-8", errors="strict"):
       as well as any other name registered with codecs.register_error that
       can handle UnicodeDecodeErrors.
     """
-    return _codecs.encode(self, encoding=encoding, errors=errors)
+    result = _codecs.encode(self, encoding=encoding, errors=errors)
+    if not isinstance(result, bytes):
+        if isinstance(result, bytearray):
+            return bytes(result)
+        raise TypeError("'%s' encoder returned '%s' instead of 'bytes'; use codecs.encode() to encode to arbitrary types"
+                        % (encoding, type(result).__name__))
+    return result
 
 
 str.encode = encode

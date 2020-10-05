@@ -168,6 +168,13 @@ public class ClassDefTests extends ParserTestBase {
     }
 
     @Test
+    public void decorator03() throws Exception {
+        checkScopeAndTree("class C(object):\n" +
+                        "    @staticmethod\n" +
+                        "    def foo(): return 42\n");
+    }
+
+    @Test
     public void classDoc01() throws Exception {
         checkTreeResult(
                         "class Test():\n" +

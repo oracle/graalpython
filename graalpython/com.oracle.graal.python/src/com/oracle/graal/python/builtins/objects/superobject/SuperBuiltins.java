@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -254,7 +255,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Cached ReadCallerFrameNode readCaller,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-            PFrame target = readCaller.executeWith(frame, 0);
+            PFrame target = readCaller.executeWith(frame, FrameSelector.SKIP_PYTHON_BUILTIN, 0);
             if (target == null) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }

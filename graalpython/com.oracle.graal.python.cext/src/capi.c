@@ -300,6 +300,11 @@ PyObject* get_tp_dict(PyTypeObject* obj) {
 	return native_to_java(obj->tp_dict);
 }
 
+/** to be used from Java code only; reads native 'tp_base' field */
+PyObject* get_tp_base(PyTypeObject* obj) {
+	return native_to_java((PyObject*) obj->tp_base);
+}
+
 /** to be used from Java code only; reads native 'tp_bases' field */
 PyObject* get_tp_bases(PyTypeObject* obj) {
 	return native_to_java(obj->tp_bases);
@@ -475,11 +480,14 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
+/* Use this function to decode a C char array to a Java string using the source file encoding. */
 void* PyTruffle_CstrToString(void* o) {
-    if (polyglot_fits_in_i64(o)) {
-        return polyglot_from_string((const char*)polyglot_as_i64(o), SRC_CS);
-    }
     return polyglot_from_string(o, SRC_CS);
+}
+
+/* Use this function to decode a C ASCII string to a Java string. */
+void* PyTruffle_AsciiToString(void* ptr) {
+    return polyglot_from_string(ptr, "ascii");
 }
 
 /* To be used from Java code only.

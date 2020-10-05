@@ -49,7 +49,7 @@ public class RandomModuleBuiltins extends PythonBuiltins {
     }
 
     // _random.Random([seed])
-    @Builtin(name = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PRandom)
+    @Builtin(name = "Random", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PRandom, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     abstract static class PRandomNode extends PythonBuiltinNode {
         @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create("seed");

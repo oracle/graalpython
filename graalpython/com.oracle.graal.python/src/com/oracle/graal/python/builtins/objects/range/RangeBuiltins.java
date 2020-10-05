@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.CoerceToBigRange;
+import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNodeExact;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.PRangeStartNode;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.PRangeStepNode;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.PRangeStopNode;
@@ -364,16 +365,17 @@ public class RangeBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
             try {
                 final int rStart = self.getIntStart();
                 final int rStep = self.getIntStep();
                 SliceInfo info = compute.execute(slice, self.getIntLength());
-                return createRange(info, rStart, rStep, lenOfRangeNode);
+                return createRange(info, rStart, rStep, lenOfRangeNodeExact);
             } catch (PException pe) {
                 pe.expect(PythonBuiltinClassType.OverflowError, profileError);
                 // pass
-            } catch (CannotCastException | ArithmeticException e) {
+            } catch (CannotCastException | OverflowException e) {
                 // pass
             }
             PBigRange rangeBI = toBigIntRange.execute(self, factory());
@@ -390,17 +392,18 @@ public class RangeBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             try {
                 int rStart = lib.asSize(self.getStart());
                 int rStep = lib.asSize(self.getStep());
                 SliceInfo info = compute.execute(slice, lib.asSize(self.getLength()));
-                return createRange(info, rStart, rStep, lenOfRangeNode);
+                return createRange(info, rStart, rStep, lenOfRangeNodeExact);
             } catch (PException pe) {
                 pe.expect(PythonBuiltinClassType.OverflowError, profileError);
                 // pass
-            } catch (CannotCastException | ArithmeticException e) {
+            } catch (CannotCastException | OverflowException e) {
                 // pass
             }
             PBigRange rangeBI = toBigIntRange.execute(self, factory());
@@ -419,6 +422,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @Cached CastToJavaBigIntegerNode toBigInt,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
@@ -431,9 +435,9 @@ public class RangeBuiltins extends PythonBuiltins {
             if (isSliceIndexProfile.profile(idx instanceof PSlice)) {
                 PSlice slice = (PSlice) idx;
                 if (self instanceof PIntRange) {
-                    return doPRangeSliceSlowPath((PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNode);
+                    return doPRangeSliceSlowPath((PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode);
                 }
-                return doPRangeSliceSlowPath((PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNode, pol);
+                return doPRangeSliceSlowPath((PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, pol);
             }
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
         }
@@ -455,11 +459,11 @@ public class RangeBuiltins extends PythonBuiltins {
             return i;
         }
 
-        private PIntRange createRange(SliceInfo info, int rStart, int rStep, RangeNodes.LenOfRangeNode lenOfRangeNode) {
+        private PIntRange createRange(SliceInfo info, int rStart, int rStep, LenOfIntRangeNodeExact lenOfRangeNode) throws OverflowException {
             int newStep = rStep * info.step;
             int newStart = rStart + info.start * rStep;
             int newStop = rStart + info.stop * rStep;
-            int len = (int) lenOfRangeNode.execute(newStart, newStop, newStep);
+            int len = lenOfRangeNode.executeInt(newStart, newStop, newStep);
             return factory().createIntRange(newStart, newStop, newStep, len);
         }
 
@@ -472,7 +476,7 @@ public class RangeBuiltins extends PythonBuiltins {
             BigInteger step = rStep.multiply(sliceStep);
             BigInteger start = rStart.add(sliceStart.multiply(rStep));
             BigInteger stop = rStart.add(sliceStop.multiply(rStep));
-            BigInteger len = (BigInteger) lenOfRangeNode.execute(start, stop, step);
+            BigInteger len = lenOfRangeNode.execute(start, stop, step);
             return factory().createBigRange(factory().createInt(start), factory().createInt(stop), factory().createInt(step), factory().createInt(len));
         }
     }

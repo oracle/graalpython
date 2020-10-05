@@ -554,7 +554,7 @@ public class GraalHPyNodes {
 
                 // read class 'property' from 'builtins/property.py'
                 Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, new Object[0], new PKeyword[]{
+                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
                                 new PKeyword("fget", getterObject),
                                 new PKeyword("fset", setterObject),
                                 new PKeyword("doc", memberDoc),
@@ -633,7 +633,7 @@ public class GraalHPyNodes {
 
                 // read class 'property' from 'builtins/property.py'
                 Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, new Object[0], new PKeyword[]{
+                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
                                 new PKeyword("fget", getterObject),
                                 new PKeyword("fset", setterObject),
                                 new PKeyword("doc", memberDoc),
@@ -1526,7 +1526,7 @@ public class GraalHPyNodes {
 
             // if the pointer is NULL, no bases have been explicitly specified
             if (ptrLib.isNull(typeSpecParamArray)) {
-                return factory.createTuple(new Object[0]);
+                return factory.createTuple(PythonUtils.EMPTY_OBJECT_ARRAY);
             }
 
             long nSpecParam = ptrLib.getArraySize(typeSpecParamArray);

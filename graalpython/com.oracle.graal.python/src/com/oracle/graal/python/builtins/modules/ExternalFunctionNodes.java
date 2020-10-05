@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
+import com.oracle.graal.python.runtime.ExecutionContextFactory.ForeignCallContextNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -199,6 +200,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
+        @Child private ForeignCallContext foreignCallContext;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -249,7 +251,7 @@ public abstract class ExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
+            Object state = ensureForeignCallContext().enter(frame, ctx, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, lib.execute(callable, cArguments))));
@@ -263,7 +265,7 @@ public abstract class ExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
+                ensureForeignCallContext().exit(frame, ctx, state);
             }
         }
 
@@ -285,6 +287,14 @@ public abstract class ExternalFunctionNodes {
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
             return contextRef.get();
+        }
+
+        private ForeignCallContext ensureForeignCallContext() {
+            if (foreignCallContext == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                foreignCallContext = insert(ForeignCallContextNodeGen.create());
+            }
+            return foreignCallContext;
         }
 
         public static ExternalFunctionInvokeNode create() {
@@ -473,7 +483,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -488,7 +498,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
         }
 
@@ -521,7 +531,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
@@ -566,7 +576,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         public MethNoargsRoot(PythonLanguage language, String name, Object callable) {
             super(language, name, callable);
@@ -589,7 +599,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         public MethORoot(PythonLanguage language, String name, Object callable) {
@@ -615,7 +625,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -628,7 +638,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, callable, provider);
             this.factory = PythonObjectFactory.create();
             this.readVarargsNode = ReadVarArgsNode.create(1, true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
         }
 
         @Override
@@ -653,7 +663,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -684,7 +694,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code allocfunc} and {@code ssizeargfunc}.
      */
     static class AllocFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
@@ -720,7 +730,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
     static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
 
@@ -753,7 +763,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
     static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key", "value"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key", "value"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
@@ -789,7 +799,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a rich compare function (C type {@code richcmpfunc}).
      */
     static final class RichCmpFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -828,7 +838,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code ssizeobjargproc}.
      */
     static final class SSizeObjArgProcRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -867,7 +877,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for reverse binary operations.
      */
     static final class MethReverseRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "obj"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "obj"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -907,7 +917,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static class MethPowRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 0, false, new String[]{"args"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, 0, false, new String[]{"args"}, PythonUtils.EMPTY_STRING_ARRAY);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -966,7 +976,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static final class MethRichcmpOpRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other"}, PythonUtils.EMPTY_STRING_ARRAY);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         private final int op;

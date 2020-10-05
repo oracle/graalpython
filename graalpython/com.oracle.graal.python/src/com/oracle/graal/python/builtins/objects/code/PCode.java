@@ -48,8 +48,6 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -69,6 +67,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -84,7 +83,6 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    static final String[] EMPTY_STRINGS = new String[0];
     static final long FLAG_VAR_ARGS = 0x4;
     static final long FLAG_VAR_KW_ARGS = 0x8;
     static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
@@ -177,7 +175,7 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof PClosureRootNode) {
             return ((PClosureRootNode) rootNode).getFreeVars();
         } else {
-            return EMPTY_STRINGS;
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
@@ -185,24 +183,47 @@ public final class PCode extends PythonBuiltinObject {
         if (rootNode instanceof PClosureFunctionRootNode) {
             return ((PClosureFunctionRootNode) rootNode).getCellVars();
         } else {
-            return EMPTY_STRINGS;
+            return PythonUtils.EMPTY_STRING_ARRAY;
         }
     }
 
     @TruffleBoundary
-    private static String extractFileName(RootNode rootNode) {
+    private static void setRootNodeFileName(RootNode rootNode, String filename) {
+        RootNode funcRootNode = rootNodeForExtraction(rootNode);
+        if (funcRootNode instanceof PClosureRootNode) {
+            ((PClosureRootNode) funcRootNode).setFileName(filename);
+        }
+    }
+
+    @TruffleBoundary
+    public static String extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
-        if (src != null) {
-            if (src.getSource().getPath() == null) {
-                return src.getSource().getName();
+
+        if (funcRootNode instanceof PClosureRootNode) {
+            PClosureRootNode closureRootNode = (PClosureRootNode) funcRootNode;
+            if (closureRootNode.getFileName() != null) {
+                // for compiled modules, _imp._fix_co_filename will set the filename
+                return closureRootNode.getFileName();
+            } else if (src != null) {
+                return getSourceSectionFileName(src);
+            } else {
+                return closureRootNode.getName();
             }
-            return src.getSource().getPath();
-        } else if (funcRootNode instanceof ModuleRootNode) {
-            return funcRootNode.getName();
+        } else if (src != null) {
+            return getSourceSectionFileName(src);
         } else {
             return "<unknown source>";
         }
+    }
+
+    @TruffleBoundary
+    private static String getSourceSectionFileName(SourceSection src) {
+        String path = src.getSource().getPath();
+        if (path == null) {
+            return src.getSource().getName();
+        }
+        return path;
     }
 
     @TruffleBoundary
@@ -332,7 +353,7 @@ public final class PCode extends PythonBuiltinObject {
             return serializer.serialize(rootNode);
         }
         // no code for non-user functions
-        return new byte[0];
+        return PythonUtils.EMPTY_BYTE_ARRAY;
     }
 
     public RootNode getRootNode() {
@@ -355,6 +376,14 @@ public final class PCode extends PythonBuiltinObject {
 
     public void setFilename(String filename) {
         this.filename = filename;
+        RootNode rootNode = getRootNode();
+        setRootNodeFileName(rootNode, filename);
+        constants = extractConstants(rootNode);
+        for (Object ob : constants) {
+            if (ob instanceof PCode) {
+                ((PCode) ob).setFilename(filename);
+            }
+        }
     }
 
     public String getFilename() {
@@ -505,60 +534,60 @@ public final class PCode extends PythonBuiltinObject {
         return String.format("<code object %s, file \"%s\", line %d>", codeName, codeFilename, codeFirstLineNo);
     }
 
-    public Object co_name() {
-        String codeName = this.getName();
-        if (codeName != null) {
-            return codeName;
+    private static PTuple createTuple(Object[] array, PythonObjectFactory factory) {
+        Object[] data = array;
+        if (data == null) {
+            data = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        return PNone.NONE;
+        return factory.createTuple(data);
+    }
+
+    private static PBytes createBytes(byte[] array, PythonObjectFactory factory) {
+        byte[] bytes = array;
+        if (bytes == null) {
+            bytes = PythonUtils.EMPTY_BYTE_ARRAY;
+        }
+        return factory.createBytes(bytes);
+    }
+
+    public String co_name() {
+        String codeName = this.getName();
+        assert codeName != null : "PCode.co_name cannot be null!";
+        return codeName;
+    }
+
+    public String co_filename() {
+        String fName = this.getFilename();
+        assert fName != null : "PCode.co_filename cannot be null";
+        return fName;
     }
 
     public PBytes co_code(PythonObjectFactory factory) {
-        byte[] codeCodeString = this.getCodestring();
-        if (codeCodeString == null) {
-            codeCodeString = new byte[0];
-        }
-        return factory.createBytes(codeCodeString);
+        return createBytes(this.getCodestring(), factory);
+    }
+
+    public PBytes co_lnotab(PythonObjectFactory factory) {
+        return createBytes(this.getLnotab(), factory);
     }
 
     public PTuple co_consts(PythonObjectFactory factory) {
-        Object[] codeConstants = this.getConstants();
-        if (codeConstants == null) {
-            codeConstants = new Object[0];
-        }
-        return factory.createTuple(codeConstants);
+        return createTuple(this.getConstants(), factory);
     }
 
     public PTuple co_names(PythonObjectFactory factory) {
-        Object[] codeNames = this.getNames();
-        if (codeNames == null) {
-            codeNames = new Object[0];
-        }
-        return factory.createTuple(codeNames);
+        return createTuple(this.getNames(), factory);
     }
 
-    public PythonAbstractObject co_varnames(PythonObjectFactory factory) {
-        Object[] codeVarNames = this.getVarnames();
-        if (codeVarNames != null) {
-            return factory.createTuple(codeVarNames);
-        }
-        return PNone.NONE;
+    public PTuple co_varnames(PythonObjectFactory factory) {
+        return createTuple(this.getVarnames(), factory);
     }
 
-    public PythonAbstractObject co_freevars(PythonObjectFactory factory) {
-        Object[] codeFreeVars = this.getFreeVars();
-        if (codeFreeVars != null) {
-            return factory.createTuple(codeFreeVars);
-        }
-        return PNone.NONE;
+    public PTuple co_freevars(PythonObjectFactory factory) {
+        return createTuple(this.getFreeVars(), factory);
     }
 
-    public PythonAbstractObject co_cellvars(PythonObjectFactory factory) {
-        Object[] codeCellVars = this.getCellVars();
-        if (codeCellVars != null) {
-            return factory.createTuple(codeCellVars);
-        }
-        return PNone.NONE;
+    public PTuple co_cellvars(PythonObjectFactory factory) {
+        return createTuple(this.getCellVars(), factory);
     }
 
     public int co_argcount() {
@@ -579,5 +608,13 @@ public final class PCode extends PythonBuiltinObject {
 
     public int co_flags() {
         return this.getFlags();
+    }
+
+    public int co_firstlineno() {
+        return this.getFirstLineNo();
+    }
+
+    public int co_stacksize() {
+        return this.getStacksize();
     }
 }

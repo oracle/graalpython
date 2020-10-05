@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.util;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
@@ -52,9 +55,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
-
-import java.util.LinkedList;
-import java.util.List;
 
 public class PFunctionArgsFinder {
     private final RootNode rootNode;
@@ -74,7 +74,7 @@ public class PFunctionArgsFinder {
             }
         });
 
-        return new ArgumentListObject(arguments.toArray(new String[0]));
+        return new ArgumentListObject(arguments.toArray(PythonUtils.EMPTY_STRING_ARRAY));
     }
 
     @ExportLibrary(InteropLibrary.class)

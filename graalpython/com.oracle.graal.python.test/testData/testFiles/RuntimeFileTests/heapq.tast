@@ -2652,7 +2652,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: list
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            GeneratorExpressionNode SourceSection: [19872,19904]`for i, elem in zip(r...`
+                            GeneratorExpressionNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
                               Name: <genexpr>
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
                               Enclosing
@@ -2661,7 +2661,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               For Nodes: 1
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
-                              FunctionRootNode SourceSection: [19872,19904]`for i, elem in zip(r...`
+                              FunctionRootNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
                                 Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
@@ -2671,10 +2671,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [19872,19904]`for i, elem in zip(r...`
-                                  GeneratorReturnTargetNode SourceSection: [19872,19904]`for i, elem in zip(r...`
+                                InnerRootNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
+                                  GeneratorReturnTargetNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
                                     flagSlot: 1
-                                    GeneratorForNode SourceSection: [19872,19904]`for i, elem in zip(r...`
+                                    GeneratorForNode SourceSection: [19862,19904]`(elem, i) for i, ele...`
                                       ExpressionStatementNode SourceSection: [19862,19871]`(elem, i)`
                                         YieldNode SourceSection: [19862,19871]`(elem, i)`
                                           flagSlot: 0
@@ -2896,7 +2896,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [20282,20309]`for (elem, order) in...`
+                              GeneratorExpressionNode SourceSection: [20277,20309]`elem for (elem, orde...`
                                 Name: <genexpr>
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
                                 Enclosing
@@ -2905,7 +2905,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 For Nodes: 1
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [20282,20309]`for (elem, order) in...`
+                                FunctionRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
                                   Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
@@ -2915,10 +2915,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [20282,20309]`for (elem, order) in...`
-                                    GeneratorReturnTargetNode SourceSection: [20282,20309]`for (elem, order) in...`
+                                  InnerRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                                    GeneratorReturnTargetNode SourceSection: [20277,20309]`elem for (elem, orde...`
                                       flagSlot: 1
-                                      GeneratorForNode SourceSection: [20282,20309]`for (elem, order) in...`
+                                      GeneratorForNode SourceSection: [20277,20309]`elem for (elem, orde...`
                                         ExpressionStatementNode SourceSection: [20277,20281]`elem`
                                           YieldNode SourceSection: [20277,20281]`elem`
                                             flagSlot: 0
@@ -2991,7 +2991,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [20406,20438]`for i, elem in zip(r...`
+                        GeneratorExpressionNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                           Name: <genexpr>
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
                           Enclosing
@@ -3000,7 +3000,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [20406,20438]`for i, elem in zip(r...`
+                          FunctionRootNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -3010,10 +3010,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ExecutionSlots:
                               FreeVarsSlots: key, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [20406,20438]`for i, elem in zip(r...`
-                              GeneratorReturnTargetNode SourceSection: [20406,20438]`for i, elem in zip(r...`
+                            InnerRootNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
+                              GeneratorReturnTargetNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [20406,20438]`for i, elem in zip(r...`
+                                GeneratorForNode SourceSection: [20385,20438]`(key(elem), i, elem)...`
                                   ExpressionStatementNode SourceSection: [20385,20405]`(key(elem), i, elem)...`
                                     YieldNode SourceSection: [20385,20405]`(key(elem), i, elem)...`
                                       flagSlot: 0
@@ -3274,7 +3274,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [20793,20823]`for (k, order, elem)...`
+                          GeneratorExpressionNode SourceSection: [20788,20823]`elem for (k, order, ...`
                             Name: <genexpr>
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
                             Enclosing
@@ -3283,7 +3283,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [20793,20823]`for (k, order, elem)...`
+                            FunctionRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -3293,10 +3293,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [20793,20823]`for (k, order, elem)...`
-                                GeneratorReturnTargetNode SourceSection: [20793,20823]`for (k, order, elem)...`
+                              InnerRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                                GeneratorReturnTargetNode SourceSection: [20788,20823]`elem for (k, order, ...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [20793,20823]`for (k, order, elem)...`
+                                  GeneratorForNode SourceSection: [20788,20823]`elem for (k, order, ...`
                                     ExpressionStatementNode SourceSection: [20788,20792]`elem`
                                       YieldNode SourceSection: [20788,20792]`elem`
                                         flagSlot: 0
@@ -3630,7 +3630,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadGlobalOrBuiltinNodeGen SourceSection: None
                               Identifier: list
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            GeneratorExpressionNode SourceSection: [21652,21692]`for i, elem in zip(r...`
+                            GeneratorExpressionNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
                               Name: <genexpr>
                               FrameDescriptor: 5 slots [i, elem, <>temp2, <>temp3, <return_val>]
                               Enclosing
@@ -3639,7 +3639,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               For Nodes: 1
                               Block Nodes: 0
                               Is Enclosing Frame Generator: false
-                              FunctionRootNode SourceSection: [21652,21692]`for i, elem in zip(r...`
+                              FunctionRootNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
                                 Name: <genexpr>
                                 Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                 CelVars: None
@@ -3649,10 +3649,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [21652,21692]`for i, elem in zip(r...`
-                                  GeneratorReturnTargetNode SourceSection: [21652,21692]`for i, elem in zip(r...`
+                                InnerRootNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
+                                  GeneratorReturnTargetNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
                                     flagSlot: 1
-                                    GeneratorForNode SourceSection: [21652,21692]`for i, elem in zip(r...`
+                                    GeneratorForNode SourceSection: [21642,21692]`(elem, i) for i, ele...`
                                       ExpressionStatementNode SourceSection: [21642,21651]`(elem, i)`
                                         YieldNode SourceSection: [21642,21651]`(elem, i)`
                                           flagSlot: 0
@@ -3890,7 +3890,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [22073,22100]`for (elem, order) in...`
+                              GeneratorExpressionNode SourceSection: [22068,22100]`elem for (elem, orde...`
                                 Name: <genexpr>
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
                                 Enclosing
@@ -3899,7 +3899,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 For Nodes: 1
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [22073,22100]`for (elem, order) in...`
+                                FunctionRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
                                   Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
@@ -3909,10 +3909,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [22073,22100]`for (elem, order) in...`
-                                    GeneratorReturnTargetNode SourceSection: [22073,22100]`for (elem, order) in...`
+                                  InnerRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                                    GeneratorReturnTargetNode SourceSection: [22068,22100]`elem for (elem, orde...`
                                       flagSlot: 1
-                                      GeneratorForNode SourceSection: [22073,22100]`for (elem, order) in...`
+                                      GeneratorForNode SourceSection: [22068,22100]`elem for (elem, orde...`
                                         ExpressionStatementNode SourceSection: [22068,22072]`elem`
                                           YieldNode SourceSection: [22068,22072]`elem`
                                             flagSlot: 0
@@ -3985,7 +3985,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                           Identifier: list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        GeneratorExpressionNode SourceSection: [22197,22237]`for i, elem in zip(r...`
+                        GeneratorExpressionNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                           Name: <genexpr>
                           FrameDescriptor: 6 slots [i, elem, key, <>temp3, <>temp4, <return_val>]
                           Enclosing
@@ -3994,7 +3994,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           For Nodes: 1
                           Block Nodes: 0
                           Is Enclosing Frame Generator: false
-                          FunctionRootNode SourceSection: [22197,22237]`for i, elem in zip(r...`
+                          FunctionRootNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                             Name: <genexpr>
                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                             CelVars: None
@@ -4004,10 +4004,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ExecutionSlots:
                               FreeVarsSlots: key, 
                               CellVarsSlots: None
-                            InnerRootNode SourceSection: [22197,22237]`for i, elem in zip(r...`
-                              GeneratorReturnTargetNode SourceSection: [22197,22237]`for i, elem in zip(r...`
+                            InnerRootNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
+                              GeneratorReturnTargetNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                                 flagSlot: 1
-                                GeneratorForNode SourceSection: [22197,22237]`for i, elem in zip(r...`
+                                GeneratorForNode SourceSection: [22176,22237]`(key(elem), i, elem)...`
                                   ExpressionStatementNode SourceSection: [22176,22196]`(key(elem), i, elem)...`
                                     YieldNode SourceSection: [22176,22196]`(key(elem), i, elem)...`
                                       flagSlot: 0
@@ -4284,7 +4284,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [22595,22625]`for (k, order, elem)...`
+                          GeneratorExpressionNode SourceSection: [22590,22625]`elem for (k, order, ...`
                             Name: <genexpr>
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
                             Enclosing
@@ -4293,7 +4293,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [22595,22625]`for (k, order, elem)...`
+                            FunctionRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -4303,10 +4303,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [22595,22625]`for (k, order, elem)...`
-                                GeneratorReturnTargetNode SourceSection: [22595,22625]`for (k, order, elem)...`
+                              InnerRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                                GeneratorReturnTargetNode SourceSection: [22590,22625]`elem for (k, order, ...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [22595,22625]`for (k, order, elem)...`
+                                  GeneratorForNode SourceSection: [22590,22625]`elem for (k, order, ...`
                                     ExpressionStatementNode SourceSection: [22590,22594]`elem`
                                       YieldNode SourceSection: [22590,22594]`elem`
                                         flagSlot: 0
@@ -4391,12 +4391,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapreplace_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -4416,12 +4412,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heapify_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -4441,12 +4433,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             WriteNameNodeGen SourceSection: None
               Identifier: _heappop_max
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None

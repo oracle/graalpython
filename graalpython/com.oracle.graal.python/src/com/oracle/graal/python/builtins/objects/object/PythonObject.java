@@ -184,6 +184,11 @@ public class PythonObject extends PythonAbstractObject {
         dylib.put(this, DICT, dict);
     }
 
+    @ExportMessage
+    public final void deleteDict(@Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
+        dylib.put(this, DICT, null);
+    }
+
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();

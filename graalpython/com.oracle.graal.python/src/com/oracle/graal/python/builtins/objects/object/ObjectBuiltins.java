@@ -53,6 +53,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,9 +68,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrDeleteNode;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrGetNode;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins.DescrSetNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -87,18 +95,22 @@ import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -127,48 +139,59 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
 
-        private static final String ERROR_MESSAGE = "__class__ assignment only supported for heap types or ModuleType subclasses";
-
         @Specialization(guards = "isNoValue(value)")
         Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
 
-        @Specialization
-        Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") PythonBuiltinClass klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
-        }
-
         @Specialization(guards = "isNativeClass(klass)")
         Object setClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object klass) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
-        @Specialization(guards = "isPythonClass(value)")
+        @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
                         @Cached("create()") BranchProfile errorValueBranch,
-                        @Cached("create()") BranchProfile errorSelfBranch) {
-            if (value instanceof PythonBuiltinClass || PGuards.isNativeClass(value)) {
+                        @Cached("create()") BranchProfile errorSelfBranch,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
             Object lazyClass = lib1.getLazyPythonClass(self);
-            if (lazyClass instanceof PythonBuiltinClassType || lazyClass instanceof PythonBuiltinClass || PGuards.isNativeClass(lazyClass)) {
+            if (isBuiltinClassNotModule(lazyClass) || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
-                throw raise(TypeError, ERROR_MESSAGE);
+                throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
-            getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
-
-            lib1.setLazyPythonClass(self, value);
+            setClass(frame, self, lazyClass, value, ctx, lib1);
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isPythonClass(value)", "!isPythonObject(self)"})
+        private void setClass(VirtualFrame frame, PythonObject self, Object lazyClass, Object value, PythonContext ctx, PythonObjectLibrary lib1) {
+            if (lazyClass instanceof PythonBuiltinClassType) {
+                getCheckCompatibleForAssigmentNode().execute(frame, ctx.getCore().lookupType((PythonBuiltinClassType) lazyClass), value);
+            } else {
+                getCheckCompatibleForAssigmentNode().execute(frame, lazyClass, value);
+            }
+
+            lib1.setLazyPythonClass(self, value);
+        }
+
+        private static boolean isBuiltinClassNotModule(Object lazyClass) {
+            if (lazyClass instanceof PythonBuiltinClass) {
+                return ((PythonBuiltinClass) lazyClass).getType() != PythonBuiltinClassType.PythonModule;
+            } else if (lazyClass instanceof PythonBuiltinClassType) {
+                return ((PythonBuiltinClassType) lazyClass) != PythonBuiltinClassType.PythonModule;
+            }
+            return false;
+        }
+
+        @Specialization(guards = {"isPythonClass(value) || isPythonBuiltinClassType(value)", "!isPythonObject(self)"})
         Object getClass(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object value) {
-            throw raise(TypeError, ERROR_MESSAGE);
+            throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
         }
 
         @Fallback
@@ -551,7 +574,6 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
-    @GenerateNodeFactory
     public abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Child private IsBuiltinClassProfile exactObjInstanceProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile exactBuiltinInstanceProfile = IsBuiltinClassProfile.create();
@@ -565,10 +587,22 @@ public class ObjectBuiltins extends PythonBuiltins {
             return exactBuiltinInstanceProfile.profileIsOtherBuiltinObject(self, PythonBuiltinClassType.PythonModule);
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)", "isNoValue(none)"})
-        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none,
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
+        Object dict(VirtualFrame frame, PythonObject self, @SuppressWarnings("unused") PNone none,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrGetNode getNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_getdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return getNode.execute(frame, func, self);
+            }
+
             PDict dict = lib.getDict(self);
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -582,10 +616,22 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
-        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isClass(self, iLib)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self, PDict dict,
+        @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
+        Object dict(VirtualFrame frame, PythonObject self, PDict dict,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrSetNode setNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib) {
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary iLib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_setdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return setNode.execute(frame, func, self, dict);
+            }
+
             try {
                 lib.setDict(self, dict);
             } catch (UnsupportedMessageException e) {
@@ -605,6 +651,48 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
+        @Specialization(limit = "1")
+        Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetBaseClassNode getBaseNode,
+                        @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
+                        @Cached DescrDeleteNode deleteNode,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached BranchProfile branchProfile) {
+            // typeobject.c#subtype_setdict()
+            Object func = getDescrFromBuiltinBase(getClassNode.execute(self), getBaseNode, getDescrNode);
+            if (func != null) {
+                branchProfile.enter();
+                return deleteNode.execute(frame, func, self);
+            }
+            try {
+                lib.deleteDict(self);
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException(e);
+            }
+            return PNone.NONE;
+        }
+
+        /**
+         * see typeobject.c#get_builtin_base_with_dict()
+         */
+        private static Object getDescrFromBuiltinBase(Object type, GetBaseClassNode getBaseNode, LookupAttributeInMRONode getDescrNode) {
+            Object t = type;
+            Object base = getBaseNode.execute(t);
+            while (base != null) {
+                if (t instanceof PythonBuiltinClass) {
+                    Object func = getDescrNode.execute(t);
+                    if (func != PNone.NO_VALUE) {
+                        return func;
+                    }
+                }
+                t = base;
+                base = getBaseNode.execute(t);
+            }
+            return null;
+        }
+
         @Specialization(guards = {"!isNoValue(mapping)", "!isDict(mapping)"})
         Object dict(@SuppressWarnings("unused") Object self, Object mapping) {
             throw raise(TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, mapping);
@@ -617,22 +705,23 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class FormatNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object format(VirtualFrame frame, Object self, Object formatStringObj,
-                        @Cached CastToJavaStringNode castToStringNode,
+    abstract static class FormatNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object format(Object self, @SuppressWarnings("unused") String formatString) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
+        }
+
+        @Specialization(guards = "formatString.isEmpty()")
+        static Object format(VirtualFrame frame, Object self, @SuppressWarnings("unused") String formatString,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode strCall) {
-            String formatString;
-            try {
-                formatString = castToStringNode.execute(formatStringObj);
-            } catch (CannotCastException ex) {
-                throw raise(TypeError, ErrorMessages.FORMAT_SPEC_MUST_BE_STRING);
-            }
-            if (formatString.length() > 0) {
-                raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_FORMAT_STRING_PASSED_TO_P_FORMAT, self);
-            }
             return strCall.executeObject(frame, self);
         }
     }

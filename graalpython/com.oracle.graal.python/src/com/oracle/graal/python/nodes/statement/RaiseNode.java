@@ -177,7 +177,7 @@ public abstract class RaiseNode extends StatementNode {
             throw raise.raiseExceptionObject((PBaseException) newException, language);
         } else {
             constructorTypeErrorProfile.enter();
-            throw raise.raise(TypeError, "calling %s should have returned an instance of BaseException, not %p", pythonClass, newException);
+            throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }
 
@@ -195,7 +195,7 @@ public abstract class RaiseNode extends StatementNode {
             setExceptionCauseNode.execute(frame, (PBaseException) newException, cause);
             throw raise.raiseExceptionObject((PBaseException) newException, language);
         } else {
-            throw raise.raise(TypeError, "calling %s should have returned an instance of BaseException, not %p", pythonClass, newException);
+            throw raise.raise(TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, pythonClass, newException);
         }
     }
 

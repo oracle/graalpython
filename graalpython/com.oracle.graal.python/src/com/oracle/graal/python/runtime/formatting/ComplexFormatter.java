@@ -41,15 +41,15 @@
 package com.oracle.graal.python.runtime.formatting;
 
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
 public class ComplexFormatter extends InternalFormat.Formatter {
     private final FloatFormatter reFormatter;
     private final FloatFormatter imFormatter;
 
-    protected ComplexFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
-        super(core, result, spec);
+    protected ComplexFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+        super(raiseNode, result, spec);
         Spec reSpec;
         Spec imSpec;
         if (hasNoSpecType()) {
@@ -63,12 +63,12 @@ public class ComplexFormatter extends InternalFormat.Formatter {
             reSpec = getComponentSpec(spec, spec.sign);
             imSpec = getComponentSpec(spec, '+');
         }
-        reFormatter = new FloatFormatter(core, result, reSpec, false);
-        imFormatter = new FloatFormatter(core, result, imSpec, false);
+        reFormatter = new FloatFormatter(raiseNode, result, reSpec, false);
+        imFormatter = new FloatFormatter(raiseNode, result, imSpec, false);
     }
 
-    public ComplexFormatter(PythonCore core, Spec spec) {
-        this(core, new FormattingBuffer.StringFormattingBuffer(32 + Math.max(0, spec.width)), spec);
+    public ComplexFormatter(PRaiseNode raiseNode, Spec spec) {
+        this(raiseNode, new FormattingBuffer.StringFormattingBuffer(32 + Math.max(0, spec.width)), spec);
     }
 
     private static Spec getComponentSpec(Spec spec, char sign) {

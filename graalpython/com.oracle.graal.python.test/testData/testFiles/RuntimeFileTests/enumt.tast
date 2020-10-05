@@ -21,12 +21,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
         WriteNameNodeGen SourceSection: None
           Identifier: DynamicClassAttribute
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       TryFinallyNode SourceSection: [118,226]`try:↵    from _colle...`
@@ -38,12 +34,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
             WriteNameNodeGen SourceSection: None
               Identifier: OrderedDict
               EmptyNode SourceSection: None
-            GetAnyAttributeNodeGen SourceSection: None
+            IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __getattribute__
-              IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
           ExceptNode SourceSection: None
@@ -54,12 +46,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               WriteNameNodeGen SourceSection: None
                 Identifier: OrderedDict
                 EmptyNode SourceSection: None
-              GetAnyAttributeNodeGen SourceSection: None
+              IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __getattribute__
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
             ReadNameNodeGen SourceSection: [171,182]`ImportError`
@@ -1644,7 +1632,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: dict
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GeneratorExpressionNode SourceSection: [5320,5352]`for k in classdict._...`
+                                        GeneratorExpressionNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                           Name: <genexpr>
                                           FrameDescriptor: 3 slots [k, classdict, <return_val>]
                                           Enclosing
@@ -1653,7 +1641,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           For Nodes: 1
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [5320,5352]`for k in classdict._...`
+                                          FunctionRootNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -1663,10 +1651,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExecutionSlots:
                                               FreeVarsSlots: classdict, 
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [5320,5352]`for k in classdict._...`
-                                              GeneratorReturnTargetNode SourceSection: [5320,5352]`for k in classdict._...`
+                                            InnerRootNode SourceSection: [5304,5352]`k: classdict[k] for ...`
+                                              GeneratorReturnTargetNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [5320,5352]`for k in classdict._...`
+                                                GeneratorForNode SourceSection: [5304,5352]`k: classdict[k] for ...`
                                                   ExpressionStatementNode SourceSection: None
                                                     YieldNode SourceSection: None
                                                       flagSlot: 0
@@ -1896,7 +1884,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: set
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GeneratorExpressionNode SourceSection: [6379,6424]`for b in enum_class....`
+                                        GeneratorExpressionNode SourceSection: [6377,6424]`a for b in enum_clas...`
                                           Name: <genexpr>
                                           FrameDescriptor: 3 slots [a, b, <return_val>]
                                           Enclosing
@@ -1905,7 +1893,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           For Nodes: 2
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [6379,6424]`for b in enum_class....`
+                                          FunctionRootNode SourceSection: [6377,6424]`a for b in enum_clas...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -1915,11 +1903,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExecutionSlots:
                                               FreeVarsSlots: None
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [6379,6424]`for b in enum_class....`
-                                              GeneratorReturnTargetNode SourceSection: [6379,6424]`for b in enum_class....`
+                                            InnerRootNode SourceSection: [6377,6424]`a for b in enum_clas...`
+                                              GeneratorReturnTargetNode SourceSection: [6377,6424]`a for b in enum_clas...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [6379,6424]`for b in enum_class....`
-                                                  GeneratorForNode SourceSection: [6405,6424]`for a in b.__dict__`
+                                                GeneratorForNode SourceSection: [6377,6424]`a for b in enum_clas...`
+                                                  GeneratorForNode SourceSection: [6388,6424]`enum_class.mro() for...`
                                                     ExpressionStatementNode SourceSection: [6377,6378]`a`
                                                       YieldNode SourceSection: [6377,6378]`a`
                                                         flagSlot: 0
@@ -2032,7 +2020,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [7407,7410]`any`
                                                   Identifier: any
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GeneratorExpressionNode SourceSection: [7437,7453]`for m in methods`
+                                                GeneratorExpressionNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                   Name: <genexpr>
                                                   FrameDescriptor: 3 slots [m, member_type, <return_val>]
                                                   Enclosing
@@ -2041,7 +2029,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   For Nodes: 1
                                                   Block Nodes: 0
                                                   Is Enclosing Frame Generator: false
-                                                  FunctionRootNode SourceSection: [7437,7453]`for m in methods`
+                                                  FunctionRootNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                     Name: <genexpr>
                                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                     CelVars: None
@@ -2051,10 +2039,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ExecutionSlots:
                                                       FreeVarsSlots: member_type, 
                                                       CellVarsSlots: None
-                                                    InnerRootNode SourceSection: [7437,7453]`for m in methods`
-                                                      GeneratorReturnTargetNode SourceSection: [7437,7453]`for m in methods`
+                                                    InnerRootNode SourceSection: [7411,7453]`m in member_type.__d...`
+                                                      GeneratorReturnTargetNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                         flagSlot: 1
-                                                        GeneratorForNode SourceSection: [7437,7453]`for m in methods`
+                                                        GeneratorForNode SourceSection: [7411,7453]`m in member_type.__d...`
                                                           ExpressionStatementNode SourceSection: [7411,7436]`m in member_type.__d...`
                                                             YieldNode SourceSection: [7411,7436]`m in member_type.__d...`
                                                               flagSlot: 0
@@ -3484,7 +3472,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
-                                        GeneratorExpressionNode SourceSection: [14241,14271]`for name in cls._mem...`
+                                        GeneratorExpressionNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                           Name: <genexpr>
                                           FrameDescriptor: 3 slots [name, cls, <return_val>]
                                           Enclosing
@@ -3493,7 +3481,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           For Nodes: 1
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [14241,14271]`for name in cls._mem...`
+                                          FunctionRootNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -3503,10 +3491,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExecutionSlots:
                                               FreeVarsSlots: cls, 
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [14241,14271]`for name in cls._mem...`
-                                              GeneratorReturnTargetNode SourceSection: [14241,14271]`for name in cls._mem...`
+                                            InnerRootNode SourceSection: [14218,14271]`cls._member_map_[nam...`
+                                              GeneratorReturnTargetNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [14241,14271]`for name in cls._mem...`
+                                                GeneratorForNode SourceSection: [14218,14271]`cls._member_map_[nam...`
                                                   ExpressionStatementNode SourceSection: [14218,14240]`cls._member_map_[nam...`
                                                     YieldNode SourceSection: [14218,14240]`cls._member_map_[nam...`
                                                       flagSlot: 0
@@ -3793,7 +3781,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Identifier: <return_val>
                                         WriteLocalFrameSlotNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
-                                        GeneratorExpressionNode SourceSection: [14757,14797]`for name in reversed...`
+                                        GeneratorExpressionNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                           Name: <genexpr>
                                           FrameDescriptor: 3 slots [name, cls, <return_val>]
                                           Enclosing
@@ -3802,7 +3790,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           For Nodes: 1
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [14757,14797]`for name in reversed...`
+                                          FunctionRootNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -3812,10 +3800,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExecutionSlots:
                                               FreeVarsSlots: cls, 
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [14757,14797]`for name in reversed...`
-                                              GeneratorReturnTargetNode SourceSection: [14757,14797]`for name in reversed...`
+                                            InnerRootNode SourceSection: [14734,14797]`cls._member_map_[nam...`
+                                              GeneratorReturnTargetNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                                 flagSlot: 1
-                                                GeneratorForNode SourceSection: [14757,14797]`for name in reversed...`
+                                                GeneratorForNode SourceSection: [14734,14797]`cls._member_map_[nam...`
                                                   ExpressionStatementNode SourceSection: [14734,14756]`cls._member_map_[nam...`
                                                     YieldNode SourceSection: [14734,14756]`cls._member_map_[nam...`
                                                       flagSlot: 0
@@ -5838,7 +5826,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ReadGlobalOrBuiltinNodeGen SourceSection: None
                                           Identifier: list
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        GeneratorExpressionNode SourceSection: [22717,22848]`for cls in self.__cl...`
+                                        GeneratorExpressionNode SourceSection: [22699,22848]`m↵                fo...`
                                           Name: <genexpr>
                                           FrameDescriptor: 4 slots [m, cls, self, <return_val>]
                                           Enclosing
@@ -5847,7 +5835,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           For Nodes: 2
                                           Block Nodes: 0
                                           Is Enclosing Frame Generator: false
-                                          FunctionRootNode SourceSection: [22717,22848]`for cls in self.__cl...`
+                                          FunctionRootNode SourceSection: [22699,22848]`m↵                fo...`
                                             Name: <genexpr>
                                             Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                             CelVars: None
@@ -5857,11 +5845,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ExecutionSlots:
                                               FreeVarsSlots: self, 
                                               CellVarsSlots: None
-                                            InnerRootNode SourceSection: [22717,22848]`for cls in self.__cl...`
-                                              GeneratorReturnTargetNode SourceSection: [22717,22848]`for cls in self.__cl...`
+                                            InnerRootNode SourceSection: [22699,22848]`m↵                fo...`
+                                              GeneratorReturnTargetNode SourceSection: [22699,22848]`m↵                fo...`
                                                 flagSlot: 3
-                                                GeneratorForNode SourceSection: [22717,22848]`for cls in self.__cl...`
-                                                  GeneratorForNode SourceSection: [22765,22848]`for m in cls.__dict_...`
+                                                GeneratorForNode SourceSection: [22699,22848]`m↵                fo...`
+                                                  GeneratorForNode SourceSection: [22728,22848]`self.__class__.mro()...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -6534,7 +6522,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                                             Identifier: list
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [25252,25309]`for name in source.k...`
+                                          GeneratorExpressionNode SourceSection: [25215,25309]`(name, source[name])...`
                                             Name: <genexpr>
                                             FrameDescriptor: 4 slots [name, filter, source, <return_val>]
                                             Enclosing
@@ -6543,7 +6531,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [25252,25309]`for name in source.k...`
+                                            FunctionRootNode SourceSection: [25215,25309]`(name, source[name])...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -6553,10 +6541,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ExecutionSlots:
                                                 FreeVarsSlots: filter, , source, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [25252,25309]`for name in source.k...`
-                                                GeneratorReturnTargetNode SourceSection: [25252,25309]`for name in source.k...`
+                                              InnerRootNode SourceSection: [25215,25309]`(name, source[name])...`
+                                                GeneratorReturnTargetNode SourceSection: [25215,25309]`(name, source[name])...`
                                                   flagSlot: 3
-                                                  GeneratorForNode SourceSection: [25252,25309]`for name in source.k...`
+                                                  GeneratorForNode SourceSection: [25215,25309]`(name, source[name])...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -7819,7 +7807,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                   Identifier: list
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                GeneratorExpressionNode SourceSection: [28517,28533]`for m in members`
+                                                GeneratorExpressionNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
                                                   Name: <genexpr>
                                                   FrameDescriptor: 2 slots [m, <return_val>]
                                                   Enclosing
@@ -7828,7 +7816,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   For Nodes: 1
                                                   Block Nodes: 0
                                                   Is Enclosing Frame Generator: false
-                                                  FunctionRootNode SourceSection: [28517,28533]`for m in members`
+                                                  FunctionRootNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
                                                     Name: <genexpr>
                                                     Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                     CelVars: None
@@ -7838,10 +7826,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ExecutionSlots:
                                                       FreeVarsSlots: None
                                                       CellVarsSlots: None
-                                                    InnerRootNode SourceSection: [28517,28533]`for m in members`
-                                                      GeneratorReturnTargetNode SourceSection: [28517,28533]`for m in members`
+                                                    InnerRootNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
+                                                      GeneratorReturnTargetNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
                                                         flagSlot: 1
-                                                        GeneratorForNode SourceSection: [28517,28533]`for m in members`
+                                                        GeneratorForNode SourceSection: [28490,28533]`str(m._name_ or m._v...`
                                                           ExpressionStatementNode SourceSection: [28490,28516]`str(m._name_ or m._v...`
                                                             YieldNode SourceSection: [28490,28516]`str(m._name_ or m._v...`
                                                               flagSlot: 0
@@ -8162,7 +8150,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: None
                                                     Identifier: list
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  GeneratorExpressionNode SourceSection: [29050,29066]`for m in members`
+                                                  GeneratorExpressionNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
                                                     Name: <genexpr>
                                                     FrameDescriptor: 2 slots [m, <return_val>]
                                                     Enclosing
@@ -8171,7 +8159,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     For Nodes: 1
                                                     Block Nodes: 0
                                                     Is Enclosing Frame Generator: false
-                                                    FunctionRootNode SourceSection: [29050,29066]`for m in members`
+                                                    FunctionRootNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
                                                       Name: <genexpr>
                                                       Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                                       CelVars: None
@@ -8181,10 +8169,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ExecutionSlots:
                                                         FreeVarsSlots: None
                                                         CellVarsSlots: None
-                                                      InnerRootNode SourceSection: [29050,29066]`for m in members`
-                                                        GeneratorReturnTargetNode SourceSection: [29050,29066]`for m in members`
+                                                      InnerRootNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
+                                                        GeneratorReturnTargetNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
                                                           flagSlot: 1
-                                                          GeneratorForNode SourceSection: [29050,29066]`for m in members`
+                                                          GeneratorForNode SourceSection: [29023,29066]`str(m._name_ or m._v...`
                                                             ExpressionStatementNode SourceSection: [29023,29049]`str(m._name_ or m._v...`
                                                               YieldNode SourceSection: [29023,29049]`str(m._name_ or m._v...`
                                                                 flagSlot: 0
@@ -10061,7 +10049,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
                                 Identifier: list
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [32873,32904]`for (alias, name) in...`
+                              GeneratorExpressionNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
                                 Name: <genexpr>
                                 FrameDescriptor: 5 slots [alias, name, <>temp2, <>temp3, <return_val>]
                                 Enclosing
@@ -10070,7 +10058,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 For Nodes: 1
                                 Block Nodes: 0
                                 Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [32873,32904]`for (alias, name) in...`
+                                FunctionRootNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
                                   Name: <genexpr>
                                   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                   CelVars: None
@@ -10080,10 +10068,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   ExecutionSlots:
                                     FreeVarsSlots: None
                                     CellVarsSlots: None
-                                  InnerRootNode SourceSection: [32873,32904]`for (alias, name) in...`
-                                    GeneratorReturnTargetNode SourceSection: [32873,32904]`for (alias, name) in...`
+                                  InnerRootNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
+                                    GeneratorReturnTargetNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
                                       flagSlot: 1
-                                      GeneratorForNode SourceSection: [32873,32904]`for (alias, name) in...`
+                                      GeneratorForNode SourceSection: [32846,32904]`"%s -> %s" % (alias,...`
                                         ExpressionStatementNode SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
                                           YieldNode SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
                                             flagSlot: 0
@@ -10249,7 +10237,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [33536,33623]`for v, m in list(fla...`
+                          GeneratorExpressionNode SourceSection: [33513,33623]`(m, v)↵             ...`
                             Name: <genexpr>
                             FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
                             Enclosing
@@ -10258,7 +10246,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [33536,33623]`for v, m in list(fla...`
+                            FunctionRootNode SourceSection: [33513,33623]`(m, v)↵             ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -10268,10 +10256,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [33536,33623]`for v, m in list(fla...`
-                                GeneratorReturnTargetNode SourceSection: [33536,33623]`for v, m in list(fla...`
+                              InnerRootNode SourceSection: [33513,33623]`(m, v)↵             ...`
+                                GeneratorReturnTargetNode SourceSection: [33513,33623]`(m, v)↵             ...`
                                   flagSlot: 3
-                                  GeneratorForNode SourceSection: [33536,33623]`for v, m in list(fla...`
+                                  GeneratorForNode SourceSection: [33513,33623]`(m, v)↵             ...`
                                     GeneratorIfNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       YesNodeGen SourceSection: None
@@ -10374,7 +10362,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [33774,33881]`for v, m in list(fla...`
+                          GeneratorExpressionNode SourceSection: [33751,33881]`(m, v)↵             ...`
                             Name: <genexpr>
                             FrameDescriptor: 5 slots [v, m, <>temp2, <>temp3, <return_val>]
                             Enclosing
@@ -10383,7 +10371,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [33774,33881]`for v, m in list(fla...`
+                            FunctionRootNode SourceSection: [33751,33881]`(m, v)↵             ...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -10393,10 +10381,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [33774,33881]`for v, m in list(fla...`
-                                GeneratorReturnTargetNode SourceSection: [33774,33881]`for v, m in list(fla...`
+                              InnerRootNode SourceSection: [33751,33881]`(m, v)↵             ...`
+                                GeneratorReturnTargetNode SourceSection: [33751,33881]`(m, v)↵             ...`
                                   flagSlot: 3
-                                  GeneratorForNode SourceSection: [33774,33881]`for v, m in list(fla...`
+                                  GeneratorForNode SourceSection: [33751,33881]`(m, v)↵             ...`
                                     GeneratorIfNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       YesNodeGen SourceSection: None

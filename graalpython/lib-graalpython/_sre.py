@@ -271,6 +271,10 @@ class SRE_Pattern():
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
+    @staticmethod
+    def __check_pos(pos):
+        if pos > maxsize():
+            raise OverflowError('Python int too large to convert to Java int')
 
     def __tregex_compile(self, pattern, flags=None):
         if flags is None:
@@ -313,7 +317,7 @@ class SRE_Pattern():
         input_str = string
         if endpos == -1 or endpos >= len(string):
             endpos = len(string)
-            result = tregex_call_exec(pattern.exec, input_str, min(pos, len(string) + 1))
+            result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos))
         else:
             input_str = string[:endpos]
             result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
@@ -323,14 +327,17 @@ class SRE_Pattern():
             return None
 
     def search(self, string, pos=0, endpos=None):
+        self.__check_pos(pos)
         self.__check_input_type(string)
         return self._search(self.pattern, string, pos, default(endpos, -1))
 
     def match(self, string, pos=0, endpos=None):
+        self.__check_pos(pos)
         self.__check_input_type(string)
         return self._search(self.pattern, string, pos, default(endpos, -1), sticky=True)
 
     def fullmatch(self, string, pos=0, endpos=None):
+        self.__check_pos(pos)
         self.__check_input_type(string)
         return self._search(_append_end_assert(self.pattern), string, pos, default(endpos, -1), sticky=True)
 

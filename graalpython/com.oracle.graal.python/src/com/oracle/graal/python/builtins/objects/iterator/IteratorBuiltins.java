@@ -405,7 +405,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             int start = self.getReduceStart();
             int stop = self.getReduceStop();
             int step = self.getReduceStep();
-            int len = (int) length.execute(start, stop, step);
+            int len = length.executeInt(start, stop, step);
             return reduceInternal(frame, factory().createIntRange(start, stop, step, len), self.getIndex(), context, pol);
         }
 
@@ -417,7 +417,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             PInt start = self.getReduceStart();
             PInt stop = self.getReduceStop(factory());
             PInt step = self.getReduceStep();
-            PInt len = factory().createInt((BigInteger) length.execute(start, stop, step));
+            PInt len = factory().createInt(length.execute(start.getValue(), stop.getValue(), step.getValue()));
             return reduceInternal(frame, factory().createBigRange(start, stop, step, len), self.getLongIndex(factory()), context, pol);
         }
 
@@ -425,6 +425,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         public Object reduce(VirtualFrame frame, PSequenceIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+            if (self.isExhausted()) {
+                return reduceInternal(frame, factory().createTuple(new Object[0]), null, context, pol);
+            }
             return reduceInternal(frame, self.getPSequence(), self.getIndex(), context, pol);
         }
 
@@ -435,7 +438,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (!self.isExhausted()) {
                 return reduceInternal(frame, self.getObject(), self.getIndex(), context, pol);
             } else {
-                return reduceInternal(frame, factory().createTuple(new Object[]{}), null, context, pol);
+                return reduceInternal(frame, factory().createTuple(new Object[0]), null, context, pol);
             }
         }
 

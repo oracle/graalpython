@@ -21,8 +21,7 @@ import java.util.Locale.Category;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -36,9 +35,9 @@ public class InternalFormat {
      * @param text to parse
      * @return parsed equivalent to text
      */
-    private static Spec fromText(PythonCore core, String text) {
+    private static Spec fromText(PRaiseNode raiseNode, String text) {
         Parser parser = new Parser(text);
-        return parser.parse(core);
+        return parser.parse(raiseNode);
     }
 
     /**
@@ -48,15 +47,15 @@ public class InternalFormat {
      * @return parsed equivalent to text
      */
     @TruffleBoundary
-    public static Spec fromText(PythonCore core, Object text, String method) {
+    public static Spec fromText(PRaiseNode raiseNode, Object text, String method) {
         if (text instanceof PBytes) {
-            return fromText(core, text.toString());
+            return fromText(raiseNode, text.toString());
         } else if (text instanceof PString) {
-            return fromText(core, ((PString) text).toString());
+            return fromText(raiseNode, ((PString) text).toString());
         } else if (text instanceof String) {
-            return fromText(core, (String) text);
+            return fromText(raiseNode, (String) text);
         } else {
-            throw core.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, method, 1, "str", text);
+            throw raiseNode.raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, method, 1, "str", text);
         }
     }
 
@@ -67,7 +66,7 @@ public class InternalFormat {
      * ephemeral objects that are not, on their own, thread safe.
      */
     public static class Formatter implements Appendable {
-        final ParserErrorCallback errors;
+        protected final PRaiseNode raiseNode;
 
         /** The specification according to which we format any number supplied to the method. */
         protected final Spec spec;
@@ -102,8 +101,8 @@ public class InternalFormat {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        protected Formatter(ParserErrorCallback errors, FormattingBuffer result, Spec spec) {
-            this.errors = errors;
+        protected Formatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+            this.raiseNode = raiseNode;
             this.spec = spec;
             this.result = result;
             this.start = this.mark = result.length();
@@ -526,8 +525,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public static PException unknownFormat(ParserErrorCallback errors, char code, String forType) {
-            throw errors.raise(ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
+        public static PException unknownFormat(PRaiseNode raiseNode, char code, String forType) {
+            throw raiseNode.raise(ValueError, ErrorMessages.UNKNOWN_FORMAT_CODE, code, forType);
         }
 
         /**
@@ -539,7 +538,7 @@ public class InternalFormat {
          * @return exception to throw
          */
         public PException precisionTooLarge(String type) {
-            throw errors.raise(OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
+            throw raiseNode.raise(OverflowError, ErrorMessages.FORMATED_S_TOO_LONG, type);
         }
     }
 
@@ -779,7 +778,7 @@ public class InternalFormat {
 
     /**
      * Parser for PEP-3101 field format specifications. This class provides a
-     * {@link #parse(PythonCore)} method that translates the format specification into an
+     * {@link #parse(PRaiseNode)} method that translates the format specification into an
      * <code>Spec</code> object.
      */
     private static class Parser {
@@ -788,7 +787,7 @@ public class InternalFormat {
         private int ptr;
 
         /**
-         * Constructor simply holds the specification string ahead of the {@link #parse(PythonCore)}
+         * Constructor simply holds the specification string ahead of the {@link #parse(PRaiseNode)}
          * operation.
          *
          * @param spec format specifier to parse (e.g. "&lt;+12.3f")
@@ -811,7 +810,7 @@ public class InternalFormat {
          * This method is the equivalent of CPython's parse_internal_render_format_spec() in
          * ~/Objects/stringlib/formatter.h, but we deal with defaults another way.
          */
-        Spec parse(PythonCore core) {
+        Spec parse(PRaiseNode raiseNode) {
 
             char fill = Spec.NONE, align = Spec.NONE;
             char sign = Spec.NONE, type = Spec.NONE;
@@ -862,7 +861,7 @@ public class InternalFormat {
                     width = scanInteger();
                 } catch (NumberFormatException ex) {
                     // CPython seems to happily parse big ints and then it chokes on the allocation
-                    throw core.raise(ValueError, "width too big");
+                    throw raiseNode.raise(ValueError, "width too big");
                 }
             }
 
@@ -872,11 +871,11 @@ public class InternalFormat {
             }
             if (scanPast('_')) {
                 if (specified(grouping)) {
-                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
                 grouping = '_';
                 if (scanPast(',')) {
-                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
+                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE);
                 }
             }
 
@@ -886,10 +885,10 @@ public class InternalFormat {
                     try {
                         precision = scanInteger();
                     } catch (NumberFormatException ex) {
-                        throw core.raise(ValueError, "precision too big");
+                        throw raiseNode.raise(ValueError, "precision too big");
                     }
                 } else {
-                    throw core.raise(ValueError, "Format specifier missing precision");
+                    throw raiseNode.raise(ValueError, "Format specifier missing precision");
                 }
             }
 
@@ -900,7 +899,7 @@ public class InternalFormat {
 
             // If we haven't reached the end, something is wrong
             if (ptr != spec.length()) {
-                throw core.raise(ValueError, "Invalid conversion specification");
+                throw raiseNode.raise(ValueError, "Invalid conversion specification");
             }
 
             // Some basic validation
@@ -931,7 +930,7 @@ public class InternalFormat {
                         valid = false;
                 }
                 if (!valid) {
-                    throw core.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
+                    throw raiseNode.raise(ValueError, ErrorMessages.CANNOT_SPECIFY_C_WITH_C, grouping, type);
                 }
             }
 

@@ -576,7 +576,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [1756,1759]`any`
                                             Identifier: any
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GeneratorExpressionNode SourceSection: [1769,1787]`for m in self.maps`
+                                          GeneratorExpressionNode SourceSection: [1760,1787]`key in m for m in se...`
                                             Name: <genexpr>
                                             FrameDescriptor: 3 slots [m, key, <return_val>]
                                             Enclosing
@@ -585,7 +585,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             For Nodes: 1
                                             Block Nodes: 0
                                             Is Enclosing Frame Generator: false
-                                            FunctionRootNode SourceSection: [1769,1787]`for m in self.maps`
+                                            FunctionRootNode SourceSection: [1760,1787]`key in m for m in se...`
                                               Name: <genexpr>
                                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                                               CelVars: None
@@ -595,10 +595,10 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ExecutionSlots:
                                                 FreeVarsSlots: key, 
                                                 CellVarsSlots: None
-                                              InnerRootNode SourceSection: [1769,1787]`for m in self.maps`
-                                                GeneratorReturnTargetNode SourceSection: [1769,1787]`for m in self.maps`
+                                              InnerRootNode SourceSection: [1760,1787]`key in m for m in se...`
+                                                GeneratorReturnTargetNode SourceSection: [1760,1787]`key in m for m in se...`
                                                   flagSlot: 1
-                                                  GeneratorForNode SourceSection: [1769,1787]`for m in self.maps`
+                                                  GeneratorForNode SourceSection: [1760,1787]`key in m for m in se...`
                                                     ExpressionStatementNode SourceSection: [1760,1768]`key in m`
                                                       YieldNode SourceSection: [1760,1768]`key in m`
                                                         flagSlot: 0

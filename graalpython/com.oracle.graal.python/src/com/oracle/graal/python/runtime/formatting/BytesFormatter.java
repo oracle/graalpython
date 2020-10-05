@@ -40,13 +40,13 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.BytesFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
 public class BytesFormatter extends InternalFormat.Formatter {
-    BytesFormatter(ParserErrorCallback errors, FormattingBuffer result, Spec spec) {
-        super(errors, result, spec);
+    BytesFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+        super(raiseNode, result, spec);
         assert result instanceof BytesFormattingBuffer;
     }
 

@@ -100,6 +100,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
+
 public abstract class HPyExternalFunctionNodes {
 
     /**
@@ -196,6 +198,7 @@ public abstract class HPyExternalFunctionNodes {
         Object doIt(VirtualFrame frame, String name, Object callable, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached ForeignCallContext foreignCallContext,
                         @Cached PRaiseNode raiseNode) {
             Object[] convertedArguments = new Object[arguments.length + 1];
             GraalHPyContext hPyContext = ctx.getHPyContext();
@@ -206,7 +209,7 @@ public abstract class HPyExternalFunctionNodes {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = ForeignCallContext.enter(frame, ctx, this);
+            Object state = foreignCallContext.enter(frame, ctx, this);
 
             try {
                 return checkFunctionResultNode.execute(hPyContext, name, lib.execute(callable, convertedArguments));
@@ -218,7 +221,7 @@ public abstract class HPyExternalFunctionNodes {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
-                ForeignCallContext.exit(frame, ctx, state);
+                foreignCallContext.exit(frame, ctx, state);
             }
         }
 
@@ -339,7 +342,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
 
         public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable, boolean nativePrimitiveResult) {
             super(language, name, callable, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -357,7 +360,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -385,7 +388,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -415,7 +418,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -442,7 +445,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object getKwargs(VirtualFrame frame) {
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
+                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(EMPTY_STRING_ARRAY));
             }
             return readKwargsNode.execute(frame);
         }
@@ -454,7 +457,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethInitProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -489,7 +492,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object getKwargs(VirtualFrame frame) {
             if (readKwargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(new String[0]));
+                readKwargsNode = insert(ReadVarKeywordsNode.createForUserFunction(EMPTY_STRING_ARRAY));
             }
             return readKwargsNode.execute(frame);
         }
@@ -501,7 +504,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethTernaryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -539,7 +542,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -567,7 +570,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethSSizeSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "n", "m"}, new String[0], true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "n", "m"}, EMPTY_STRING_ARRAY, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -607,7 +610,7 @@ public abstract class HPyExternalFunctionNodes {
      * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
      */
     static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, new String[0]);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, EMPTY_STRING_ARRAY);
 
         @Child private CastToJavaIntExactNode castToJavaIntExactNode;
 

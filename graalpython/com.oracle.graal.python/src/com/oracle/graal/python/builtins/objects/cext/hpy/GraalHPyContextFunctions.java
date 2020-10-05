@@ -859,7 +859,7 @@ public abstract class GraalHPyContextFunctions {
 
             // Unfortunately, the HPyRaiseNode is not suitable because it expects a String message.
             try {
-                throw raiseNode.execute(errType, PNone.NO_VALUE, errorMessage, new Object[0]);
+                throw raiseNode.execute(errType, PNone.NO_VALUE, errorMessage, PythonUtils.EMPTY_OBJECT_ARRAY);
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(context, p);
             }

@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -112,6 +113,7 @@ import com.oracle.truffle.llvm.api.Toolchain;
 @CoreFunctions(defineModule = __GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public static final String LLVM_LANGUAGE = "llvm";
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -122,6 +124,27 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         builtinConstants.put("is_native", TruffleOptions.AOT);
+        PythonContext ctx = core.getContext();
+        String encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
+        String standardStreamEncoding = null;
+        String standardStreamError = null;
+        if (encodingOpt != null && !encodingOpt.isEmpty()) {
+            String[] parts = encodingOpt.split(":");
+            if (parts.length > 0) {
+                standardStreamEncoding = parts[0].isEmpty() ? "utf-8" : parts[0];
+                standardStreamError = parts.length > 1 && !parts[1].isEmpty() ? parts[1] : "strict";
+            }
+        }
+        if (standardStreamEncoding == null) {
+            standardStreamEncoding = "utf-8";
+            standardStreamError = "surrogateescape";
+        }
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(String.format("Setting default stdio encoding to %s:%s", standardStreamEncoding, standardStreamError));
+        }
+        this.builtinConstants.put("stdio_encoding", standardStreamEncoding);
+        this.builtinConstants.put("stdio_error", standardStreamError);
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize(core);
     }
@@ -150,19 +173,19 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         mod.setAttribute("capi_home", capiHome);
         mod.setAttribute("platform_id", toolchain.getIdentifier());
         mod.setAttribute("flags", core.factory().createTuple(new Object[]{
-                        false, // bytes_warning
-                        !context.getOption(PythonOptions.PythonOptimizeFlag), // debug
-                        context.getOption(PythonOptions.DontWriteBytecodeFlag),  // dont_write_bytecode
-                        false, // hash_randomization
-                        context.getOption(PythonOptions.IgnoreEnvironmentFlag), // ignore_environment
-                        context.getOption(PythonOptions.InspectFlag), // inspect
-                        context.getOption(PythonOptions.TerminalIsInteractive), // interactive
-                        context.getOption(PythonOptions.IsolateFlag), // isolated
-                        context.getOption(PythonOptions.NoSiteFlag), // no_site
-                        context.getOption(PythonOptions.NoUserSiteFlag), // no_user_site
-                        context.getOption(PythonOptions.PythonOptimizeFlag), // optimize
-                        context.getOption(PythonOptions.QuietFlag), // quiet
-                        context.getOption(PythonOptions.VerboseFlag), // verbose
+                        0, // bytes_warning
+                        PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
+                        PInt.intValue(context.getOption(PythonOptions.DontWriteBytecodeFlag)),  // dont_write_bytecode
+                        0, // hash_randomization
+                        PInt.intValue(context.getOption(PythonOptions.IgnoreEnvironmentFlag)), // ignore_environment
+                        PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
+                        PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
+                        PInt.intValue(context.getOption(PythonOptions.IsolateFlag)), // isolated
+                        PInt.intValue(context.getOption(PythonOptions.NoSiteFlag)), // no_site
+                        PInt.intValue(context.getOption(PythonOptions.NoUserSiteFlag)), // no_user_site
+                        PInt.intValue(context.getOption(PythonOptions.PythonOptimizeFlag)), // optimize
+                        PInt.intValue(context.getOption(PythonOptions.QuietFlag)), // quiet
+                        PInt.intValue(context.getOption(PythonOptions.VerboseFlag)), // verbose
                         false, // dev_mode
                         0, // utf8_mode
         }));
@@ -177,7 +200,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doCache(modulename, moduleFile, new String[0], ctxt, lang);
+            return doCache(modulename, moduleFile, PythonUtils.EMPTY_STRING_ARRAY, ctxt, lang);
         }
 
         @Specialization
@@ -226,7 +249,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
-            return cacheWithModulePath(modulename, new String[0], lang, ct);
+            return cacheWithModulePath(modulename, PythonUtils.EMPTY_STRING_ARRAY, lang, ct);
         }
 
         @Specialization
@@ -426,6 +449,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
                 functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
+                    @Override
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
                             ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;

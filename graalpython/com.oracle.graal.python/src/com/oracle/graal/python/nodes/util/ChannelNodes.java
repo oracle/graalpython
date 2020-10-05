@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteByteToChannel
 import com.oracle.graal.python.nodes.util.ChannelNodesFactory.WriteToChannelNodeGen;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -146,7 +147,7 @@ public abstract class ChannelNodes {
         public abstract ByteSequenceStorage execute(Object channel, int size);
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
+        @TruffleBoundary
         public static ByteSequenceStorage read(Object channel, int size,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode) {
@@ -183,7 +184,7 @@ public abstract class ChannelNodes {
             int readSize = readIntoBuffer(channel, dst, gotException, raiseNode);
             byte[] array;
             if (readSize <= 0) {
-                array = new byte[0];
+                array = PythonUtils.EMPTY_BYTE_ARRAY;
                 readSize = 0;
             } else {
                 array = getByteBufferArray(dst);
@@ -301,7 +302,7 @@ public abstract class ChannelNodes {
         public abstract int execute(Object channel, SequenceStorage s, int len);
 
         @Specialization
-        @TruffleBoundary(allowInlining = true)
+        @TruffleBoundary
         int writeOp(Object channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
                         @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,

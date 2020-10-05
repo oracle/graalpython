@@ -40,35 +40,46 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.GLOBALS;
-import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
+import static com.oracle.graal.python.nodes.ErrorMessages.IMPORT_NOT_FOUND;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
     @Child PythonObjectFactory objectFactory;
+    @Child private PythonObjectLibrary pythonLibrary;
 
     @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
+    @Child private PRaiseNode raiseNode;
+    @Child private PConstructAndRaiseNode constructAndRaiseNode;
 
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
@@ -106,7 +117,43 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     protected Object importModule(VirtualFrame frame, String name) {
-        return importModule(frame, name, PNone.NONE, new String[0], 0);
+        return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
+    }
+
+    protected PythonObjectLibrary ensurePythonLibrary() {
+        if (pythonLibrary == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
+        }
+        return pythonLibrary;
+    }
+
+    private PRaiseNode ensureRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            raiseNode = insert(PRaiseNode.create());
+        }
+        return raiseNode;
+    }
+
+    protected PException raiseTypeError(String format, Object... args) {
+        throw raise(PythonBuiltinClassType.TypeError, format, args);
+    }
+
+    protected PException raise(PythonBuiltinClassType type, String format, Object... args) {
+        throw ensureRaiseNode().raise(type, format, args);
+    }
+
+    private PConstructAndRaiseNode ensureConstructAndRaiseNode() {
+        if (constructAndRaiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
+        }
+        return constructAndRaiseNode;
+    }
+
+    protected PException raiseImportError(Frame frame, Object name, Object path, String format, Object... formatArgs) {
+        throw ensureConstructAndRaiseNode().raiseImportError(frame, name, path, format, formatArgs);
     }
 
     CallNode getCallNode() {
@@ -125,41 +172,55 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
+    @TruffleBoundary
+    public static Object importModule(String name) {
+        PythonContext ctx = PythonLanguage.getContext();
+        CallNode callNode = CallNode.getUncached();
+        GetDictNode getDictNode = GetDictNode.getUncached();
+        PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        PConstructAndRaiseNode raiseNode = PConstructAndRaiseNode.getUncached();
+        return __import__(null, raiseNode, ctx, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0, callNode, getDictNode, factory);
+    }
+
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
-        if (!getContext().getCore().isInitialized()) {
-            PythonModule builtinModule = getContext().getCore().lookupBuiltinModule(name);
+        PythonContext context = getContext();
+        if (!context.getCore().isInitialized()) {
+            PythonModule builtinModule = context.getCore().lookupBuiltinModule(name);
             if (builtinModule != null) {
                 return builtinModule;
             }
         }
         if (emulateJython()) {
             if (fromList.length > 0) {
-                getContext().pushCurrentImport(PString.cat(name, ".", fromList[0]));
+                context.pushCurrentImport(PString.cat(name, ".", fromList[0]));
             } else {
-                getContext().pushCurrentImport(name);
+                context.pushCurrentImport(name);
             }
         }
         try {
-            return __import__(frame, name, globals, fromList, level);
+            return __import__(frame, ensureConstructAndRaiseNode(), context, name, globals, fromList, level, getCallNode(), getGetDictNode(), factory());
         } finally {
             if (emulateJython()) {
-                getContext().popCurrentImport();
+                context.popCurrentImport();
             }
         }
     }
 
-    Object __import__(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
-        PMethod builtinImport = (PMethod) getContext().getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
+    private static Object __import__(VirtualFrame frame, PConstructAndRaiseNode raiseNode, PythonContext ctx, String name, Object globals, String[] fromList, int level, CallNode callNode,
+                    GetDictNode getDictNode,
+                    PythonObjectFactory factory) {
+        Object builtinImport = ctx.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS).getAttribute(__IMPORT__);
+        if (builtinImport == PNone.NO_VALUE) {
+            throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
+        }
+        assert builtinImport instanceof PMethod || builtinImport instanceof PFunction;
         assert fromList != null;
         assert globals != null;
-        return getCallNode().execute(frame, builtinImport, new Object[]{name}, new PKeyword[]{
-                        new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
-                        new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
-                                                          // can always be None
-                        new PKeyword("fromlist", factory().createTuple(fromList)),
-                        new PKeyword("level", level)
-        });
+        // the locals argument is ignored so it can always be None
+        return callNode.execute(frame, builtinImport, new Object[]{name,
+                        getDictNode.execute(globals), PNone.NONE, factory.createTuple(fromList), level},
+                        PKeyword.EMPTY_KEYWORDS);
     }
 
     protected boolean emulateJython() {

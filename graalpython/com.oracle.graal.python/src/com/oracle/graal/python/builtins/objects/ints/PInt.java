@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.BigIntegerUtils;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -56,6 +55,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -229,7 +229,7 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public int asFileDescriptor(
+    public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
         try {
@@ -267,7 +267,13 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLong(
-                    @Cached CastToJavaLongLossyNode castToLong) {
+                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
+        return castToLong.execute(this);
+    }
+
+    @ExportMessage
+    public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
         return castToLong.execute(this);
     }
 
@@ -279,6 +285,11 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public PInt asPInt() {
+        return this;
+    }
+
+    @ExportMessage
+    public PInt asPIntWithState(@SuppressWarnings("unused") ThreadState state) {
         return this;
     }
 
@@ -360,20 +371,20 @@ public final class PInt extends PythonBuiltinObject {
         return intValue(value);
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public static int intValue(BigInteger value) {
         return value.intValue();
     }
 
     public int intValueExact() throws OverflowException {
-        return BigIntegerUtils.intValueExact(value);
+        return intValueExact(value);
     }
 
     public long longValue() {
         return longValue(value);
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(allowInlining = true)
     public static long longValue(BigInteger integer) {
         return integer.longValue();
     }
@@ -382,8 +393,11 @@ public final class PInt extends PythonBuiltinObject {
         return longValueExact(value);
     }
 
-    public static long longValueExact(BigInteger value) throws OverflowException {
-        return BigIntegerUtils.longValueExact(value);
+    public static long longValueExact(BigInteger x) throws OverflowException {
+        if (!fitsIn(x, MIN_LONG, MAX_LONG)) {
+            throw OverflowException.INSTANCE;
+        }
+        return longValue(x);
     }
 
     public PInt max(PInt val) {
@@ -442,6 +456,13 @@ public final class PInt extends PythonBuiltinObject {
             throw OverflowException.INSTANCE;
         }
         return (int) val;
+    }
+
+    public static int intValueExact(BigInteger x) throws OverflowException {
+        if (!fitsIn(x, MIN_INT, MAX_INT)) {
+            throw OverflowException.INSTANCE;
+        }
+        return intValue(x);
     }
 
     public static char charValueExact(int val) throws OverflowException {
@@ -548,7 +569,8 @@ public final class PInt extends PythonBuiltinObject {
         return add(other.value);
     }
 
-    @ExportMessage
+    // We cannot export it as a message, because it can be overridden!
+    @Ignore
     public long hash() {
         return hashBigInteger(value);
     }
@@ -559,8 +581,12 @@ public final class PInt extends PythonBuiltinObject {
         return h == -1 ? -2 : h;
     }
 
-    @TruffleBoundary
-    private boolean fitsIn(BigInteger left, BigInteger right) {
+    @TruffleBoundary(allowInlining = true)
+    public static boolean fitsIn(BigInteger value, BigInteger left, BigInteger right) {
         return value.compareTo(left) >= 0 && value.compareTo(right) <= 0;
+    }
+
+    private boolean fitsIn(BigInteger left, BigInteger right) {
+        return fitsIn(value, left, right);
     }
 }

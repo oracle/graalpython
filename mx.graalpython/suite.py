@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "a7cae0f6d7a4c7308d32eadae70986eee83314ab",
+                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "a7cae0f6d7a4c7308d32eadae70986eee83314ab",
+                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "a7cae0f6d7a4c7308d32eadae70986eee83314ab",
+                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -160,6 +160,18 @@ suite = {
             "type": "python",
             "path": 'scripts',
             "source": [],
+        },
+
+        "docs.user": {
+            "type": "python",
+            "path": 'docs',
+            "source": ["user"],
+        },
+
+        "docs.contributor": {
+            "type": "python",
+            "path": 'docs',
+            "source": ["contributor"],
         },
 
         "com.oracle.graal.python.cext": {

@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -122,7 +123,7 @@ public abstract class ExecutePositionalStarargsNode extends Node {
 
     @Specialization
     static Object[] doNone(@SuppressWarnings("unused") PNone none) {
-        return new Object[0];
+        return PythonUtils.EMPTY_OBJECT_ARRAY;
     }
 
     @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")

@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
@@ -151,6 +152,7 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
@@ -175,8 +177,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -228,7 +228,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "_warnings",
                         "posix",
                         "_io",
                         "_frozen_importlib",
@@ -319,8 +318,8 @@ public final class Python3Core implements PythonCore {
                         new BoolBuiltins(),
                         new FloatBuiltins(),
                         new BytesBuiltins(),
-                        new ComplexBuiltins(),
                         new ByteArrayBuiltins(),
+                        new ComplexBuiltins(),
                         new TypeBuiltins(),
                         new IntBuiltins(),
                         new ForeignObjectBuiltins(),
@@ -422,6 +421,7 @@ public final class Python3Core implements PythonCore {
                         new LZMADecompressorBuiltins(),
                         new MultiprocessingModuleBuiltins(),
                         new SemLockBuiltins(),
+                        new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
@@ -543,7 +543,7 @@ public final class Python3Core implements PythonCore {
     @Override
     @TruffleBoundary
     public String[] builtinModuleNames() {
-        return builtinModules.keySet().toArray(new String[0]);
+        return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
     @Override
@@ -565,10 +565,23 @@ public final class Python3Core implements PythonCore {
 
     @Override
     @TruffleBoundary
-    public void warn(Object type, String format, Object... args) {
-        PythonModule warningsModule = lookupBuiltinModule("_warnings");
-        Object warn = ReadAttributeFromDynamicObjectNode.getUncached().execute(warningsModule.getStorage(), "warn");
-        CallNode.getUncached().execute(warn, String.format(format, args), type);
+    public void warn(PythonBuiltinClassType type, String format, Object... args) {
+        WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
+    }
+
+    @Override
+    public Object getStderr() {
+        Object sys = lookupBuiltinModule("sys");
+        try {
+            return PythonObjectLibrary.getUncached().lookupAttribute(sys, null, "stderr");
+        } catch (PException e) {
+            try {
+                getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
+            } catch (IOException ioe) {
+                // nothing more we can do
+            }
+            throw e;
+        }
     }
 
     private void publishBuiltinModules() {
@@ -636,7 +649,6 @@ public final class Python3Core implements PythonCore {
 
         // core machinery
         createModule("_descriptor");
-        createModule("_warnings");
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib_external", bootstrapExternal);

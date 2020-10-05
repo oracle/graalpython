@@ -341,10 +341,7 @@ class CPyExtFunction():
         code = self.template.format(**fargs)
 
         with open("%s/%s.c" % (__dir__, self.name), "wb", buffering=0) as f:
-            if GRAALPYTHON:
-                f.write(code)
-            else:
-                f.write(bytes(code, 'utf-8'))
+            f.write(bytes(code, 'utf-8'))
 
     def _insert(self, d, name, default_value):
         d[name] = d.get(name, default_value)
@@ -597,10 +594,7 @@ def CPyExtType(name, code, **kwargs):
 
     source_file = "%s/%s.c" % (__dir__, name)
     with open(source_file, "wb", buffering=0) as f:
-        if GRAALPYTHON:
-            f.write(c_source)
-        else:
-            f.write(bytes(c_source, 'utf-8'))
+        f.write(bytes(c_source, 'utf-8'))
 
     # ensure file was really written
     try:

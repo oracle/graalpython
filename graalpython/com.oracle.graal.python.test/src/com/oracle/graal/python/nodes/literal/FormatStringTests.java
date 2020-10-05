@@ -409,7 +409,7 @@ public class FormatStringTests extends ParserTestBase {
         }
 
         @Override
-        public void warn(Object type, String format, Object... args) {
+        public void warn(PythonBuiltinClassType type, String format, Object... args) {
             throw new RuntimeException("Warning: " + String.format(format, args));
         }
 

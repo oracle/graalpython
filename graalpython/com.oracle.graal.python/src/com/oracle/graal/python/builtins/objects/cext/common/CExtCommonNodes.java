@@ -51,10 +51,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -203,7 +201,7 @@ public abstract class CExtCommonNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 CodingErrorAction action = BytesBuiltins.toCodingErrorAction(errors, raiseNode);
-                return factory.createBytes(doEncode(charset, unicodeObject, action));
+                return factory.createBytes(BytesBuiltins.doEncode(charset, unicodeObject, action));
             } catch (CharacterCodingException e) {
                 throw raiseNode.raise(UnicodeEncodeError, "%m", e);
             }
@@ -222,19 +220,6 @@ public abstract class CExtCommonNodes {
                 throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_S_NOT_P, "argument", "string", unicodeObject);
             }
 
-        }
-
-        @TruffleBoundary
-        private static byte[] doEncode(Charset charset, String string, CodingErrorAction action) throws CharacterCodingException {
-            CharsetEncoder encoder = charset.newEncoder();
-            encoder.onMalformedInput(action).onUnmappableCharacter(action);
-            CharBuffer buf = CharBuffer.allocate(string.length());
-            buf.put(string);
-            buf.flip();
-            ByteBuffer encoded = encoder.encode(buf);
-            byte[] barr = new byte[encoded.remaining()];
-            encoded.get(barr);
-            return barr;
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,11 +44,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ClassBodyRootNode extends FunctionRootNode {
-    private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"namespace"}, new String[0]);
+    private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"namespace"}, PythonUtils.EMPTY_STRING_ARRAY);
 
     public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
         super(language, sourceSection, functionName, false, false, frameDescriptor, body, executionCellSlots, SIGNATURE);

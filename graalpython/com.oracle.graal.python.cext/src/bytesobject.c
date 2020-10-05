@@ -46,7 +46,7 @@
 // taken from CPython "Objects/bytesobject.c"
 #define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
 
-PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
+PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE, sizeof(char));
 
 typedef PyObject* (*fromStringAndSize_fun_t)(int8_t* str, int64_t sz);
 

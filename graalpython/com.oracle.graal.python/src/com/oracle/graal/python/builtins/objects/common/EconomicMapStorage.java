@@ -587,6 +587,15 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
+    @ExportMessage
+    public HashingStorage xor(HashingStorage other,
+                    @CachedLibrary("this") HashingStorageLibrary selfLib,
+                    @CachedLibrary(limit = "2") HashingStorageLibrary otherLib) {
+        HashingStorage a = selfLib.diff(this, other);
+        HashingStorage b = otherLib.diff(other, this);
+        return selfLib.union(a, b);
+    }
+
     @Override
     @ExportMessage
     public HashingStorageIterable<Object> keys() {

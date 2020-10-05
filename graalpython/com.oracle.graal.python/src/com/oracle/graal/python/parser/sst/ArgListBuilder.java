@@ -49,11 +49,11 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNodeFactory;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
+import com.oracle.graal.python.util.PythonUtils;
 
 public final class ArgListBuilder {
 
     private static final SSTNode[] EMPTY_SSTN = new SSTNode[0];
-    private static final String[] EMPTY_NAMES = new String[0];
     private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
 
     private List<SSTNode> args;
@@ -105,7 +105,7 @@ public final class ArgListBuilder {
     }
 
     protected String[] getNameArgNames() {
-        return nameArgNames == null ? EMPTY_NAMES : nameArgNames.toArray(new String[nameArgNames.size()]);
+        return nameArgNames == null ? PythonUtils.EMPTY_STRING_ARRAY : nameArgNames.toArray(new String[nameArgNames.size()]);
     }
 
     protected SSTNode[] getStarArg() {

@@ -13129,7 +13129,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           ReadGlobalOrBuiltinNodeGen SourceSection: None
                             Identifier: list
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [38905,38922]`for s in literals`
+                          GeneratorExpressionNode SourceSection: [38862,38922]`None if s is None el...`
                             Name: <genexpr>
                             FrameDescriptor: 2 slots [s, <return_val>]
                             Enclosing
@@ -13138,7 +13138,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             For Nodes: 1
                             Block Nodes: 0
                             Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [38905,38922]`for s in literals`
+                            FunctionRootNode SourceSection: [38862,38922]`None if s is None el...`
                               Name: <genexpr>
                               Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
                               CelVars: None
@@ -13148,10 +13148,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               ExecutionSlots:
                                 FreeVarsSlots: None
                                 CellVarsSlots: None
-                              InnerRootNode SourceSection: [38905,38922]`for s in literals`
-                                GeneratorReturnTargetNode SourceSection: [38905,38922]`for s in literals`
+                              InnerRootNode SourceSection: [38862,38922]`None if s is None el...`
+                                GeneratorReturnTargetNode SourceSection: [38862,38922]`None if s is None el...`
                                   flagSlot: 1
-                                  GeneratorForNode SourceSection: [38905,38922]`for s in literals`
+                                  GeneratorForNode SourceSection: [38862,38922]`None if s is None el...`
                                     ExpressionStatementNode SourceSection: [38862,38904]`None if s is None el...`
                                       YieldNode SourceSection: [38862,38904]`None if s is None el...`
                                         flagSlot: 0

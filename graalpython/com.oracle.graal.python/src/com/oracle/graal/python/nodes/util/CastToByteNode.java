@@ -67,8 +67,6 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class CastToByteNode extends Node {
     public static final CastToByteNode UNCACHED_INSTANCE = CastToByteNode.create();
 
-    public static final String INVALID_BYTE_VALUE = "byte must be in range(0, 256)";
-
     @Child private PRaiseNode raiseNode;
 
     private final Function<Object, Byte> rangeErrorHandler;
@@ -88,7 +86,7 @@ public abstract class CastToByteNode extends Node {
         return value;
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
+    @Specialization(rewriteOn = {OverflowException.class})
     protected byte doShort(short value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
@@ -102,7 +100,7 @@ public abstract class CastToByteNode extends Node {
         }
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
+    @Specialization(rewriteOn = {OverflowException.class})
     protected byte doInt(int value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
@@ -116,7 +114,7 @@ public abstract class CastToByteNode extends Node {
         }
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
+    @Specialization(rewriteOn = {OverflowException.class})
     protected byte doLong(long value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
@@ -130,7 +128,7 @@ public abstract class CastToByteNode extends Node {
         }
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
+    @Specialization(rewriteOn = {OverflowException.class})
     protected byte doPInt(PInt value) throws OverflowException {
         return PInt.byteValueExact(value.longValueExact());
     }
@@ -139,7 +137,7 @@ public abstract class CastToByteNode extends Node {
     protected byte doPIntOvf(PInt value) {
         try {
             return PInt.byteValueExact(value.longValueExact());
-        } catch (OverflowException e) {
+        } catch (OverflowException | ArithmeticException e) {
             return handleRangeError(value);
         }
     }
@@ -149,10 +147,15 @@ public abstract class CastToByteNode extends Node {
         return value ? (byte) 1 : (byte) 0;
     }
 
-    @Specialization(guards = "coerce")
+    @Specialization
     protected byte doBytes(VirtualFrame frame, PBytesLike value,
                     @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-        return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
+        // Workaround GR-26346
+        if (coerce) {
+            return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
+        } else {
+            return doGeneric(value);
+        }
     }
 
     @Specialization(guards = "plib.isForeignObject(value)", limit = "1")
@@ -167,6 +170,13 @@ public abstract class CastToByteNode extends Node {
             }
         }
         return doGeneric(value);
+    }
+
+    @Specialization(guards = "lib.canBeIndex(value)")
+    protected byte doObject(VirtualFrame frame, Object value,
+                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Cached CastToByteNode recursive) {
+        return recursive.execute(frame, lib.asIndexWithFrame(value, frame));
     }
 
     @Fallback
@@ -190,7 +200,7 @@ public abstract class CastToByteNode extends Node {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            throw raiseNode.raise(ValueError, INVALID_BYTE_VALUE);
+            throw raiseNode.raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
         }
     }
 

@@ -438,6 +438,7 @@ class WarnTests(BaseTest):
                 self.assertEqual(os.path.basename(w[-1].filename),
                                     "sys")
 
+    @support.impl_detail("frozen importlib", graalvm=False)
     def test_stacklevel_import(self):
         # Issue #24305: With stacklevel=2, module-level warnings should work.
         support.unload('test.test_warnings.data.import_warning')
@@ -926,6 +927,7 @@ class CWarningsDisplayTests(WarningsDisplayTests, unittest.TestCase):
 class PyWarningsDisplayTests(WarningsDisplayTests, unittest.TestCase):
     module = py_warnings
 
+    @support.impl_detail("tracemalloc and finalization", graalvm=False)
     def test_tracemalloc(self):
         self.addCleanup(support.unlink, support.TESTFN)
 
@@ -1228,6 +1230,7 @@ class BootstrapTest(unittest.TestCase):
 
 
 class FinalizationTest(unittest.TestCase):
+    @support.impl_detail("finalization", graalvm=False)
     @support.requires_type_collecting
     def test_finalization(self):
         # Issue #19421: warnings.warn() should not crash
@@ -1245,6 +1248,7 @@ a=A()
         rc, out, err = assert_python_ok("-c", code)
         self.assertEqual(err.decode(), '<string>:7: UserWarning: test')
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_late_resource_warning(self):
         # Issue #21925: Emitting a ResourceWarning late during the Python
         # shutdown must be logged.

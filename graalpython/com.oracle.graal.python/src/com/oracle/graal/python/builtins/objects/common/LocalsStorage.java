@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -77,7 +78,7 @@ public class LocalsStorage extends HashingStorage {
     private int len = -1;
 
     public LocalsStorage(FrameDescriptor fd) {
-        this.frame = Truffle.getRuntime().createMaterializedFrame(new Object[0], fd);
+        this.frame = Truffle.getRuntime().createMaterializedFrame(PythonUtils.EMPTY_OBJECT_ARRAY, fd);
     }
 
     public LocalsStorage(MaterializedFrame frame) {

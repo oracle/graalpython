@@ -36,23 +36,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from builtins import BaseException
+
 
 def make_implementation_info():
     from _descriptor import SimpleNamespace, make_named_tuple_class
     version_info_type = make_named_tuple_class(
         "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
     )
-    return SimpleNamespace(
+    result = SimpleNamespace(
         name="graalpython",
         cache_tag="graalpython",
         version=version_info_type(version_info),
         _multiarch=__gmultiarch
     )
+    version_info_type.seal()
+    return result
 implementation = make_implementation_info()
 del make_implementation_info
 del __gmultiarch
 version_info = implementation.version
-hexversion = ((version_info.major << 24) |
+implementation.hexversion = hexversion = ((version_info.major << 24) |
               (version_info.minor << 16) |
               (version_info.micro << 8) |
               (0xa << 4) | # 0xA is alpha, 0xB is beta, 0xC is rc, 0xF is final
@@ -61,27 +65,13 @@ hexversion = ((version_info.major << 24) |
 
 def make_flags_class():
     from _descriptor import make_named_tuple_class
-    get_set_descriptor = type(type(make_flags_class).__code__)
-
     names = ["bytes_warning", "debug", "dont_write_bytecode",
              "hash_randomization", "ignore_environment", "inspect",
              "interactive", "isolated", "no_site", "no_user_site", "optimize",
              "quiet", "verbose", "dev_mode", "utf8_mode"]
-
-    flags_class = make_named_tuple_class("sys.flags", names)
-
-    def make_func(i):
-        def func(self):
-            return __graalpython__.flags[i]
-        return func
-
-    for i, f in enumerate(names):
-        setattr(flags_class, f, get_set_descriptor(fget=make_func(i), name=f, owner=flags_class))
-
-    return flags_class
-
-
-flags = make_flags_class()()
+    return make_named_tuple_class("sys.flags", names)
+flags = make_flags_class()(__graalpython__.flags)
+type(flags).seal()
 del make_flags_class
 
 
@@ -135,6 +125,17 @@ hash_info = make_hash_info_class()(hash_info)
 del make_hash_info_class
 
 
+def make_thread_info_class():
+    from _descriptor import make_named_tuple_class
+    return make_named_tuple_class(
+        "thread_info",
+        ["name",
+         "lock",
+         "version"]
+    )
+thread_info = make_thread_info_class()([None, None, None])
+del make_thread_info_class
+
 def make_unraisable_hook_args_class():
     from _descriptor import make_named_tuple_class
     return make_named_tuple_class(
@@ -168,8 +169,12 @@ def addaudithook(hook):
 
 
 @__graalpython__.builtin
-def exit(arg=0):
-    raise SystemExit(arg)
+def exit(arg=None):
+    # see SystemExit_init, tuple of size 1 is unpacked
+    code = arg
+    if isinstance(arg, tuple) and len(arg) == 1:
+        code = arg[0]
+    raise SystemExit(code)
 
 
 def make_excepthook():
@@ -190,13 +195,35 @@ def make_excepthook():
             print(type(e).__qualname__, file=stderr)
 
     def __print_traceback__(typ, value, tb):
+        if not isinstance(value, BaseException):
+            msg = "TypeError: print_exception(): Exception expected for value, {} found\n".format(type(value).__name__)
+            print(msg, file=stderr, end="")
+            return
         try:
+            # CPython's C traceback printer diverges from traceback.print_exception in some details marked as (*)
+            import sys
             import traceback
-            lines = traceback.format_exception(typ, value, tb)
-            # CPython's C traceback printer diverges from traceback.print_exception in this small detail.
-            # We'd like to contribute to CPython to fix the divergence, but for now we do just
-            # a string substitution to pass the tests
+            no_traceback = False
+            limit = getattr(sys, 'tracebacklimit', None)
+            if isinstance(limit, int):
+                if limit <= 0:
+                    # (*) the C traceback printer does nothing if the limit is <= 0,
+                    # but the exception message is still printed
+                    limit = 0
+                    no_traceback = True
+                else:
+                    # (*) in the C printer limit is interpreted as -limit in format_exception
+                    limit = -limit
+            else:
+                # (*) non integer values of limit are interpreted as the default limit
+                limit = None
+            lines = traceback.format_exception(typ, value, tb, limit=limit)
+            # (*) if the exception cannot be printed, then the message differs between the C driver and format_exception
+            # We'd like to contribute to CPython to fix the divergence, but for now we do just a string substitution
+            # to pass the tests
             lines[-1] = lines[-1].replace(f'<unprintable {typ.__name__} object>', f'<exception str() failed>')
+            if no_traceback:
+                lines = lines[-1:]
             for line in lines:
                 print(line, file=stderr, end="")
         except BaseException as exc:
@@ -266,11 +293,41 @@ def breakpointhook(*args, **kws):
 
 __breakpointhook__ = breakpointhook
 
-
 @__graalpython__.builtin
 def getrecursionlimit():
-    return 1000
+    return __graalpython__.sys_state.recursionlimit
 
+@__graalpython__.builtin
+def setrecursionlimit(value):
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    if value <= 0:
+        raise ValueError("recursion limit must be greater or equal than 1")
+    __graalpython__.sys_state.recursionlimit = value
+
+@__graalpython__.builtin
+def getcheckinterval():
+    return __graalpython__.sys_state.checkinterval
+
+@__graalpython__.builtin
+def setcheckinterval(value):
+    import warnings
+    warnings.warn("sys.getcheckinterval() and sys.setcheckinterval() are deprecated. Use sys.setswitchinterval() instead.", DeprecationWarning)
+    if not isinstance(value, int):
+        raise TypeError("an integer is required")
+    __graalpython__.sys_state.checkinterval = value
+
+@__graalpython__.builtin
+def getswitchinterval():
+    return __graalpython__.sys_state.switchinterval
+
+@__graalpython__.builtin
+def setswitchinterval(value):
+    if not isinstance(value, (int, float)):
+        raise TypeError("must be real number, not str")
+    if value <= 0:
+        raise ValueError("switch interval must be strictly positive")
+    __graalpython__.sys_state.switchinterval = value
 
 @__graalpython__.builtin
 def displayhook(value):
@@ -281,15 +338,19 @@ def displayhook(value):
     builtins._ = None
     text = repr(value)
     try:
-        stdout.write(text)
+        local_stdout = stdout
+    except NameError as e:
+        raise RuntimeError("lost sys.stdout") from e
+    try:
+        local_stdout.write(text)
     except UnicodeEncodeError:
-        bytes = text.encode(stdout.encoding, 'backslashreplace')
-        if hasattr(stdout, 'buffer'):
-            stdout.buffer.write(bytes)
+        bytes = text.encode(local_stdout.encoding, 'backslashreplace')
+        if hasattr(local_stdout, 'buffer'):
+            local_stdout.buffer.write(bytes)
         else:
-            text = bytes.decode(stdout.encoding, 'strict')
-            stdout.write(text)
-    stdout.write("\n")
+            text = bytes.decode(local_stdout.encoding, 'strict')
+            local_stdout.write(text)
+    local_stdout.write("\n")
     builtins._ = value
 
 

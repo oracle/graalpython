@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -71,8 +72,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
 
-    public BytesFormatProcessor(PythonCore core, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes) {
-        super(core, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
+    public BytesFormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes) {
+        super(core, raiseNode, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
         this.formatBytes = formatBytes;
     }
 
@@ -92,7 +93,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         try {
             return (char) formatBytes[index++];
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw core.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
+            throw raiseNode.raise(ValueError, ErrorMessages.INCOMPLETE_FORMAT);
         }
     }
 
@@ -118,7 +119,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
             return super.asFloat(arg);
         } catch (PException ex) {
             // exactly like in CPython, all errors are translated to this
-            throw core.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.FLOAT_ARG_REQUIRED, arg);
         }
     }
 
@@ -140,7 +141,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         if (pyLib.isBuffer(arg)) {
             try {
                 if (pyLib.getBufferLength(arg) == 1) {
-                    BytesFormatter f = new BytesFormatter(core, buffer, spec);
+                    BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
                     f.format(pyLib.getBufferBytes(arg));
                     return f;
                 }
@@ -179,16 +180,16 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         }
 
         if (!foundByte) {
-            throw core.raise(TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
+            throw raiseNode.raise(TypeError, ErrorMessages.C_REQUIRES_INT_IN_BYTE_RANGE_OR_SINGLE_BYTE);
         }
 
-        BytesFormatter f = new BytesFormatter(core, buffer, spec);
+        BytesFormatter f = new BytesFormatter(raiseNode, buffer, spec);
         f.format(value);
         return f;
     }
 
     private PException raiseOverflow() {
-        throw core.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
+        throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE256_DECIMAL);
     }
 
     @Override
@@ -202,7 +203,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
                 // call __bytes__
                 arg = getArg();
                 bytes = asBytes(arg);
-                BytesFormatter fb = new BytesFormatter(core, buffer, spec);
+                BytesFormatter fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.format(bytes);
                 return fb;
 
@@ -215,12 +216,12 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
                     Object result = call(attribute, arg);
                     if (PGuards.isString(result)) {
                         bytes = BytesUtils.unicodeNonAsciiEscape(result.toString());
-                        fb = new BytesFormatter(core, buffer, spec);
+                        fb = new BytesFormatter(raiseNode, buffer, spec);
                         fb.format(bytes);
                         return fb;
                     }
                 }
-                throw core.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, __REPR__);
+                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, __REPR__);
 
             default:
                 return null;
@@ -237,14 +238,14 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
         if (attribute != PNone.NO_VALUE) {
             Object bytesResult = call(attribute, arg);
             if (!(bytesResult instanceof PBytes)) {
-                throw core.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, arg);
+                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, arg);
             }
             return toBytes((PBytes) bytesResult);
         }
         // otherwise: use the buffer protocol
         byte[] result = byteBufferAsBytesOrNull(arg);
         if (result == null) {
-            throw core.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
+            throw raiseNode.raise(TypeError, ErrorMessages.B_REQUIRES_BYTES_OR_OBJ_THAT_IMPLEMENTS_S_NOT_P, __BYTES__, arg);
         }
         return result;
     }

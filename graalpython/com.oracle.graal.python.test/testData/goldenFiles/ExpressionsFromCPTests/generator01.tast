@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
       ReadGlobalOrBuiltinNodeGen SourceSection: None
         Identifier: list
         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-      GeneratorExpressionNode SourceSection: [6,24]`for x in range(20)`
+      GeneratorExpressionNode SourceSection: [1,24]`x**3 for x in range(...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
         Enclosing
@@ -19,7 +19,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
         For Nodes: 1
         Block Nodes: 0
         Is Enclosing Frame Generator: false
-        FunctionRootNode SourceSection: [6,24]`for x in range(20)`
+        FunctionRootNode SourceSection: [1,24]`x**3 for x in range(...`
           Name: <genexpr>
           Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
           CelVars: None
@@ -29,10 +29,10 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,25]`[x**3 for x in
           ExecutionSlots:
             FreeVarsSlots: None
             CellVarsSlots: None
-          InnerRootNode SourceSection: [6,24]`for x in range(20)`
-            GeneratorReturnTargetNode SourceSection: [6,24]`for x in range(20)`
+          InnerRootNode SourceSection: [1,24]`x**3 for x in range(...`
+            GeneratorReturnTargetNode SourceSection: [1,24]`x**3 for x in range(...`
               flagSlot: 1
-              GeneratorForNode SourceSection: [6,24]`for x in range(20)`
+              GeneratorForNode SourceSection: [1,24]`x**3 for x in range(...`
                 ExpressionStatementNode SourceSection: [1,5]`x**3`
                   YieldNode SourceSection: [1,5]`x**3`
                     flagSlot: 0

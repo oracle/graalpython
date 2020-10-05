@@ -514,10 +514,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
-    static long hash(PythonBuiltinClassType type,
+    static long hashWithState(PythonBuiltinClassType type, ThreadState state,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.hash(context.getCore().lookupType(type));
+        return lib.hashWithState(context.getCore().lookupType(type), state);
     }
 
     @ExportMessage
@@ -548,6 +548,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     static int equalsInternal(PythonBuiltinClassType self, Object other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("self") PythonObjectLibrary selfLib) {
         return selfLib.isSame(self, other) ? 1 : 0;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean isCallable() {
+        return true;
+    }
+
+    @ExportMessage
+    public Object callObjectWithState(ThreadState state, Object[] arguments,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.callObjectWithState(ctx.getCore().lookupType(this), state, arguments);
     }
 
     @ExportMessage
@@ -586,5 +599,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
             }
         }
         return false;
+    }
+
+    /**
+     * Must be kept in sync with
+     * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.ReprNode
+     * TypeBuiltins.ReprNode}
+     */
+    @ExportMessage
+    String asPString() {
+        return getQualifiedName();
+    }
+
+    @ExportMessage
+    String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
+        return asPString();
     }
 }

@@ -67,7 +67,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
@@ -226,12 +225,13 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             PSequence pSequence = constructListNode.execute(sequence);
 
             for (int i = 0; i < len; i++) {
-                int fd = itemLib.asFileDescriptorWithState(callGetItemNode.executeObject(frame, pSequence, i), threadState);
+                Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
+                int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
                 Channel fileChannel = getContext().getResources().getFileChannel(fd);
                 if (!(fileChannel instanceof SelectableChannel)) {
                     throw NonSelectableChannel.INSTANCE;
                 }
-                result[i] = new ChannelFD(fd, (SelectableChannel) fileChannel);
+                result[i] = new ChannelFD(pythonObject, (SelectableChannel) fileChannel);
             }
             return result;
         }
@@ -243,13 +243,13 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                     cnt++;
                 }
             }
-            int[] fds = new int[cnt];
+            Object[] fds = new Object[cnt];
             for (ChannelFD channelFD : arr) {
                 if (channelFD != null) {
-                    fds[fds.length - (cnt--)] = channelFD.fd;
+                    fds[fds.length - (cnt--)] = channelFD.pythonObject;
                 }
             }
-            return factory().createList(new IntSequenceStorage(fds));
+            return factory().createList(fds);
         }
 
         static LookupAndCallBinaryNode createGetItem() {
@@ -258,11 +258,11 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
         @ValueType
         private static final class ChannelFD {
-            private final int fd;
+            private final Object pythonObject;
             private final SelectableChannel channel;
 
-            private ChannelFD(int fd, SelectableChannel channel) {
-                this.fd = fd;
+            private ChannelFD(Object pythonObject, SelectableChannel channel) {
+                this.pythonObject = pythonObject;
                 this.channel = channel;
             }
         }

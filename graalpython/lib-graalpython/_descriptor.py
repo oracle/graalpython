@@ -43,10 +43,22 @@ descriptor = type(FunctionType.__code__)
 
 
 def make_named_tuple_class(name, fields):
+    sealed = False
     class named_tuple(tuple):
         __name__ = name
+        __qualname__ = name
         n_sequence_fields = len(fields)
         fields = fields
+
+        @classmethod
+        def seal(cls):
+            nonlocal sealed
+            sealed = True
+
+        def __new__(cls, *args, **kwargs):
+            if sealed:
+                raise TypeError("cannot create '{}' instances".format(name))
+            return super(named_tuple, cls).__new__(cls, *args, **kwargs)
 
         def __str__(self):
             return self.__repr__()

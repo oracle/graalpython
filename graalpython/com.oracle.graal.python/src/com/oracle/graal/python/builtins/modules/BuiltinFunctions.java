@@ -72,6 +72,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.util.List;
 
 import com.oracle.graal.python.PythonFileDetector;
@@ -159,6 +160,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -800,8 +802,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "3")
         PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached CastToJavaStringNode castStr,
+                        @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
             if (wSource instanceof PCode) {
                 return (PCode) wSource;
             }
@@ -812,12 +815,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "compile()", "mode", "str", wMode);
             }
-            String source = sourceAsString(wSource, filename, interopLib, lib);
+            String source = sourceAsString(wSource, filename, interopLib, lib, handleDecodingErrorNode);
             return compile(source, filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         // modeled after _Py_SourceAsString
-        String sourceAsString(Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib) {
+        String sourceAsString(Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib, CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode) {
             if (interopLib.isString(source)) {
                 try {
                     return interopLib.asString(source);
@@ -835,9 +838,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
                     Charset charset = PythonFileDetector.findEncodingStrict(bytes);
-                    return createString(bytes, charset);
+                    String pythonEncodingNameFromJavaName = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
+                    CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, CodingErrorAction.REPORT);
+                    if (!decoder.decodingStep(true)) {
+                        try {
+                            handleDecodingErrorNode.execute(decoder, "strict", source);
+                            throw CompilerDirectives.shouldNotReachHere();
+                        } catch (PException e) {
+                            throw raiseInvalidSyntax(filename, "(unicode error) %s", pyLib.asPString(e.getEscapedException()));
+                        }
+                    }
+                    return decoder.getString();
                 } catch (PythonFileDetector.InvalidEncodingException e) {
-                    throw handleInvalidEncoding(filename, e);
+                    throw raiseInvalidSyntax(filename, "encoding problem: %s", e.getEncodingName());
                 }
             } else {
                 throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
@@ -845,17 +858,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private RuntimeException handleInvalidEncoding(String filename, PythonFileDetector.InvalidEncodingException e) {
+        private RuntimeException raiseInvalidSyntax(String filename, String format, Object... args) {
             PythonContext context = getContext();
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
             Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile);
-            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), "encoding problem: %s", e.getEncodingName());
-        }
-
-        @TruffleBoundary
-        private static String createString(byte[] bytes, Charset charset) {
-            return new String(bytes, charset);
-
+            throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), format, args);
         }
 
         public static CompileNode create(boolean mapFilenameToUri) {
@@ -1291,6 +1298,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // iter(object[, sentinel])
     @Builtin(name = ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ReportPolymorphism
     public abstract static class IterNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(sentinel)", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object iter(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone sentinel,
@@ -1696,37 +1704,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             try {
                 String str = castToJavaStringNode.execute(obj);
-                return doAsciiString(str);
+                return BytesUtils.doAsciiString(str);
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("should not be reached");
             }
-        }
-
-        @TruffleBoundary
-        private static Object doAsciiString(String str) {
-            byte[] bytes = BytesUtils.unicodeEscape(str);
-            boolean hasSingleQuote = false;
-            boolean hasDoubleQuote = false;
-            for (int i = 0; i < bytes.length; i++) {
-                char c = (char) bytes[i];
-                hasSingleQuote |= c == '\'';
-                hasDoubleQuote |= c == '"';
-            }
-            boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
-            char quote = useDoubleQuotes ? '"' : '\'';
-            StringBuilder sb = new StringBuilder(bytes.length + 2);
-            sb.append(quote);
-            for (int i = 0; i < bytes.length; i++) {
-                char c = (char) bytes[i];
-                if (c == '\'' && !useDoubleQuotes) {
-                    sb.append("\\'");
-                } else {
-                    sb.append(c);
-                }
-            }
-            sb.append(quote);
-            return sb.toString();
         }
 
         @Specialization(guards = "!isString(obj)")

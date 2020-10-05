@@ -981,12 +981,8 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
         WriteNameNodeGen SourceSection: None
           Identifier: __getframe__
           EmptyNode SourceSection: None
-        GetAnyAttributeNodeGen SourceSection: None
+        IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __getattribute__
-          IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
         IsBuiltinClassProfile SourceSection: None
           CachedDispatchFirst SourceSection: None
       WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`

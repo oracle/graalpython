@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'asyncWith02'> SourceSection: [0,47]`async def f():
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [22,47]`with a as b, c as d:...`
                       WithNode SourceSection: [22,47]`with a as b, c as d:...`
-                        WithNode SourceSection: None
+                        WithNode SourceSection: [35,47]`c as d: pass`
                           ExpressionStatementNode SourceSection: [43,47]`pass`
                             EmptyNode SourceSection: [43,47]`pass`
                           WriteLocalVariableNodeGen SourceSection: None

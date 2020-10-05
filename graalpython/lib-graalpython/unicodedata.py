@@ -44,9 +44,9 @@ c_unicodedata_module = None
 
 @__graalpython__.builtin
 def __get_c_unicodedata():
+    global c_unicodedata_module
     if c_unicodedata_module is None:
         import _cpython_unicodedata
-        global c_unicodedata_module
         c_unicodedata_module = _cpython_unicodedata
     return c_unicodedata_module
 
@@ -57,8 +57,3 @@ east_asian_width = lambda arg: __get_c_unicodedata().east_asian_width(arg)
 @__graalpython__.builtin
 def lookup(name):
     return __get_c_unicodedata().lookup(name)
-
-
-@__graalpython__.builtin
-def category(char):
-    return __get_c_unicodedata().category(char)

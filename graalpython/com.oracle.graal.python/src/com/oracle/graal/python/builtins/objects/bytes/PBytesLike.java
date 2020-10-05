@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -68,6 +69,16 @@ public abstract class PBytesLike extends PSequence {
     @Override
     public final SequenceStorage getSequenceStorage() {
         return store;
+    }
+
+    @Override
+    public void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && isNativeByte((NativeSequenceStorage) store);
+        this.store = store;
+    }
+
+    private static boolean isNativeByte(NativeSequenceStorage store) {
+        return store.getElementType() == SequenceStorage.ListStorageType.Byte;
     }
 
     @ExportMessage

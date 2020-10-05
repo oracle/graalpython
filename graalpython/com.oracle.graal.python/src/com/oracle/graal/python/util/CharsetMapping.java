@@ -46,15 +46,20 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.icu.charset.CharsetICU;
+import com.oracle.graal.python.charset.PythonRawUnicodeEscapeCharset;
+import com.oracle.graal.python.charset.PythonUnicodeEscapeCharset;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * Utility class for mapping Python encodings to Java charsets
  */
 public class CharsetMapping {
-    private static final Map<String, Charset> JAVA_CHARSETS = new HashMap<>();
+    private static final ConcurrentMap<String, Charset> JAVA_CHARSETS = new ConcurrentHashMap<>();
+    // Name maps are populated by static initializer and are immutable afterwards
     private static final Map<String, String> CHARSET_NAME_MAP = new HashMap<>();
     private static final Map<String, String> CHARSET_NAME_MAP_REVERSE = new HashMap<>();
 
@@ -72,31 +77,29 @@ public class CharsetMapping {
         return CHARSET_NAME_MAP_REVERSE.get(javaEncodingName.toLowerCase());
     }
 
+    @TruffleBoundary
     public static String normalize(String encoding) {
         return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
     }
 
     private static Charset getJavaCharset(String name) {
-        Charset charset = JAVA_CHARSETS.get(name);
-        if (charset == null) {
+        return JAVA_CHARSETS.computeIfAbsent(name, key -> {
             // Important: When adding additional ICU4J charset, the implementation class needs to be
             // added to reflect-config.json
             if (name.equals("UTF-7") || name.equals("HZ")) {
                 try {
-                    charset = CharsetICU.forNameICU(name);
+                    return CharsetICU.forNameICU(name);
                 } catch (UnsupportedCharsetException e) {
-                    // Let it stay null
+                    return null;
                 }
             } else {
                 try {
-                    charset = Charset.forName(name);
+                    return Charset.forName(name);
                 } catch (UnsupportedCharsetException e) {
-                    // Let it stay null
+                    return null;
                 }
             }
-            JAVA_CHARSETS.put(name, charset);
-        }
-        return charset;
+        });
     }
 
     private static void addMapping(String pythonName, String javaName) {
@@ -120,6 +123,12 @@ public class CharsetMapping {
         JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
         JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
         JAVA_CHARSETS.put("UTF-16", StandardCharsets.UTF_16);
+
+        // Add our custom charsets
+        addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
+        addMapping("unicode-escape", "x-python-unicode-escape");
+        JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
+        JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
 
         addMapping("ascii", "US-ASCII");
         addMapping("big5hkscs", "Big5-HKSCS");

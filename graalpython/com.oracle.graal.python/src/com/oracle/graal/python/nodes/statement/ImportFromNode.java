@@ -25,20 +25,22 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNodeGen.GetAnyAttributeNodeGen;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -48,16 +50,14 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 
 public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
-    @Child private GetAttributeNode getName;
     @Child private GetItemNode getItem;
-    @Child private ReadAttributeFromObjectNode readModules;
-    @Child private GetAnyAttributeNode getAttributeNode = GetAnyAttributeNodeGen.create();
-    @Child private PRaiseNode raiseNode;
+    @Child private CastToJavaStringNode castToJavaStringNode;
 
     private final String importee;
     private final int level;
 
     @Child private IsBuiltinClassProfile getAttrErrorProfile = IsBuiltinClassProfile.create();
+    @Child private IsBuiltinClassProfile getFileErrorProfile = IsBuiltinClassProfile.create();
     @CompilationFinal(dimensions = 1) private final String[] fromlist;
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
@@ -88,43 +88,78 @@ public class ImportFromNode extends AbstractImportNode {
     public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(frame, importee, globals, fromlist, level);
+        PythonObjectLibrary pol = ensurePythonLibrary();
+        Object sysModules = getSysModules(frame, pol);
+
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, getAttributeNode.executeObject(frame, importedModule, attr));
+                writeNode.doWrite(frame, pol.lookupAttributeStrict(importedModule, frame, attr));
             } catch (PException pe) {
                 pe.expectAttributeError(getAttrErrorProfile);
-                if (getName == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getName = insert(GetAttributeNode.create(__NAME__, null));
-                }
+                Object moduleName = "<unknown module name>";
                 try {
-                    String pkgname;
-                    Object pkgname_o = getName.executeObject(frame, importedModule);
-                    if (pkgname_o instanceof PString) {
-                        pkgname = ((PString) pkgname_o).getValue();
-                    } else if (pkgname_o instanceof String) {
-                        pkgname = (String) pkgname_o;
-                    } else {
+                    moduleName = pol.lookupAttributeStrict(importedModule, frame, __NAME__);
+                    try {
+                        String pkgname = ensureCastToStringNode().execute(moduleName);
+                        String fullname = PString.cat(pkgname, ".", attr);
+                        writeNode.doWrite(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
+                    } catch (CannotCastException cce) {
                         throw pe;
                     }
-                    String fullname = PString.cat(pkgname, ".", attr);
-                    if (readModules == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getItem = insert(GetItemNode.create());
-                        readModules = insert(ReadAttributeFromObjectNode.create());
+                } catch (PException pe2) {
+                    Object modulePath = "unknown location";
+                    if (!getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
+                        try {
+                            modulePath = pol.lookupAttributeStrict(importedModule, frame, __FILE__);
+                        } catch (PException pe3) {
+                            pe3.expectAttributeError(getFileErrorProfile);
+                        }
                     }
-                    Object sysModules = readModules.execute(getContext().getCore().lookupBuiltinModule("sys"), "modules");
-                    writeNode.doWrite(frame, getItem.execute(frame, sysModules, fullname));
-                } catch (PException e2) {
-                    if (raiseNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        raiseNode = insert(PRaiseNode.create());
+
+                    if (isModuleInitialising(frame, pol, importedModule)) {
+                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
+                    } else {
+                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                     }
-                    throw raiseNode.raise(ImportError, ErrorMessages.CANNOT_IMPORT_NAME, attr);
                 }
             }
         }
+    }
+
+    private Object getSysModules(VirtualFrame frame, PythonObjectLibrary pol) {
+        Object sysModules = getContext().getSysModules();
+        if (sysModules == null) {
+            PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+            sysModules = pol.lookupAttribute(sys, frame, "modules");
+        }
+        assert sysModules != PNone.NO_VALUE : "ImportFromNode: sys.modules was not found!";
+        return sysModules;
+    }
+
+    private static boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
+        Object spec = pol.lookupAttribute(importedModule, frame, __SPEC__);
+        if (spec != PNone.NO_VALUE) {
+            Object initializing = pol.lookupAttribute(spec, frame, "_initializing");
+            return pol.isTrue(initializing);
+        }
+        return false;
+    }
+
+    private GetItemNode ensureGetItemNode() {
+        if (getItem == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItem = insert(GetItemNode.create());
+        }
+        return getItem;
+    }
+
+    private CastToJavaStringNode ensureCastToStringNode() {
+        if (castToJavaStringNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            castToJavaStringNode = insert(CastToJavaStringNode.create());
+        }
+        return castToJavaStringNode;
     }
 }

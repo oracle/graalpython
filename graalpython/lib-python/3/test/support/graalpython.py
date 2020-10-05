@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,12 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# GraalPython specific support. This code should work on both CPython and GraalPython
 
-@__graalpython__.builtin
-def _warn(msg, cls=Warning, stacklevel=None):
-    print(cls, msg)
+def graalpython_ignore(assertion, default_return=None, message=None):
+   '''
+   Allows to ignore single assertion of otherwise passing test. Assertions ignored this way can be enabled by
+   exporting environment variable PROCESS_IGNORED_GRAALPYTHON_ASSERTS.
 
-
-@__graalpython__.builtin
-def warn(msg, cls=Warning, stacklevel=None):
-    _warn(msg, cls=cls, stacklevel=stacklevel)
+   :param assertion: executable object, typically lambda with the assertion that should be ignored.
+   :param default_return: return value to be used if the assertion is ignored.
+   :param message: dummy argument that can be used to provide an explanation why the assertion needs to be ignored.
+   :return: The result of calling 'assertion' or 'default_return' if the assertion was ignored.
+   '''
+   import os
+   if os.environ.get('PROCESS_IGNORED_GRAALPYTHON_ASSERTS', None) is None:
+      return default_return
+   result = assertion()
+   if message is not None:
+      print("\nIgnored assertion '{}' is passing! Stack trace:".format(message))
+   else:
+      print("\nIgnored assertion is passing! Stack trace:")
+   import sys
+   import traceback
+   traceback.print_stack(f=sys._getframe().f_back, limit=1)
+   return result

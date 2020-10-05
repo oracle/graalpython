@@ -14,6 +14,7 @@ import test.support
 import textwrap
 import unittest
 import warnings
+from test.support.graalpython import graalpython_ignore
 
 
 # count the number of test runs, used to create unique
@@ -448,7 +449,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(sys.float_info), 11)
         self.assertEqual(sys.float_info.radix, 2)
         self.assertEqual(len(sys.int_info), 2)
-        self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
+        graalpython_ignore(lambda: self.assertTrue(sys.int_info.bits_per_digit % 5 == 0), message='implementation specific')
         self.assertTrue(sys.int_info.sizeof_digit >= 1)
         self.assertEqual(type(sys.int_info.bits_per_digit), int)
         self.assertEqual(type(sys.int_info.sizeof_digit), int)
@@ -533,6 +534,10 @@ class SysModuleTest(unittest.TestCase):
         INTERN_NUMRUNS += 1
         self.assertRaises(TypeError, sys.intern)
         s = "never interned before" + str(INTERN_NUMRUNS)
+        # GraalPython patch: added the following line
+        # The docs does not seem to indicate that 'sys.intern(s) is s'
+        # should hold in general unless 's' was already an interned string
+        s = sys.intern(s)
         self.assertTrue(sys.intern(s) is s)
         s2 = s.swapcase().swapcase()
         self.assertTrue(sys.intern(s2) is s)
@@ -829,6 +834,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertIn(c, range(b - 50, b + 50))
 
     @test.support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_is_finalizing(self):
         self.assertIs(sys.is_finalizing(), False)
         # Don't use the atexit module because _Py_Finalizing is only set
@@ -851,6 +857,7 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(stdout.rstrip(), b'True')
 
     @test.support.requires_type_collecting
+    @support.impl_detail("finalization", graalvm=False)
     def test_issue20602(self):
         # sys.flags and sys.float_info were wiped during shutdown.
         code = """if 1:

@@ -43,6 +43,7 @@ package com.oracle.graal.python.test.parser;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.parser.sst.SSTCheckOffsetVisitor;
 import com.oracle.graal.python.parser.sst.SSTNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParser;
@@ -97,6 +98,7 @@ public class ParserTestBase {
         PythonParser parser = context.getCore().getParser();
         Node result = ((PythonParserImpl) parser).parseN(mode, context.getCore(), source, fd, null);
         lastGlobalScope = ((PythonParserImpl) parser).getLastGlobaScope();
+        lastSST = ((PythonParserImpl) parser).getLastSST();
         return result;
     }
 
@@ -258,6 +260,12 @@ public class ParserTestBase {
 
         }
         assertDescriptionMatches(scopes.toString(), goldenScopeFile);
+    }
+
+    public void checkSSTNodeOffsets(SSTNode node) {
+        SSTCheckOffsetVisitor checker = new SSTCheckOffsetVisitor(node);
+        boolean result = node.accept(checker);
+        assertTrue(checker.getMessage(), result);
     }
 
     protected String printTreeToString(Node node) {
@@ -428,6 +436,7 @@ public class ParserTestBase {
 
     public void checkScopeAndTree(String source, PythonParser.ParserMode mode) throws Exception {
         checkScopeResult(source, mode);
+        checkSSTNodeOffsets(lastSST);
         checkTreeResult(source, mode);
     }
 
@@ -437,10 +446,12 @@ public class ParserTestBase {
 
     public void checkTreeResult(String source) throws Exception {
         checkTreeResult(source, PythonParser.ParserMode.File);
+        checkSSTNodeOffsets(lastSST);
     }
 
     public void checkScopeAndTreeFromFile(File testFile) throws Exception {
         checkScopeFromFile(testFile, true);
+        checkSSTNodeOffsets(lastSST);
         checkTreeFromFile(testFile, true);
     }
 }

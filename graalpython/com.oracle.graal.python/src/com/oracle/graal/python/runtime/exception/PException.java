@@ -47,9 +47,9 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -204,8 +204,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
             return false;
         }
         Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
-        return IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.SyntaxError) ||
-                        IsSubtypeNode.getUncached().execute(clazz, PythonBuiltinClassType.SyntaxError);
+        if (clazz instanceof PythonBuiltinClass) {
+            clazz = ((PythonBuiltinClass) clazz).getType();
+        }
+        // these are the only ones we'll raise, we don't want to report user subtypes of SyntaxError
+        // as Truffle syntax errors
+        return clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError;
     }
 
     public void setIncompleteSource(boolean val) {

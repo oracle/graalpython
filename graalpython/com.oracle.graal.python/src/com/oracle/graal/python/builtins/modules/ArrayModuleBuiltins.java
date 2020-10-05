@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -274,13 +275,12 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             switch (type) {
                 case 'c':
                 case 'b':
-                    return factory().createArray(cls, new byte[0]);
                 case 'B':
-                    return factory().createArray(cls, new byte[0]);
+                    return factory().createArray(cls, PythonUtils.EMPTY_BYTE_ARRAY);
                 case 'i':
-                    return factory().createArray(cls, new int[0]);
+                    return factory().createArray(cls, PythonUtils.EMPTY_INT_ARRAY);
                 case 'd':
-                    return factory().createArray(cls, new double[0]);
+                    return factory().createArray(cls, PythonUtils.EMPTY_DOUBLE_ARRAY);
                 default:
                     return null;
             }

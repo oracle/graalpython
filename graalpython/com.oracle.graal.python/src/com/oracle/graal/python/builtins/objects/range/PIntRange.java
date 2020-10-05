@@ -111,12 +111,17 @@ public final class PIntRange extends PRange {
     }
 
     @ExportMessage
-    public int length() {
+    public int lengthWithState(@SuppressWarnings("unused") ThreadState state) {
         return length;
     }
 
     @ExportMessage
     public boolean isTrue() {
+        return length != 0;
+    }
+
+    @ExportMessage
+    public boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {
         return length != 0;
     }
 

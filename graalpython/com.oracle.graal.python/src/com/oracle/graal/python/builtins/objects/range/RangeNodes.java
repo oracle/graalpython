@@ -45,14 +45,14 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.range.RangeNodesFactory.LenOfRangeNodeFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.nodes.util.ExactMath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -87,73 +87,76 @@ public abstract class RangeNodes {
             checkStepZero(stepBI, raise);
             BigInteger startBI = startToBI.execute(start);
             BigInteger stopBI = stopToBI.execute(stop);
-            BigInteger len = (BigInteger) lenOfRangeNode.execute(startBI, stopBI, stepBI);
+            BigInteger len = lenOfRangeNode.execute(startBI, stopBI, stepBI);
             return factory.createBigRange(factory.createInt(startBI), factory.createInt(stopBI), factory.createInt(stepBI), factory.createInt(len));
         }
 
     }
 
+    // Base class used just for code sharing
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class LenOfIntRangeBaseNode extends Node {
+
+        public abstract int executeInt(int start, int stop, int step) throws OverflowException;
+
+        @Specialization(guards = {"step > 0", "lo > 0", "lo < hi"})
+        static int simple(int lo, int hi, int step) {
+            return 1 + ((hi - 1 - lo) / step);
+        }
+
+        @Specialization(guards = {"step > 0", "lo >= hi"})
+        static int zero1(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
+            return 0;
+        }
+
+        @Specialization(guards = {"step < 0", "lo < 0", "lo > hi"})
+        static int simpleNegative(int lo, int hi, int step) {
+            return 1 + ((lo - 1 - hi) / -step);
+        }
+
+        @Specialization(guards = {"step < 0", "lo <= hi"})
+        static int zero2(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
+            return 0;
+        }
+    }
+
     /**
-     * Attempts to produce result of the same type as the arguments, otherwise throws
-     * {@link ArithmeticException}. It is responsibility of the caller to widen the arguments' types
-     * if necessary.
+     * Computes the length of a range given its start, stop, step. Produces the result of the same
+     * type as the arguments ({@code int} vs {@link BigInteger}). Overflow with integer arguments is
+     * silent! However, unwanted overflows are checked with an assertion.
      */
     @GenerateNodeFactory
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    public abstract static class LenOfRangeNode extends Node {
-        public abstract Object execute(Object start, Object stop, Object step);
+    public abstract static class LenOfRangeNode extends LenOfIntRangeBaseNode {
+        public abstract BigInteger execute(BigInteger start, BigInteger stop, BigInteger step);
 
+        @Override // removes the checked exception
         public abstract int executeInt(int start, int stop, int step);
-
-        public int len(int start, int stop, int step) throws ArithmeticException {
-            return executeInt(start, stop, step);
-        }
 
         public int len(SliceInfo slice) throws ArithmeticException {
             return executeInt(slice.start, slice.stop, slice.step);
         }
 
-        @Specialization(guards = {"step > 0", "lo > 0", "lo < hi"})
-        int simple(int lo, int hi, int step) {
-            return 1 + ((hi - 1 - lo) / step);
-        }
-
-        @Specialization(guards = {"step > 0", "lo >= hi"})
-        int zero1(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
-            return 0;
-        }
-
         @Specialization(guards = {"step > 0", "lo < hi"})
-        int mightBeBig1(int lo, int hi, int step) throws ArithmeticException {
-            long diff = Math.subtractExact(Math.subtractExact(hi, (long) lo), 1);
-            return Math.toIntExact(Math.addExact(diff / step, 1));
-        }
-
-        @Specialization(guards = {"step < 0", "lo < 0", "lo > hi"})
-        int simpleNegative(int lo, int hi, int step) {
-            return 1 + ((lo - 1 - hi) / -step);
-        }
-
-        @Specialization(guards = {"step < 0", "lo <= hi"})
-        int zero2(@SuppressWarnings("unused") int lo, @SuppressWarnings("unused") int hi, @SuppressWarnings("unused") int step) {
-            return 0;
+        static int mightBeBig1(int lo, int hi, int step) throws ArithmeticException {
+            long diff = (hi - (long) lo) - 1L;
+            long result = (diff / step) + 1L;
+            assert result == (int) result;
+            return (int) result;
         }
 
         @Specialization(guards = {"step < 0", "lo > hi"})
-        int mightBeBig2(int lo, int hi, int step) throws ArithmeticException {
-            long diff = Math.subtractExact(Math.subtractExact(lo, (long) hi), 1);
-            return Math.toIntExact(Math.addExact(diff / -(long) step, 1));
-        }
-
-        @TruffleBoundary
-        Object doBigInt(int lo, int hi, int step) {
-            return doBigInt(BigInteger.valueOf(lo), BigInteger.valueOf(hi), BigInteger.valueOf(step));
+        static int mightBeBig2(int lo, int hi, int step) throws ArithmeticException {
+            long diff = (lo - (long) hi) - 1L;
+            long result = (diff / -(long) step) + 1L;
+            assert result == (int) result;
+            return (int) result;
         }
 
         @Specialization
         @TruffleBoundary
-        Object doBigInt(BigInteger lo, BigInteger hi, BigInteger step) {
+        static Object doBigInt(BigInteger lo, BigInteger hi, BigInteger step) {
             BigInteger diff;
             BigInteger zero = BigInteger.ZERO;
             BigInteger one = BigInteger.ONE;
@@ -173,14 +176,27 @@ public abstract class RangeNodes {
 
             return n;
         }
+    }
 
-        @Specialization
-        Object doPint(PInt start, PInt stop, PInt step) {
-            return doBigInt(start.getValue(), stop.getValue(), step.getValue());
+    /**
+     * Attempts to produce length of an int range given its start, stop and step. This calculation
+     * may overflow, which results in {@link OverflowException}. It is then the responsibility of
+     * the caller to widen the arguments' types if necessary.
+     */
+    @GenerateNodeFactory
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class LenOfIntRangeNodeExact extends LenOfIntRangeBaseNode {
+        @Specialization(guards = {"step > 0", "lo < hi"})
+        static int mightBeBig1(int lo, int hi, int step) throws OverflowException {
+            long diff = ExactMath.subtractExact(ExactMath.subtractExact(hi, (long) lo), 1);
+            return ExactMath.toIntExact(ExactMath.addExact(diff / step, 1));
         }
 
-        public static LenOfRangeNode create() {
-            return LenOfRangeNodeFactory.create();
+        @Specialization(guards = {"step < 0", "lo > hi"})
+        static int mightBeBig2(int lo, int hi, int step) throws OverflowException {
+            long diff = ExactMath.subtractExact(ExactMath.subtractExact(lo, (long) hi), 1);
+            return ExactMath.toIntExact(ExactMath.addExact(diff / -(long) step, 1));
         }
     }
 

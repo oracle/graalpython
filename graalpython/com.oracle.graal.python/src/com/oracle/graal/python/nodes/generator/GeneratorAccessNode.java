@@ -46,8 +46,8 @@ final class GeneratorAccessNode extends Node {
     private static final byte TRUE = 1;
     private static final byte FALSE = 2;
 
-    @CompilationFinal(dimensions = 1) private byte[] active = new byte[0];
-    @CompilationFinal(dimensions = 1) private int[] indices = new int[0];
+    @CompilationFinal(dimensions = 1) private byte[] active = PythonUtils.EMPTY_BYTE_ARRAY;
+    @CompilationFinal(dimensions = 1) private int[] indices = PythonUtils.EMPTY_INT_ARRAY;
 
     private GeneratorAccessNode() {
         // private constructor

@@ -51,6 +51,8 @@ import java.math.RoundingMode;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -70,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -88,11 +91,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -161,50 +163,55 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundLongInt(long arg, int n) {
+        public Object roundLongInt(long arg, int n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg, n));
+            return makeInt(op(arg, n), intOverflow);
         }
 
         @Specialization
-        public Object roundPIntInt(PInt arg, int n) {
+        public Object roundPIntInt(PInt arg, int n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
-            return makeInt(op(arg.getValue(), n));
+            return makeInt(op(arg.getValue(), n), intOverflow);
         }
 
         @Specialization
-        public Object roundLongLong(long arg, long n) {
-            if (n >= 0) {
-                return arg;
-            }
-            if (n < Integer.MIN_VALUE) {
-                return 0;
-            }
-            return makeInt(op(arg, (int) n));
-        }
-
-        @Specialization
-        public Object roundPIntLong(PInt arg, long n) {
+        public Object roundLongLong(long arg, long n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
             }
             if (n < Integer.MIN_VALUE) {
                 return 0;
             }
-            return makeInt(op(arg.getValue(), (int) n));
+            return makeInt(op(arg, (int) n), intOverflow);
         }
 
         @Specialization
-        public Object roundPIntLong(long arg, PInt n) {
+        public Object roundPIntLong(PInt arg, long n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
+            if (n >= 0) {
+                return arg;
+            }
+            if (n < Integer.MIN_VALUE) {
+                return 0;
+            }
+            return makeInt(op(arg.getValue(), (int) n), intOverflow);
+        }
+
+        @Specialization
+        public Object roundPIntLong(long arg, PInt n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg, n.intValueExact()));
+                return makeInt(op(arg, n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -212,12 +219,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntPInt(PInt arg, PInt n) {
+        public Object roundPIntPInt(PInt arg, PInt n,
+                        @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
             }
             try {
-                return makeInt(op(arg.getValue(), n.intValueExact()));
+                return makeInt(op(arg.getValue(), n.intValueExact()), intOverflow);
             } catch (OverflowException e) {
                 // n is < -2^31, max. number of base-10 digits in BigInteger is 2^31 * log10(2)
                 return 0;
@@ -230,33 +238,52 @@ public class IntBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
         }
 
-        private Object makeInt(BigDecimal d) {
+        private Object makeInt(BigDecimal d, BranchProfile intOverflow) {
             try {
                 return intValueExact(d);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // does not fit int, so try long
+                intOverflow.enter();
             }
             try {
                 return longValueExact(d);
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 // does not fit long, try BigInteger
             }
             try {
-                return factory().createInt(d.toBigIntegerExact());
-            } catch (ArithmeticException e) {
+                // lazy factory initialization should serve as branch profile
+                return factory().createInt(toBigIntegerExact(d));
+            } catch (OverflowException e) {
                 // has non-zero fractional part, which should not happen
                 throw CompilerDirectives.shouldNotReachHere("non-integer produced after rounding an integer", e);
             }
         }
 
         @TruffleBoundary
-        private static int intValueExact(BigDecimal d) {
-            return d.intValueExact();
+        private static BigInteger toBigIntegerExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.toBigIntegerExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         @TruffleBoundary
-        private static long longValueExact(BigDecimal d) {
-            return d.longValueExact();
+        private static int intValueExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.intValueExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
+        }
+
+        @TruffleBoundary
+        private static long longValueExact(BigDecimal d) throws OverflowException {
+            try {
+                return d.longValueExact();
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         @TruffleBoundary
@@ -1357,10 +1384,13 @@ public class IntBuiltins extends PythonBuiltins {
             } catch (OverflowException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
-                    return factory().createInt(op(PInt.longToBigInteger(left), rightI));
-                } else {
-                    throw raise(PythonErrorType.OverflowError);
+                    try {
+                        return factory().createInt(op(PInt.longToBigInteger(left), rightI));
+                    } catch (OverflowException ex) {
+                        // fallback to the raise of overflow error
+                    }
                 }
+                throw raise(PythonErrorType.OverflowError);
             }
         }
 
@@ -1392,7 +1422,7 @@ public class IntBuiltins extends PythonBuiltins {
         protected PInt doGuardedBiI(BigInteger left, int right) {
             try {
                 return factory().createInt(op(left, right));
-            } catch (ArithmeticException e) {
+            } catch (OverflowException e) {
                 throw raise(PythonErrorType.OverflowError);
             }
         }
@@ -1432,8 +1462,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public static BigInteger op(BigInteger left, int right) {
-            return left.shiftLeft(right);
+        public static BigInteger op(BigInteger left, int right) throws OverflowException {
+            try {
+                return left.shiftLeft(right);
+            } catch (ArithmeticException ex) {
+                throw OverflowException.INSTANCE;
+            }
         }
 
         private void raiseNegativeShiftCount(boolean cond) {
@@ -2448,7 +2482,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_S_OBJ_TO_BYTES, object);
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
         }
     }
 
@@ -2510,63 +2544,51 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
         @Child private BuiltinConstructors.FloatNode floatNode;
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FormatNodeClinicProviderGen.INSTANCE;
+        }
+
         // We cannot use PythonArithmeticTypes, because for empty format string we need to call the
-        // boolean's __str__ and not int's __str__
-        @Specialization
-        Object formatB(VirtualFrame frame, boolean self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            return doFormatInt(self ? 1 : 0, formatString);
+        // boolean's __str__ and not int's __str__ (that specialization is inherited)
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatB(boolean self, String formatString) {
+            return formatI(self ? 1 : 0, formatString);
         }
 
-        @Specialization
-        Object formatI(VirtualFrame frame, int self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            return doFormatInt(self, formatString);
-        }
-
-        private String doFormatInt(int self, String formatString) {
-            PythonCore core = getCore();
-            Spec spec = getSpec(formatString, core);
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatI(int self, String formatString) {
+            PRaiseNode raiseNode = getRaiseNode();
+            Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
-                return formatDouble(core, spec, self);
+                return formatDouble(raiseNode, spec, self);
             }
-            validateIntegerSpec(core, spec);
-            return formatInt(self, core, spec);
+            validateIntegerSpec(raiseNode, spec);
+            return formatInt(self, raiseNode, spec);
         }
 
-        @Specialization
-        Object formatL(VirtualFrame frame, long self, Object formatString,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            return formatPI(frame, factory().createInt(self), formatString, castToStringNode);
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatL(VirtualFrame frame, long self, String formatString) {
+            return formatPI(frame, factory().createInt(self), formatString);
         }
 
-        @Specialization
-        Object formatPI(VirtualFrame frame, PInt self, Object formatStringObj,
-                        @Shared("cast") @Cached CastToJavaStringNode castToStringNode) {
-            String formatString = castFormatString(formatStringObj, castToStringNode);
-            if (formatString.isEmpty()) {
-                return ensureStrCallNode().executeObject(frame, self);
-            }
-            PythonCore core = getCore();
-            Spec spec = getSpec(formatString, core);
+        @Specialization(guards = "!formatString.isEmpty()")
+        Object formatPI(VirtualFrame frame, PInt self, String formatString) {
+            PRaiseNode raiseNode = getRaiseNode();
+            Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
-                return formatDouble(core, spec, asDouble(frame, self));
+                // lazy init of floatNode serves as branch profile
+                double doubleVal = asDouble(frame, self);
+                return formatDouble(raiseNode, spec, doubleVal);
             }
-            validateIntegerSpec(core, spec);
-            return formatPInt(self, core, spec);
+            validateIntegerSpec(raiseNode, spec);
+            return formatPInt(self, raiseNode, spec);
         }
 
         private double asDouble(VirtualFrame frame, Object self) {
@@ -2578,8 +2600,8 @@ public class IntBuiltins extends PythonBuiltins {
             return (double) floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, self);
         }
 
-        private static Spec getSpec(String formatString, PythonCore core) {
-            Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+        private static Spec getSpec(String formatString, PRaiseNode raiseNode) {
+            Spec spec = InternalFormat.fromText(raiseNode, formatString, __FORMAT__);
             return spec.withDefaults(Spec.NUMERIC);
         }
 
@@ -2590,35 +2612,35 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String formatDouble(PythonCore core, Spec spec, double value) {
-            FloatFormatter formatter = new FloatFormatter(core, spec);
+        private static String formatDouble(PRaiseNode raiseNode, Spec spec, double value) {
+            FloatFormatter formatter = new FloatFormatter(raiseNode, spec);
             formatter.format(value);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatInt(int self, PythonCore core, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+        private static String formatInt(int self, PRaiseNode raiseNode, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatPInt(PInt self, PythonCore core, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+        private static String formatPInt(PInt self, PRaiseNode raiseNode, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self.getValue());
             return formatter.pad().getResult();
         }
 
-        private static void validateIntegerSpec(PythonCore core, Spec spec) {
+        private static void validateIntegerSpec(PRaiseNode raiseNode, Spec spec) {
             if (Spec.specified(spec.precision)) {
-                throw core.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
+                throw raiseNode.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
             }
             if (spec.type == 'c') {
                 if (Spec.specified(spec.sign)) {
-                    throw core.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
                 } else if (spec.alternate) {
-                    throw core.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
                 }
             }
         }

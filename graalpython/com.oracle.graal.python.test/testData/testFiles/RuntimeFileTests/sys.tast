@@ -45,12 +45,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [1,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
-                      GetAnyAttributeNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattribute__
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2103,2230]`version_info_type = ...`
@@ -168,12 +164,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
-                      GetAnyAttributeNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattribute__
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2616,2674]`get_set_descriptor =...`
@@ -466,12 +458,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
-                      GetAnyAttributeNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattribute__
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
                     FrameReturnNode SourceSection: [3399,3669]`return make_named_tu...`
@@ -553,12 +541,8 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         WriteLocalFrameSlotNodeGen SourceSection: None
                           Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
-                      GetAnyAttributeNodeGen SourceSection: None
+                      IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __getattribute__
-                        IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
                         CachedDispatchFirst SourceSection: None
                     FrameReturnNode SourceSection: [3830,4059]`return make_named_tu...`

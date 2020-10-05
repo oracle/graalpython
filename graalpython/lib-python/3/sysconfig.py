@@ -1,7 +1,8 @@
 """Access to Python's configuration information."""
 
-import os
 import sys
+
+import os
 from os.path import pardir, realpath
 
 __all__ = [
@@ -418,11 +419,18 @@ def _generate_posix_vars():
 def _init_posix(vars):
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see _generate_posix_vars()
-    # TODO: Truffle reneable me once we know what goes on in here (GR-9137)
+    #
+    # GraalPython patch: following commented out code would import module named,
+    # e.g., _sysconfigdata__linux_x86_64-linux-gnu, which should contain the
+    # configuration data. We would need to distribute such module for all supported
+    # systems, instead, we reuse the logic from our patch of distutils.
+    #
     # name = _get_sysconfigdata_name()
     # _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
     # build_time_vars = _temp.build_time_vars
-    # vars.update(build_time_vars)
+    #
+    import _sysconfig
+    vars.update(_sysconfig._get_posix_vars())
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""

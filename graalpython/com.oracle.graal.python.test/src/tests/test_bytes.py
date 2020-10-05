@@ -239,6 +239,13 @@ def test_setslice():
     b[5:10] = [4, 5, 6, 7, 8]
     assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
 
+    # assign list with integers backed by generic storage
+    b = bytearray(b"hellohellohello")
+    rhs = ['hello', 5, 6, 7, 8]
+    rhs[0] = 4
+    b[5:10] = rhs
+    assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
+
     # assign range
     b = bytearray(b"hellohellohello")
     b[5:10] = range(5)
@@ -705,6 +712,15 @@ def test_bytes_init():
     
     bytes.__init__(ba, b'zzz')
     assert ba == bytes(b'abc')
+    
+def test_bytes_mod():
+    assert b'%s' % (b'a') == b'a'
+    raised = False
+    try:
+        b'%s' % (b'a', b'b') 
+    except TypeError:
+        raised = True
+    assert raised
     
 class BaseLikeBytes:
 
