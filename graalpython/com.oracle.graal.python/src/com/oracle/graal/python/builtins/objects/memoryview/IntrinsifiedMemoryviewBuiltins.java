@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -711,10 +712,112 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public static abstract class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int nativeLen(IntrinsifiedPMemoryView self,
+        int len(IntrinsifiedPMemoryView self,
                         @Cached ConditionProfile zeroDimProfile) {
             self.checkReleased(this);
             return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+        }
+    }
+
+    @Builtin(name = "itemsize", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class ItemSizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.getItemSize();
+        }
+    }
+
+    @Builtin(name = "nbytes", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class NBytesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.getLength();
+        }
+    }
+
+    @Builtin(name = "obj", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class ObjNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.getOwner() != null ? self.getOwner() : PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "format", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class FormatNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.getFormat() != null ? self.getFormat() : "B";
+        }
+    }
+
+    @Builtin(name = "shape", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class ShapeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile nullProfile) {
+            self.checkReleased(this);
+            if (nullProfile.profile(self.getBufferShape() == null)) {
+                return factory().createEmptyTuple();
+            }
+            return factory().createTuple(new IntSequenceStorage(self.getBufferShape()));
+        }
+    }
+
+    @Builtin(name = "strides", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class StridesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile nullProfile) {
+            self.checkReleased(this);
+            if (nullProfile.profile(self.getBufferStrides() == null)) {
+                return factory().createEmptyTuple();
+            }
+            return factory().createTuple(new IntSequenceStorage(self.getBufferStrides()));
+        }
+    }
+
+    @Builtin(name = "suboffsets", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class SuboffsetsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile nullProfile) {
+            self.checkReleased(this);
+            if (nullProfile.profile(self.getBufferSuboffsets() == null)) {
+                return factory().createEmptyTuple();
+            }
+            return factory().createTuple(new IntSequenceStorage(self.getBufferSuboffsets()));
+        }
+    }
+
+    @Builtin(name = "readonly", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class ReadonlyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.isReadOnly();
+        }
+    }
+
+    @Builtin(name = "ndim", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class NDimNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.getDimensions();
         }
     }
 }
