@@ -2290,7 +2290,7 @@ public class IntBuiltins extends PythonBuiltins {
             return recursiveNode.execute(frame, self, count, byteorder, signed);
         }
 
-        protected static ToBytesNode create() {
+        public static ToBytesNode create() {
             return IntBuiltinsFactory.ToBytesNodeFactory.create(null);
         }
     }

@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -85,7 +86,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -174,19 +174,23 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        // it's b'\x0c\xaf\xaf\xe1', original magic number of GraalPython
-        private static int BASE_MAGIC_NUMBER = 212840417;
-
         @Specialization
-        public PBytes run() {
-            // The magic number in CPython is usually increased by 10.
-            int number = BASE_MAGIC_NUMBER + 10 * SerializationUtils.VERSION;
-            byte[] magicNumber = new byte[4];
-            magicNumber[0] = (byte) (number >>> 24);
-            magicNumber[1] = (byte) (number >>> 16);
-            magicNumber[2] = (byte) (number >>> 8);
-            magicNumber[3] = (byte) (number);
-            return factory().createBytes(magicNumber);
+        public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
+                        @SuppressWarnings("unused") @Cached IntBuiltins.ToBytesNode toBytesNode,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary pol,
+                        @Cached("getMagicNumberBytes(frame, toBytesNode, pol)") PBytes magicBytes) {
+            return magicBytes;
+        }
+
+        protected PBytes getMagicNumberBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
+            try {
+                PBytes magic = toBytesNode.execute(frame, 3413, 2, "little", false);
+                byte[] magicBytes = pol.getBufferBytes(magic);
+                return factory().createBytes(new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'});
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("magicBytes does not support getBufferBytes()");
+            }
         }
     }
 
