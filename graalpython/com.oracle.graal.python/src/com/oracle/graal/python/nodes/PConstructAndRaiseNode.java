@@ -120,7 +120,8 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})
-    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object[] formatArgs,
+    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") String format,
+                    @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @CachedLanguage PythonLanguage language,
@@ -152,7 +153,7 @@ public abstract class PConstructAndRaiseNode extends Node {
         Object[] args = new Object[arguments.length + 1];
         args[0] = formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
-        return raiseInternal(frame, type,cause, args, keywords, callNode, language, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
     }
 
     // ImportError helpers
