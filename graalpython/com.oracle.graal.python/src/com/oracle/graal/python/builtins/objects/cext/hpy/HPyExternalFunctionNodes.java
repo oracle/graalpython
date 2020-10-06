@@ -711,16 +711,17 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
-            return handle;
+            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
         }
 
         @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
         Object doNonNullHandle(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
+                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
-            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
+            return asPythonObjectNode.execute(nativeContext, handle);
         }
 
         @Specialization(replaces = {"doIntegerNull", "doNonNullHandle"})
