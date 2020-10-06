@@ -191,6 +191,7 @@ public abstract class GraalHPyDef {
         HPY_NB_TRUE_DIVIDE(37, SpecialMethodNames.__TRUEDIV__, HPyFuncSignature.BINARYFUNC),
         HPY_NB_XOR(38, SpecialMethodNames.__XOR__, HPyFuncSignature.BINARYFUNC),
         HPY_SQ_ITEM(44, SpecialMethodNames.__GETITEM__, HPyFuncSignature.SSIZEARGFUNC),
+        HPY_SQ_LENGTH(45, SpecialMethodNames.__LEN__, HPyFuncSignature.LENFUNC),
         HPY_TP_INIT(60, SpecialMethodNames.__INIT__, HPyFuncSignature.INITPROC),
         HPY_TP_NEW(65, SpecialMethodNames.__NEW__, HPyFuncSignature.KEYWORDS),
         HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFuncSignature.REPRFUNC),
