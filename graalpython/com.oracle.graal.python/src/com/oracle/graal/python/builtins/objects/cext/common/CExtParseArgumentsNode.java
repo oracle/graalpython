@@ -1035,13 +1035,13 @@ public abstract class CExtParseArgumentsNode {
             return out;
         }
 
-        @Specialization(replaces = "doNoKeywords", limit = "1")
+        @Specialization(replaces = "doNoKeywords")
         static Object doGeneric(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
-                        @CachedLibrary("kwdnames") InteropLibrary kwdnamesLib,
+                        @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached PCallCExtFunction callCStringToString) throws InteropException {
 
