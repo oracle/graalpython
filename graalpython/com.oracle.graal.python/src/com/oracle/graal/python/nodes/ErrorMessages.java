@@ -227,6 +227,8 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";
+    public static final String FD_IS_GREATER_THAN_MAXIMUM = "fd is greater than maximum";
+    public static final String FD_IS_LESS_THAN_MINIMUM = "fd is less than minimum";
     public static final String FILE_NOT_OPENED_FOR_READING = "file not opened for reading";
     public static final String FILL_CHAR_MUST_BE_LENGTH_1 = "The fill character must be exactly one character long";
     public static final String FILTER_SPEC_MUST_BE_DICT = "Filter specifier must be a dict or dict-like object";
@@ -461,7 +463,9 @@ public abstract class ErrorMessages {
     public static final String RETURNED_NULL_WO_SETTING_ERROR = "%s returned NULL without setting an error";
     public static final String RETURNED_RESULT_WITH_ERROR_SET = "%s returned a result with an error set";
     public static final String RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S = "%s returned an unexpected return code; expected 'int' but was %s";
+    public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "%s in %s conflicts with class variable";
+    public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";

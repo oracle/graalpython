@@ -25,7 +25,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
@@ -95,6 +97,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemDynamicNode;
@@ -111,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -121,12 +125,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -155,6 +163,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -997,15 +1006,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nfi_open", minNumOfPositionalArgs = 2, parameterNames = {"pathname", "flags"})
+    @Builtin(name = "nfi_open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", customConversion = "createPathConversionNode")
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class NfiOpenNode extends PythonFileNode {
+    public abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
+
+        public static PathConversionNode createPathConversionNode() {
+            return PosixModuleBuiltinsFactory.PathConversionNodeGen.create("open", "path", false, false);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiOpenNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object open(VirtualFrame frame, String pathname, int flags,
+        Object open(VirtualFrame frame, PathT path, int flags, int mode, Object dir_fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.open(getPosixSupport(), pathname, flags);
+            // TODO C-string proxy instead of new String()
+            return posixLib.open(getPosixSupport(), new String(path.narrow), flags);
         }
     }
 
@@ -2134,6 +2155,157 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static boolean getBlocking(SelectableChannel channel) {
             return channel.isBlocking();
+        }
+    }
+
+    /**
+     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
+     * structure, but only contains the results of the conversion.
+     */
+    public static class PathT {
+
+        public static final PathT DEFAULT = new PathT();
+
+        /**
+         * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
+         * null character).
+         */
+        public final byte[] narrow;
+
+        // TODO: there will be at least one additional field - listdir needs to determine whether it
+        // should return str or bytes
+
+        private PathT() {
+            narrow = null;
+        }
+
+        public PathT(byte[] narrow) {
+            assert narrow != null;
+            this.narrow = narrow;
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code path_converter()}. Returns either an instance of {@code PathT}
+     * or an {@code int} if {@code allowFd} is {@code true} and the caller provides an integer.
+     */
+    public abstract static class PathConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+
+        private final String functionNameWithColon;
+        private final String argumentName;
+        protected final boolean nullable;
+        protected final boolean allowFd;
+
+        public PathConversionNode(String functionName, String argumentName, boolean nullable, boolean allowFd) {
+            this.functionNameWithColon = functionName != null ? functionName + ": " : "";
+            this.argumentName = argumentName != null ? argumentName : "path";
+            this.nullable = nullable;
+            this.allowFd = allowFd;
+        }
+
+        @Specialization(guards = "nullable")
+        PathT doNone(@SuppressWarnings("unused") PNone value) {
+            return PathT.DEFAULT;
+        }
+
+        @Specialization(guards = "allowFd")
+        int doFd(int value) {
+            return value;
+        }
+
+        @Specialization
+        PathT doUnicode(String value) {
+            // TODO replace getStringBytes with PyUnicode_FSConverter equivalent
+            return createPath(getStringBytes(value));
+        }
+
+        @Specialization
+        PathT doUnicode(PString value,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            return doUnicode(castToJavaStringNode.execute(value));
+        }
+
+        @Specialization
+        PathT doBytes(VirtualFrame frame, PBytesLike value,
+                        @Cached BytesNodes.ToBytesNode toByteArrayNode) {
+            return createPath(toByteArrayNode.execute(frame, value));
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
+        PathT doBuffer(VirtualFrame frame, Object value,
+                        // TODO when is shared dispatched library better than (non-shared) specialized library?
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached WarningsModuleBuiltins.WarnNode warningNode) {
+            warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                            ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+            try {
+                return createPath(lib.getBufferBytes(value));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
+            }
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "lib.canBeIndex(value)"}, limit = "3")
+        int doIndex(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            // TODO move this somewhere else, it will be needed by dir_fd_converter
+            Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
+            long l = castToLongNode.execute(o);
+            if (l > Integer.MAX_VALUE) {
+                throw raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
+            }
+            if (l < Integer.MIN_VALUE) {
+                throw raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
+            }
+            return (int) l;
+        }
+
+        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !lib.canBeIndex(value)"}, limit = "3")
+        Object doGeneric(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            Object func = lib.lookupAttributeOnType(value, __FSPATH__);
+            if (func == PNone.NO_VALUE) {
+                throw raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
+                                getAllowedTypes(), value);
+            }
+            Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
+            if (pathObject instanceof PBytesLike) {
+                return doBytes(frame, (PBytesLike) pathObject, toByteArrayNode);
+            }
+            if (pathObject instanceof PString) {
+                return doUnicode((PString) pathObject, castToJavaStringNode);
+            }
+            if (pathObject instanceof String) {
+                return doUnicode((String) pathObject);
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
+        }
+
+        protected boolean isHandled(Object value) {
+            return PGuards.isPNone(value) && nullable || value instanceof Integer && allowFd || PGuards.isString(value) || PGuards.isBytes(value);
+        }
+
+        private String getAllowedTypes() {
+            return allowFd && nullable ? "string, bytes, os.PathLike, integer or None"
+                            : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
+        }
+
+        private PathT createPath(byte[] path) {
+            for (byte b : path) {
+                if (b == 0) {
+                    throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
+                }
+            }
+            return new PathT(path);
+        }
+
+        @TruffleBoundary
+        private static byte[] getStringBytes(String str) {
+            return str.getBytes();
         }
     }
 }
