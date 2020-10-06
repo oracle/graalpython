@@ -277,54 +277,50 @@ public abstract class GraalHPyContextFunctions {
                 PythonModule module = factory.createPythonModule(mName);
 
                 // process HPy methods
-                {
-                    Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
-                    if (!ptrLib.hasArrayElements(moduleDefines)) {
-                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
-                    }
+                Object moduleDefines = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_DEFINES, moduleDef);
+                if (!ptrLib.hasArrayElements(moduleDefines)) {
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'defines' did not return an array");
+                }
 
-                    long nModuleDefines = ptrLib.getArraySize(moduleDefines);
-                    for (long i = 0; i < nModuleDefines; i++) {
-                        Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
-                        int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
-                        switch (kind) {
-                            case GraalHPyDef.HPY_DEF_KIND_METH:
-                                Object methodDef = callGetterNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
-                                PBuiltinFunction fun = addFunctionNode.execute(context, null, methodDef);
-                                PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                                writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
-                                writeAttrNode.execute(module, fun.getName(), method);
-                                break;
-                            case GraalHPyDef.HPY_DEF_KIND_SLOT:
-                            case GraalHPyDef.HPY_DEF_KIND_MEMBER:
-                            case GraalHPyDef.HPY_DEF_KIND_GETSET:
-                                // silently ignore
-                                // TODO(fa): maybe we should log a warning
-                                break;
-                            default:
-                                assert false : "unknown definition kind";
-                        }
+                long nModuleDefines = ptrLib.getArraySize(moduleDefines);
+                for (long i = 0; i < nModuleDefines; i++) {
+                    Object moduleDefine = ptrLib.readArrayElement(moduleDefines, i);
+                    int kind = castToJavaIntNode.execute(callGetterNode.call(context, GRAAL_HPY_DEF_GET_KIND, moduleDefine));
+                    switch (kind) {
+                        case GraalHPyDef.HPY_DEF_KIND_METH:
+                            Object methodDef = callGetterNode.call(context, GRAAL_HPY_DEF_GET_METH, moduleDefine);
+                            PBuiltinFunction fun = addFunctionNode.execute(context, null, methodDef);
+                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                            writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
+                            writeAttrNode.execute(module, fun.getName(), method);
+                            break;
+                        case GraalHPyDef.HPY_DEF_KIND_SLOT:
+                        case GraalHPyDef.HPY_DEF_KIND_MEMBER:
+                        case GraalHPyDef.HPY_DEF_KIND_GETSET:
+                            // silently ignore
+                            // TODO(fa): maybe we should log a warning
+                            break;
+                        default:
+                            assert false : "unknown definition kind";
                     }
                 }
 
                 // process legacy methods
-                {
-                    Object legacyMethods = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
-                    // the field 'legacy_methods' may be 'NULL'
-                    if (!ptrLib.isNull(legacyMethods)) {
-                        if (!ptrLib.hasArrayElements(legacyMethods)) {
-                            throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
-                        }
+                Object legacyMethods = callGetterNode.call(context, GRAAL_HPY_MODULE_GET_LEGACY_METHODS, moduleDef);
+                // the field 'legacy_methods' may be 'NULL'
+                if (!ptrLib.isNull(legacyMethods)) {
+                    if (!ptrLib.hasArrayElements(legacyMethods)) {
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, "field 'legacyMethods' did not return an array");
+                    }
 
-                        long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                        for (long i = 0; i < nLegacyMethods; i++) {
-                            Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
+                    long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
+                    for (long i = 0; i < nLegacyMethods; i++) {
+                        Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
 
-                            PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
-                            PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
-                            writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
-                            writeAttrNode.execute(module, fun.getName(), method);
-                        }
+                        PBuiltinFunction fun = addLegacyMethodNode.execute(context, legacyMethod);
+                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                        writeAttrToMethodNode.execute(method.getStorage(), SpecialAttributeNames.__MODULE__, mName);
+                        writeAttrNode.execute(module, fun.getName(), method);
                     }
                 }
 
@@ -550,7 +546,7 @@ public abstract class GraalHPyContextFunctions {
             }
 
             try {
-                Object result = invokeNode.execute(getCallTarget(this, language), pythonArguments);
+                Object result = invokeNode.execute(getCallTarget(language), pythonArguments);
                 return asHandleNode.execute(result);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -581,12 +577,10 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        private RootCallTarget getCallTarget(GraalHPyArithmetic receiver, PythonLanguage language) {
-            RootCallTarget callTarget = receiver.callTarget;
+        private RootCallTarget getCallTarget(PythonLanguage language) {
             if (callTarget == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callTarget = createCallTarget(language);
-                receiver.callTarget = callTarget;
             }
             return callTarget;
         }
@@ -594,14 +588,17 @@ public abstract class GraalHPyContextFunctions {
         @TruffleBoundary
         private RootCallTarget createCallTarget(PythonLanguage language) {
             Pair<PythonLanguage, Object> key = Pair.create(language, getOp());
-            WeakReference<RootCallTarget> ctRef = weakCallTargetMap.get(key);
-            RootCallTarget callTarget = ctRef != null ? ctRef.get() : null;
-            if (callTarget == null) {
-                callTarget = PythonUtils.getOrCreateCallTarget(new CallArithmeticRootNode(language, unaryOperator, binaryOperator, inplaceOperator, ternaryOperator));
-                weakCallTargetMap.put(key, new WeakReference<>(callTarget));
+            RootCallTarget cachedCallTarget;
+            synchronized (weakCallTargetMap) {
+                WeakReference<RootCallTarget> ctRef = weakCallTargetMap.get(key);
+                cachedCallTarget = ctRef != null ? ctRef.get() : null;
+                if (cachedCallTarget == null) {
+                    cachedCallTarget = PythonUtils.getOrCreateCallTarget(new CallArithmeticRootNode(language, unaryOperator, binaryOperator, inplaceOperator, ternaryOperator));
+                    weakCallTargetMap.put(key, new WeakReference<>(cachedCallTarget));
+                }
             }
-            assert callTarget != null;
-            return callTarget;
+            assert cachedCallTarget != null;
+            return cachedCallTarget;
         }
 
         private Object getOp() {

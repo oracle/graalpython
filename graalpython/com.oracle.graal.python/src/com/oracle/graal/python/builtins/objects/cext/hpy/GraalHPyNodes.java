@@ -512,7 +512,6 @@ public class GraalHPyNodes {
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
-                        @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached ReadAttributeFromObjectNode readAttributeNode,
@@ -835,7 +834,7 @@ public class GraalHPyNodes {
 
         public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object slotDef);
 
-        @Specialization(limit = "1")
+        @Specialization
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
                         @Cached HPyAddLegacyMethodNode legacyMethodNode,
@@ -1063,7 +1062,7 @@ public class GraalHPyNodes {
         @Specialization(replaces = "doUnsignedIntPositive")
         static long doUnsignedInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
             if (n < 0) {
-                return ((long) n) & 0xffffffffL;
+                return n & 0xffffffffL;
             }
             return n;
         }

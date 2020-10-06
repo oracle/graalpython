@@ -40,14 +40,12 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.util.Supplier;
-
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.truffle.api.nodes.Node.Child;
+import com.oracle.graal.python.util.Supplier;
 
 public enum InplaceArithmetic {
     IAdd(SpecialMethodNames.__IADD__, "+="),
@@ -78,8 +76,7 @@ public enum InplaceArithmetic {
         this.operator = operator;
         this.isTernary = isTernary;
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
-            @Child
-            private PRaiseNode raiseNode = PRaiseNode.create();
+            @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
             @Override
             public Object execute(Object arg, Object arg2) {
