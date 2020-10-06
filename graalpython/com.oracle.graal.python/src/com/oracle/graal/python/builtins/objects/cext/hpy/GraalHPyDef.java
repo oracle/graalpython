@@ -55,6 +55,7 @@ public abstract class GraalHPyDef {
     public static final HiddenKey TYPE_HPY_BASICSIZE = new HiddenKey("hpy_basicsize");
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
+    public static final HiddenKey TYPE_HPY_DESTROY = new HiddenKey("hpy_destroy");
     public static final HiddenKey OBJECT_HPY_NATIVE_SPACE = new HiddenKey("hpy_native_space");
 
     /* enum values of 'HPyDef_Kind' */
@@ -198,7 +199,7 @@ public abstract class GraalHPyDef {
         HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFuncSignature.BINARYFUNC),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFuncSignature.BINARYFUNC),
         // TODO(fa): use a hidden key ?
-        HPY_TP_DESTROY(1000, null, HPyFuncSignature.DESTROYFUNC);
+        HPY_TP_DESTROY(1000, TYPE_HPY_DESTROY, HPyFuncSignature.DESTROYFUNC);
 
         /** The corresponding C enum value. */
         private final int value;

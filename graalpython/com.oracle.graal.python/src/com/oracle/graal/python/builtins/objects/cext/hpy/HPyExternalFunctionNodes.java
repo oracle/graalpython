@@ -126,6 +126,7 @@ public abstract class HPyExternalFunctionNodes {
             case REPRFUNC:
             case GETITERFUNC:
             case ITERNEXTFUNC:
+            case DESTROYFUNC:
                 rootNode = new HPyMethNoargsRoot(language, name, callable, false);
                 break;
             case O:
