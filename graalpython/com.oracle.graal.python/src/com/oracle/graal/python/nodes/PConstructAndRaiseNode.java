@@ -71,46 +71,66 @@ public abstract class PConstructAndRaiseNode extends Node {
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
     public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, Object[] arguments) {
-        return execute(frame, type, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
+        return execute(frame, type, null, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public final PException executeWithArgsOnly(Frame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments) {
+        return execute(frame, type, cause, null, null, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
     public final PException executeWithArgsAndKwargs(Frame frame, PythonBuiltinClassType type, Object[] arguments, PKeyword[] keywords) {
-        return execute(frame, type, null, null, arguments, keywords);
+        return execute(frame, type, null, null, null, arguments, keywords);
+    }
+
+    public final PException executeWithArgsAndKwargs(Frame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords) {
+        return execute(frame, type, cause, null, null, arguments, keywords);
     }
 
     public final PException executeWithFmtMessageAndKwargs(Frame frame, PythonBuiltinClassType type, String format, Object[] formatArgs, PKeyword[] keywords) {
-        return execute(frame, type, format, formatArgs, null, keywords);
+        return execute(frame, type, null, format, formatArgs, null, keywords);
+    }
+
+    public final PException executeWithFmtMessageAndKwargs(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, PKeyword[] keywords) {
+        return execute(frame, type, cause, format, formatArgs, null, keywords);
     }
 
     public final PException executeWithFmtMessageAndArgs(Frame frame, PythonBuiltinClassType type, String format, Object[] formatArgs, Object[] arguments) {
-        return execute(frame, type, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
+        return execute(frame, type, null, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public abstract PException execute(Frame frame, PythonBuiltinClassType type, String format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
+    public final PException executeWithFmtMessageAndArgs(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, Object[] arguments) {
+        return execute(frame, type, cause, format, formatArgs, arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
 
     @CompilerDirectives.TruffleBoundary
     private static String getFormattedMessage(PythonObjectLibrary pol, String format, Object[] formatArgs) {
         return FORMATTER.format(pol, format, formatArgs);
     }
 
-    private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, Object[] arguments, PKeyword[] keywords,
+    private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
                     CallVarargsMethodNode callNode, PythonLanguage language, PythonCore core) {
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(type), arguments, keywords);
+        if (cause != null) {
+            error.setContext(cause);
+            error.setCause(cause);
+        }
         return PRaiseNode.raise(this, error, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})
-    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object[] formatArgs,
+    PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") String format, @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
-        return raiseInternal(frame, type, arguments, keywords, callNode, language, core);
+        return raiseInternal(frame, type, cause, arguments, keywords, callNode, language, core);
     }
 
     @Specialization(guards = {"format != null", "arguments == null"})
-    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, String format, Object[] formatArgs,
+    PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @Cached.Shared("pol") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
@@ -118,11 +138,11 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format};
-        return raiseInternal(frame, type, args, keywords, callNode, language, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
     }
 
     @Specialization(guards = {"format != null", "arguments != null"})
-    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, String format, Object[] formatArgs,
+    PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @Cached.Shared("pol") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
@@ -132,10 +152,14 @@ public abstract class PConstructAndRaiseNode extends Node {
         Object[] args = new Object[arguments.length + 1];
         args[0] = formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
-        return raiseInternal(frame, type, args, keywords, callNode, language, core);
+        return raiseInternal(frame, type,cause, args, keywords, callNode, language, core);
     }
 
     // ImportError helpers
+    private PException raiseImportErrorInternal(Frame frame, PBaseException cause, String format, Object[] formatArgs, PKeyword[] keywords) {
+        return executeWithFmtMessageAndKwargs(frame, PythonBuiltinClassType.ImportError, cause, format, formatArgs, keywords);
+    }
+
     private PException raiseImportErrorInternal(Frame frame, String format, Object[] formatArgs, PKeyword[] keywords) {
         return executeWithFmtMessageAndKwargs(frame, PythonBuiltinClassType.ImportError, format, formatArgs, keywords);
     }
@@ -146,6 +170,10 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseImportError(Frame frame, String format, Object... formatArgs) {
         return raiseImportErrorInternal(frame, format, formatArgs, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    public final PException raiseImportError(Frame frame, PBaseException cause, Object name, Object path, String format, Object... formatArgs) {
+        return raiseImportErrorInternal(frame, cause, format, formatArgs, new PKeyword[]{new PKeyword("name", name), new PKeyword("path", path)});
     }
 
     // OSError helpers
