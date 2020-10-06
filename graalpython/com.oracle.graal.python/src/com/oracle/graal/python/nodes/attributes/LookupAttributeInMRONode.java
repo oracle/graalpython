@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -57,9 +56,10 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -68,22 +68,9 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 @ImportStatic(PythonOptions.class)
 @ReportPolymorphism
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
+    @GenerateUncached
     public abstract static class Dynamic extends PNodeWithContext {
-        private static final DynamicUncached UNCACHED = new DynamicUncached();
-
         public abstract Object execute(Object klass, Object key);
-
-        public static LookupAttributeInMRONode.Dynamic create() {
-            return LookupAttributeInMRONodeGen.DynamicCachedNodeGen.create();
-        }
-
-        public static LookupAttributeInMRONode.Dynamic getUncached() {
-            return UNCACHED;
-        }
-    }
-
-    abstract static class DynamicCached extends Dynamic {
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         protected static boolean compareStrings(String key, String cachedKey) {
             return cachedKey.equals(key);
@@ -97,37 +84,25 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected Object lookup(PythonBuiltinClassType klass, Object key) {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return findAttr(contextRef.get().getCore(), klass, key);
+        protected Object lookup(PythonBuiltinClassType klass, Object key,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
+            return findAttr(ctx.getCore(), klass, key, readAttrNode);
         }
 
         @Specialization(replaces = "lookupConstantMRO")
         protected static Object lookup(Object klass, Object key,
-                        @Cached("create()") GetMroStorageNode getMroNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+                        @Cached GetMroStorageNode getMroNode,
+                        @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
             return lookupSlow(klass, key, getMroNode, readAttrNode, false);
         }
-    }
 
-    static class DynamicUncached extends Dynamic {
-        private final ReadAttributeFromObjectNode readAttrNode = ReadAttributeFromObjectNode.getUncachedForceType();
-        private final GetMroStorageNode getMroNode = GetMroStorageNode.getUncached();
+        public static LookupAttributeInMRONode.Dynamic create() {
+            return LookupAttributeInMRONodeGen.DynamicNodeGen.create();
+        }
 
-        @TruffleBoundary
-        @Override
-        public Object execute(Object klass, Object key) {
-            if (klass instanceof PythonBuiltinClassType) {
-                return findAttr(PythonLanguage.getCore(), (PythonBuiltinClassType) klass, key);
-            } else if (klass instanceof PythonAbstractClass) {
-                return lookupSlow(klass, key, getMroNode, readAttrNode, false);
-            } else {
-                CompilerDirectives.transferToInterpreter();
-                throw new RuntimeException("not implemented: lookup inherited attribute from non-PythonClass");
-            }
+        public static LookupAttributeInMRONode.Dynamic getUncached() {
+            return LookupAttributeInMRONodeGen.DynamicNodeGen.getUncached();
         }
     }
 
@@ -170,17 +145,21 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
      */
     public abstract Object execute(Object klass);
 
-    @TruffleBoundary
     protected static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key) {
+        return findAttr(core, klass, key, ReadAttributeFromDynamicObjectNode.getUncached());
+    }
+
+    protected static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key, ReadAttributeFromDynamicObjectNode readAttrNode) {
         PythonBuiltinClassType current = klass;
-        while (current != PythonBuiltinClassType.PythonObject) {
-            Object value = ReadAttributeFromDynamicObjectNode.getUncached().execute(core.lookupType(current).getStorage(), key);
+        Object value = PNone.NO_VALUE;
+        while (current != null) {
+            value = readAttrNode.execute(core.lookupType(current), key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }
             current = current.getBase();
         }
-        return ReadAttributeFromDynamicObjectNode.getUncached().execute(core.lookupType(current).getStorage(), key);
+        return value;
     }
 
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
@@ -190,9 +169,25 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return cachedValue;
     }
 
+    protected static boolean canCache(Object value) {
+        return value instanceof Long ||
+            value instanceof Integer ||
+            value instanceof Boolean ||
+            value instanceof Double ||
+            value instanceof PNone;
+    }
+
+    @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected static Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
+                    @Cached("findAttr(getCore(), cachedKlass, key)") Object cachedValue) {
+        return cachedValue;
+    }
+
     @Specialization(replaces = "lookupPBCTCached")
-    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass) {
-        return findAttr(getCore(), klass, key);
+    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass,
+                    @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
+        return findAttr(getCore(), klass, key, readAttrNode);
     }
 
     static final class PythonClassAssumptionPair {
