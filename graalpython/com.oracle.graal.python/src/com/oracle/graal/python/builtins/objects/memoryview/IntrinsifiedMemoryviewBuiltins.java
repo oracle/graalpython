@@ -708,6 +708,19 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "toreadonly", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class ToReadonlyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        IntrinsifiedPMemoryView toreadonly(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            // TODO factory
+            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), true, self.getItemSize(), self.getFormat(), self.getDimensions(), self.getBufferPointer(),
+                            self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets());
+        }
+    }
+
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public static abstract class LenNode extends PythonUnaryBuiltinNode {
