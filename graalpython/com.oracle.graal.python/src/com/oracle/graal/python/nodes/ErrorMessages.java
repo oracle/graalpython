@@ -432,6 +432,7 @@ public abstract class ErrorMessages {
     public static final String ODD_LENGTH_STRING = "Odd-length string";
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";
+    public static final String ORDER_MUST_BE_C_F_OR_A = "order must be 'C', 'F' or 'A'";
     public static final String PACKED_IP_WRONG_LENGTH = "packed IP wrong length for %s";
     public static final String PACKET_IP_WRONG_LENGTH_FOR = "packed IP wrong length for %s";
     public static final String PATCHED_DATETIME_CLASS = "patched datetime class: %r";

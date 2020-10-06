@@ -139,6 +139,32 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
+    test_memoryview_tobytes = CPyExtFunction(
+        lambda args: args[1],
+        lambda: [
+            (None, b'\x02\x01Y\x01\xbe\x00\x9c\x03\x03\x01Z\x01\xbf\x00\x9d\x03\x01\x01X\x01\xbd\x00\x9b\x03\x04\x01[\x01\xc0\x00\x9e\x03'),
+            ('C', b'\x02\x01Y\x01\xbe\x00\x9c\x03\x03\x01Z\x01\xbf\x00\x9d\x03\x01\x01X\x01\xbd\x00\x9b\x03\x04\x01[\x01\xc0\x00\x9e\x03'),
+            ('A', b'\x02\x01Y\x01\xbe\x00\x9c\x03\x03\x01Z\x01\xbf\x00\x9d\x03\x01\x01X\x01\xbd\x00\x9b\x03\x04\x01[\x01\xc0\x00\x9e\x03'),
+            ('F', b'\x02\x01\x01\x01\x03\x01\x04\x01\xbe\x00\xbd\x00\xbf\x00\xc0\x00Y\x01X\x01Z\x01[\x01\x9c\x03\x9b\x03\x9d\x03\x9e\x03'),
+            ('X', ValueError("order must be 'C', 'F' or 'A'")),
+        ],
+        code=suboffsets_buf + '''
+            static PyObject* test_read(PyObject* order, PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromBuffer(&buffer);
+                if (!mv)
+                    return NULL;
+                PyObject *bytes = PyObject_CallMethod(mv, "tobytes", "O", order);
+                Py_DECREF(mv);
+                return bytes;
+            }
+        ''',
+        resultspec='O',
+        argspec='OO',
+        arguments=["PyObject* order", "PyObject* expected"],
+        callfunction="test_read",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
     test_memoryview_slice = CPyExtFunction(
         lambda args: bytes((5, 6, 255, 128, 99))[args[0]][args[1]][args[2]],
         lambda: list(itertools.product(slices, slices, range(-2, 5))),

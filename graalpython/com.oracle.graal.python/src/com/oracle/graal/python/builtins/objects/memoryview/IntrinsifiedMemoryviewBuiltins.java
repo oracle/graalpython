@@ -11,6 +11,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -31,8 +32,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -140,6 +143,33 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 raiseNode = insert(PRaiseNode.create());
             }
             throw raiseNode.raise(type, message, args);
+        }
+    }
+
+    static abstract class ReadBytesAtNode extends Node {
+        public abstract void execute(byte[] dest, int destOffset, int len, IntrinsifiedPMemoryView self, Object ptr, int offset);
+
+        @Specialization(guards = "ptr != null")
+        static void doNative(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") IntrinsifiedPMemoryView self, Object ptr, int offset,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            try {
+                for (int i = 0; i < len; i++) {
+                    dest[destOffset + i] = (byte) lib.readArrayElement(ptr, offset + i);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+
+        @Specialization(guards = "ptr == null")
+        static void doManaged(byte[] dest, int destOffset, int len, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            // TODO assumes byte storage
+            SequenceStorage storage = getStorageNode.execute(self.getOwner());
+            for (int i = 0; i < len; i++) {
+                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
+            }
         }
     }
 
@@ -566,6 +596,114 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
                 callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
             }
             return callCapiFunction;
+        }
+    }
+
+    @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})
+    @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"C\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public static abstract class ToBytesNode extends PythonBinaryClinicBuiltinNode {
+        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
+
+        @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
+        Object tobytesCached(IntrinsifiedPMemoryView self, String order,
+                        @Cached("self.getDimensions()") int cachedDimensions,
+                        @Cached ConditionProfile orderProfile,
+                        @Cached ReadBytesAtNode readBytesAtNode) {
+            self.checkReleased(this);
+            byte[] bytes = new byte[self.getLength()];
+            if (cachedDimensions == 0) {
+                readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
+            } else {
+                if (orderProfile.profile("C".equals(order) || "A".equals(order))) {
+                    recursiveC(bytes, 0, self, readBytesAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
+                } else if ("F".equals(order)) {
+                    recursiveF(bytes, 0, self.getItemSize(), self, readBytesAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
+                } else {
+                    throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
+                }
+            }
+            return factory().createBytes(bytes);
+        }
+
+        @Specialization(replaces = "tobytesCached")
+        Object tobytes(IntrinsifiedPMemoryView self, String order,
+                        @Cached ConditionProfile orderProfile,
+                        @Cached ReadBytesAtNode readBytesAtNode) {
+            self.checkReleased(this);
+            byte[] bytes = new byte[self.getLength()];
+            if (self.getDimensions() == 0) {
+                readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
+            } else {
+                if (orderProfile.profile("C".equals(order) || "A".equals(order))) {
+                    recursiveBoundaryC(bytes, 0, self, readBytesAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
+                } else if ("F".equals(order)) {
+                    recursiveBoundaryF(bytes, 0, self.getItemSize(), self, readBytesAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
+                } else {
+                    throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
+                }
+            }
+            return factory().createBytes(bytes);
+        }
+
+        @TruffleBoundary
+        private void recursiveBoundaryC(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+            recursiveC(dest, destOffset, self, readBytesAtNode, dim, ndim, ptr, offset);
+        }
+
+        @TruffleBoundary
+        private void recursiveBoundaryF(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+            recursiveF(dest, destOffset, destStride, self, readBytesAtNode, dim, ndim, ptr, offset);
+        }
+
+        private int recursiveC(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+            for (int i = 0; i < self.getBufferShape()[dim]; i++) {
+                Object xptr = ptr;
+                int xoffset = offset;
+                if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
+                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xoffset = 0;
+                }
+                if (dim == ndim - 1) {
+                    readBytesAtNode.execute(dest, destOffset, self.getItemSize(), self, xptr, xoffset);
+                    destOffset += self.getItemSize();
+                } else {
+                    destOffset = recursiveC(dest, destOffset, self, readBytesAtNode, dim + 1, ndim, xptr, xoffset);
+                }
+                offset += self.getBufferStrides()[dim];
+            }
+            return destOffset;
+        }
+
+        private void recursiveF(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+            for (int i = 0; i < self.getBufferShape()[dim]; i++) {
+                Object xptr = ptr;
+                int xoffset = offset;
+                if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
+                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xoffset = 0;
+                }
+                if (dim == ndim - 1) {
+                    readBytesAtNode.execute(dest, destOffset, self.getItemSize(), self, xptr, xoffset);
+                } else {
+                    recursiveF(dest, destOffset, destStride * self.getBufferShape()[dim], self, readBytesAtNode, dim + 1, ndim, xptr, xoffset);
+                }
+                destOffset += destStride;
+                offset += self.getBufferStrides()[dim];
+            }
+        }
+
+        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
+            if (callCapiFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
+            }
+            return callCapiFunction;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IntrinsifiedMemoryviewBuiltinsClinicProviders.ToBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 
