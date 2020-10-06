@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -72,6 +74,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -83,8 +86,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.util.ArrayList;
-import java.util.List;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @GenerateUncached
@@ -166,7 +167,25 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached"})
+    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached", "doFunctionCached"})
+    Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
+                    @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures are attached to PRootNodes
+                    @Cached ConditionProfile gotMethod,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached("getCallTarget(callable)") @SuppressWarnings("unused") RootCallTarget cachedCallTarget) {
+        Object[] defaults = getDefaultsNode.execute(callable);
+        PKeyword[] kwdefaults = getKwDefaultsNode.execute(callable);
+        Object self = null;
+        if (gotMethod.profile(PGuards.isMethod(callable))) {
+            self = getSelf(callable);
+        }
+        return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, self, defaults, kwdefaults, isMethodCall(self));
+    }
+
+    @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
     Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
 
@@ -862,6 +881,19 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return ((PBuiltinMethod) callable).getFunction();
         } else if (callable instanceof PMethod) {
             return ((PMethod) callable).getFunction();
+        }
+        return null;
+    }
+
+    protected static RootCallTarget getCallTarget(Object callable) {
+        if (callable instanceof PBuiltinMethod) {
+            return ((PBuiltinMethod) callable).getFunction().getCallTarget();
+        } else if (callable instanceof PMethod) {
+            return getCallTarget(((PMethod) callable).getFunction());
+        } else if (callable instanceof PBuiltinFunction) {
+            return ((PBuiltinFunction) callable).getCallTarget();
+        } else if (callable instanceof PFunction) {
+            return ((PFunction) callable).getCallTarget();
         }
         return null;
     }
