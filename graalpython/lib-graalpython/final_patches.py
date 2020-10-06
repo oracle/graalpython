@@ -38,5 +38,12 @@
 # SOFTWARE.
 
 import _imp
+import sys
 
 _imp.cache_all_file_modules()
+
+from importlib._bootstrap import _spec_from_module
+for name in ['importlib._bootstrap', 'importlib._bootstrap_external', '_descriptor']:
+    mod = sys.modules.get(name, None)
+    if mod:
+        setattr(mod, '__spec__', _spec_from_module(mod))
