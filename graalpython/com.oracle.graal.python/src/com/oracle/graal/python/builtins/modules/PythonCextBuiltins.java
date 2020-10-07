@@ -1595,12 +1595,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
                         }
                     } else {
-                        // From CPython init_strides_from_shape
-                        strides = new int[ndim];
-                        strides[ndim - 1] = itemsize;
-                        for (int i = ndim - 2; i >= 0; i--) {
-                            strides[i] = strides[i + 1] * shape[i + 1];
-                        }
+                        strides = IntrinsifiedPMemoryView.initStridesFromShape(ndim, itemsize, shape);
                     }
                     if (!lib.isNull(suboffsetsPointer)) {
                         suboffsets = new int[ndim];

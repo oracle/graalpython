@@ -48,6 +48,7 @@ public abstract class ErrorMessages {
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
     public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
     public static final String ARG_D_MUST_BE_S_OR_S = "%s argument %d must be '%s' or '%s'";
+    public static final String ARG_S_MUST_BE_A_LIST_OR_TUPLE = "%s must be a list or tuple";
     public static final String ARG_D_MUST_NOT_BE_EMPTY = "arg %d must not be empty";
     public static final String ARG_EXPECTED_GOT = "%s argument expected, got %p";
     public static final String ARG_IS_EMPTY_SEQ = "%s() arg is an empty sequence";
@@ -357,6 +358,15 @@ public abstract class ErrorMessages {
     public static final String MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1 = "memoryview slice assignments are currently restricted to ndim = 1";
     public static final String MEMORYVIEW_DIFFERENT_STRUCTURES = "memoryview assignment: lvalue and rvalue have different structures";
     public static final String MEMORYVIEW_FORBIDDEN_RELEASED = "operation forbidden on released memoryview object";
+    public static final String MEMORYVIEW_DESTINATION_FORMAT_ERROR = "memoryview: destination format must be a native single character format prefixed with an optional '@'";
+    public static final String MEMORYVIEW_CANNOT_CAST_NON_BYTE = "memoryview: cannot cast between two non-byte formats";
+    public static final String MEMORYVIEW_LENGTH_NOT_MULTIPLE_OF_ITEMSIZE = "memoryview: length is not a multiple of itemsize";
+    public static final String MEMORYVIEW_CAST_MUST_BE_1D_TO_ND_OR_ND_TO_1D = "memoryview: cast must be 1D -> ND or ND -> 1D";
+    public static final String MEMORYVIEW_NUMBER_OF_DIMENSIONS_MUST_NOT_EXCEED_D = "memoryview: number of dimensions must not exceed %d";
+    public static final String MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS = "memoryview: casts are restricted to C-contiguous views";
+    public static final String MEMORYVIEW_CANNOT_CAST_VIEW_WITH_ZEROS_IN_SHAPE_OR_STRIDES = "memoryview: cannot cast view with zeros in shape or strides";
+    public static final String MEMORYVIEW_CAST_WRONG_LENGTH = "memoryview: product(shape) * itemsize != buffer size";
+    public static final String MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS = "memoryview.cast(): elements of shape must be integers > 0";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";

@@ -1204,6 +1204,7 @@ public abstract class SequenceStorageNodes {
     public abstract static class SetItemScalarNode extends Node {
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
+        public abstract void execute(SequenceStorage s, int idx, byte value);
 
         @Specialization
         protected static void doBoolean(BoolSequenceStorage storage, int idx, boolean value) {

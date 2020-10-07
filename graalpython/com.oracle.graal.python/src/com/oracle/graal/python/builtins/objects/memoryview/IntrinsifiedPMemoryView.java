@@ -10,12 +10,14 @@ import com.oracle.truffle.api.object.Shape;
 // TODO POL
 // TODO interop lib
 public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
+    public static final int MAX_DIM = 64;
     private final Object bufferStructPointer;
     private final Object owner;
     private final int len;
     private final boolean readonly;
     private final int itemsize;
-    private final String format;
+    private final String formatString;
+    private final BufferFormat format;
     private final int ndim;
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
     // offset
@@ -28,7 +30,7 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     boolean released = false;
 
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
-                    int len, boolean readonly, int itemsize, String format, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets) {
         super(cls, instanceShape);
         this.bufferStructPointer = bufferStructPointer;
@@ -36,7 +38,8 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         this.len = len;
         this.readonly = readonly;
         this.itemsize = itemsize;
-        this.format = format;
+        this.format = BufferFormat.fromString(formatString);
+        this.formatString = formatString;
         this.ndim = ndim;
         this.bufPointer = bufPointer;
         this.offset = offset;
@@ -45,9 +48,90 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         this.suboffsets = suboffsets;
     }
 
+    public enum BufferFormat {
+        UNSIGNED_BYTE,
+        SIGNED_BYTE,
+        UNSIGNED_SHORT,
+        SIGNED_SHORT,
+        UNSIGNED_INT,
+        SIGNED_INT,
+        UNSIGNED_LONG,
+        SIGNED_LONG,
+        UNSIGNED_LONG_LONG,
+        SIGNED_LONG_LONG,
+        UNSIGNED_SIZE,
+        SIGNED_SIZE,
+        BOOLEAN,
+        CHAR,
+        POINTER,
+        FLOAT,
+        DOUBLE,
+        OTHER;
+
+        public static BufferFormat fromString(String format) {
+            if (format == null) {
+                return UNSIGNED_BYTE;
+            }
+            if (!format.isEmpty()) {
+                char fmtchar = format.charAt(0);
+                if (fmtchar == '@' && format.length() >= 2) {
+                    fmtchar = format.charAt(1);
+                }
+                switch (fmtchar) {
+                    case 'B':
+                        return UNSIGNED_BYTE;
+                    case 'b':
+                        return SIGNED_BYTE;
+                    case 'H':
+                        return UNSIGNED_SHORT;
+                    case 'h':
+                        return SIGNED_SHORT;
+                    case 'I':
+                        return UNSIGNED_INT;
+                    case 'i':
+                        return SIGNED_INT;
+                    case 'L':
+                        return UNSIGNED_LONG;
+                    case 'l':
+                        return SIGNED_LONG;
+                    case 'Q':
+                        return UNSIGNED_LONG_LONG;
+                    case 'q':
+                        return SIGNED_LONG_LONG;
+                    case 'N':
+                        return SIGNED_SIZE;
+                    case 'n':
+                        return UNSIGNED_SIZE;
+                    case 'f':
+                        return FLOAT;
+                    case 'd':
+                        return DOUBLE;
+                    case 'P':
+                        return POINTER;
+                    case '?':
+                        return BOOLEAN;
+                    case 'c':
+                        return CHAR;
+                }
+            }
+            return OTHER;
+        }
+
+    }
+
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner, int len, boolean readonly, int itemsize, String format,
                     int ndim, Object bufPointer, int[] shape, int[] strides, int[] suboffsets) {
         this(cls, instanceShape, bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets);
+    }
+
+    // From CPython init_strides_from_shape
+    public static int[] initStridesFromShape(int ndim, int itemsize, int[] shape) {
+        int[] strides = new int[ndim];
+        strides[ndim - 1] = itemsize;
+        for (int i = ndim - 2; i >= 0; i--) {
+            strides[i] = strides[i + 1] * shape[i + 1];
+        }
+        return strides;
     }
 
     public Object getBufferStructPointer() {
@@ -70,7 +154,11 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         return itemsize;
     }
 
-    public String getFormat() {
+    public String getFormatString() {
+        return formatString;
+    }
+
+    public BufferFormat getFormat() {
         return format;
     }
 

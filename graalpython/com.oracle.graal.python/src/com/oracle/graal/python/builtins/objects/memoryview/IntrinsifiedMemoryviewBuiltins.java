@@ -24,6 +24,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView.BufferFormat;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -34,6 +35,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -67,57 +69,80 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         return IntrinsifiedMemoryviewBuiltinsFactory.getFactories();
     }
 
+    private static int bytesize(BufferFormat format) {
+        // TODO fetch from sulong
+        switch (format) {
+            case UNSIGNED_BYTE:
+            case SIGNED_BYTE:
+            case CHAR:
+            case BOOLEAN:
+                return 1;
+            case UNSIGNED_SHORT:
+            case SIGNED_SHORT:
+                return 2;
+            case SIGNED_INT:
+            case UNSIGNED_INT:
+            case FLOAT:
+                return 4;
+            case UNSIGNED_LONG:
+            case SIGNED_LONG:
+            case UNSIGNED_SIZE:
+            case SIGNED_SIZE:
+            case SIGNED_LONG_LONG:
+            case UNSIGNED_LONG_LONG:
+            case DOUBLE:
+            case POINTER:
+                return 8;
+        }
+        return -1;
+    }
+
+    private static boolean isByteFormat(BufferFormat format) {
+        return format == BufferFormat.UNSIGNED_BYTE || format == BufferFormat.SIGNED_BYTE || format == BufferFormat.CHAR;
+    }
+
+    @ImportStatic(BufferFormat.class)
     static abstract class UnpackValueNode extends Node {
-        public abstract Object execute(String format, byte[] bytes);
+        public abstract Object execute(BufferFormat format, byte[] bytes);
 
-        static final char B = 'B';
-        static final char b = 'b';
-        static final char h = 'h';
-        static final char i = 'i';
-        static final char l = 'l';
-
-        @Specialization(guards = "format == null || format.charAt(0) == B")
-        static int unpackUnsignedByte(@SuppressWarnings("unused") String format, byte[] bytes) {
+        @Specialization(guards = "format == UNSIGNED_BYTE")
+        static int unpackUnsignedByte(@SuppressWarnings("unused") BufferFormat format, byte[] bytes) {
             return bytes[0] & 0xFF;
         }
 
-        @Specialization(guards = "format.charAt(0) == b")
-        static int unpackSignedByte(@SuppressWarnings("unused") String format, byte[] bytes) {
+        @Specialization(guards = "format == SIGNED_BYTE")
+        static int unpackSignedByte(@SuppressWarnings("unused") BufferFormat format, byte[] bytes) {
             return bytes[0];
         }
 
-        @Specialization(guards = "format.charAt(0) == h")
-        static int unpackShort(@SuppressWarnings("unused") String format, byte[] bytes) {
+        @Specialization(guards = "format == SIGNED_SHORT")
+        static int unpackShort(@SuppressWarnings("unused") BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8;
         }
 
-        @Specialization(guards = "format.charAt(0) == i")
-        static int unpackInt(@SuppressWarnings("unused") String format, byte[] bytes) {
+        @Specialization(guards = "format == SIGNED_INT")
+        static int unpackInt(@SuppressWarnings("unused") BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
         }
 
-        @Specialization(guards = "format.charAt(0) == l")
-        static long unpackLong(@SuppressWarnings("unused") String format, byte[] bytes) {
+        @Specialization(guards = "format == SIGNED_LONG")
+        static long unpackLong(@SuppressWarnings("unused") BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24 |
                             (bytes[4] & 0xFFL) << 32 | (bytes[5] & 0xFFL) << 40 | (bytes[6] & 0xFFL) << 48 | (bytes[7] & 0xFFL) << 56;
         }
+
+        // TODO rest of formats
     }
 
+    @ImportStatic(BufferFormat.class)
     static abstract class PackValueNode extends Node {
-        // TODO deduplicate
-        static final char B = 'B';
-        static final char b = 'b';
-        static final char h = 'h';
-        static final char i = 'i';
-        static final char l = 'l';
-
         @Child private PRaiseNode raiseNode;
 
         // Output goes to bytes, lenght not checked
-        public abstract void execute(String format, Object object, byte[] bytes);
+        public abstract void execute(BufferFormat format, Object object, byte[] bytes);
 
-        @Specialization(guards = "format == null || format.charAt(0) == B", limit = "2")
-        void packUnsignedByte(@SuppressWarnings("unused") String format, Object object, byte[] bytes,
+        @Specialization(guards = "format == UNSIGNED_BYTE", limit = "2")
+        void packUnsignedByte(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 1;
             long value = lib.asJavaLong(object);
@@ -127,8 +152,8 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             bytes[0] = (byte) value;
         }
 
-        @Specialization(guards = "format.charAt(0) == l", limit = "2")
-        static void packLong(@SuppressWarnings("unused") String format, Object object, byte[] bytes,
+        @Specialization(guards = "format == SIGNED_LONG", limit = "2")
+        static void packLong(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
             long value = lib.asJavaLong(object);
@@ -196,9 +221,14 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization(guards = "ptr == null")
         static Object doManaged(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            // TODO cast can change the format
-            return getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset / self.getItemSize());
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached UnpackValueNode unpackValueNode) {
+            // TODO assumes byte storage
+            byte[] bytes = new byte[self.getItemSize()];
+            for (int i = 0; i < self.getItemSize(); i++) {
+                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
+            }
+            return unpackValueNode.execute(self.getFormat(), bytes);
         }
     }
 
@@ -208,7 +238,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization(guards = "ptr != null")
         static void doNative(IntrinsifiedPMemoryView self, Object ptr, int offset, Object object,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached IntrinsifiedMemoryviewBuiltins.PackValueNode packValueNode) {
+                        @Cached PackValueNode packValueNode) {
             int itemsize = self.getItemSize();
             byte[] bytes = new byte[itemsize];
             packValueNode.execute(self.getFormat(), object, bytes);
@@ -223,15 +253,15 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "ptr == null")
         static void doManaged(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @Cached IntrinsifiedMemoryviewBuiltins.PackValueNode packValueNode,
+                        @Cached PackValueNode packValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO cast can change the format
-            // TODO might not be bytes in array case
-            assert self.getFormat() == null || self.getFormat().equals("B");
-            byte[] bytes = new byte[1];
+            // TODO assumes bytes storage
+            byte[] bytes = new byte[self.getItemSize()];
             packValueNode.execute(self.getFormat(), object, bytes);
-            setItemNode.execute(getStorageNode.execute(self.getOwner()), offset / self.getItemSize(), bytes[0]);
+            for (int i = 0; i < self.getItemSize(); i++) {
+                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
+            }
         }
     }
 
@@ -451,7 +481,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
-                            self.getBufferStructPointer(), self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormat(), self.getDimensions(), self.getBufferPointer(),
+                            self.getBufferStructPointer(), self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, self.getBufferSuboffsets());
         }
 
@@ -495,7 +525,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             IntrinsifiedPMemoryView srcView = createMemoryView.create(object);
             IntrinsifiedPMemoryView destView = (IntrinsifiedPMemoryView) getItemNode.execute(frame, self, slice);
             // TODO format skip @
-            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormat().equals(destView.getFormat())) {
+            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormatString().equals(destView.getFormatString())) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
             }
             for (int i = 0; i < destView.getBufferShape()[0]; i++) {
@@ -716,8 +746,106 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             self.checkReleased(this);
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
-                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), true, self.getItemSize(), self.getFormat(), self.getDimensions(), self.getBufferPointer(),
+                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), true, self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets());
+        }
+    }
+
+    @Builtin(name = "cast", minNumOfPositionalArgs = 2, parameterNames = {"$self", "format", "shape"})
+    @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    public static abstract class CastNode extends PythonTernaryClinicBuiltinNode {
+
+        @Specialization
+        IntrinsifiedPMemoryView cast(IntrinsifiedPMemoryView self, String formatString, @SuppressWarnings("unused") PNone none) {
+            self.checkReleased(this);
+            return doCast(self, formatString, 1, null);
+        }
+
+        @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
+        IntrinsifiedPMemoryView cast(IntrinsifiedPMemoryView self, String formatString, Object shapeObj,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            self.checkReleased(this);
+            SequenceStorage storage = getSequenceStorageNode.execute(shapeObj);
+            int ndim = lenNode.execute(storage);
+            int[] shape = new int[ndim];
+            for (int i = 0; i < ndim; i++) {
+                shape[i] = lib.asSize(getItemScalarNode.execute(storage, i));
+                if (shape[i] <= 0) {
+                    throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS);
+                }
+            }
+            return doCast(self, formatString, ndim, shape);
+        }
+
+        @Specialization(guards = {"!isPTuple(shape)", "!isList(shape)", "!isPNone(shape)"})
+        @SuppressWarnings("unused")
+        IntrinsifiedPMemoryView error(IntrinsifiedPMemoryView self, String format, Object shape) {
+            throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_A_LIST_OR_TUPLE, "shape");
+        }
+
+        private IntrinsifiedPMemoryView doCast(IntrinsifiedPMemoryView self, String formatString, int ndim, int[] shape) {
+            // TODO check C-contiguous
+            if (false) {
+                throw raise(TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
+            }
+            BufferFormat format = BufferFormat.fromString(formatString);
+            int itemsize = bytesize(format);
+            if (itemsize < 0) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_DESTINATION_FORMAT_ERROR);
+            }
+            if (!isByteFormat(format) && !isByteFormat(self.getFormat())) {
+                throw raise(TypeError, ErrorMessages.MEMORYVIEW_CANNOT_CAST_NON_BYTE);
+            }
+            if (self.getLength() % itemsize != 0) {
+                throw raise(TypeError, ErrorMessages.MEMORYVIEW_LENGTH_NOT_MULTIPLE_OF_ITEMSIZE);
+            }
+            for (int i = 0; i < self.getDimensions(); i++) {
+                if (self.getBufferShape()[i] == 0) {
+                    throw raise(TypeError, ErrorMessages.MEMORYVIEW_CANNOT_CAST_VIEW_WITH_ZEROS_IN_SHAPE_OR_STRIDES);
+                }
+            }
+            int[] newShape;
+            int[] newStrides;
+            if (ndim == 0) {
+                newShape = null;
+                newStrides = null;
+                if (self.getLength() != itemsize) {
+                    throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_WRONG_LENGTH);
+                }
+            } else {
+                if (shape == null) {
+                    newShape = new int[]{self.getLength() / itemsize};
+                } else {
+                    if (ndim != 1 && self.getDimensions() != 1) {
+                        throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_MUST_BE_1D_TO_ND_OR_ND_TO_1D);
+                    }
+                    if (ndim > IntrinsifiedPMemoryView.MAX_DIM) {
+                        throw raise(ValueError, ErrorMessages.MEMORYVIEW_NUMBER_OF_DIMENSIONS_MUST_NOT_EXCEED_D, ndim);
+                    }
+                    int newLenght = itemsize;
+                    for (int i = 0; i < ndim; i++) {
+                        newLenght *= shape[i];
+                    }
+                    if (newLenght != self.getLength()) {
+                        throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_WRONG_LENGTH);
+                    }
+                    newShape = shape;
+                }
+                newStrides = IntrinsifiedPMemoryView.initStridesFromShape(ndim, itemsize, shape);
+            }
+            // TODO factory
+            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), self.isReadOnly(), itemsize, formatString, ndim, self.getBufferPointer(),
+                            self.getOffset(), newShape, newStrides, null);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IntrinsifiedMemoryviewBuiltinsClinicProviders.CastNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -768,7 +896,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization
         Object get(IntrinsifiedPMemoryView self) {
             self.checkReleased(this);
-            return self.getFormat() != null ? self.getFormat() : "B";
+            return self.getFormatString() != null ? self.getFormatString() : "B";
         }
     }
 
