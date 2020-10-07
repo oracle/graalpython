@@ -1,7 +1,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathT;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -36,8 +36,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void noneAllowed() {
-        Assert.assertEquals(PathT.DEFAULT, callAndExpectPathT(true, false, PNone.NONE));
-        Assert.assertEquals(PathT.DEFAULT, callAndExpectPathT(true, false, PNone.NO_VALUE));
+        Assert.assertEquals(PosixPath.DEFAULT, callAndExpectPathT(true, false, PNone.NONE));
+        Assert.assertEquals(PosixPath.DEFAULT, callAndExpectPathT(true, false, PNone.NO_VALUE));
     }
 
     @Test
@@ -206,6 +206,11 @@ public class PathConversionNodeTests {
     }
 
     @Test
+    public void indexInIntSubclass() {
+        Assert.assertEquals(42, callAndExpectInt(evalValue("class C(int):\n  def __index__(self):\n    return 123\nC(42)")));
+    }
+
+    @Test
     public void fspathBytes() {
         Assert.assertEquals("abc", new String(callAndExpectPathT(true, true, evalValue("class C:\n  def __fspath__(self):\n    return b'abc'\nC()")).narrow));
     }
@@ -291,10 +296,10 @@ public class PathConversionNodeTests {
         return callTarget.call();
     }
 
-    private static PathT callAndExpectPathT(boolean nullable, boolean allowFd, Object arg) {
+    private static PosixPath callAndExpectPathT(boolean nullable, boolean allowFd, Object arg) {
         Object result = call(nullable, allowFd, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PathT.class));
-        return (PathT) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
+        return (PosixPath) result;
     }
 
     private static int callAndExpectInt(Object arg) {

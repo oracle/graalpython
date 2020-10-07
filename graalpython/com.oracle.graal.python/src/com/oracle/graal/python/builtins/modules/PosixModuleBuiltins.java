@@ -1023,7 +1023,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(VirtualFrame frame, PathT path, int flags, int mode, Object dir_fd,
+        Object open(VirtualFrame frame, PosixPath path, int flags, int mode, Object dir_fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             // TODO C-string proxy instead of new String()
             return posixLib.open(getPosixSupport(), new String(path.narrow), flags);
@@ -2162,9 +2162,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
      * structure, but only contains the results of the conversion.
      */
-    public static class PathT {
+    public static class PosixPath {
 
-        public static final PathT DEFAULT = new PathT();
+        public static final PosixPath DEFAULT = new PosixPath();
 
         /**
          * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
@@ -2175,11 +2175,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         // TODO: there will be at least one additional field - listdir needs to determine whether it
         // should return str or bytes
 
-        private PathT() {
+        private PosixPath() {
             narrow = null;
         }
 
-        public PathT(byte[] narrow) {
+        public PosixPath(byte[] narrow) {
             assert narrow != null;
             this.narrow = narrow;
         }
@@ -2204,13 +2204,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "nullable")
-        PathT doNone(@SuppressWarnings("unused") PNone value) {
-            return PathT.DEFAULT;
+        PosixPath doNone(@SuppressWarnings("unused") PNone value) {
+            return PosixPath.DEFAULT;
         }
 
         @Specialization(guards = "allowFd")
         int doFdBool(boolean value) {
-            return value ? 1 : 0;
+            return PInt.intValue(value);
         }
 
         @Specialization(guards = "allowFd")
@@ -2236,25 +2236,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PathT doUnicode(String value) {
+        PosixPath doUnicode(String value) {
             // TODO replace getStringBytes with PyUnicode_FSConverter equivalent
             return createPath(getStringBytes(value));
         }
 
         @Specialization
-        PathT doUnicode(PString value,
+        PosixPath doUnicode(PString value,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             return doUnicode(castToJavaStringNode.execute(value));
         }
 
         @Specialization
-        PathT doBytes(VirtualFrame frame, PBytesLike value,
+        PosixPath doBytes(VirtualFrame frame, PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode) {
             return createPath(toByteArrayNode.execute(frame, value));
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
-        PathT doBuffer(VirtualFrame frame, Object value,
+        PosixPath doBuffer(VirtualFrame frame, Object value,
                         // TODO when is shared dispatched library better than (non-shared) specialized library?
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
@@ -2308,13 +2308,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
         }
 
-        private PathT createPath(byte[] path) {
+        private PosixPath createPath(byte[] path) {
             for (byte b : path) {
                 if (b == 0) {
                     throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
                 }
             }
-            return new PathT(path);
+            return new PosixPath(path);
         }
 
         @TruffleBoundary
