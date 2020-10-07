@@ -96,6 +96,19 @@ public class PathConversionNodeTests {
     }
 
     @Test
+    public void boolAllowed() {
+        Assert.assertEquals(0, callAndExpectInt(false));
+        Assert.assertEquals(1, callAndExpectInt(true));
+    }
+
+    @Test
+    public void boolForbidden() {
+        expectedException.expect(PException.class);
+        expectedException.expectMessage("TypeError: fun: arg should be string, bytes, os.PathLike or None, not bool");
+        call(true, false, true);
+    }
+
+    @Test
     public void intAllowed() {
         Assert.assertEquals(42, callAndExpectInt(42));
     }
@@ -175,7 +188,7 @@ public class PathConversionNodeTests {
     public void indexTooBig() {
         expectedException.expect(PException.class);
         expectedException.expectMessage("OverflowError: fd is greater than maximum");
-        call(false, true, evalValue("class C:\n  def __index__(self):\n    return 1 << 100\nC()"));
+        call(false, true, evalValue("class C:\n  def __index__(self):\n    return 1 << 40\nC()"));
     }
 
     @Test

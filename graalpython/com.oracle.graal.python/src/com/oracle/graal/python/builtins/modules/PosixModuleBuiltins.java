@@ -2209,8 +2209,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "allowFd")
-        int doFd(int value) {
+        int doFdBool(boolean value) {
+            return value ? 1 : 0;
+        }
+
+        @Specialization(guards = "allowFd")
+        int doFdInt(int value) {
             return value;
+        }
+
+        @Specialization(guards = "allowFd")
+        int doFdLong(long value) {
+            if (value > Integer.MAX_VALUE) {
+                throw raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
+            }
+            if (value < Integer.MIN_VALUE) {
+                throw raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
+            }
+            return (int) value;
+        }
+
+        @Specialization(guards = "allowFd")
+        int doFdPInt(PInt value,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            return doFdLong(castToLongNode.execute(value));
         }
 
         @Specialization
@@ -2249,16 +2271,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         int doIndex(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
-            // TODO move this somewhere else, it will be needed by dir_fd_converter
             Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
-            long l = castToLongNode.execute(o);
-            if (l > Integer.MAX_VALUE) {
-                throw raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
-            }
-            if (l < Integer.MIN_VALUE) {
-                throw raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
-            }
-            return (int) l;
+            return doFdLong(castToLongNode.execute(o));
         }
 
         @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !lib.canBeIndex(value)"}, limit = "3")
@@ -2286,7 +2300,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         protected boolean isHandled(Object value) {
-            return PGuards.isPNone(value) && nullable || value instanceof Integer && allowFd || PGuards.isString(value) || PGuards.isBytes(value);
+            return PGuards.isPNone(value) && nullable || PGuards.canBeInteger(value) && allowFd || PGuards.isString(value) || PGuards.isBytes(value);
         }
 
         private String getAllowedTypes() {
