@@ -2934,25 +2934,24 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [2,names,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [12691,12697]`module`
-                                                Frame: [4,module,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [12708,12716]`qualname`
-                                                Frame: [5,qualname,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [12723,12727]`type`
-                                                Frame: [6,type,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [12735,12740]`start`
-                                                Frame: [7,start,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12691,12697]`module`
+                                                  Frame: [4,module,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12708,12716]`qualname`
+                                                  Frame: [5,qualname,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12723,12727]`type`
+                                                  Frame: [6,type,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12735,12740]`start`
+                                                  Frame: [7,start,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                            EmptyNode SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [12657,12660]`cls`
                                               Frame: [0,cls,Illegal]
@@ -6614,73 +6613,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonCallNodeGen SourceSection: [25364,25404]`members.sort(key=lam...`
                                               CallNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  FunctionDefinitionNode Name: <lambda> SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                    Arguments: None
-                                                    KwArguments: None
-                                                    Documentation: None
-                                                    FreeVarSlots: None
-                                                    ExecutionSlots:
-                                                      FreeVarsSlots: None
-                                                      CellVarsSlots: None
-                                                    FunctionRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                      Name: <lambda>
-                                                      Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                                        Param Names: t
-                                                      CelVars: None
-                                                      FreeVars: None
-                                                      NeedsCellFrame: False
-                                                      FrameDescriptor: 2 slots [t, <return_val>]
-                                                      ExecutionSlots:
-                                                        FreeVarsSlots: None
-                                                        CellVarsSlots: None
-                                                      InnerRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                        ReturnTargetNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
-                                                          Body: BlockNode SourceSection: None
-                                                            WriteLocalVariableNodeGen SourceSection: None
-                                                              Identifier: t
-                                                              WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                Frame: [0,t,Illegal]
-                                                              ArgumentExpressionNode SourceSection: None
-                                                                ReadIndexedArgumentNodeGen SourceSection: None
-                                                                  Index: 0
-                                                            FrameReturnNode SourceSection: None
-                                                              FunctionBodyNode SourceSection: [25391,25403]`(t[1], t[0])`
-                                                                WriteLocalVariableNodeGen SourceSection: None
-                                                                  Identifier: <return_val>
-                                                                  WriteLocalFrameSlotNodeGen SourceSection: None
-                                                                    Frame: [1,<return_val>,Illegal]
-                                                                  TupleLiteralNode SourceSection: [25391,25403]`(t[1], t[0])`
-                                                                    GetItemNodeGen SourceSection: [25392,25396]`t[1]`
-                                                                      ReadLocalVariableNode SourceSection: None
-                                                                        Frame: [0,t,Illegal]
-                                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      IntegerLiteralNode SourceSection: [25394,25395]`1`
-                                                                        Value: 1
-                                                                    GetItemNodeGen SourceSection: [25398,25402]`t[0]`
-                                                                      ReadLocalVariableNode SourceSection: None
-                                                                        Frame: [0,t,Illegal]
-                                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      IntegerLiteralNode SourceSection: [25400,25401]`0`
-                                                                        Value: 0
-                                                                    PythonObjectFactoryNodeGen SourceSection: None
-                                                          Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                                            Frame: [1,<return_val>,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
-                                              GetCallAttributeNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [25364,25371]`members`
-                                                  Frame: [6,members,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                          ExceptNode SourceSection: None
-                                            ExpressionStatementNode SourceSection: [25522,25554]`members.sort(key=lam...`
-                                              PythonCallNodeGen SourceSection: [25522,25554]`members.sort(key=lam...`
-                                                CallNodeGen SourceSection: None
-                                                KeywordArgumentsNodeGen SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
                                                   KeywordLiteralNode SourceSection: None
-                                                    FunctionDefinitionNode Name: <lambda> SourceSection: [25539,25553]`lambda t: t[0]`
+                                                    FunctionDefinitionNode Name: <lambda> SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
                                                       Arguments: None
                                                       KwArguments: None
                                                       Documentation: None
@@ -6688,7 +6623,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ExecutionSlots:
                                                         FreeVarsSlots: None
                                                         CellVarsSlots: None
-                                                      FunctionRootNode SourceSection: [25539,25553]`lambda t: t[0]`
+                                                      FunctionRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
                                                         Name: <lambda>
                                                         Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
                                                           Param Names: t
@@ -6699,8 +6634,8 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         ExecutionSlots:
                                                           FreeVarsSlots: None
                                                           CellVarsSlots: None
-                                                        InnerRootNode SourceSection: [25539,25553]`lambda t: t[0]`
-                                                          ReturnTargetNode SourceSection: [25539,25553]`lambda t: t[0]`
+                                                        InnerRootNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
+                                                          ReturnTargetNode SourceSection: [25381,25403]`lambda t: (t[1], t[0...`
                                                             Body: BlockNode SourceSection: None
                                                               WriteLocalVariableNodeGen SourceSection: None
                                                                 Identifier: t
@@ -6710,23 +6645,85 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   ReadIndexedArgumentNodeGen SourceSection: None
                                                                     Index: 0
                                                               FrameReturnNode SourceSection: None
-                                                                FunctionBodyNode SourceSection: [25549,25553]`t[0]`
+                                                                FunctionBodyNode SourceSection: [25391,25403]`(t[1], t[0])`
                                                                   WriteLocalVariableNodeGen SourceSection: None
                                                                     Identifier: <return_val>
                                                                     WriteLocalFrameSlotNodeGen SourceSection: None
                                                                       Frame: [1,<return_val>,Illegal]
-                                                                    GetItemNodeGen SourceSection: [25549,25553]`t[0]`
-                                                                      ReadLocalVariableNode SourceSection: None
-                                                                        Frame: [0,t,Illegal]
-                                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      IntegerLiteralNode SourceSection: [25551,25552]`0`
-                                                                        Value: 0
+                                                                    TupleLiteralNode SourceSection: [25391,25403]`(t[1], t[0])`
+                                                                      GetItemNodeGen SourceSection: [25392,25396]`t[1]`
+                                                                        ReadLocalVariableNode SourceSection: None
+                                                                          Frame: [0,t,Illegal]
+                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        IntegerLiteralNode SourceSection: [25394,25395]`1`
+                                                                          Value: 1
+                                                                      GetItemNodeGen SourceSection: [25398,25402]`t[0]`
+                                                                        ReadLocalVariableNode SourceSection: None
+                                                                          Frame: [0,t,Illegal]
+                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        IntegerLiteralNode SourceSection: [25400,25401]`0`
+                                                                          Value: 0
+                                                                      PythonObjectFactoryNodeGen SourceSection: None
                                                             Return Expresssion: ReadLocalVariableNode SourceSection: None
                                                               Frame: [1,<return_val>,Illegal]
                                                               ReadVariableFromFrameNodeGen SourceSection: None
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                EmptyNode SourceSection: None
+                                              GetCallAttributeNodeGen SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [25364,25371]`members`
+                                                  Frame: [6,members,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                          ExceptNode SourceSection: None
+                                            ExpressionStatementNode SourceSection: [25522,25554]`members.sort(key=lam...`
+                                              PythonCallNodeGen SourceSection: [25522,25554]`members.sort(key=lam...`
+                                                CallNodeGen SourceSection: None
+                                                KeywordArgumentsNodeGen SourceSection: None
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      FunctionDefinitionNode Name: <lambda> SourceSection: [25539,25553]`lambda t: t[0]`
+                                                        Arguments: None
+                                                        KwArguments: None
+                                                        Documentation: None
+                                                        FreeVarSlots: None
+                                                        ExecutionSlots:
+                                                          FreeVarsSlots: None
+                                                          CellVarsSlots: None
+                                                        FunctionRootNode SourceSection: [25539,25553]`lambda t: t[0]`
+                                                          Name: <lambda>
+                                                          Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                                            Param Names: t
+                                                          CelVars: None
+                                                          FreeVars: None
+                                                          NeedsCellFrame: False
+                                                          FrameDescriptor: 2 slots [t, <return_val>]
+                                                          ExecutionSlots:
+                                                            FreeVarsSlots: None
+                                                            CellVarsSlots: None
+                                                          InnerRootNode SourceSection: [25539,25553]`lambda t: t[0]`
+                                                            ReturnTargetNode SourceSection: [25539,25553]`lambda t: t[0]`
+                                                              Body: BlockNode SourceSection: None
+                                                                WriteLocalVariableNodeGen SourceSection: None
+                                                                  Identifier: t
+                                                                  WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                    Frame: [0,t,Illegal]
+                                                                  ArgumentExpressionNode SourceSection: None
+                                                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                                                      Index: 0
+                                                                FrameReturnNode SourceSection: None
+                                                                  FunctionBodyNode SourceSection: [25549,25553]`t[0]`
+                                                                    WriteLocalVariableNodeGen SourceSection: None
+                                                                      Identifier: <return_val>
+                                                                      WriteLocalFrameSlotNodeGen SourceSection: None
+                                                                        Frame: [1,<return_val>,Illegal]
+                                                                      GetItemNodeGen SourceSection: [25549,25553]`t[0]`
+                                                                        ReadLocalVariableNode SourceSection: None
+                                                                          Frame: [0,t,Illegal]
+                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        IntegerLiteralNode SourceSection: [25551,25552]`0`
+                                                                          Value: 0
+                                                              Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                                                Frame: [1,<return_val>,Illegal]
+                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                  EmptyNode SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNode SourceSection: [25522,25529]`members`
                                                     Frame: [6,members,Illegal]
@@ -6748,13 +6745,12 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Frame: [6,members,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [25595,25601]`module`
-                                                Frame: [2,module,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [25595,25601]`module`
+                                                  Frame: [2,module,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                            EmptyNode SourceSection: None
                                           ReadLocalVariableNode SourceSection: [25569,25572]`cls`
                                             Frame: [0,cls,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -6808,14 +6804,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [21058,21066]`EnumMeta`
-                Identifier: EnumMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [21058,21066]`EnumMeta`
+                  Identifier: EnumMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [25753,25838]`class IntEnum(int, E...`
@@ -10641,61 +10636,60 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       PythonCallNodeGen SourceSection: [34223,34274]`members.sort(key=lam...`
                         CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            FunctionDefinitionNode Name: <lambda> SourceSection: [34240,34259]`lambda m: m._value_`
-                              Arguments: None
-                              KwArguments: None
-                              Documentation: None
-                              FreeVarSlots: None
-                              ExecutionSlots:
-                                FreeVarsSlots: None
-                                CellVarsSlots: None
-                              FunctionRootNode SourceSection: [34240,34259]`lambda m: m._value_`
-                                Name: <lambda>
-                                Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
-                                  Param Names: m
-                                CelVars: None
-                                FreeVars: None
-                                NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [m, <return_val>]
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              FunctionDefinitionNode Name: <lambda> SourceSection: [34240,34259]`lambda m: m._value_`
+                                Arguments: None
+                                KwArguments: None
+                                Documentation: None
+                                FreeVarSlots: None
                                 ExecutionSlots:
                                   FreeVarsSlots: None
                                   CellVarsSlots: None
-                                InnerRootNode SourceSection: [34240,34259]`lambda m: m._value_`
-                                  ReturnTargetNode SourceSection: [34240,34259]`lambda m: m._value_`
-                                    Body: BlockNode SourceSection: None
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: m
-                                        WriteLocalFrameSlotNodeGen SourceSection: None
-                                          Frame: [0,m,Illegal]
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                      FrameReturnNode SourceSection: None
-                                        FunctionBodyNode SourceSection: [34250,34259]`m._value_`
-                                          WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            WriteLocalFrameSlotNodeGen SourceSection: None
-                                              Frame: [1,<return_val>,Illegal]
-                                            GetAttributeNodeGen SourceSection: [34250,34259]`m._value_`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _value_
-                                                CachedDispatchFirst SourceSection: None
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
+                                FunctionRootNode SourceSection: [34240,34259]`lambda m: m._value_`
+                                  Name: <lambda>
+                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=False, positionalOnly=True, requiresKeywordArgs=False
+                                    Param Names: m
+                                  CelVars: None
+                                  FreeVars: None
+                                  NeedsCellFrame: False
+                                  FrameDescriptor: 2 slots [m, <return_val>]
+                                  ExecutionSlots:
+                                    FreeVarsSlots: None
+                                    CellVarsSlots: None
+                                  InnerRootNode SourceSection: [34240,34259]`lambda m: m._value_`
+                                    ReturnTargetNode SourceSection: [34240,34259]`lambda m: m._value_`
+                                      Body: BlockNode SourceSection: None
+                                        WriteLocalVariableNodeGen SourceSection: None
+                                          Identifier: m
+                                          WriteLocalFrameSlotNodeGen SourceSection: None
+                                            Frame: [0,m,Illegal]
+                                          ArgumentExpressionNode SourceSection: None
+                                            ReadIndexedArgumentNodeGen SourceSection: None
+                                              Index: 0
+                                        FrameReturnNode SourceSection: None
+                                          FunctionBodyNode SourceSection: [34250,34259]`m._value_`
+                                            WriteLocalVariableNodeGen SourceSection: None
+                                              Identifier: <return_val>
+                                              WriteLocalFrameSlotNodeGen SourceSection: None
+                                                Frame: [1,<return_val>,Illegal]
+                                              GetAttributeNodeGen SourceSection: [34250,34259]`m._value_`
+                                                GetFixedAttributeNodeGen SourceSection: None
+                                                  Key: _value_
                                                   CachedDispatchFirst SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [34250,34251]`m`
-                                                Frame: [0,m,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                    Return Expresssion: ReadLocalVariableNode SourceSection: None
-                                      Frame: [1,<return_val>,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            BooleanLiteralNode SourceSection: [34269,34273]`True`
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                    Op: __getattribute__
+                                                  IsBuiltinClassProfile SourceSection: None
+                                                    CachedDispatchFirst SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [34250,34251]`m`
+                                                  Frame: [0,m,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                      Return Expresssion: ReadLocalVariableNode SourceSection: None
+                                        Frame: [1,<return_val>,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              BooleanLiteralNode SourceSection: [34269,34273]`True`
+                          EmptyNode SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [34223,34230]`members`
                             Frame: [5,members,Illegal]

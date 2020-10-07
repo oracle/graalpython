@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,93 +25,123 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-@NodeChild(value = "splat", type = ExecuteKeywordStarargsNode.class)
-@ImportStatic(PythonOptions.class)
+@NodeChild(value = "arguments", type = ExecuteKeywordArgumentsNode.class)
+@NodeChild(value = "starKeywordArgs", type = ExpressionNode.class)
+@ImportStatic({PythonOptions.class, PGuards.class})
 public abstract class KeywordArgumentsNode extends Node {
-    @Children private final ExpressionNode[] arguments;
-    @Child private CompactKeywordsNode compactNode = CompactKeywordsNodeGen.create();
 
     public static KeywordArgumentsNode create(ExpressionNode[] arguments, ExpressionNode starargs) {
-        return KeywordArgumentsNodeGen.create(arguments, ExecuteKeywordStarargsNodeGen.create(starargs == null ? EmptyNode.create() : starargs));
-    }
-
-    KeywordArgumentsNode(ExpressionNode[] arguments) {
-        this.arguments = arguments;
+        return KeywordArgumentsNodeGen.create(ExecuteKeywordArgumentsNode.create(arguments), starargs == null ? EmptyNode.create() : starargs);
     }
 
     public abstract PKeyword[] execute(VirtualFrame frame);
 
-    @Specialization(guards = {"starargs.length == cachedLen", "starargs.length < 32"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {
+                    "arguments.length == cachedLenArguments", "arguments.length < 32"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
-    PKeyword[] makeKeywords(VirtualFrame frame, PKeyword[] starargs,
-                    @Cached("starargs.length") int cachedLen) {
-        int length = arguments.length;
-        CompilerAsserts.partialEvaluationConstant(length);
-        PKeyword[] keywords = new PKeyword[length + cachedLen];
-        int reshape = 0;
-        for (int i = 0; i < length; i++) {
-            Object o = arguments[i].execute(frame);
-            if (o instanceof PKeyword) {
-                keywords[i] = (PKeyword) o;
-            } else {
-                reshape++;
+    PKeyword[] doDictCached(PKeyword[] arguments, PDict starargs,
+                    @Cached ExpandKeywordStarargsNode executeStarArgsNode,
+                    @Cached KeywordArgumentsInternalNode internalNode,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @Cached("arguments.length") int cachedLenArguments,
+                    @Cached BranchProfile sameKeyProfile) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        for (int i = 0; i < cachedLenArguments; i++) {
+            if (lib.hasKey(dictStorage, arguments[i].getName())) {
+                sameKeyProfile.enter();
+                throw new SameDictKeyException(arguments[i].getName());
             }
         }
-
-        for (int i = 0; i < cachedLen; i++) {
-            keywords[arguments.length + i] = starargs[i];
-        }
-
-        if (reshape > 0) {
-            return compactNode.execute(keywords, reshape);
-        } else {
-            return keywords;
-        }
+        PKeyword[] starArgs = executeStarArgsNode.execute(starargs);
+        return internalNode.execute(arguments, starArgs);
     }
 
-    @Specialization(replaces = "makeKeywords")
-    @ExplodeLoop
-    PKeyword[] makeKeywordsUncached(VirtualFrame frame, PKeyword[] starargs) {
-        int length = arguments.length;
-        CompilerAsserts.partialEvaluationConstant(length);
-        PKeyword[] keywords = length == 0 ? new PKeyword[starargs.length] : new PKeyword[length + starargs.length];
-        int reshape = 0;
-        for (int i = 0; i < length; i++) {
-            Object o = arguments[i].execute(frame);
-            if (o instanceof PKeyword) {
-                keywords[i] = (PKeyword) o;
-            } else {
-                reshape++;
+    @Specialization(replaces = "doDictCached")
+    PKeyword[] doDict(PKeyword[] arguments, PDict starargs,
+                    @Cached ExpandKeywordStarargsNode executeStarArgsNode,
+                    @Cached KeywordArgumentsInternalNode internalNode,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @Cached BranchProfile sameKeyProfile) {
+        HashingStorage dictStorage = starargs.getDictStorage();
+        for (int i = 0; i < arguments.length; i++) {
+            if (lib.hasKey(dictStorage, arguments[i].getName())) {
+                sameKeyProfile.enter();
+                throw new SameDictKeyException(arguments[i].getName());
             }
         }
-
-        copyStarargs(keywords, starargs);
-
-        if (reshape > 0) {
-            return compactNode.execute(keywords, reshape);
-        } else {
-            return keywords;
-        }
+        PKeyword[] starArgs = executeStarArgsNode.execute(starargs);
+        return internalNode.execute(arguments, starArgs);
     }
 
-    private void copyStarargs(PKeyword[] keywords, PKeyword[] starargs) {
-        // This loop has deliberately been moved out such that it won't be exploded since the length
-        // of iterations is not constant.
-        for (int i = 0; i < starargs.length; i++) {
-            keywords[arguments.length + i] = starargs[i];
+    @Specialization
+    PKeyword[] doNone(PKeyword[] arguments, @SuppressWarnings("unused") PNone starargs) {
+        return arguments;
+    }
+
+    @Specialization(guards = {"!isDict(starargs)", "!isPNone(starargs)"})
+    PKeyword[] doGeneral(@SuppressWarnings("unused") PKeyword[] arguments, Object starargs) {
+        throw new NonMappingException(starargs);
+    }
+
+    @ImportStatic(PythonOptions.class)
+    protected abstract static class KeywordArgumentsInternalNode extends Node {
+
+        public abstract PKeyword[] execute(PKeyword[] arguments, PKeyword[] starargs);
+
+        @Specialization(guards = {
+                        "arguments.length == cachedLenArguments", "arguments.length < 32",
+                        "starargs.length == cachedLenStarArgs", "starargs.length < 32"
+        }, limit = "getVariableArgumentInlineCacheLimit()")
+        @ExplodeLoop
+        PKeyword[] makeKeywords(PKeyword[] arguments, PKeyword[] starargs,
+                        @Cached("arguments.length") int cachedLenArguments,
+                        @Cached("starargs.length") int cachedLenStarArgs) {
+            PKeyword[] keywords = new PKeyword[cachedLenArguments + cachedLenStarArgs];
+            for (int i = 0; i < cachedLenArguments; i++) {
+                keywords[i] = arguments[i];
+            }
+
+            for (int i = 0; i < cachedLenStarArgs; i++) {
+                keywords[cachedLenArguments + i] = starargs[i];
+            }
+
+            return keywords;
         }
+
+        @Specialization(replaces = "makeKeywords")
+        PKeyword[] makeKeywordsUncached(PKeyword[] arguments, PKeyword[] starargs) {
+            int lengthArguments = arguments.length;
+            int lengthStarArgs = starargs.length;
+            PKeyword[] keywords = lengthArguments == 0 ? new PKeyword[lengthStarArgs] : new PKeyword[lengthArguments + lengthStarArgs];
+            for (int i = 0; i < lengthArguments; i++) {
+                keywords[i] = arguments[i];
+            }
+
+            for (int i = 0; i < lengthStarArgs; i++) {
+                keywords[lengthArguments + i] = starargs[i];
+            }
+            return keywords;
+        }
+
     }
 }

@@ -7436,24 +7436,23 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           StringLiteralNode SourceSection: [21345,21348]`'.'`
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                      KeywordLiteralNode SourceSection: None
-                                                        BinaryArithmeticExpression SourceSection: [21373,21387]`'  '*(level-1)`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __mul__
-                                                          StringLiteralNode SourceSection: [21373,21377]`'  '`
-                                                          BinaryArithmeticExpression SourceSection: [21379,21386]`level-1`
+                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                        KeywordLiteralNode SourceSection: None
+                                                          BinaryArithmeticExpression SourceSection: [21373,21387]`'  '*(level-1)`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __sub__
-                                                            ReadLocalCellNodeGen SourceSection: [21379,21384]`level`
-                                                              ReadLocalVariableNode SourceSection: None
-                                                                Frame: [5,level,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadFromCellNodeGen SourceSection: None
-                                                            IntegerLiteralNode SourceSection: [21385,21386]`1`
-                                                              Value: 1
-                                                      CompactKeywordsNodeGen SourceSection: None
-                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                              Op: __mul__
+                                                            StringLiteralNode SourceSection: [21373,21377]`'  '`
+                                                            BinaryArithmeticExpression SourceSection: [21379,21386]`level-1`
+                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                                Op: __sub__
+                                                              ReadLocalCellNodeGen SourceSection: [21379,21384]`level`
+                                                                ReadLocalVariableNode SourceSection: None
+                                                                  Frame: [5,level,Illegal]
+                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                                ReadFromCellNodeGen SourceSection: None
+                                                              IntegerLiteralNode SourceSection: [21385,21386]`1`
+                                                                Value: 1
+                                                      EmptyNode SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21278,21283]`print`
                                                       Identifier: print
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7519,32 +7518,31 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   PythonCallNodeGen SourceSection: [21478,21517]`print(end=' '*(offse...`
                                                     CallNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                      KeywordLiteralNode SourceSection: None
-                                                        BinaryArithmeticExpression SourceSection: [21488,21516]`' '*(offset_width + ...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __mul__
-                                                          StringLiteralNode SourceSection: [21488,21491]`' '`
-                                                          BinaryArithmeticExpression SourceSection: [21493,21515]`offset_width + 2*lev...`
+                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                        KeywordLiteralNode SourceSection: None
+                                                          BinaryArithmeticExpression SourceSection: [21488,21516]`' '*(offset_width + ...`
                                                             LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __add__
-                                                            ReadLocalCellNodeGen SourceSection: [21493,21505]`offset_width`
-                                                              ReadLocalVariableNode SourceSection: None
-                                                                Frame: [3,offset_width,Illegal]
-                                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                                              ReadFromCellNodeGen SourceSection: None
-                                                            BinaryArithmeticExpression SourceSection: [21508,21515]`2*level`
+                                                              Op: __mul__
+                                                            StringLiteralNode SourceSection: [21488,21491]`' '`
+                                                            BinaryArithmeticExpression SourceSection: [21493,21515]`offset_width + 2*lev...`
                                                               LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __mul__
-                                                              IntegerLiteralNode SourceSection: [21508,21509]`2`
-                                                                Value: 2
-                                                              ReadLocalCellNodeGen SourceSection: [21510,21515]`level`
+                                                                Op: __add__
+                                                              ReadLocalCellNodeGen SourceSection: [21493,21505]`offset_width`
                                                                 ReadLocalVariableNode SourceSection: None
-                                                                  Frame: [2,level,Illegal]
+                                                                  Frame: [3,offset_width,Illegal]
                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                 ReadFromCellNodeGen SourceSection: None
-                                                      CompactKeywordsNodeGen SourceSection: None
-                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                              BinaryArithmeticExpression SourceSection: [21508,21515]`2*level`
+                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                  Op: __mul__
+                                                                IntegerLiteralNode SourceSection: [21508,21509]`2`
+                                                                  Value: 2
+                                                                ReadLocalCellNodeGen SourceSection: [21510,21515]`level`
+                                                                  ReadLocalVariableNode SourceSection: None
+                                                                    Frame: [2,level,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                  ReadFromCellNodeGen SourceSection: None
+                                                      EmptyNode SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [21478,21483]`print`
                                                       Identifier: print
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8018,19 +8016,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [7,skip,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           KeywordArgumentsNodeGen SourceSection: None
-                                                            KeywordLiteralNode SourceSection: None
-                                                              BinaryArithmeticExpression SourceSection: [22775,22781]`i+skip`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __add__
-                                                                ReadLocalVariableNode SourceSection: [22775,22776]`i`
-                                                                  Frame: [4,i,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                                ReadLocalVariableNode SourceSection: [22777,22781]`skip`
-                                                                  Frame: [7,skip,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                            CompactKeywordsNodeGen SourceSection: None
-                                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                              EmptyNode SourceSection: None
+                                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                                              KeywordLiteralNode SourceSection: None
+                                                                BinaryArithmeticExpression SourceSection: [22775,22781]`i+skip`
+                                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    Op: __add__
+                                                                  ReadLocalVariableNode SourceSection: [22775,22776]`i`
+                                                                    Frame: [4,i,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [22777,22781]`skip`
+                                                                    Frame: [7,skip,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                            EmptyNode SourceSection: None
                                                           ReadLocalVariableNode SourceSection: [22755,22761]`print_`
                                                             Frame: [2,print_,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -8649,19 +8646,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       Frame: [7,skip,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                                      KeywordLiteralNode SourceSection: None
-                                                                        BinaryArithmeticExpression SourceSection: [24005,24011]`i+skip`
-                                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                                            Op: __add__
-                                                                          ReadLocalVariableNode SourceSection: [24005,24006]`i`
-                                                                            Frame: [4,i,Illegal]
-                                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                                          ReadLocalVariableNode SourceSection: [24007,24011]`skip`
-                                                                            Frame: [7,skip,Illegal]
-                                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                                      CompactKeywordsNodeGen SourceSection: None
-                                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                        EmptyNode SourceSection: None
+                                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                                        KeywordLiteralNode SourceSection: None
+                                                                          BinaryArithmeticExpression SourceSection: [24005,24011]`i+skip`
+                                                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                                                              Op: __add__
+                                                                            ReadLocalVariableNode SourceSection: [24005,24006]`i`
+                                                                              Frame: [4,i,Illegal]
+                                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                                            ReadLocalVariableNode SourceSection: [24007,24011]`skip`
+                                                                              Frame: [7,skip,Illegal]
+                                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                                      EmptyNode SourceSection: None
                                                                     ReadLocalVariableNode SourceSection: [23985,23991]`print_`
                                                                       Frame: [2,print_,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
@@ -8710,19 +8706,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         Frame: [7,skip,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                                       KeywordArgumentsNodeGen SourceSection: None
-                                                                        KeywordLiteralNode SourceSection: None
-                                                                          BinaryArithmeticExpression SourceSection: [24134,24140]`i+skip`
-                                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                                              Op: __add__
-                                                                            ReadLocalVariableNode SourceSection: [24134,24135]`i`
-                                                                              Frame: [4,i,Illegal]
-                                                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                                                            ReadLocalVariableNode SourceSection: [24136,24140]`skip`
-                                                                              Frame: [7,skip,Illegal]
-                                                                              ReadVariableFromFrameNodeGen SourceSection: None
-                                                                        CompactKeywordsNodeGen SourceSection: None
-                                                                        ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                          EmptyNode SourceSection: None
+                                                                        ExecuteKeywordArgumentsNode SourceSection: None
+                                                                          KeywordLiteralNode SourceSection: None
+                                                                            BinaryArithmeticExpression SourceSection: [24134,24140]`i+skip`
+                                                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                Op: __add__
+                                                                              ReadLocalVariableNode SourceSection: [24134,24135]`i`
+                                                                                Frame: [4,i,Illegal]
+                                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                                              ReadLocalVariableNode SourceSection: [24136,24140]`skip`
+                                                                                Frame: [7,skip,Illegal]
+                                                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                                                        EmptyNode SourceSection: None
                                                                       ReadLocalVariableNode SourceSection: [24114,24120]`print_`
                                                                         Frame: [2,print_,Illegal]
                                                                         ReadVariableFromFrameNodeGen SourceSection: None
@@ -8808,19 +8803,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                   Frame: [7,skip,Illegal]
                                                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                                                  KeywordLiteralNode SourceSection: None
-                                                                                    BinaryArithmeticExpression SourceSection: [24382,24388]`i+skip`
-                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                        Op: __add__
-                                                                                      ReadLocalVariableNode SourceSection: [24382,24383]`i`
-                                                                                        Frame: [4,i,Illegal]
-                                                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                      ReadLocalVariableNode SourceSection: [24384,24388]`skip`
-                                                                                        Frame: [7,skip,Illegal]
-                                                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                  CompactKeywordsNodeGen SourceSection: None
-                                                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                                    EmptyNode SourceSection: None
+                                                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                                                    KeywordLiteralNode SourceSection: None
+                                                                                      BinaryArithmeticExpression SourceSection: [24382,24388]`i+skip`
+                                                                                        LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                          Op: __add__
+                                                                                        ReadLocalVariableNode SourceSection: [24382,24383]`i`
+                                                                                          Frame: [4,i,Illegal]
+                                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                        ReadLocalVariableNode SourceSection: [24384,24388]`skip`
+                                                                                          Frame: [7,skip,Illegal]
+                                                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                  EmptyNode SourceSection: None
                                                                                 ReadLocalVariableNode SourceSection: [24356,24362]`print_`
                                                                                   Frame: [2,print_,Illegal]
                                                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -8958,19 +8952,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           Frame: [13,max,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                                         KeywordArgumentsNodeGen SourceSection: None
-                                                                          KeywordLiteralNode SourceSection: None
-                                                                            BinaryArithmeticExpression SourceSection: [24707,24713]`i+skip`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
-                                                                              ReadLocalVariableNode SourceSection: [24707,24708]`i`
-                                                                                Frame: [4,i,Illegal]
-                                                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                                                              ReadLocalVariableNode SourceSection: [24709,24713]`skip`
-                                                                                Frame: [7,skip,Illegal]
-                                                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                                                          CompactKeywordsNodeGen SourceSection: None
-                                                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                            EmptyNode SourceSection: None
+                                                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                                                            KeywordLiteralNode SourceSection: None
+                                                                              BinaryArithmeticExpression SourceSection: [24707,24713]`i+skip`
+                                                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                  Op: __add__
+                                                                                ReadLocalVariableNode SourceSection: [24707,24708]`i`
+                                                                                  Frame: [4,i,Illegal]
+                                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                ReadLocalVariableNode SourceSection: [24709,24713]`skip`
+                                                                                  Frame: [7,skip,Illegal]
+                                                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                                          EmptyNode SourceSection: None
                                                                         ReadLocalVariableNode SourceSection: [24677,24683]`print_`
                                                                           Frame: [2,print_,Illegal]
                                                                           ReadVariableFromFrameNodeGen SourceSection: None
@@ -9078,19 +9071,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             Frame: [7,skip,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                                           KeywordArgumentsNodeGen SourceSection: None
-                                                                            KeywordLiteralNode SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [24897,24903]`i+skip`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
-                                                                                ReadLocalVariableNode SourceSection: [24897,24898]`i`
-                                                                                  Frame: [4,i,Illegal]
-                                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                ReadLocalVariableNode SourceSection: [24899,24903]`skip`
-                                                                                  Frame: [7,skip,Illegal]
-                                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                                            CompactKeywordsNodeGen SourceSection: None
-                                                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                              EmptyNode SourceSection: None
+                                                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                                                              KeywordLiteralNode SourceSection: None
+                                                                                BinaryArithmeticExpression SourceSection: [24897,24903]`i+skip`
+                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                    Op: __add__
+                                                                                  ReadLocalVariableNode SourceSection: [24897,24898]`i`
+                                                                                    Frame: [4,i,Illegal]
+                                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                  ReadLocalVariableNode SourceSection: [24899,24903]`skip`
+                                                                                    Frame: [7,skip,Illegal]
+                                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                            EmptyNode SourceSection: None
                                                                           ReadLocalVariableNode SourceSection: [24872,24878]`print_`
                                                                             Frame: [2,print_,Illegal]
                                                                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -9182,19 +9174,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               Frame: [6,arg,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
                                                                             KeywordArgumentsNodeGen SourceSection: None
-                                                                              KeywordLiteralNode SourceSection: None
-                                                                                BinaryArithmeticExpression SourceSection: [25055,25061]`i+skip`
-                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                    Op: __add__
-                                                                                  ReadLocalVariableNode SourceSection: [25055,25056]`i`
-                                                                                    Frame: [4,i,Illegal]
-                                                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                  ReadLocalVariableNode SourceSection: [25057,25061]`skip`
-                                                                                    Frame: [7,skip,Illegal]
-                                                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                                              CompactKeywordsNodeGen SourceSection: None
-                                                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                                EmptyNode SourceSection: None
+                                                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                                                KeywordLiteralNode SourceSection: None
+                                                                                  BinaryArithmeticExpression SourceSection: [25055,25061]`i+skip`
+                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                      Op: __add__
+                                                                                    ReadLocalVariableNode SourceSection: [25055,25056]`i`
+                                                                                      Frame: [4,i,Illegal]
+                                                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                    ReadLocalVariableNode SourceSection: [25057,25061]`skip`
+                                                                                      Frame: [7,skip,Illegal]
+                                                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                                              EmptyNode SourceSection: None
                                                                             ReadLocalVariableNode SourceSection: [25030,25036]`print_`
                                                                               Frame: [2,print_,Illegal]
                                                                               ReadVariableFromFrameNodeGen SourceSection: None
@@ -9354,19 +9345,18 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 Frame: [13,max,Illegal]
                                                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                                                               KeywordArgumentsNodeGen SourceSection: None
-                                                                                KeywordLiteralNode SourceSection: None
-                                                                                  BinaryArithmeticExpression SourceSection: [25338,25344]`i+skip`
-                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                      Op: __add__
-                                                                                    ReadLocalVariableNode SourceSection: [25338,25339]`i`
-                                                                                      Frame: [4,i,Illegal]
-                                                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                    ReadLocalVariableNode SourceSection: [25340,25344]`skip`
-                                                                                      Frame: [7,skip,Illegal]
-                                                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                CompactKeywordsNodeGen SourceSection: None
-                                                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                                  EmptyNode SourceSection: None
+                                                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                                                  KeywordLiteralNode SourceSection: None
+                                                                                    BinaryArithmeticExpression SourceSection: [25338,25344]`i+skip`
+                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                        Op: __add__
+                                                                                      ReadLocalVariableNode SourceSection: [25338,25339]`i`
+                                                                                        Frame: [4,i,Illegal]
+                                                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                      ReadLocalVariableNode SourceSection: [25340,25344]`skip`
+                                                                                        Frame: [7,skip,Illegal]
+                                                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                EmptyNode SourceSection: None
                                                                               ReadLocalVariableNode SourceSection: [25296,25302]`print_`
                                                                                 Frame: [2,print_,Illegal]
                                                                                 ReadVariableFromFrameNodeGen SourceSection: None

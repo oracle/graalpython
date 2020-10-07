@@ -40,19 +40,20 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.truffle.api.nodes.ControlFlowException;
+import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
 
-public class SameDictKeyException extends ControlFlowException {
-    private static final long serialVersionUID = 1L;
+public class SameDictKeyException extends PythonControlFlowException {
 
-    private final String key;
+    private static final long serialVersionUID = 301451134733299948L;
 
-    public SameDictKeyException(String key) {
+    private final Object key;
+
+    public SameDictKeyException(Object key) {
         super();
         this.key = key;
     }
 
-    public String getKey() {
+    public Object getKey() {
         return key;
     }
 

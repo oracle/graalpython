@@ -1385,13 +1385,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 IntegerLiteralNode SourceSection: [5683,5684]`0`
                                   Value: 0
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [5696,5704]`monetary`
-                                    Frame: [3,monetary,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [5696,5704]`monetary`
+                                      Frame: [3,monetary,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [5670,5676]`_group`
                                 Identifier: _group
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1517,13 +1516,12 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [5,formatted,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [6087,6095]`monetary`
-                                      Frame: [3,monetary,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [6087,6095]`monetary`
+                                        Frame: [3,monetary,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  EmptyNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [6060,6066]`_group`
                                   Identifier: _group
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2045,12 +2043,11 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Identifier: DeprecationWarning
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            IntegerLiteralNode SourceSection: [7856,7857]`2`
-                              Value: 2
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              IntegerLiteralNode SourceSection: [7856,7857]`2`
+                                Value: 2
+                          EmptyNode SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [7683,7691]`warnings`
                             Frame: [5,warnings,Illegal]
@@ -2287,11 +2284,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           Frame: [2,grouping,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            BooleanLiteralNode SourceSection: [8657,8661]`True`
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              BooleanLiteralNode SourceSection: [8657,8661]`True`
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [8601,8608]`_format`
                           Identifier: _format
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

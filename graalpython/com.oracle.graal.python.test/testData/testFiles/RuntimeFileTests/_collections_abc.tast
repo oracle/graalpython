@@ -884,14 +884,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [2671,2678]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [2671,2678]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [2924,3203]`class Awaitable(meta...`
@@ -1091,14 +1090,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [2950,2957]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [2950,2957]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [3203,4279]`class Coroutine(Awai...`
@@ -1721,14 +1719,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [4341,4348]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [4341,4348]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [4615,5061]`class AsyncIterator(...`
@@ -2654,14 +2651,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [6553,6560]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [6553,6560]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [6833,7255]`class Iterator(Itera...`
@@ -3942,14 +3938,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [9411,9418]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [9411,9418]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [9659,9953]`class Container(meta...`
@@ -4152,14 +4147,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [9685,9692]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [9685,9692]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [9953,10209]`class Collection(Siz...`
@@ -4522,14 +4516,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           KeywordArgumentsNodeGen SourceSection: None
-            KeywordLiteralNode SourceSection: None
-              ReadNameNodeGen SourceSection: [10234,10241]`ABCMeta`
-                Identifier: ABCMeta
-                IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
-            CompactKeywordsNodeGen SourceSection: None
-            ExecuteKeywordStarargsNodeGen SourceSection: None
-              EmptyNode SourceSection: None
+            ExecuteKeywordArgumentsNode SourceSection: None
+              KeywordLiteralNode SourceSection: None
+                ReadNameNodeGen SourceSection: [10234,10241]`ABCMeta`
+                  Identifier: ABCMeta
+                  IsBuiltinClassProfile SourceSection: None
+                    CachedDispatchFirst SourceSection: None
+            EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [10521,14799]`class Set(Collection...`

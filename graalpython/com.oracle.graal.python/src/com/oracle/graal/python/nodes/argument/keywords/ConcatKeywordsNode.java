@@ -47,15 +47,14 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateNodeFactory
 public abstract class ConcatKeywordsNode extends ExpressionNode {
 
     @Node.Children final ExpressionNode[] mappables;
@@ -66,12 +65,12 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
 
     @ExplodeLoop
     @Specialization
-    public Object concat(VirtualFrame frame,
+    protected Object concat(VirtualFrame frame,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                     @Cached GetDictStorageNode getStore,
                     @CachedLibrary(limit = "2") HashingStorageLibrary firstlib,
                     @CachedLibrary(limit = "1") HashingStorageLibrary otherlib,
-                    @Cached("createBinaryProfile()") ConditionProfile sameKeyProfile) {
+                    @Cached BranchProfile sameKeyProfile) {
         PDict first = null;
         PDict other;
         for (ExpressionNode n : mappables) {
@@ -86,22 +85,18 @@ public abstract class ConcatKeywordsNode extends ExpressionNode {
     }
 
     private static void addAllToDict(VirtualFrame frame, PDict dict, PDict other, ConditionProfile hasFrame,
-                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, GetDictStorageNode getStore, ConditionProfile sameKeyProfile) {
+                    HashingStorageLibrary firstlib, HashingStorageLibrary otherlib, GetDictStorageNode getStore, BranchProfile sameKeyProfile) {
         HashingStorage dictStorage = getStore.execute(dict);
         HashingStorage otherStorage = getStore.execute(other);
         for (Object key : otherlib.keys(otherStorage)) {
             Object value = otherlib.getItemWithFrame(otherStorage, key, hasFrame, frame);
-            if (sameKeyProfile.profile(firstlib.hasKey(dictStorage, key))) {
-                throw createSameDictKeyException(key);
+            if (firstlib.hasKey(dictStorage, key)) {
+                sameKeyProfile.enter();
+                throw new SameDictKeyException(key);
             }
             dictStorage = firstlib.setItemWithFrame(dictStorage, key, value, hasFrame, frame);
         }
         dict.setDictStorage(dictStorage);
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    private static SameDictKeyException createSameDictKeyException(Object key) {
-        return new SameDictKeyException(key.toString());
     }
 
     private static PDict expectDict(Object first) {

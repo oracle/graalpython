@@ -2489,13 +2489,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [19280,19288]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [19280,19288]`sentinel`
+                                      Frame: [4,sentinel,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19264,19267]`min`
                                 Identifier: min
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2509,19 +2508,18 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [19341,19349]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalCellNodeGen SourceSection: [19355,19358]`key`
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,key,Illegal]
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [19341,19349]`sentinel`
+                                      Frame: [4,sentinel,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadFromCellNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalCellNodeGen SourceSection: [19355,19358]`key`
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [2,key,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadFromCellNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19325,19328]`min`
                                 Identifier: min
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2599,15 +2597,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [1,iterable,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   KeywordArgumentsNodeGen SourceSection: None
-                                    KeywordLiteralNode SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [19626,19629]`key`
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [2,key,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                    CompactKeywordsNodeGen SourceSection: None
-                                    ExecuteKeywordStarargsNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                    ExecuteKeywordArgumentsNode SourceSection: None
+                                      KeywordLiteralNode SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [19626,19629]`key`
+                                          ReadLocalVariableNode SourceSection: None
+                                            Frame: [2,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                    EmptyNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [19605,19611]`sorted`
                                     Identifier: sorted
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3465,13 +3462,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [21159,21167]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [21159,21167]`sentinel`
+                                      Frame: [4,sentinel,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21143,21146]`max`
                                 Identifier: max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3485,19 +3481,18 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Frame: [3,it,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [21220,21228]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalCellNodeGen SourceSection: [21234,21237]`key`
-                                    ReadLocalVariableNode SourceSection: None
-                                      Frame: [2,key,Illegal]
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [21220,21228]`sentinel`
+                                      Frame: [4,sentinel,Illegal]
                                       ReadVariableFromFrameNodeGen SourceSection: None
-                                    ReadFromCellNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalCellNodeGen SourceSection: [21234,21237]`key`
+                                      ReadLocalVariableNode SourceSection: None
+                                        Frame: [2,key,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                      ReadFromCellNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21204,21207]`max`
                                 Identifier: max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3575,17 +3570,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Frame: [1,iterable,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   KeywordArgumentsNodeGen SourceSection: None
-                                    KeywordLiteralNode SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [21505,21508]`key`
-                                        ReadLocalVariableNode SourceSection: None
-                                          Frame: [2,key,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                    KeywordLiteralNode SourceSection: None
-                                      BooleanLiteralNode SourceSection: [21518,21522]`True`
-                                    CompactKeywordsNodeGen SourceSection: None
-                                    ExecuteKeywordStarargsNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                    ExecuteKeywordArgumentsNode SourceSection: None
+                                      KeywordLiteralNode SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [21505,21508]`key`
+                                          ReadLocalVariableNode SourceSection: None
+                                            Frame: [2,key,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                          ReadFromCellNodeGen SourceSection: None
+                                      KeywordLiteralNode SourceSection: None
+                                        BooleanLiteralNode SourceSection: [21518,21522]`True`
+                                    EmptyNode SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [21484,21490]`sorted`
                                     Identifier: sorted
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3871,11 +3865,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           PythonCallNodeGen SourceSection: [22026,22051]`result.sort(reverse=...`
                             CallNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                BooleanLiteralNode SourceSection: [22046,22050]`True`
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  BooleanLiteralNode SourceSection: [22046,22050]`True`
+                              EmptyNode SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [22026,22032]`result`
                                 Frame: [5,result,Illegal]
@@ -4265,11 +4258,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       PythonCallNodeGen SourceSection: [22552,22577]`result.sort(reverse=...`
                         CallNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            BooleanLiteralNode SourceSection: [22572,22576]`True`
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              BooleanLiteralNode SourceSection: [22572,22576]`True`
+                          EmptyNode SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [22552,22558]`result`
                             Frame: [5,result,Illegal]

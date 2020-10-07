@@ -202,15 +202,14 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             Frame: [0,base,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
-                                                ReadGeneratorFrameVariableNode SourceSection: None
-                                                  Frame: [1,abcs,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                ReadFromCellNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalCellNodeGen SourceSection: [179,183]`abcs`
+                                                  ReadGeneratorFrameVariableNode SourceSection: None
+                                                    Frame: [1,abcs,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ReadFromCellNodeGen SourceSection: None
+                                            EmptyNode SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [164,167]`mro`
                                             Identifier: mro
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

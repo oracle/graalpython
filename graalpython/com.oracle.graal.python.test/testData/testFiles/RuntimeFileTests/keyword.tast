@@ -209,11 +209,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           Frame: [4,optfile,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            StringLiteralNode SourceSection: [1319,1321]`''`
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              StringLiteralNode SourceSection: [1319,1321]`''`
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1297,1301]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -510,11 +509,10 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           ReadVariableFromFrameNodeGen SourceSection: None
                         StringLiteralNode SourceSection: [2152,2155]`'w'`
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            StringLiteralNode SourceSection: [2165,2167]`''`
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              StringLiteralNode SourceSection: [2165,2167]`''`
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2138,2142]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

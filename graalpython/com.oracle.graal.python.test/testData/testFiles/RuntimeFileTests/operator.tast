@@ -3932,19 +3932,18 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [8091,8103]`self._kwargs`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: _kwargs
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                            GetAttributeNodeGen SourceSection: [8091,8103]`self._kwargs`
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: _kwargs
+                                                CachedDispatchFirst SourceSection: None
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                                IsBuiltinClassProfile SourceSection: None
                                                   CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [8091,8095]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [8091,8095]`self`
+                                                Frame: [0,self,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                           PythonCallBinary SourceSection: [8051,8075]`getattr(obj, self._n...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8051,8058]`getattr`
@@ -4349,19 +4348,18 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [8668,8680]`self._kwargs`
-                                                      GetFixedAttributeNodeGen SourceSection: None
-                                                        Key: _kwargs
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                  GetAttributeNodeGen SourceSection: [8668,8680]`self._kwargs`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: _kwargs
+                                                      CachedDispatchFirst SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __getattribute__
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [8668,8672]`self`
-                                                        Frame: [0,self,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [8668,8672]`self`
+                                                      Frame: [0,self,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [8630,8637]`partial`
                                                   Frame: [1,partial,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None

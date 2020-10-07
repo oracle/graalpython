@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.argument.keywords.ConcatKeywordsNodeFactory;
+import com.oracle.graal.python.nodes.argument.keywords.ConcatKeywordsNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.KeywordLiteralNode;
@@ -169,7 +169,7 @@ public final class ArgListBuilder {
                 for (int i = 0; i < len; i++) {
                     expressions[i] = (ExpressionNode) kwArg.get(i).accept(visitor);
                 }
-                result = ConcatKeywordsNodeFactory.create(expressions);
+                result = ConcatKeywordsNodeGen.create(expressions);
             }
         }
         return result;

@@ -1002,21 +1002,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                 Frame: [4,fullname,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [6482,6492]`sys.stderr`
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: stderr
-                                                    CachedDispatchFirst SourceSection: None
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
+                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  GetAttributeNodeGen SourceSection: [6482,6492]`sys.stderr`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: stderr
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [6482,6485]`sys`
-                                                    Identifier: sys
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [6482,6485]`sys`
+                                                      Identifier: sys
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              EmptyNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6388,6393]`print`
                                               Identifier: print
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1054,21 +1053,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                             Frame: [6,line,Illegal]
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                         KeywordArgumentsNodeGen SourceSection: None
-                                                          KeywordLiteralNode SourceSection: None
-                                                            GetAttributeNodeGen SourceSection: [6701,6711]`sys.stderr`
-                                                              GetFixedAttributeNodeGen SourceSection: None
-                                                                Key: stderr
-                                                                CachedDispatchFirst SourceSection: None
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __getattribute__
-                                                                IsBuiltinClassProfile SourceSection: None
+                                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                                            KeywordLiteralNode SourceSection: None
+                                                              GetAttributeNodeGen SourceSection: [6701,6711]`sys.stderr`
+                                                                GetFixedAttributeNodeGen SourceSection: None
+                                                                  Key: stderr
                                                                   CachedDispatchFirst SourceSection: None
-                                                              ReadGlobalOrBuiltinNodeGen SourceSection: [6701,6704]`sys`
-                                                                Identifier: sys
-                                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                          CompactKeywordsNodeGen SourceSection: None
-                                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                            EmptyNode SourceSection: None
+                                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                                    Op: __getattribute__
+                                                                  IsBuiltinClassProfile SourceSection: None
+                                                                    CachedDispatchFirst SourceSection: None
+                                                                ReadGlobalOrBuiltinNodeGen SourceSection: [6701,6704]`sys`
+                                                                  Identifier: sys
+                                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                          EmptyNode SourceSection: None
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6679,6684]`print`
                                                           Identifier: print
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1101,21 +1099,20 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             CallNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [6735,6764]`"\nRemainder of file...`
                                             KeywordArgumentsNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [6771,6781]`sys.stderr`
-                                                  GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: stderr
-                                                    CachedDispatchFirst SourceSection: None
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __getattribute__
-                                                    IsBuiltinClassProfile SourceSection: None
+                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  GetAttributeNodeGen SourceSection: [6771,6781]`sys.stderr`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: stderr
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [6771,6774]`sys`
-                                                    Identifier: sys
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [6771,6774]`sys`
+                                                      Identifier: sys
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              EmptyNode SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [6729,6734]`print`
                                               Identifier: print
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3840,11 +3837,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [8,virtual_conf,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                StringLiteralNode SourceSection: [16544,16551]`'utf-8'`
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  StringLiteralNode SourceSection: [16544,16551]`'utf-8'`
+                              EmptyNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16516,16520]`open`
                               Identifier: open
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

@@ -50,13 +50,12 @@ ModuleRootNode Name: <module 'classDef09'> SourceSection: [0,36]`class Enum(meta
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             KeywordArgumentsNodeGen SourceSection: None
-              KeywordLiteralNode SourceSection: None
-                ReadNameNodeGen SourceSection: [21,29]`EnumMeta`
-                  Identifier: EnumMeta
-                  IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
-              CompactKeywordsNodeGen SourceSection: None
-              ExecuteKeywordStarargsNodeGen SourceSection: None
-                EmptyNode SourceSection: None
+              ExecuteKeywordArgumentsNode SourceSection: None
+                KeywordLiteralNode SourceSection: None
+                  ReadNameNodeGen SourceSection: [21,29]`EnumMeta`
+                    Identifier: EnumMeta
+                    IsBuiltinClassProfile SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+              EmptyNode SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               BuiltinsLiteralNode SourceSection: None

@@ -80,14 +80,13 @@ ModuleRootNode Name: <module 'functionDef14'> SourceSection: [0,71]`def bla():â†
                         PythonCallNodeGen SourceSection: [13,36]`install(extra_opts=[...`
                           CallNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ListLiteralNode SourceSection: [32,35]`[1]`
-                                IntegerLiteralNode SourceSection: [33,34]`1`
-                                  Value: 1
-                                PythonObjectFactoryNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ListLiteralNode SourceSection: [32,35]`[1]`
+                                  IntegerLiteralNode SourceSection: [33,34]`1`
+                                    Value: 1
+                                  PythonObjectFactoryNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [13,20]`install`
                             Identifier: install
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

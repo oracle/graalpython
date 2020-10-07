@@ -38,11 +38,10 @@ ModuleRootNode Name: <module 'call19'> SourceSection: [0,33]`def fn(): "in".form
                         PythonCallNodeGen SourceSection: [10,33]`"in".format(name="Ba...`
                           CallNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              StringLiteralNode SourceSection: [27,32]`"Baf"`
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                StringLiteralNode SourceSection: [27,32]`"Baf"`
+                            EmptyNode SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [10,14]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

@@ -9,15 +9,14 @@ ModuleRootNode Name: <module 'call08'> SourceSection: [0,31]`foo('ahoj', arg1 = 
       CallNodeGen SourceSection: None
       StringLiteralNode SourceSection: [4,10]`'ahoj'`
       KeywordArgumentsNodeGen SourceSection: None
-        KeywordLiteralNode SourceSection: None
-          IntegerLiteralNode SourceSection: [19,20]`1`
-            Value: 1
-        KeywordLiteralNode SourceSection: None
-          IntegerLiteralNode SourceSection: [29,30]`2`
-            Value: 2
-        CompactKeywordsNodeGen SourceSection: None
-        ExecuteKeywordStarargsNodeGen SourceSection: None
-          EmptyNode SourceSection: None
+        ExecuteKeywordArgumentsNode SourceSection: None
+          KeywordLiteralNode SourceSection: None
+            IntegerLiteralNode SourceSection: [19,20]`1`
+              Value: 1
+          KeywordLiteralNode SourceSection: None
+            IntegerLiteralNode SourceSection: [29,30]`2`
+              Value: 2
+        EmptyNode SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None

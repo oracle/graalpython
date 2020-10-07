@@ -1422,11 +1422,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       Frame: [4,op,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  KeywordLiteralNode SourceSection: None
-                                                    StringLiteralNode SourceSection: [3725,3727]`''`
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      StringLiteralNode SourceSection: [3725,3727]`''`
+                                                  EmptyNode SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3693,3698]`print`
                                                   Identifier: print
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1818,11 +1817,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       CallNodeGen SourceSection: None
                                                                       StringLiteralNode SourceSection: [4787,4790]`' '`
                                                                       KeywordArgumentsNodeGen SourceSection: None
-                                                                        KeywordLiteralNode SourceSection: None
-                                                                          StringLiteralNode SourceSection: [4796,4798]`''`
-                                                                        CompactKeywordsNodeGen SourceSection: None
-                                                                        ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                          EmptyNode SourceSection: None
+                                                                        ExecuteKeywordArgumentsNode SourceSection: None
+                                                                          KeywordLiteralNode SourceSection: None
+                                                                            StringLiteralNode SourceSection: [4796,4798]`''`
+                                                                        EmptyNode SourceSection: None
                                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4781,4786]`print`
                                                                         Identifier: print
                                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1834,11 +1832,10 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       Frame: [5,a,Illegal]
                                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                                      KeywordLiteralNode SourceSection: None
-                                                                        StringLiteralNode SourceSection: [4837,4839]`''`
-                                                                      CompactKeywordsNodeGen SourceSection: None
-                                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                        EmptyNode SourceSection: None
+                                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                                        KeywordLiteralNode SourceSection: None
+                                                                          StringLiteralNode SourceSection: [4837,4839]`''`
+                                                                      EmptyNode SourceSection: None
                                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [4824,4829]`print`
                                                                       Identifier: print
                                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7155,18 +7152,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 Identifier: FutureWarning
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  BinaryArithmeticExpression SourceSection: [17326,17336]`nested + 6`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __add__
-                                                    ReadLocalVariableNode SourceSection: [17326,17332]`nested`
-                                                      Frame: [3,nested,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                    IntegerLiteralNode SourceSection: [17335,17336]`6`
-                                                      Value: 6
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    BinaryArithmeticExpression SourceSection: [17326,17336]`nested + 6`
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __add__
+                                                      ReadLocalVariableNode SourceSection: [17326,17332]`nested`
+                                                        Frame: [3,nested,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                      IntegerLiteralNode SourceSection: [17335,17336]`6`
+                                                        Value: 6
+                                                EmptyNode SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [17191,17199]`warnings`
                                                   Frame: [16,warnings,Illegal]
@@ -7390,18 +7386,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                               Identifier: FutureWarning
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                             KeywordArgumentsNodeGen SourceSection: None
-                                                              KeywordLiteralNode SourceSection: None
-                                                                BinaryArithmeticExpression SourceSection: [18407,18417]`nested + 6`
-                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                    Op: __add__
-                                                                  ReadLocalVariableNode SourceSection: [18407,18413]`nested`
-                                                                    Frame: [3,nested,Illegal]
-                                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                                  IntegerLiteralNode SourceSection: [18416,18417]`6`
-                                                                    Value: 6
-                                                              CompactKeywordsNodeGen SourceSection: None
-                                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                EmptyNode SourceSection: None
+                                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                                KeywordLiteralNode SourceSection: None
+                                                                  BinaryArithmeticExpression SourceSection: [18407,18417]`nested + 6`
+                                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                                      Op: __add__
+                                                                    ReadLocalVariableNode SourceSection: [18407,18413]`nested`
+                                                                      Frame: [3,nested,Illegal]
+                                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                                    IntegerLiteralNode SourceSection: [18416,18417]`6`
+                                                                      Value: 6
+                                                              EmptyNode SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               ReadLocalVariableNode SourceSection: [17973,17981]`warnings`
                                                                 Frame: [16,warnings,Illegal]
@@ -7614,18 +7609,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 Identifier: FutureWarning
                                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                               KeywordArgumentsNodeGen SourceSection: None
-                                                                KeywordLiteralNode SourceSection: None
-                                                                  BinaryArithmeticExpression SourceSection: [19479,19489]`nested + 6`
-                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                      Op: __add__
-                                                                    ReadLocalVariableNode SourceSection: [19479,19485]`nested`
-                                                                      Frame: [3,nested,Illegal]
-                                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                                    IntegerLiteralNode SourceSection: [19488,19489]`6`
-                                                                      Value: 6
-                                                                CompactKeywordsNodeGen SourceSection: None
-                                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                  EmptyNode SourceSection: None
+                                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                                  KeywordLiteralNode SourceSection: None
+                                                                    BinaryArithmeticExpression SourceSection: [19479,19489]`nested + 6`
+                                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                                        Op: __add__
+                                                                      ReadLocalVariableNode SourceSection: [19479,19485]`nested`
+                                                                        Frame: [3,nested,Illegal]
+                                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                                      IntegerLiteralNode SourceSection: [19488,19489]`6`
+                                                                        Value: 6
+                                                                EmptyNode SourceSection: None
                                                               GetCallAttributeNodeGen SourceSection: None
                                                                 ReadLocalVariableNode SourceSection: [19273,19281]`warnings`
                                                                   Frame: [16,warnings,Illegal]
@@ -10224,18 +10218,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                             Identifier: DeprecationWarning
                                                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                                           KeywordArgumentsNodeGen SourceSection: None
-                                                                            KeywordLiteralNode SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [29921,29931]`nested + 6`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
-                                                                                ReadLocalVariableNode SourceSection: [29921,29927]`nested`
-                                                                                  Frame: [3,nested,Illegal]
-                                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                                                IntegerLiteralNode SourceSection: [29930,29931]`6`
-                                                                                  Value: 6
-                                                                            CompactKeywordsNodeGen SourceSection: None
-                                                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                              EmptyNode SourceSection: None
+                                                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                                                              KeywordLiteralNode SourceSection: None
+                                                                                BinaryArithmeticExpression SourceSection: [29921,29931]`nested + 6`
+                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                                                                    Op: __add__
+                                                                                  ReadLocalVariableNode SourceSection: [29921,29927]`nested`
+                                                                                    Frame: [3,nested,Illegal]
+                                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                                  IntegerLiteralNode SourceSection: [29930,29931]`6`
+                                                                                    Value: 6
+                                                                            EmptyNode SourceSection: None
                                                                           GetCallAttributeNodeGen SourceSection: None
                                                                             ReadLocalVariableNode SourceSection: [29556,29564]`warnings`
                                                                               Frame: [16,warnings,Illegal]

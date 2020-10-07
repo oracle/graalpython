@@ -67,40 +67,39 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                   ReadFromCellNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    PythonCallBinary SourceSection: [161,251]`PathMetadata(↵      ...`
-                                      CallBinaryMethodNodeGen SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: [161,173]`PathMetadata`
-                                        Identifier: PathMetadata
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
-                                        ReadGeneratorFrameVariableNode SourceSection: None
-                                          Frame: [1,path_item,Illegal]
-                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                        ReadFromCellNodeGen SourceSection: None
-                                      PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      PythonCallBinary SourceSection: [161,251]`PathMetadata(↵      ...`
                                         CallBinaryMethodNodeGen SourceSection: None
-                                        GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNodeGen SourceSection: [202,209]`os.path`
-                                            GetFixedAttributeNodeGen SourceSection: None
-                                              Key: path
-                                              CachedDispatchFirst SourceSection: None
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
-                                              Identifier: os
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [161,173]`PathMetadata`
+                                          Identifier: PathMetadata
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [191,200]`path_item`
                                           ReadGeneratorFrameVariableNode SourceSection: None
                                             Frame: [1,path_item,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                        PythonCallBinary SourceSection: [202,237]`os.path.join(path_it...`
+                                          CallBinaryMethodNodeGen SourceSection: None
+                                          GetCallAttributeNodeGen SourceSection: None
+                                            GetAttributeNodeGen SourceSection: [202,209]`os.path`
+                                              GetFixedAttributeNodeGen SourceSection: None
+                                                Key: path
+                                                CachedDispatchFirst SourceSection: None
+                                                LookupAndCallBinaryNodeGen SourceSection: None
+                                                  Op: __getattribute__
+                                                IsBuiltinClassProfile SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
+                                                Identifier: os
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalCellNodeGen SourceSection: [215,224]`path_item`
+                                            ReadGeneratorFrameVariableNode SourceSection: None
+                                              Frame: [1,path_item,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                            ReadFromCellNodeGen SourceSection: None
+                                          StringLiteralNode SourceSection: [226,236]`'EGG-INFO'`
+                                  EmptyNode SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [101,113]`Distribution`
                                     Identifier: Distribution

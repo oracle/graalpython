@@ -250,6 +250,10 @@ public abstract class StringNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
             }
         }
+
+        public static CastToJavaStringCheckedNode create() {
+            return StringNodesFactory.CastToJavaStringCheckedNodeGen.create();
+        }
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})

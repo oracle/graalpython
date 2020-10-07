@@ -584,28 +584,27 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                               PythonCallNodeGen SourceSection: [2852,2911]`descriptor(fget=make...`
                                                 CallNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  KeywordLiteralNode SourceSection: None
-                                                    PythonCallUnary SourceSection: [2868,2880]`make_func(i)`
-                                                      CallUnaryMethodNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [2868,2877]`make_func`
-                                                        Frame: [0,make_func,Illegal]
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      PythonCallUnary SourceSection: [2868,2880]`make_func(i)`
+                                                        CallUnaryMethodNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [2868,2877]`make_func`
+                                                          Frame: [0,make_func,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadLocalVariableNode SourceSection: [2878,2879]`i`
+                                                          Frame: [1,i,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      ReadLocalVariableNode SourceSection: [2887,2891]`name`
+                                                        Frame: [2,name,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [2878,2879]`i`
-                                                        Frame: [1,i,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                  KeywordLiteralNode SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [2887,2891]`name`
-                                                      Frame: [2,name,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                  KeywordLiteralNode SourceSection: None
-                                                    ReadLocalCellNodeGen SourceSection: [2899,2910]`named_tuple`
-                                                      ReadLocalVariableNode SourceSection: None
-                                                        Frame: [4,named_tuple,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
-                                                      ReadFromCellNodeGen SourceSection: None
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      ReadLocalCellNodeGen SourceSection: [2899,2910]`named_tuple`
+                                                        ReadLocalVariableNode SourceSection: None
+                                                          Frame: [4,named_tuple,Illegal]
+                                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                                        ReadFromCellNodeGen SourceSection: None
+                                                  EmptyNode SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2852,2862]`descriptor`
                                                   Identifier: descriptor
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

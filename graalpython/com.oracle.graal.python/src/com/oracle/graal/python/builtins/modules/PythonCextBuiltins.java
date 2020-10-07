@@ -205,7 +205,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -3203,7 +3203,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
-            return expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
+            return expandKwargsNode.execute(kwargsToJavaNode.execute(kwargsObj));
         }
 
         static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {

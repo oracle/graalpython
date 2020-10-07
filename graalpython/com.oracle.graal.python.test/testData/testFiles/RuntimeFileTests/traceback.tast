@@ -132,15 +132,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Frame: [2,item,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [875,879]`file`
-                                    Frame: [1,file,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  StringLiteralNode SourceSection: [885,887]`""`
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [875,879]`file`
+                                      Frame: [1,file,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    StringLiteralNode SourceSection: [885,887]`""`
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [858,863]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -271,24 +270,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Frame: [0,tb,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [1846,1851]`limit`
-                                Frame: [1,limit,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [1846,1851]`limit`
+                                  Frame: [1,limit,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [1825,1835]`extract_tb`
                             Identifier: extract_tb
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [1859,1863]`file`
-                              Frame: [2,file,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [1859,1863]`file`
+                                Frame: [2,file,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1814,1824]`print_list`
                           Identifier: print_list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -350,13 +347,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Frame: [0,tb,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [1993,1998]`limit`
-                                    Frame: [1,limit,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [1993,1998]`limit`
+                                      Frame: [1,limit,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [1972,1982]`extract_tb`
                                 Identifier: extract_tb
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -420,13 +416,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               Frame: [0,tb,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [2597,2602]`limit`
-                                Frame: [1,limit,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [2597,2602]`limit`
+                                  Frame: [1,limit,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2557,2569]`StackSummary`
                               Identifier: StackSummary
@@ -551,15 +546,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 Frame: [6,line,Illegal]
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [3860,3864]`file`
-                                    Frame: [4,file,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  StringLiteralNode SourceSection: [3870,3872]`""`
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [3860,3864]`file`
+                                      Frame: [4,file,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    StringLiteralNode SourceSection: [3870,3872]`""`
+                                EmptyNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [3843,3848]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -567,13 +561,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           PythonCallNodeGen SourceSection: [3745,3833]`TracebackException(↵...`
                             CallNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: [3827,3832]`chain`
-                                  Frame: [5,chain,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [3827,3832]`chain`
+                                    Frame: [5,chain,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [3745,3813]`TracebackException(↵...`
                                 CallNodeGen SourceSection: None
@@ -592,13 +585,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Frame: [2,tb,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [3807,3812]`limit`
-                                      Frame: [3,limit,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [3807,3812]`limit`
+                                        Frame: [3,limit,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  EmptyNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3745,3763]`TracebackException`
                                   Identifier: TracebackException
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -682,13 +674,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                           PythonCallNodeGen SourceSection: [4572,4656]`TracebackException(↵...`
                             CallNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: [4650,4655]`chain`
-                                  Frame: [4,chain,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [4650,4655]`chain`
+                                    Frame: [4,chain,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               PythonCallNodeGen SourceSection: [4572,4636]`TracebackException(↵...`
                                 CallNodeGen SourceSection: None
@@ -707,13 +698,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                   Frame: [2,tb,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [4630,4635]`limit`
-                                      Frame: [3,limit,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [4630,4635]`limit`
+                                        Frame: [3,limit,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  EmptyNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4572,4590]`TracebackException`
                                   Identifier: TracebackException
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1036,21 +1026,20 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ExecutePositionalStarargsNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [5913,5918]`limit`
-                              Frame: [0,limit,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [5925,5929]`file`
-                              Frame: [1,file,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [5937,5942]`chain`
-                              Frame: [2,chain,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [5913,5918]`limit`
+                                Frame: [0,limit,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [5925,5929]`file`
+                                Frame: [1,file,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [5937,5942]`chain`
+                                Frame: [2,chain,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [5874,5889]`print_exception`
                           Identifier: print_exception
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1119,17 +1108,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ExecutePositionalStarargsNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: [6092,6097]`limit`
-                                  Frame: [0,limit,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: [6105,6110]`chain`
-                                  Frame: [1,chain,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [6092,6097]`limit`
+                                    Frame: [0,limit,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [6105,6110]`chain`
+                                    Frame: [1,chain,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6052,6068]`format_exception`
                               Identifier: format_exception
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1346,24 +1334,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Frame: [0,f,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [6918,6923]`limit`
-                                Frame: [1,limit,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [6918,6923]`limit`
+                                  Frame: [1,limit,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [6895,6908]`extract_stack`
                             Identifier: extract_stack
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [6931,6935]`file`
-                              Frame: [2,file,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [6931,6935]`file`
+                                Frame: [2,file,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          EmptyNode SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [6884,6894]`print_list`
                           Identifier: print_list
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1456,13 +1442,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                               Frame: [0,f,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                ReadLocalVariableNode SourceSection: [7140,7145]`limit`
-                                  Frame: [1,limit,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [7140,7145]`limit`
+                                    Frame: [1,limit,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                              EmptyNode SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [7117,7130]`extract_stack`
                               Identifier: extract_stack
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1554,13 +1539,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             Frame: [0,f,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                         KeywordArgumentsNodeGen SourceSection: None
-                          KeywordLiteralNode SourceSection: None
-                            ReadLocalVariableNode SourceSection: [7678,7683]`limit`
-                              Frame: [1,limit,Illegal]
-                              ReadVariableFromFrameNodeGen SourceSection: None
-                          CompactKeywordsNodeGen SourceSection: None
-                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                            EmptyNode SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                            KeywordLiteralNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [7678,7683]`limit`
+                                Frame: [1,limit,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
+                          EmptyNode SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7636,7648]`StackSummary`
                             Identifier: StackSummary
@@ -2471,45 +2455,44 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                         PythonCallNodeGen SourceSection: [10133,10270]`"<FrameSummary file ...`
                                           CallNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [10220,10233]`self.filename`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: filename
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [10220,10233]`self.filename`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: filename
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [10220,10224]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [10242,10253]`self.lineno`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: lineno
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [10220,10224]`self`
+                                                    Frame: [0,self,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [10242,10253]`self.lineno`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: lineno
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [10242,10246]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [10260,10269]`self.name`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: name
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [10242,10246]`self`
+                                                    Frame: [0,self,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [10260,10269]`self.name`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: name
                                                     CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [10260,10264]`self`
-                                                  Frame: [0,self,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [10260,10264]`self`
+                                                    Frame: [0,self,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                            EmptyNode SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             StringLiteralNode SourceSection: [10133,10190]`"<FrameSummary file ...`
                                 Return Expresssion: ReadLocalVariableNode SourceSection: None
@@ -3094,16 +3077,15 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Frame: [1,frame_gen,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  UnaryArithmeticExpression SourceSection: [12269,12275]`-limit`
-                                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                                      Op: __neg__
-                                                    ReadLocalVariableNode SourceSection: [12270,12275]`limit`
-                                                      Frame: [3,limit,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    UnaryArithmeticExpression SourceSection: [12269,12275]`-limit`
+                                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                                        Op: __neg__
+                                                      ReadLocalVariableNode SourceSection: [12270,12275]`limit`
+                                                        Frame: [3,limit,Illegal]
+                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [12233,12244]`collections`
                                                   Identifier: collections
@@ -3277,15 +3259,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       Frame: [10,name,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                      KeywordLiteralNode SourceSection: None
-                                                        BooleanLiteralNode SourceSection: [12827,12832]`False`
-                                                      KeywordLiteralNode SourceSection: None
-                                                        ReadLocalVariableNode SourceSection: [12841,12849]`f_locals`
-                                                          Frame: [11,f_locals,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                      CompactKeywordsNodeGen SourceSection: None
-                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                        KeywordLiteralNode SourceSection: None
+                                                          BooleanLiteralNode SourceSection: [12827,12832]`False`
+                                                        KeywordLiteralNode SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [12841,12849]`f_locals`
+                                                            Frame: [11,f_locals,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                      EmptyNode SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [12761,12773]`FrameSummary`
                                                       Identifier: FrameSummary
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3525,13 +3506,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                         Frame: [5,name,Illegal]
                                                         ReadVariableFromFrameNodeGen SourceSection: None
                                                       KeywordArgumentsNodeGen SourceSection: None
-                                                        KeywordLiteralNode SourceSection: None
-                                                          ReadLocalVariableNode SourceSection: [13920,13924]`line`
-                                                            Frame: [6,line,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                        CompactKeywordsNodeGen SourceSection: None
-                                                        ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                        ExecuteKeywordArgumentsNode SourceSection: None
+                                                          KeywordLiteralNode SourceSection: None
+                                                            ReadLocalVariableNode SourceSection: [13920,13924]`line`
+                                                              Frame: [6,line,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                        EmptyNode SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [13878,13890]`FrameSummary`
                                                         Identifier: FrameSummary
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3975,17 +3955,16 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                           PythonCallNodeGen SourceSection: [15578,15633]`'    {name} = {value...`
                                                             CallNodeGen SourceSection: None
                                                             KeywordArgumentsNodeGen SourceSection: None
-                                                              KeywordLiteralNode SourceSection: None
-                                                                ReadLocalVariableNode SourceSection: [15615,15619]`name`
-                                                                  Frame: [7,name,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                              KeywordLiteralNode SourceSection: None
-                                                                ReadLocalVariableNode SourceSection: [15627,15632]`value`
-                                                                  Frame: [8,value,Illegal]
-                                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                                              CompactKeywordsNodeGen SourceSection: None
-                                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                                EmptyNode SourceSection: None
+                                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                                KeywordLiteralNode SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [15615,15619]`name`
+                                                                    Frame: [7,name,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                                KeywordLiteralNode SourceSection: None
+                                                                  ReadLocalVariableNode SourceSection: [15627,15632]`value`
+                                                                    Frame: [8,value,Illegal]
+                                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                              EmptyNode SourceSection: None
                                                             GetCallAttributeNodeGen SourceSection: None
                                                               StringLiteralNode SourceSection: [15578,15602]`'    {name} = {value...`
                                                     GetIteratorExpressionNodeGen SourceSection: [15517,15545]`sorted(frame.locals....`
@@ -4372,23 +4351,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [17997,18002]`limit`
-                                                    Frame: [5,limit,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  BooleanLiteralNode SourceSection: [18033,18038]`False`
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18071,18085]`capture_locals`
-                                                    Frame: [7,capture_locals,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18109,18114]`_seen`
-                                                    Frame: [8,_seen,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [17997,18002]`limit`
+                                                      Frame: [5,limit,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    BooleanLiteralNode SourceSection: [18033,18038]`False`
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [18071,18085]`capture_locals`
+                                                      Frame: [7,capture_locals,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [18109,18114]`_seen`
+                                                      Frame: [8,_seen,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [17824,17842]`TracebackException`
                                                 Identifier: TracebackException
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4509,23 +4487,22 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     Frame: [2,exc_value,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18473,18478]`limit`
-                                                    Frame: [5,limit,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  BooleanLiteralNode SourceSection: [18509,18514]`False`
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18547,18561]`capture_locals`
-                                                    Frame: [7,capture_locals,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [18585,18590]`_seen`
-                                                    Frame: [8,_seen,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [18473,18478]`limit`
+                                                      Frame: [5,limit,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    BooleanLiteralNode SourceSection: [18509,18514]`False`
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [18547,18561]`capture_locals`
+                                                      Frame: [7,capture_locals,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [18585,18590]`_seen`
+                                                      Frame: [8,_seen,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [18294,18312]`TracebackException`
                                                 Identifier: TracebackException
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4598,21 +4575,20 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 Frame: [3,exc_traceback,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [18956,18961]`limit`
-                                                  Frame: [5,limit,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [18976,18988]`lookup_lines`
-                                                  Frame: [6,lookup_lines,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                              KeywordLiteralNode SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [19017,19031]`capture_locals`
-                                                  Frame: [7,capture_locals,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                EmptyNode SourceSection: None
+                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [18956,18961]`limit`
+                                                    Frame: [5,limit,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [18976,18988]`lookup_lines`
+                                                    Frame: [6,lookup_lines,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                KeywordLiteralNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [19017,19031]`capture_locals`
+                                                    Frame: [7,capture_locals,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                              EmptyNode SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [18892,18904]`StackSummary`
                                                 Identifier: StackSummary
@@ -4869,11 +4845,10 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    ReadLocalVariableNode SourceSection: [19801,19807]`kwargs`
-                                                      Frame: [3,kwargs,Illegal]
-                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [19801,19807]`kwargs`
+                                                    Frame: [3,kwargs,Illegal]
+                                                    ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [19753,19756]`cls`
                                                   Frame: [0,cls,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -5755,13 +5730,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                   PythonCallNodeGen SourceSection: [22635,22669]`self.__cause__.forma...`
                                                     CallNodeGen SourceSection: None
                                                     KeywordArgumentsNodeGen SourceSection: None
-                                                      KeywordLiteralNode SourceSection: None
-                                                        ReadGeneratorFrameVariableNode SourceSection: [22663,22668]`chain`
-                                                          Frame: [2,chain,Illegal]
-                                                          ReadVariableFromFrameNodeGen SourceSection: None
-                                                      CompactKeywordsNodeGen SourceSection: None
-                                                      ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                        EmptyNode SourceSection: None
+                                                      ExecuteKeywordArgumentsNode SourceSection: None
+                                                        KeywordLiteralNode SourceSection: None
+                                                          ReadGeneratorFrameVariableNode SourceSection: [22663,22668]`chain`
+                                                            Frame: [2,chain,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
+                                                      EmptyNode SourceSection: None
                                                     GetCallAttributeNodeGen SourceSection: None
                                                       GetAttributeNodeGen SourceSection: [22635,22649]`self.__cause__`
                                                         GetFixedAttributeNodeGen SourceSection: None
@@ -5844,13 +5818,12 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                     PythonCallNodeGen SourceSection: [22833,22869]`self.__context__.for...`
                                                       CallNodeGen SourceSection: None
                                                       KeywordArgumentsNodeGen SourceSection: None
-                                                        KeywordLiteralNode SourceSection: None
-                                                          ReadGeneratorFrameVariableNode SourceSection: [22863,22868]`chain`
-                                                            Frame: [2,chain,Illegal]
-                                                            ReadVariableFromFrameNodeGen SourceSection: None
-                                                        CompactKeywordsNodeGen SourceSection: None
-                                                        ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                          EmptyNode SourceSection: None
+                                                        ExecuteKeywordArgumentsNode SourceSection: None
+                                                          KeywordLiteralNode SourceSection: None
+                                                            ReadGeneratorFrameVariableNode SourceSection: [22863,22868]`chain`
+                                                              Frame: [2,chain,Illegal]
+                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                        EmptyNode SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         GetAttributeNodeGen SourceSection: [22833,22849]`self.__context__`
                                                           GetFixedAttributeNodeGen SourceSection: None

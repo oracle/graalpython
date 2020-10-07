@@ -357,3 +357,8 @@ def test_multiple_values_with_callable_name():
     msg = assert_call_raises_get_message(TypeError, "fooo(**{'a' : 4}, **{'a': 3})")  # TypeError: f26() got multiple values for keyword argument 'a'
     assert msg == "f26() got multiple values for keyword argument 'a'"
     
+def test_runtime_args():
+    mydict = {'a':1, 'b':2, 'c':3}
+    kw = f26(b = mydict.pop('b', 22), **mydict)
+    assert 'b' in kw
+    assert kw['b'] == 2

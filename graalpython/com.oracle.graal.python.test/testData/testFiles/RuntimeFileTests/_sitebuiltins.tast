@@ -1223,11 +1223,10 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExecutePositionalStarargsNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [3109,3113]`kwds`
-                                                    Frame: [2,kwds,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [3109,3113]`kwds`
+                                                  Frame: [2,kwds,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [3089,3094]`pydoc`
                                                   Frame: [3,pydoc,Illegal]

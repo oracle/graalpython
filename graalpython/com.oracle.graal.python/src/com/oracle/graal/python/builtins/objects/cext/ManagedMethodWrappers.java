@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -140,7 +140,7 @@ public abstract class ManagedMethodWrappers {
 
             Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
             Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
-            PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
+            PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
 
             // execute
             return toSulongNode.execute(callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray));

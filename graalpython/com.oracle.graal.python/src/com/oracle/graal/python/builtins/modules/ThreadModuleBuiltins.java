@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -171,7 +171,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
             // ignore setting the stack size for the moment
             Thread thread = env.createThread(() -> {
                 Object[] arguments = getArgsNode.executeWith(frame, args);
-                PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
+                PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
                 // n.b.: It is important to pass 'null' frame here because each thread has it's own
                 // stack and if we would pass the current frame, this would be connected as a caller

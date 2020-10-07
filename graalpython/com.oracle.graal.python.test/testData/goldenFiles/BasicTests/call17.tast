@@ -38,12 +38,11 @@ ModuleRootNode Name: <module 'call17'> SourceSection: [0,22]`def fn(): foo(arg =
                         PythonCallNodeGen SourceSection: [10,22]`foo(arg = 1)`
                           CallNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              IntegerLiteralNode SourceSection: [20,21]`1`
-                                Value: 1
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                IntegerLiteralNode SourceSection: [20,21]`1`
+                                  Value: 1
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [10,13]`foo`
                             Identifier: foo
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

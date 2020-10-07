@@ -500,7 +500,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
                         if (unusedKeywords != null) {
-                            addKeyword(unusedKeywords, k++, kwArg, callee, raise);
+                            unusedKeywords[k++] = kwArg;
                         } else {
                             posArgOnlyPassedAsKeywordProfile.enter();
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
@@ -512,7 +512,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
                 } else if (unusedKeywords != null) {
-                    addKeyword(unusedKeywords, k++, kwArg, callee, raise);
+                    unusedKeywords[k++] = kwArg;
                 } else {
                     additionalKwds++;
                     lastWrongKeyword = name;
@@ -553,7 +553,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 if (kwIdx != -1) {
                     if (positionalOnlyArgIndex > -1 && kwIdx < positionalOnlyArgIndex) {
                         if (unusedKeywords != null) {
-                            addKeyword(unusedKeywords, k++, kwArg, callee, raise);
+                            unusedKeywords[k++] = kwArg;
                         } else {
                             posArgOnlyPassedAsKeywordProfile.enter();
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
@@ -565,7 +565,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
                     }
                 } else if (unusedKeywords != null) {
-                    addKeyword(unusedKeywords, k++, kwArg, callee, raise);
+                    unusedKeywords[k++] = kwArg;
                 } else {
                     additionalKwds++;
                     lastWrongKeyword = name;
@@ -573,16 +573,6 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             }
             storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, posArgOnlyPassedAsKeywordProfile, raise);
             return arguments;
-        }
-
-        private static void addKeyword(PKeyword[] keywords, int where, PKeyword keyword, Object callee, PRaiseNode raise) {
-            String name = keyword.getName();
-            for (int i = 0; i < where; i++) {
-                if (keywords[i].getName().equals(name)) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, CreateArgumentsNode.getName(callee), name);
-                }
-            }
-            keywords[where] = keyword;
         }
 
         @TruffleBoundary

@@ -855,11 +855,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Frame: [6,ns,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [2010,2014]`kwds`
-                                Frame: [2,kwds,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [2010,2014]`kwds`
+                              Frame: [2,kwds,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                           ReadLocalVariableNode SourceSection: [1977,1981]`meta`
                             Frame: [5,meta,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -1308,11 +1307,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Frame: [1,bases,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              ReadLocalVariableNode SourceSection: [3696,3700]`kwds`
-                                Frame: [2,kwds,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                            ReadLocalVariableNode SourceSection: [3696,3700]`kwds`
+                              Frame: [2,kwds,Illegal]
+                              ReadVariableFromFrameNodeGen SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [3664,3668]`meta`
                               Frame: [3,meta,Illegal]
@@ -3686,11 +3684,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [9119,9125]`kwargs`
-                                              Frame: [1,kwargs,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [9119,9125]`kwargs`
+                                            Frame: [1,kwargs,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [9105,9109]`func`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [3,func,Illegal]

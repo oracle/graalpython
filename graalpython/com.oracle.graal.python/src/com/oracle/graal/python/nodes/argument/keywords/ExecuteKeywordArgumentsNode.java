@@ -40,21 +40,55 @@
  */
 package com.oracle.graal.python.nodes.argument.keywords;
 
-import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
-public class NonMappingException extends PythonControlFlowException {
+public class ExecuteKeywordArgumentsNode extends Node {
 
-    private static final long serialVersionUID = -5215981713505181732L;
+    @Children private final ExpressionNode[] arguments;
+    @Child private CompactKeywordsNode compactNode;
 
-    private final Object object;
-
-    public NonMappingException(Object object) {
-        super();
-        this.object = object;
+    ExecuteKeywordArgumentsNode(ExpressionNode[] arguments) {
+        this.arguments = arguments;
     }
 
-    public Object getObject() {
-        return object;
+    public static ExecuteKeywordArgumentsNode create(ExpressionNode[] arguments) {
+        return new ExecuteKeywordArgumentsNode(arguments);
+    }
+
+    @ExplodeLoop
+    public PKeyword[] execute(VirtualFrame frame) {
+        int length = arguments.length;
+        CompilerAsserts.partialEvaluationConstant(length);
+        PKeyword[] keywords = new PKeyword[length];
+        int reshape = 0;
+        for (int i = 0; i < length; i++) {
+            Object o = arguments[i].execute(frame);
+            if (o instanceof PKeyword) {
+                keywords[i] = (PKeyword) o;
+            } else {
+                reshape++;
+            }
+        }
+
+        if (reshape > 0) {
+            return getCompactNode().execute(keywords, reshape);
+        } else {
+            return keywords;
+        }
+    }
+
+    private CompactKeywordsNode getCompactNode() {
+        if (compactNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            compactNode = insert(CompactKeywordsNodeGen.create());
+        }
+        return compactNode;
     }
 
 }
