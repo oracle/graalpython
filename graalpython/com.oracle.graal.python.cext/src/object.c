@@ -141,15 +141,21 @@ Py_ssize_t PyObject_Size(PyObject *o) {
 
 UPCALL_ID(PyObject_Str);
 PyObject* PyObject_Str(PyObject* o) {
+	if (o == NULL)
+		return PyUnicode_FromString("<NULL>");
     return UPCALL_CEXT_O(_jls_PyObject_Str, native_to_java(o));
 }
 
 PyObject* PyObject_ASCII(PyObject* o) {
+	if (o == NULL)
+		return PyUnicode_FromString("<NULL>");
     return UPCALL_O(PY_BUILTIN, polyglot_from_string("ascii", SRC_CS), native_to_java(o));
 }
 
 UPCALL_ID(PyObject_Repr);
 PyObject* PyObject_Repr(PyObject* o) {
+	if (o == NULL)
+		return PyUnicode_FromString("<NULL>");
     return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
 }
 
