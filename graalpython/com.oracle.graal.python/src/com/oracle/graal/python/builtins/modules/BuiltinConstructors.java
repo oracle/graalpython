@@ -3367,7 +3367,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // TODO factory
             // TODO We should lock the underlying storage for resizing
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
-                            null, object, length * itemsize, readonly, itemsize, format, 1, null, new int[]{length}, new int[]{itemsize}, null);
+                            null, object, length * itemsize, readonly, itemsize, format, 1,
+                            null, 0, new int[]{length}, new int[]{itemsize}, null,
+                            IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN);
         }
 
         public static IMemoryViewNode create() {

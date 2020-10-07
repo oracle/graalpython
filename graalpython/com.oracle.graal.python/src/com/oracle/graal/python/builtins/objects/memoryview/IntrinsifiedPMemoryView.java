@@ -11,6 +11,13 @@ import com.oracle.truffle.api.object.Shape;
 // TODO interop lib
 public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
+
+    public static final int FLAG_RELEASED = 0x001;
+    public static final int FLAG_C = 0x002;
+    public static final int FLAG_FORTRAN = 0x004;
+    public static final int FLAG_SCALAR = 0x008;
+    public static final int FLAG_PIL = 0x010;
+
     private final Object bufferStructPointer;
     private final Object owner;
     private final int len;
@@ -27,11 +34,11 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final int[] strides;
     private final int[] suboffsets;
 
-    boolean released = false;
+    private int flags;
 
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
-                    int offset, int[] shape, int[] strides, int[] suboffsets) {
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
         this.bufferStructPointer = bufferStructPointer;
         this.owner = owner;
@@ -46,6 +53,7 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         this.shape = shape;
         this.strides = strides;
         this.suboffsets = suboffsets;
+        this.flags = flags;
     }
 
     public enum BufferFormat {
@@ -119,11 +127,6 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
 
     }
 
-    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner, int len, boolean readonly, int itemsize, String format,
-                    int ndim, Object bufPointer, int[] shape, int[] strides, int[] suboffsets) {
-        this(cls, instanceShape, bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets);
-    }
-
     // From CPython init_strides_from_shape
     public static int[] initStridesFromShape(int ndim, int itemsize, int[] shape) {
         int[] strides = new int[ndim];
@@ -187,12 +190,24 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     }
 
     public boolean isReleased() {
-        return released;
+        return (flags & FLAG_RELEASED) != 0;
+    }
+
+    public boolean isCContiguous() {
+        return (flags & FLAG_C) != 0;
+    }
+
+    public boolean isFortranContiguous() {
+        return (flags & FLAG_FORTRAN) != 0;
+    }
+
+    public int getFlags() {
+        return flags;
     }
 
     // TODO add releasing logic
     public void checkReleased(PythonBuiltinBaseNode node) {
-        if (released) {
+        if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
     }

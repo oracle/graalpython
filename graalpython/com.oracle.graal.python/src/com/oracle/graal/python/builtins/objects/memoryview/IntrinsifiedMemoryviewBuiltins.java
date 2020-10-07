@@ -101,6 +101,40 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         return format == BufferFormat.UNSIGNED_BYTE || format == BufferFormat.SIGNED_BYTE || format == BufferFormat.CHAR;
     }
 
+    public static abstract class InitFlagsNode extends Node {
+        public abstract int execute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets);
+
+        @Specialization
+        static int compute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
+            if (ndim == 0) {
+                return IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN | IntrinsifiedPMemoryView.FLAG_SCALAR;
+            } else if (suboffsets != null) {
+                return IntrinsifiedPMemoryView.FLAG_PIL;
+            } else {
+                int flags = IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN;
+                int expectedStride = itemsize;
+                for (int i = ndim - 1; i >= 0; i--) {
+                    int dim = shape[i];
+                    if (dim > 1 && strides[i] != expectedStride) {
+                        flags &= ~IntrinsifiedPMemoryView.FLAG_C;
+                        break;
+                    }
+                    expectedStride *= dim;
+                }
+                expectedStride = itemsize;
+                for (int i = 0; i < ndim; i++) {
+                    int dim = shape[i];
+                    if (dim > 1 && strides[i] != expectedStride) {
+                        flags &= ~IntrinsifiedPMemoryView.FLAG_FORTRAN;
+                        break;
+                    }
+                    expectedStride *= dim;
+                }
+                return flags;
+            }
+        }
+    }
+
     @ImportStatic(BufferFormat.class)
     static abstract class UnpackValueNode extends Node {
         public abstract Object execute(BufferFormat format, byte[] bytes);
@@ -465,7 +499,8 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         @Specialization
         Object getitemSlice(IntrinsifiedPMemoryView self, PSlice slice,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached InitFlagsNode initFlagsNode) {
             self.checkReleased(this);
             // TODO ndim == 0
             // TODO profile ndim == 1
@@ -478,11 +513,13 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             int[] newShape = new int[shape.length];
             newShape[0] = sliceInfo.sliceLength;
             PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
+            int[] suboffsets = self.getBufferSuboffsets();
             int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
+            int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
                             self.getBufferStructPointer(), self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
-                            self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, self.getBufferSuboffsets());
+                            self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
 
         @Specialization
@@ -747,7 +784,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
                             self.getBufferStructPointer(), self.getOwner(), self.getLength(), true, self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
-                            self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets());
+                            self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets(), self.getFlags());
         }
     }
 
@@ -788,8 +825,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         }
 
         private IntrinsifiedPMemoryView doCast(IntrinsifiedPMemoryView self, String formatString, int ndim, int[] shape) {
-            // TODO check C-contiguous
-            if (false) {
+            if (!self.isCContiguous()) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
             }
             BufferFormat format = BufferFormat.fromString(formatString);
@@ -810,9 +846,11 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             }
             int[] newShape;
             int[] newStrides;
+            int flags = IntrinsifiedPMemoryView.FLAG_C;
             if (ndim == 0) {
                 newShape = null;
                 newStrides = null;
+                flags |= IntrinsifiedPMemoryView.FLAG_SCALAR;
                 if (self.getLength() != itemsize) {
                     throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_WRONG_LENGTH);
                 }
@@ -840,7 +878,7 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
                             self.getBufferStructPointer(), self.getOwner(), self.getLength(), self.isReadOnly(), itemsize, formatString, ndim, self.getBufferPointer(),
-                            self.getOffset(), newShape, newStrides, null);
+                            self.getOffset(), newShape, newStrides, null, flags);
         }
 
         @Override
@@ -959,6 +997,36 @@ public class IntrinsifiedMemoryviewBuiltins extends PythonBuiltins {
         int get(IntrinsifiedPMemoryView self) {
             self.checkReleased(this);
             return self.getDimensions();
+        }
+    }
+
+    @Builtin(name = "c_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class CContiguousNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.isCContiguous();
+        }
+    }
+
+    @Builtin(name = "f_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class FContiguousNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.isFortranContiguous();
+        }
+    }
+
+    @Builtin(name = "contiguous", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public static abstract class ContiguousNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean get(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
+            return self.isCContiguous() || self.isFortranContiguous();
         }
     }
 }
