@@ -279,6 +279,7 @@ class SysModuleTest(unittest.TestCase):
         finally:
             sys.setrecursionlimit(oldlimit)
 
+    @support.impl_detail("GR-26299", graalvm=False)
     def test_recursionlimit_fatalerror(self):
         # A fatal error occurs if a second recursion limit is hit when recovering
         # from a first one.
@@ -372,6 +373,7 @@ class SysModuleTest(unittest.TestCase):
         )
 
     # sys._current_frames() is a CPython-only gimmick.
+    @support.impl_detail("sys._current_frames", graalvm=False)
     @test.support.reap_threads
     def test_current_frames(self):
         import threading
