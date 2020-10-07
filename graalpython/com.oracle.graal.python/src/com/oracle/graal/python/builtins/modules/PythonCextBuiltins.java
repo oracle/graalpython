@@ -1574,7 +1574,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             int len = castToIntNode.execute(lenObj);
             boolean readonly = castToIntNode.execute(readonlyObj) != 0;
             String format = (String) asPythonObjectNode.execute(formatObj);
-            Object owner = asPythonObjectNode.execute(ownerObj);
+            Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
             try {
                 int[] shape = null;
                 int[] strides = null;

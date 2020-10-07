@@ -197,6 +197,7 @@ public enum NativeMember {
 
     // PyMemoryViewObject
     MEMORYVIEW_FLAGS("flags", PRIMITIVE),
+    MEMORYVIEW_VIEW("view"),
 
     // PyDescr_COMMON
     D_COMMON("d_common"),

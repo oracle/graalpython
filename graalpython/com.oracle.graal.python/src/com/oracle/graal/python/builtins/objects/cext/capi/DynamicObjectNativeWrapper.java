@@ -841,6 +841,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return object.getFlags();
         }
 
+        @Specialization(guards = "eq(MEMORYVIEW_VIEW, key)")
+        static Object doMemoryViewView(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new PyMemoryViewBufferWrapper(object);
+        }
+
         @Specialization(guards = "eq(START, key)")
         static Object doStart(PSlice object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
