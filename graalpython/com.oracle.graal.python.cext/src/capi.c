@@ -173,7 +173,7 @@ declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
 declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
 declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
-declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
+declare_type(PyMemoryView_Type, imemoryview, PyMemoryViewObject);
 declare_type(PySet_Type, set, PySetObject);
 declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
