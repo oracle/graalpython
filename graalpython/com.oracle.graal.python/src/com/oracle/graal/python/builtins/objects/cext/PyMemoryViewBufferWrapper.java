@@ -1,8 +1,12 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -87,6 +91,36 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
+        }
+
+        @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() == null"})
+        static Object getBufManaged(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
+                        @Cached SequenceNodes.SetSequenceStorageNode setStorage,
+                        @Cached CExtNodes.PointerAddNode pointerAddNode,
+                        @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
+            PSequence owner = (PSequence) object.getOwner();
+            NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner));
+            if (nativeStorage == null) {
+                throw CompilerDirectives.shouldNotReachHere("cannot allocate native storage");
+            }
+            setStorage.execute(owner, nativeStorage);
+            Object pointer = nativeStorage.getPtr();
+            if (object.getOffset() == 0) {
+                return pointer;
+            } else {
+                return pointerAddNode.execute(pointer, object.getOffset());
+            }
+        }
+
+        @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() != null"})
+        static Object getBufNative(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Cached CExtNodes.PointerAddNode pointerAddNode) {
+            if (object.getOffset() == 0) {
+                return object.getBufferPointer();
+            } else {
+                return pointerAddNode.execute(object.getBufferPointer(), object.getOffset());
+            }
         }
 
         @Specialization(guards = {"eq(OBJ, key)"})

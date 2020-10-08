@@ -741,6 +741,10 @@ int truffle_ptr_compare(void* x, void* y, int op) {
     }
 }
 
+void* truffle_ptr_add(void* x, Py_ssize_t y) {
+    return x + y;
+}
+
 double truffle_read_ob_fval(PyFloatObject* fobj) {
 	return fobj->ob_fval;
 }
