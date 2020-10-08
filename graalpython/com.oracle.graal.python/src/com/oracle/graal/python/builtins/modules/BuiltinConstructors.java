@@ -98,6 +98,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -1592,6 +1593,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupNew;
         @CompilationFinal private ValueProfile profileInit;
         @CompilationFinal private ValueProfile profileNew;
+        @CompilationFinal private ValueProfile profileInitFactory;
+        @CompilationFinal private ValueProfile profileNewFactory;
 
         @Override
         public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -1680,16 +1683,31 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
                 if (profileNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileNew = ValueProfile.createIdentityProfile();
+                    if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                        profileNew = ValueProfile.createIdentityProfile();
+                    } else {
+                        profileNew = ValueProfile.createClassProfile();
+                    }
                 }
                 if (profileInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    profileInit = ValueProfile.createIdentityProfile();
+                    if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                        profileInit = ValueProfile.createIdentityProfile();
+                    } else {
+                        profileInit = ValueProfile.createClassProfile();
+                    }
                 }
-                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
+                if (profileNewFactory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    profileNewFactory = ValueProfile.createIdentityProfile();
+                }
+                if (profileInitFactory == null) {
+                    profileInitFactory = ValueProfile.createIdentityProfile();
+                }
+                if (ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileNew, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_ONE_ARG);
                 }
-                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltinsFactory.InitNodeFactory.class)) {
+                if (!ObjectBuiltins.InitNode.overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class)) {
                     throw raise(TypeError, ErrorMessages.NEW_TAKES_NO_ARGS, type);
                 }
             }
