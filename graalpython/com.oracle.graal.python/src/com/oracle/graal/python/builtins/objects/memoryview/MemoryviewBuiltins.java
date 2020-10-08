@@ -53,6 +53,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -210,6 +211,7 @@ public class MemoryviewBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateUncached
     static abstract class ReadBytesAtNode extends Node {
         public abstract void execute(byte[] dest, int destOffset, int len, IntrinsifiedPMemoryView self, Object ptr, int offset);
 
@@ -363,7 +365,7 @@ public class MemoryviewBuiltins extends PythonBuiltins {
             // TODO explode?
             try {
                 for (int i = 0; i < nbytes; i++) {
-                    lib.writeArrayElement(destPtr, destOffset + i, (byte) lib.readArrayElement(srcPtr, srcOffset + i));
+                    lib.writeArrayElement(destPtr, destOffset + i, lib.readArrayElement(srcPtr, srcOffset + i));
                 }
             } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -671,117 +673,143 @@ public class MemoryviewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})
-    @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"C\"", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public static abstract class ToBytesNode extends PythonBinaryClinicBuiltinNode {
-        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
-
-        public final PBytes execute(IntrinsifiedPMemoryView self) {
-            return execute(self, "C");
-        }
-
-        public abstract PBytes execute(IntrinsifiedPMemoryView self, String order);
+    @GenerateUncached
+    public static abstract class ToJavaBytesNode extends Node {
+        public abstract byte[] execute(IntrinsifiedPMemoryView self);
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
-        PBytes tobytesCached(IntrinsifiedPMemoryView self, String order,
+        byte[] tobytesCached(IntrinsifiedPMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
-                        @Cached ConditionProfile orderProfile,
-                        @Cached ReadBytesAtNode readBytesAtNode) {
-            self.checkReleased(this);
+                        @Cached ReadBytesAtNode readBytesAtNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
             } else {
-                if (orderProfile.profile("C".equals(order) || "A".equals(order))) {
-                    recursiveC(bytes, 0, self, readBytesAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
-                } else if ("F".equals(order)) {
-                    recursiveF(bytes, 0, self.getItemSize(), self, readBytesAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
-                } else {
-                    throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
-                }
+                convert(bytes, self, cachedDimensions, readBytesAtNode, callCapiFunction);
             }
-            return factory().createBytes(bytes);
+            return bytes;
         }
 
         @Specialization(replaces = "tobytesCached")
-        PBytes tobytes(IntrinsifiedPMemoryView self, String order,
-                        @Cached ConditionProfile orderProfile,
-                        @Cached ReadBytesAtNode readBytesAtNode) {
-            self.checkReleased(this);
+        byte[] tobytesGeneric(IntrinsifiedPMemoryView self,
+                        @Cached ReadBytesAtNode readBytesAtNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
             } else {
-                if (orderProfile.profile("C".equals(order) || "A".equals(order))) {
-                    recursiveBoundaryC(bytes, 0, self, readBytesAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
-                } else if ("F".equals(order)) {
-                    recursiveBoundaryF(bytes, 0, self.getItemSize(), self, readBytesAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
-                } else {
-                    throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
-                }
+                convertBoundary(bytes, self, self.getDimensions(), readBytesAtNode, callCapiFunction);
             }
-            return factory().createBytes(bytes);
+            return bytes;
         }
 
         @TruffleBoundary
-        private void recursiveBoundaryC(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
-            recursiveC(dest, destOffset, self, readBytesAtNode, dim, ndim, ptr, offset);
+        private void convertBoundary(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+            convert(dest, self, ndim, readBytesAtNode, callCapiFunction);
         }
 
-        @TruffleBoundary
-        private void recursiveBoundaryF(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
-            recursiveF(dest, destOffset, destStride, self, readBytesAtNode, dim, ndim, ptr, offset);
+        protected void convert(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+            recursive(dest, 0, self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
         }
 
-        private int recursiveC(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+        private static int recursive(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+                        CExtNodes.PCallCapiFunction callCapiFunction) {
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
                     readBytesAtNode.execute(dest, destOffset, self.getItemSize(), self, xptr, xoffset);
                     destOffset += self.getItemSize();
                 } else {
-                    destOffset = recursiveC(dest, destOffset, self, readBytesAtNode, dim + 1, ndim, xptr, xoffset);
+                    destOffset = recursive(dest, destOffset, self, dim + 1, ndim, xptr, xoffset, readBytesAtNode, callCapiFunction);
                 }
                 offset += self.getBufferStrides()[dim];
             }
             return destOffset;
         }
 
-        private void recursiveF(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, ReadBytesAtNode readBytesAtNode, int dim, int ndim, Object ptr, int offset) {
+        public static ToJavaBytesNode create() {
+            return MemoryviewBuiltinsFactory.ToJavaBytesNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class ToJavaBytesFortranOrderNode extends ToJavaBytesNode {
+        @Override
+        protected void convert(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+            recursive(dest, 0, self.getItemSize(), self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
+        }
+
+        private static void recursive(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+                        CExtNodes.PCallCapiFunction callCapiFunction) {
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
+                    xptr = callCapiFunction.call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim], self.getLength());
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
                     readBytesAtNode.execute(dest, destOffset, self.getItemSize(), self, xptr, xoffset);
                 } else {
-                    recursiveF(dest, destOffset, destStride * self.getBufferShape()[dim], self, readBytesAtNode, dim + 1, ndim, xptr, xoffset);
+                    recursive(dest, destOffset, destStride * self.getBufferShape()[dim], self, dim + 1, ndim, xptr, xoffset, readBytesAtNode, callCapiFunction);
                 }
                 destOffset += destStride;
                 offset += self.getBufferStrides()[dim];
             }
         }
 
-        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
+        public static ToJavaBytesFortranOrderNode create() {
+            return MemoryviewBuiltinsFactory.ToJavaBytesFortranOrderNodeGen.create();
+        }
+    }
+
+    @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})
+    @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"C\"", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public static abstract class ToBytesNode extends PythonBinaryClinicBuiltinNode {
+        @Child private ToJavaBytesNode toJavaBytesNode;
+        @Child private ToJavaBytesFortranOrderNode toJavaBytesFortranOrderNode;
+
+        @Specialization
+        PBytes tobytes(IntrinsifiedPMemoryView self, String order) {
+            self.checkReleased(this);
+            byte[] bytes;
+            // The nodes act as branch profiles
+            if ("C".equals(order) || "A".equals(order)) {
+                bytes = getToJavaBytesNode().execute(self);
+            } else if ("F".equals(order)) {
+                bytes = getToJavaBytesFortranOrderNode().execute(self);
+            } else {
+                throw raise(ValueError, ErrorMessages.ORDER_MUST_BE_C_F_OR_A);
             }
-            return callCapiFunction;
+            return factory().createBytes(bytes);
         }
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MemoryviewBuiltinsClinicProviders.ToBytesNodeClinicProviderGen.INSTANCE;
+        }
+
+        private ToJavaBytesNode getToJavaBytesNode() {
+            if (toJavaBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaBytesNode = insert(ToJavaBytesNode.create());
+            }
+            return toJavaBytesNode;
+        }
+
+        private ToJavaBytesFortranOrderNode getToJavaBytesFortranOrderNode() {
+            if (toJavaBytesFortranOrderNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaBytesFortranOrderNode = insert(ToJavaBytesFortranOrderNode.create());
+            }
+            return toJavaBytesFortranOrderNode;
         }
     }
 

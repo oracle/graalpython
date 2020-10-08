@@ -2,15 +2,19 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.truffle.api.object.Shape;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
-// TODO POL
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.object.Shape;
+
 // TODO interop lib
+@ExportLibrary(PythonObjectLibrary.class)
 public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
@@ -217,5 +221,20 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
+    }
+
+    @ExportMessage
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return getLength();
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes(@Cached MemoryviewBuiltins.ToJavaBytesNode toJavaBytesNode) {
+        return toJavaBytesNode.execute(this);
     }
 }
