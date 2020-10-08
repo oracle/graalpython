@@ -1743,6 +1743,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "cpu_count", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class CpuCountNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         static int getCpuCount() {
             return Runtime.getRuntime().availableProcessors();
