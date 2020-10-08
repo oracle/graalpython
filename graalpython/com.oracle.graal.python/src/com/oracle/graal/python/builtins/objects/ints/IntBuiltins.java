@@ -95,7 +95,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -2565,13 +2564,13 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         Object formatI(int self, String formatString) {
-            PythonCore core = getCore();
-            Spec spec = getSpec(formatString, core);
+            PRaiseNode raiseNode = getRaiseNode();
+            Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
-                return formatDouble(core, spec, self);
+                return formatDouble(raiseNode, spec, self);
             }
-            validateIntegerSpec(core, spec);
-            return formatInt(self, core, spec);
+            validateIntegerSpec(raiseNode, spec);
+            return formatInt(self, raiseNode, spec);
         }
 
         @Specialization(guards = "!formatString.isEmpty()")
@@ -2581,15 +2580,15 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!formatString.isEmpty()")
         Object formatPI(VirtualFrame frame, PInt self, String formatString) {
-            PythonCore core = getCore();
-            Spec spec = getSpec(formatString, core);
+            PRaiseNode raiseNode = getRaiseNode();
+            Spec spec = getSpec(formatString, raiseNode);
             if (isDoubleSpec(spec)) {
                 // lazy init of floatNode serves as branch profile
                 double doubleVal = asDouble(frame, self);
-                return formatDouble(core, spec, doubleVal);
+                return formatDouble(raiseNode, spec, doubleVal);
             }
-            validateIntegerSpec(core, spec);
-            return formatPInt(self, core, spec);
+            validateIntegerSpec(raiseNode, spec);
+            return formatPInt(self, raiseNode, spec);
         }
 
         private double asDouble(VirtualFrame frame, Object self) {
@@ -2601,8 +2600,8 @@ public class IntBuiltins extends PythonBuiltins {
             return (double) floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, self);
         }
 
-        private static Spec getSpec(String formatString, PythonCore core) {
-            Spec spec = InternalFormat.fromText(core, formatString, __FORMAT__);
+        private static Spec getSpec(String formatString, PRaiseNode raiseNode) {
+            Spec spec = InternalFormat.fromText(raiseNode, formatString, __FORMAT__);
             return spec.withDefaults(Spec.NUMERIC);
         }
 
@@ -2613,35 +2612,35 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String formatDouble(PythonCore core, Spec spec, double value) {
-            FloatFormatter formatter = new FloatFormatter(core, spec);
+        private static String formatDouble(PRaiseNode raiseNode, Spec spec, double value) {
+            FloatFormatter formatter = new FloatFormatter(raiseNode, spec);
             formatter.format(value);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatInt(int self, PythonCore core, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+        private static String formatInt(int self, PRaiseNode raiseNode, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self);
             return formatter.pad().getResult();
         }
 
         @TruffleBoundary
-        private static String formatPInt(PInt self, PythonCore core, Spec spec) {
-            IntegerFormatter formatter = new IntegerFormatter(core, spec);
+        private static String formatPInt(PInt self, PRaiseNode raiseNode, Spec spec) {
+            IntegerFormatter formatter = new IntegerFormatter(raiseNode, spec);
             formatter.format(self.getValue());
             return formatter.pad().getResult();
         }
 
-        private static void validateIntegerSpec(PythonCore core, Spec spec) {
+        private static void validateIntegerSpec(PRaiseNode raiseNode, Spec spec) {
             if (Spec.specified(spec.precision)) {
-                throw core.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
+                throw raiseNode.raise(ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
             }
             if (spec.type == 'c') {
                 if (Spec.specified(spec.sign)) {
-                    throw core.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.raise(ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);
                 } else if (spec.alternate) {
-                    throw core.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
+                    throw raiseNode.raise(ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT);
                 }
             }
         }

@@ -199,6 +199,8 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(0, 'a' * 10, 'count', 'a\U00100304')
         self.checkequal(0, '\u0102' * 10, 'count', '\u0102\U00100304')
 
+
+    @support.impl_detail('GR-26305: string indexing', graalvm=False)
     def test_find(self):
         string_tests.CommonTest.test_find(self)
         # test implementation details of the memchr fast path
@@ -258,6 +260,7 @@ class UnicodeTest(string_tests.CommonTest,
         self.checkequal(-1, 'a' * 100, 'rfind', '\U00100304a')
         self.checkequal(-1, '\u0102' * 100, 'rfind', '\U00100304\u0102')
 
+    @support.impl_detail('GR-26305: string indexing', graalvm=False)
     def test_index(self):
         string_tests.CommonTest.test_index(self)
         self.checkequalnofix(0, 'abcdefghiabc', 'index',  '')
@@ -1919,6 +1922,8 @@ class UnicodeTest(string_tests.CommonTest,
             self.assertCorrectUTF8Decoding(bytes.fromhex(seq), res,
                                            'invalid continuation byte')
 
+    # Java UTF-8 Charset reports the whole sequence as invalid
+    @support.impl_detail(graalvm=False)
     def test_invalid_cb_for_3bytes_seq(self):
         """
         Test that an 'invalid continuation byte' error is raised when the
@@ -2148,6 +2153,8 @@ class UnicodeTest(string_tests.CommonTest,
         for encoding in ('utf-8',):
             self.assertEqual(str(u.encode(encoding),encoding), u)
 
+    # Java charsets sometimes produce a bit different results
+    @support.impl_detail(graalvm=False)
     def test_codecs_charmap(self):
         # 0-127
         s = bytes(range(128))
@@ -2300,6 +2307,8 @@ class UnicodeTest(string_tests.CommonTest,
         s = 'abc'
         self.assertIs(s.expandtabs(), s)
 
+    # Makes assumptions about memory consumption of strings
+    @support.impl_detail(graalvm=False)
     def test_raiseMemError(self):
         if struct.calcsize('P') == 8:
             # 64 bits pointers

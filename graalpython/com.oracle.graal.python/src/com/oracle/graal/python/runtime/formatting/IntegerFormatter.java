@@ -13,7 +13,7 @@ import java.math.BigInteger;
 import java.text.NumberFormat;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -33,12 +33,12 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * @param result destination buffer
      * @param spec parsed conversion specification
      */
-    public IntegerFormatter(PythonCore core, FormattingBuffer result, Spec spec) {
-        super(core, result, spec);
+    public IntegerFormatter(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+        super(raiseNode, result, spec);
     }
 
-    public IntegerFormatter(PythonCore core, Spec spec) {
-        super(core, new StringFormattingBuffer(32), spec);
+    public IntegerFormatter(PRaiseNode raiseNode, Spec spec) {
+        super(raiseNode, new StringFormattingBuffer(32), spec);
     }
 
     /*
@@ -123,7 +123,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(errors, spec.type, "integer");
+                    throw unknownFormat(raiseNode, spec.type, "integer");
             }
 
             // If required to, group the whole-part digits.
@@ -143,11 +143,11 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      * {@link #format_d(BigInteger)}.
      */
     void format_i(@SuppressWarnings("unused") BigInteger value) {
-        throw unknownFormat(errors, spec.type, "integer");
+        throw unknownFormat(raiseNode, spec.type, "integer");
     }
 
     void format_i(@SuppressWarnings("unused") int value) {
-        throw unknownFormat(errors, spec.type, "integer");
+        throw unknownFormat(raiseNode, spec.type, "integer");
     }
 
     /**
@@ -285,7 +285,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(BigInteger value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value.signum() < 0 || value.compareTo(LIMIT_UNICODE) >= 0) {
-            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value.intValue());
     }
@@ -353,7 +353,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 default:
-                    throw unknownFormat(errors, spec.type, "int");
+                    throw unknownFormat(raiseNode, spec.type, "int");
             }
 
             // If required to, group the whole-part digits.
@@ -465,7 +465,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
     final void format_c(int value) {
         assert !bytes; // for bytes we use directly BytesFormatter
         if (value < 0 || value >= LIMIT_UNICODE.intValue()) {
-            throw errors.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
+            throw raiseNode.raise(OverflowError, ErrorMessages.C_ARG_NOT_IN_RANGE, toHexString(LIMIT_UNICODE));
         }
         result.appendCodePoint(value);
     }
@@ -645,8 +645,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
          * @param result destination buffer
          * @param spec parsed conversion specification
          */
-        public Traditional(PythonCore core, FormattingBuffer result, Spec spec) {
-            super(core, result, spec);
+        public Traditional(PRaiseNode raiseNode, FormattingBuffer result, Spec spec) {
+            super(raiseNode, result, spec);
         }
 
         @Override

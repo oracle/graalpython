@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -62,19 +63,23 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -106,15 +111,15 @@ public abstract class StringNodes {
 
         @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
         static String doMaterializedNative(PString x) {
-            return ((NativeCharSequence) x.getCharSequence()).materialize();
+            return ((NativeCharSequence) x.getCharSequence()).getMaterialized();
         }
 
         @Specialization(guards = {"isNativeCharSequence(x)"}, replaces = "doMaterializedNative")
         static String doNative(PString x,
-                        @Cached PCallCapiFunction callCStringToStringNode) {
+                        @Cached PCallCapiFunction callCStringToStringNode,
+                        @Cached UnicodeFromWcharNode fromWcharNode) {
             // cast guaranteed by the guard
-            NativeCharSequence nativeCharSequence = (NativeCharSequence) x.getCharSequence();
-            String materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+            String materialized = materializeNativeCharSequence((NativeCharSequence) x.getCharSequence(), callCStringToStringNode, fromWcharNode);
             x.setCharSequence(materialized);
             return materialized;
         }
@@ -132,6 +137,29 @@ public abstract class StringNodes {
             // cast guaranteed by the guard
             return (String) x.getCharSequence();
         }
+
+        public static String materializeNativeCharSequence(NativeCharSequence nativeCharSequence,
+                        PCallCapiFunction callCStringToStringNode,
+                        UnicodeFromWcharNode fromWcharNode) {
+            // cast guaranteed by the guard
+            String materialized;
+            if (nativeCharSequence.isAsciiOnly()) {
+                materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_ASCII_TO_STRING, nativeCharSequence.getPtr());
+            } else {
+                switch (nativeCharSequence.getElementSize()) {
+                    case 1:
+                        materialized = (String) callCStringToStringNode.call(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING, nativeCharSequence.getPtr());
+                        break;
+                    case 2:
+                    case 4:
+                        materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
+                        break;
+                    default:
+                        throw CompilerDirectives.shouldNotReachHere("illegal element size");
+                }
+            }
+            return materialized;
+        }
     }
 
     @GenerateUncached
@@ -148,7 +176,7 @@ public abstract class StringNodes {
         @Specialization(guards = "isMaterialized(x)")
         static int doMaterialized(PString x) {
             // cast guaranteed by the guard
-            return ((String) x.getCharSequence()).length();
+            return CompilerDirectives.castExact(x.getCharSequence(), String.class).length();
         }
 
         @Specialization(guards = "isNativeCharSequence(x)")
@@ -159,19 +187,21 @@ public abstract class StringNodes {
         @Specialization(guards = "isLazyCharSequence(x)")
         static int doLazyString(PString x) {
             // cast guaranteed by the guard
-            return ((LazyString) x.getCharSequence()).length();
+            return CompilerDirectives.castExact(x.getCharSequence(), LazyString.class).length();
         }
 
         @Specialization(guards = {"isNativeCharSequence(x)", "isNativeMaterialized(x)"})
         static int nativeString(PString x) {
-            return ((NativeCharSequence) x.getCharSequence()).length();
+            // cast guaranteed by the guard
+            return CompilerDirectives.castExact(x.getCharSequence(), NativeCharSequence.class).getMaterialized().length();
         }
 
-        @Specialization(guards = {"isNativeCharSequence(x)", "!isNativeMaterialized(x)"}, replaces = "nativeString")
-        static int nativeStringMat(PString x, @Cached PCallCapiFunction callCapi) {
-            NativeCharSequence ncs = (NativeCharSequence) x.getCharSequence();
-            ncs.materialize(callCapi);
-            return ncs.length();
+        @Specialization(guards = {"isNativeCharSequence(x)", "!isNativeMaterialized(x)"}, replaces = "nativeString", limit = "3")
+        static int nativeStringMat(@SuppressWarnings("unused") PString x,
+                        @Bind("getNativeCharSequence(x)") NativeCharSequence ncs,
+                        @CachedLibrary("ncs") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
+            return ncs.length(lib, castToJavaIntNode);
         }
 
         @Specialization(limit = "2")
@@ -194,6 +224,10 @@ public abstract class StringNodes {
         @TruffleBoundary
         private static int intValue(Number result) {
             return result.intValue();
+        }
+
+        static NativeCharSequence getNativeCharSequence(PString self) {
+            return (NativeCharSequence) self.getCharSequence();
         }
     }
 
@@ -256,7 +290,8 @@ public abstract class StringNodes {
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile listProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmptyProfile,
+                        @Cached ConditionProfile isEmptyProfile,
+                        @Cached ConditionProfile isSingleItemProfile,
                         @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode,
                         @Cached PRaiseNode raise) {
@@ -275,6 +310,10 @@ public abstract class StringNodes {
             try {
                 // manually peel first iteration
                 Object item = getItemNode.execute(frame, storage, i);
+                // shortcut
+                if (isSingleItemProfile.profile(len == 1)) {
+                    return castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item);
+                }
                 StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
 
                 for (i = 1; i < len; i++) {

@@ -14,6 +14,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_43581
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test__enablelegacywindowsfsencoding
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_clear_type_cache
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_current_frames
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_debugmallocstats
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_dlopenflags
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_executable
@@ -28,6 +29,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_ioencoding_nonascii
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_no_duplicates_in_meta_path
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit_fatalerror
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_recursionlimit_recovery
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_refcount
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_setcheckinterval
@@ -41,6 +43,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_tracebacklimit
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_sys_version_info_no_instantiation
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_thread_info
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_attributes
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_custom_unraisablehook_fail
 *graalpython.lib-python.3.test.test_sys.UnraisableHookTest.test_original_unraisablehook

@@ -12,6 +12,7 @@ available.
 import sys
 import os
 import _imp
+import _sysconfig
 
 from distutils.errors import DistutilsPlatformError
 
@@ -25,16 +26,14 @@ python_build = False
 
 
 def get_python_inc(plat_specific=0, prefix=None):
-    if prefix is None:
-        prefix = plat_specific and BASE_EXEC_PREFIX or BASE_PREFIX
-    return os.path.join(prefix, 'include')
+    return _sysconfig.get_python_inc()
 
 def get_python_version():
     """Return a string containing the major and minor Python version,
     leaving off the patchlevel.  Sample return values could be '1.5'
     or '2.2'.
     """
-    return sys.version[:3]
+    return _sysconfig.get_python_version()
 
 
 def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
@@ -62,42 +61,8 @@ _config_vars = None
 
 def _init_posix():
     """Initialize the module as appropriate for POSIX systems."""
-    darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
-
-    # note: this must be kept in sync with _imp.extension_suffixes
-    so_abi = sys.implementation.cache_tag + "-" + __graalpython__.platform_id + "-" + sys.implementation._multiarch
-    so_ext = ".so" if not darwin_native else ".dylib"
-    assert _imp.extension_suffixes()[0] == "." + so_abi + so_ext, "mismatch between extension suffix to _imp.extension_suffixes"
-
-    toolchain_cxx = __graalpython__.get_toolchain_path('CXX')
-    have_cxx = toolchain_cxx is not None
-
-    g = {}
-    g['CC'] = __graalpython__.get_toolchain_path('CC')
-    g['CXX'] = toolchain_cxx if have_cxx else g['CC'] + ' --driver-mode=g++'
-    g['OPT'] = "-stdlib=libc++ -DNDEBUG -O1"
-    g['CONFINCLUDEPY'] = get_python_inc()
-    g['CPPFLAGS'] = '-I. -I' + get_python_inc()
-    g['CFLAGS'] = "-Wno-unused-command-line-argument -stdlib=libc++ -DNDEBUG -O1 -DHPY_UNIVERSAL_ABI"
-    g['CCSHARED'] = "-fPIC"
-    g['LDSHARED_LINUX'] = "%s -shared -fPIC" % __graalpython__.get_toolchain_path('CC')
-    if darwin_native:
-        g['LDSHARED'] = g['LDSHARED_LINUX'] + " -Wl,-undefined,dynamic_lookup"
-    else:
-        g['LDSHARED'] = g['LDSHARED_LINUX']
-    g['SOABI'] = so_abi
-    g['EXT_SUFFIX'] = "." + so_abi + so_ext
-    g['SHLIB_SUFFIX'] = so_ext
-    g['SO'] = "." + so_abi + so_ext # deprecated in Python 3, for backward compatibility
-    g['AR'] = __graalpython__.get_toolchain_path('AR')
-    g['RANLIB'] = __graalpython__.get_toolchain_path('RANLIB')
-    g['ARFLAGS'] = "rc"
-    g['EXE'] = ""
-    g['LIBDIR'] = os.path.join(sys.prefix, 'lib')
-    g['VERSION'] = get_python_version()
-
     global _config_vars
-    _config_vars = g
+    _config_vars = _sysconfig._get_posix_vars()
 
 
 def _init_nt():

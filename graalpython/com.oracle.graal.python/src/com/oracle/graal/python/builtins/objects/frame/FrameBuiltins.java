@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -233,7 +234,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), false, 0);
+                    PFrame callerFrame = readCallerFrame.executeWith(frame, cur.getRef(), FrameSelector.ALL_PYTHON_FRAMES, 0);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.

@@ -122,6 +122,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     // Note: update hexversion in sys.py when updating release level
     public static final String RELEASE_LEVEL = "alpha";
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
+    // Rarely updated version of the C API, we should take it from the imported CPython version
+    public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
@@ -130,6 +132,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+
+    /**
+     * This assumption will be valid if all contexts are single-threaded. Hence, it will be
+     * invalidated as soon as at least one context has been initialized for multi-threading.
+     */
+    public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
     private final NodeFactory nodeFactory;
     private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
@@ -619,6 +627,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeMultiThreading(PythonContext context) {
+        singleThreadedAssumption.invalidate();
         context.initializeMultiThreading();
     }
 

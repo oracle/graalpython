@@ -396,6 +396,7 @@ public abstract class ErrorMessages {
     public static final String NO_FUNCTION_FOUND = "no function %s%s found in %s";
     public static final String NO_SUCH_FILE_OR_DIR = "No such file or directory: '%s:/%s'";
     public static final String NO_SUCH_NAME = "no such name";
+    public static final String NONEMPTY_SLOTS_NOT_ALLOWED_FOR_SUBTYPE_OF_S = "nonempty __slots__ not supported for subtype of '%s'";
     public static final String NONLOCAL_AND_GLOBAL = "name '%s' is nonlocal and global";
     public static final String NONLOCAL_AT_MODULE_LEVEL = "nonlocal declaration not allowed at module level";
     public static final String NON_HEX_DIGIT_FOUND = "Non-hexadecimal digit found";
@@ -468,6 +469,7 @@ public abstract class ErrorMessages {
     public static final String S_EMBEDDED_NULL_CHARACTER_IN_S = "%sembedded null character in %s";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "%s in %s conflicts with class variable";
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
+    public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
@@ -487,7 +489,8 @@ public abstract class ErrorMessages {
     public static final String SIZE_MUST_BE_D_OR_S = "size must be %d or %s";
     public static final String SLICE_INDICES_MUST_BE_INT_NONE_HAVE_INDEX = "slice indices must be integers or None or have an __index__ method";
     public static final String SLICE_STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
-    public static final String SLOT_DISALLOWED_WE_GOT_ONE = "%s slot disallowed: we already got one";
+    public static final String DICT_SLOT_DISALLOWED_WE_GOT_ONE = "__dict__ slot disallowed: we already got one";
+    public static final String WEAKREF_SLOT_DISALLOWED_WE_GOT_ONE = "__weakref__ slot disallowed: either we already got one, or __itemsize__ != 0";
     public static final String STAR_WANTS_INT = "* wants int";
     public static final String TOO_MANY_DECIMAL_DIGITS_IN_FORMAT_STRING = "Too many decimal digits in format string";
     public static final String STARRED_ASSIGMENT_MUST_BE_IN_LIST_OR_TUPLE = "starred assignment target must be in a list or tuple";

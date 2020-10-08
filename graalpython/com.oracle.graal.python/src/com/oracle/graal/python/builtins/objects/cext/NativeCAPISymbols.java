@@ -55,6 +55,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
+    public static final String FUN_PY_TRUFFLE_ASCII_TO_STRING = "PyTruffle_AsciiToString";
     public static final String FUN_PY_FLOAT_AS_DOUBLE = "truffle_read_ob_fval";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
     public static final String FUN_GET_OB_REFCNT = "get_ob_refcnt";

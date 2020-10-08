@@ -194,15 +194,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
         @Specialization
-        @SuppressWarnings("try")
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+                        @Cached ForeignCallContext foreignCallContext,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
             PythonContext context = getContextRef().get();
-            Object state = ForeignCallContext.enter(frame, context, this);
+            Object state = foreignCallContext.enter(frame, context, this);
             try {
                 return run(moduleSpec, interop);
             } finally {
-                ForeignCallContext.exit(frame, context, state);
+                foreignCallContext.exit(frame, context, state);
             }
         }
 

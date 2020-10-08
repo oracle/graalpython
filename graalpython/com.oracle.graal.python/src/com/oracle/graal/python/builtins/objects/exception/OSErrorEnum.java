@@ -312,6 +312,9 @@ public enum OSErrorEnum {
 
     @TruffleBoundary
     private static OSErrorEnum tryFindErrnoFromMessage(Exception e) {
+        if (e.getMessage().contains("Broken pipe")) {
+            return OSErrorEnum.EPIPE;
+        }
         Matcher m = ERRNO_PATTERN.matcher(e.getMessage());
         if (m.find()) {
             return fromNumber(Integer.parseInt(m.group(1)));

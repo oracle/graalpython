@@ -29,22 +29,24 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -69,19 +71,7 @@ public final class PString extends PSequence {
     }
 
     public String getValue() {
-        return PString.getValue(value);
-    }
-
-    public static String getValue(CharSequence charSequence) {
-        if (charSequence instanceof LazyString) {
-            LazyString s = (LazyString) charSequence;
-            return s.materialize();
-        } else if (charSequence instanceof NativeCharSequence) {
-            NativeCharSequence s = (NativeCharSequence) charSequence;
-            return s.materialize();
-        } else {
-            return (String) charSequence;
-        }
+        return StringMaterializeNodeGen.getUncached().execute(this);
     }
 
     public CharSequence getCharSequence() {
@@ -127,7 +117,7 @@ public final class PString extends PSequence {
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return ((String) self.value).length();
+            return CompilerDirectives.castExact(self.value, String.class).length();
         }
 
         @Specialization(guards = {
@@ -138,7 +128,7 @@ public final class PString extends PSequence {
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return ((LazyString) self.value).length();
+            return CompilerDirectives.castExact(self.value, LazyString.class).length();
         }
 
         @Specialization(guards = {
@@ -149,21 +139,21 @@ public final class PString extends PSequence {
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return ((NativeCharSequence) self.value).length();
+            return CompilerDirectives.castExact(self.value, NativeCharSequence.class).getMaterialized().length();
         }
 
         @Specialization(guards = {
                         "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
                         "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
         }, replaces = "nativeString", limit = "1")
-        static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
+        static int nativeStringMat(@SuppressWarnings("unused") PString self, @SuppressWarnings("unused") ThreadState state,
+                        @Bind("getNativeCharSequence(self)") NativeCharSequence nativeCharSequence,
                         @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
                         @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
-                        @Cached PCallCapiFunction callCapi) {
-            NativeCharSequence ncs = (NativeCharSequence) self.value;
-            ncs.materialize(callCapi);
-            return ncs.length();
+                        @CachedLibrary("nativeCharSequence") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
+            return nativeCharSequence.length(lib, castToJavaIntNode);
         }
 
         @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
@@ -177,6 +167,10 @@ public final class PString extends PSequence {
                         @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             // call the generic implementation in the superclass
             return self.lengthWithState(state, plib, methodLib, gotState, hasLen, ltZero, raiseNode, lib);
+        }
+
+        static NativeCharSequence getNativeCharSequence(PString self) {
+            return (NativeCharSequence) self.value;
         }
     }
 

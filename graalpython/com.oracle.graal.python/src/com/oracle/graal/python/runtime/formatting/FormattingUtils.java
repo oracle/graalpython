@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
@@ -48,7 +48,7 @@ public final class FormattingUtils {
     private FormattingUtils() {
     }
 
-    public static Spec validateAndPrepareForFloat(Spec spec, PythonCore core, String forType) {
+    public static Spec validateAndPrepareForFloat(PRaiseNode raiseNode, Spec spec, String forType) {
         switch (spec.type) {
             case InternalFormat.Spec.NONE:
             case 'n':
@@ -63,7 +63,7 @@ public final class FormattingUtils {
                 // formats.
                 return spec.withDefaults(InternalFormat.Spec.NUMERIC);
             default:
-                throw Formatter.unknownFormat(core, spec.type, forType);
+                throw Formatter.unknownFormat(raiseNode, spec.type, forType);
         }
     }
 }

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,33 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _codecs
+# GraalPython specific support. This code should work on both CPython and GraalPython
 
+def graalpython_ignore(assertion, default_return=None, message=None):
+   '''
+   Allows to ignore single assertion of otherwise passing test. Assertions ignored this way can be enabled by
+   exporting environment variable PROCESS_IGNORED_GRAALPYTHON_ASSERTS.
 
-def decode(self, encoding="utf-8", errors="strict"):
-    """Decode the bytes using the codec registered for encoding.
-
-    encoding
-      The encoding with which to decode the bytes.
-    errors
-      The error handling scheme to use for the handling of decoding errors.
-      The default is 'strict' meaning that decoding errors raise a
-      UnicodeDecodeError. Other possible values are 'ignore' and 'replace'
-      as well as any other name registered with codecs.register_error that
-      can handle UnicodeDecodeErrors.
-    """
-    result = _codecs.decode(self, encoding=encoding, errors=errors)
-    if not isinstance(result, str):
-        raise TypeError("'%s' encoder returned '%s' instead of 'str'; use codecs.decode() to decode to arbitrary types"
-                        % (encoding, type(result).__name__))
-    return result
-
-
-bytes.decode = __graalpython__.builtin_method(decode)
-
-
-def strip(self, what=None):
-    return self.lstrip(what).rstrip(what)
-
-
-bytes.strip = strip
+   :param assertion: executable object, typically lambda with the assertion that should be ignored.
+   :param default_return: return value to be used if the assertion is ignored.
+   :param message: dummy argument that can be used to provide an explanation why the assertion needs to be ignored.
+   :return: The result of calling 'assertion' or 'default_return' if the assertion was ignored.
+   '''
+   import os
+   if os.environ.get('PROCESS_IGNORED_GRAALPYTHON_ASSERTS', None) is None:
+      return default_return
+   result = assertion()
+   if message is not None:
+      print("\nIgnored assertion '{}' is passing! Stack trace:".format(message))
+   else:
+      print("\nIgnored assertion is passing! Stack trace:")
+   import sys
+   import traceback
+   traceback.print_stack(f=sys._getframe().f_back, limit=1)
+   return result

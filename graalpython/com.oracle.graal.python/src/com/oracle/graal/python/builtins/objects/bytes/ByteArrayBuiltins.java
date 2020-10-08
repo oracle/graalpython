@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ByteArrayGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -231,11 +232,15 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         protected SequenceStorageNodes.SetItemNode createSetItem() {
+            // Note the error message should never be reached, because the storage should always be
+            // writeable and so SetItemScalarNode should always have a specialization for it and
+            // inside that specialization the conversion of RHS may fail and produce Python level
+            // ValueError
             return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "an integer is required");
         }
 
         protected SequenceStorageNodes.SetItemNode createSetSlice() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), ByteArrayGeneralizationNode.CACHED_SUPPLIER);
         }
 
         protected static boolean isMemoryView(Object value) {

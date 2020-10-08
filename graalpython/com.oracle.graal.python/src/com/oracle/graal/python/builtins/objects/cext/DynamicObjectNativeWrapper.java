@@ -1064,10 +1064,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"isPythonClass(object)", "eq(TP_ITEMSIZE, key)"})
         static long doTpItemsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long itemsize,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached IsBuiltinClassProfile profile) {
-            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
-                writeAttrNode.execute(object, TypeBuiltins.TYPE_ITEMSIZE, itemsize);
-            } else {
+                        @Cached ConditionProfile profile) {
+            if (!profile.profile(object instanceof PythonBuiltinClass)) {
+                // not expected to happen ...
                 writeAttrNode.execute(object, __ITEMSIZE__, itemsize);
             }
             return itemsize;

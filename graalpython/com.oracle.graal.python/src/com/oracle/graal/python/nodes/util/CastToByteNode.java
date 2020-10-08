@@ -147,10 +147,15 @@ public abstract class CastToByteNode extends Node {
         return value ? (byte) 1 : (byte) 0;
     }
 
-    @Specialization(guards = "coerce")
+    @Specialization
     protected byte doBytes(VirtualFrame frame, PBytesLike value,
                     @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-        return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
+        // Workaround GR-26346
+        if (coerce) {
+            return doIntOvf(getItemNode.executeInt(frame, value.getSequenceStorage(), 0));
+        } else {
+            return doGeneric(value);
+        }
     }
 
     @Specialization(guards = "plib.isForeignObject(value)", limit = "1")

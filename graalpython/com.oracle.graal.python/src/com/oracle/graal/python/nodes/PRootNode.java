@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -141,6 +142,10 @@ public abstract class PRootNode extends RootNode {
 
     public static boolean isPythonInternal(RootNode rootNode) {
         return rootNode instanceof PRootNode && isPythonInternal((PRootNode) rootNode);
+    }
+
+    public static boolean isPythonBuiltin(RootNode rootNode) {
+        return rootNode instanceof BuiltinFunctionRootNode;
     }
 
     private static Assumption createCallerFrameAssumption() {
