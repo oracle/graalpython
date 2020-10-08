@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -231,11 +232,26 @@ public class NativeLibrary {
 
         protected abstract Object execute(NativeLibrary lib, NativeFunction function, Object[] args);
 
-        @Specialization(guards = "function == cachedFunction", assumptions = "singleContextAssumption()", limit = "3")
+        @Specialization(guards = {"function == cachedFunction", "lib == cachedLib"}, assumptions = "singleContextAssumption()", limit = "3")
         static Object doSingleContext(NativeLibrary lib, NativeFunction function, Object[] args,
+                        @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
                         @Cached("function") NativeFunction cachedFunction,
                         @Cached(value = "getFunction(lib, function)", weak = true) Object funObj,
                         @CachedLibrary("funObj") InteropLibrary funInterop) {
+            return invoke(function, args, funObj, funInterop);
+        }
+
+        @Specialization(replaces = "doSingleContext")
+        static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
+                        @Cached("createIdentityProfile()") ValueProfile functionProfile,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @CachedLibrary(limit = "1") InteropLibrary funInterop) {
+            NativeFunction function = functionProfile.profile(functionIn);
+            Object funObj = lib.getCachedFunction(ctx, function);
+            return invoke(function, args, funObj, funInterop);
+        }
+
+        private static Object invoke(NativeFunction function, Object[] args, Object funObj, InteropLibrary funInterop) {
             try {
                 if (LOGGER.isLoggable(Level.FINEST)) {
                     LOGGER.finest(buildLogMessage(function, args));
@@ -250,16 +266,6 @@ public class NativeLibrary {
             }
         }
 
-        @Specialization(replaces = "doSingleContext")
-        static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Cached("createIdentityProfile()") ValueProfile functionProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @CachedLibrary(limit = "1") InteropLibrary funInterop) {
-            NativeFunction function = functionProfile.profile(functionIn);
-            Object funObj = lib.getCachedFunction(ctx, function);
-            return doSingleContext(lib, function, args, function, funObj, funInterop);
-        }
-
         protected static Object getFunction(NativeLibrary lib, NativeFunction fun) {
             return lib.getFunction(PythonLanguage.getContext(), fun);
         }
@@ -269,18 +275,22 @@ public class NativeLibrary {
             StringBuilder sb = new StringBuilder("Executing native function ");
             sb.append(function.name()).append(" with arguments: ");
             for (Object arg : args) {
-                try {
-                    sb.append(arg).append(',');
-                } catch (Exception ex) {
-                    sb.append(String.format("%s (toString threw %s),", arg.getClass().getSimpleName(), ex.getClass().getSimpleName()));
-                }
+                sb.append(safeToString(arg)).append(',');
             }
             return sb.toString();
         }
 
         @TruffleBoundary
         private static String buildReturnLogMessage(NativeFunction function, Object result) {
-            return "Finished executing native function " + function.name() + " with result: " + result;
+            return "Finished executing native function " + function.name() + " with result: " + safeToString(result);
+        }
+
+        private static String safeToString(Object value) {
+            try {
+                return Objects.toString(value);
+            } catch (Exception ex) {
+                return String.format("%s (toString threw %s),", value.getClass().getSimpleName(), ex.getClass().getSimpleName());
+            }
         }
 
         public InteropLibrary ensureResultInterop() {
