@@ -244,9 +244,10 @@ public class NativeLibrary {
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
                         @Cached("createIdentityProfile()") ValueProfile functionProfile,
+                        @Cached("createClassProfile()") ValueProfile functionClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
-            NativeFunction function = functionProfile.profile(functionIn);
+            NativeFunction function = functionClassProfile.profile(functionProfile.profile(functionIn));
             Object funObj = lib.getCachedFunction(ctx, function);
             return invoke(function, args, funObj, funInterop);
         }
