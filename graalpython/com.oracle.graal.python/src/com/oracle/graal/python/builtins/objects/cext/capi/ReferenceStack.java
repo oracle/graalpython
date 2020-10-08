@@ -46,14 +46,14 @@ import java.util.Iterator;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NativeReferenceStack<T> implements Iterable<T> {
+public final class ReferenceStack<T> implements Iterable<T> {
     private static final int INITIAL_CAPACITY = 64;
 
     private final IntegerStack freeList;
     private T[] nativeObjectWrapperList;
 
     @TruffleBoundary
-    public NativeReferenceStack(Class<T> elementClazz) {
+    public ReferenceStack(Class<T> elementClazz) {
         nativeObjectWrapperList = (T[]) Array.newInstance(elementClazz, INITIAL_CAPACITY);
         freeList = new IntegerStack(INITIAL_CAPACITY);
         freeList.addToFreeList(0, INITIAL_CAPACITY);

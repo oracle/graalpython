@@ -105,7 +105,7 @@ public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
-    private final NativeReferenceStack<NativeObjectReference> nativeObjectWrapperList;
+    private final ReferenceStack<NativeObjectReference> nativeObjectWrapperList;
     private TraceMallocDomain[] traceMallocDomains;
 
     /** Container of pointers that have seen to be free'd. */
@@ -135,7 +135,7 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
-        nativeObjectWrapperList = new NativeReferenceStack<>(NativeObjectReference.class);
+        nativeObjectWrapperList = new ReferenceStack<>(NativeObjectReference.class);
 
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();
