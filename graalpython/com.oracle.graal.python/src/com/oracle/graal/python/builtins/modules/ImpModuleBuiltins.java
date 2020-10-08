@@ -559,7 +559,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static String getSoAbi(PythonContext ctxt) {
+        public static String getSoAbi(PythonContext ctxt) {
             PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
             Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
             // sys.implementation.cache_tag

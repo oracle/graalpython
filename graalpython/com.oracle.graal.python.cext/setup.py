@@ -56,6 +56,7 @@ cflags_warnings = [ "-Wno-int-to-pointer-cast"
                   ]
 libpython_name = "libpython"
 libhpy_name = "libhpy"
+libposix_name = "libposix"
 
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
 darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
@@ -394,6 +395,22 @@ def build_libhpy(capi_home):
         ext_modules=[module],
     )
 
+def build_libposix(capi_home):
+    src_dir = os.path.join(__dir__, "posix")
+    files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
+    module = Extension(libposix_name,
+                       sources=files,
+                       extra_compile_args=cflags_warnings)
+    args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
+    setup(
+        script_name='setup' + libposix_name,
+        script_args=args,
+        name=libposix_name,
+        version='1.0',
+        description="Graal Python's Native support for the POSIX library",
+        ext_modules=[module],
+    )
+
 
 def build_builtin_exts(capi_home):
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s/modules' % capi_home, "clean"]
@@ -427,6 +444,7 @@ def build(capi_home):
 
     try:
         build_libhpy(capi_home)
+        build_libposix(capi_home)
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
     finally:
