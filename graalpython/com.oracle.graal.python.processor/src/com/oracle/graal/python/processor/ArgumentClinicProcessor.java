@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
@@ -267,13 +268,16 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     @SuppressWarnings("unchecked")
     private static BuiltinAnnotation getBuiltinAnnotation(TypeElement type) throws ProcessingError {
         String builtinName = null;
-        String[] parameterNames = null;
+        Stream<?> parameterNames = null;
+        Stream<?> keywordOnlyNames = null;
         for (AnnotationMirror annot : type.getAnnotationMirrors()) {
             String name = ((TypeElement) annot.getAnnotationType().asElement()).getQualifiedName().toString();
             if (name.equals(BuiltinAnnotationClass)) {
                 for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
                     if (item.getKey().getSimpleName().toString().equals("parameterNames")) {
-                        parameterNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue).toArray(String[]::new);
+                        parameterNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
+                    } else if (item.getKey().getSimpleName().toString().equals("keywordOnlyNames")) {
+                        keywordOnlyNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
                     } else if (item.getKey().getSimpleName().toString().equals("name")) {
                         builtinName = (String) item.getValue().getValue();
                     }
@@ -283,7 +287,10 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         if (parameterNames == null || builtinName == null) {
             throw error(type, "In order to use Argument Clinic, the Builtin annotation must contain 'name' and 'parameterNames' fields.");
         }
-        return new BuiltinAnnotation(builtinName, parameterNames);
+        if (keywordOnlyNames != null) {
+            parameterNames = Stream.concat(parameterNames, keywordOnlyNames);
+        }
+        return new BuiltinAnnotation(builtinName, parameterNames.toArray(String[]::new));
     }
 
     private static ProcessingError error(Element element, String fmt, Object... args) throws ProcessingError {
