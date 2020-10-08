@@ -180,7 +180,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedMemoryviewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -1551,7 +1551,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static Object wrap(Object object,
                         @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached BuiltinConstructors.IMemoryViewNode memoryViewNode,
+                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
                         @Cached ToNewRefNode toNewRefNode) {
             return toNewRefNode.execute(memoryViewNode.create(asPythonObjectNode.execute(object)));
         }
@@ -1564,7 +1564,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static Object wrap(Object bufferStructPointer, Object ownerObj, Object lenObj, Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
-                        @Cached IntrinsifiedMemoryviewBuiltins.InitFlagsNode initFlagsNode,
+                        @Cached MemoryviewBuiltins.InitFlagsNode initFlagsNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
@@ -1608,8 +1608,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 // TODO factory
-                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView,
-                                PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView,
+                                PythonBuiltinClassType.PMemoryView.getInstanceShape(),
                                 bufferStructPointer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {

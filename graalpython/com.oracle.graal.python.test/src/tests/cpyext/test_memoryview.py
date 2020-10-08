@@ -247,7 +247,7 @@ class TestPyMemoryView(CPyExtTestCase):
             (bytearray(b'12345678'), 10, ord('0'), IndexError("index out of bounds on dimension 1")),
             (bytearray(b'12345678'), "a", ord('0'), TypeError("memoryview: invalid slice key")),
             (bytearray(b'12345678'), slice(2, 5), b'abc', b'12abc678'),
-            (bytearray(b'12345678'), slice(2, 5), imemoryview(b'abcdef')[::2], b'12ace678'),
+            (bytearray(b'12345678'), slice(2, 5), memoryview(b'abcdef')[::2], b'12ace678'),
             (bytearray(b'12345678'), slice(None, None, 2), b'abcd', b'a2b4c6d8'),
             (bytearray(b'12345678'), slice(2, 5), b'1', ValueError("memoryview assignment: lvalue and rvalue have different structures")),
             (bytearray(b'12345678'), slice(2, 5), b'1111', ValueError("memoryview assignment: lvalue and rvalue have different structures")),

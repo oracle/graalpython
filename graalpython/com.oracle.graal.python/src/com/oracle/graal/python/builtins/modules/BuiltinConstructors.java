@@ -154,7 +154,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -3316,14 +3315,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    // imemoryview([iterable])
-    @Builtin(name = "imemoryview", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.IntrinsifiedPMemoryView)
+    // memoryview([iterable])
+    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
-    public abstract static class IMemoryViewNode extends PythonBuiltinNode {
+    public abstract static class MemoryViewNode extends PythonBuiltinNode {
         public abstract IntrinsifiedPMemoryView execute(Object cls, Object object);
 
         public final IntrinsifiedPMemoryView create(Object object) {
-            return execute(PythonBuiltinClassType.IntrinsifiedPMemoryView, object);
+            return execute(PythonBuiltinClassType.PMemoryView, object);
         }
 
         // TODO arrays should support buffer protocol too, but their implementation would be
@@ -3366,24 +3365,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format) {
             // TODO factory
             // TODO We should lock the underlying storage for resizing
-            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.IntrinsifiedPMemoryView, PythonBuiltinClassType.IntrinsifiedPMemoryView.getInstanceShape(),
+            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
                             null, object, length * itemsize, readonly, itemsize, format, 1,
                             null, 0, new int[]{length}, new int[]{itemsize}, null,
                             IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN);
         }
 
-        public static IMemoryViewNode create() {
-            return BuiltinConstructorsFactory.IMemoryViewNodeFactory.create(null);
-        }
-    }
-
-    // memoryview(obj)
-    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
-    @GenerateNodeFactory
-    public abstract static class MemoryViewNode extends PythonBuiltinNode {
-        @Specialization
-        public PMemoryView doGeneric(Object cls, Object value) {
-            return factory().createMemoryView(cls, value);
+        public static MemoryViewNode create() {
+            return BuiltinConstructorsFactory.MemoryViewNodeFactory.create(null);
         }
     }
 

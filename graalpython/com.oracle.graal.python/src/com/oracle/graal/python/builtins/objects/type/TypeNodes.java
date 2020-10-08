@@ -196,7 +196,6 @@ public abstract class TypeNodes {
                 case PFrame:
                 case PGenerator:
                 case PMemoryView:
-                case IntrinsifiedPMemoryView:
                 case PBuffer:
                 case PSlice:
                 case PTraceback:
