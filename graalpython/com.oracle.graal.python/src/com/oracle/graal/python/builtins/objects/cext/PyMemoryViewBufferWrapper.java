@@ -1,14 +1,20 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -83,6 +89,23 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         return readFieldNode.execute((IntrinsifiedPMemoryView) lib.getDelegate(this), member);
     }
 
+    @GenerateUncached
+    static abstract class IntArrayToNativePySSizeArray extends Node {
+        public abstract Object execute(int[] array);
+
+        @Specialization
+        static Object getShape(int[] intArray,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            long[] longArray = new long[intArray.length];
+            for (int i = 0; i < intArray.length; i++) {
+                longArray[i] = intArray[i];
+            }
+            // TODO memory leak, see GR-26590
+            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, context.getEnv().asGuestValue(longArray), longArray.length);
+        }
+    }
+
     @ImportStatic(PyMemoryViewBufferWrapper.class)
     @GenerateUncached
     abstract static class ReadFieldNode extends Node {
@@ -97,7 +120,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         static Object getBufManaged(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
-                        @Cached CExtNodes.PointerAddNode pointerAddNode,
+                        @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode,
                         @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
             PSequence owner = (PSequence) object.getOwner();
             NativeSequenceStorage nativeStorage = toNativeStorageNode.execute(getStorage.execute(owner));
@@ -115,7 +138,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() != null"})
         static Object getBufNative(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
-                        @Cached CExtNodes.PointerAddNode pointerAddNode) {
+                        @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode) {
             if (object.getOffset() == 0) {
                 return object.getBufferPointer();
             } else {
@@ -125,8 +148,8 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(OBJ, key)"})
         static Object getObj(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             if (object.getOwner() != null) {
                 return toSulongNode.execute(object.getOwner());
             } else {
@@ -157,13 +180,44 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         @Specialization(guards = {"eq(FORMAT, key)"})
         static Object getFormat(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             if (object.getFormatString() != null) {
                 return asCharPointerNode.execute(object.getFormatString());
             } else {
                 return toSulongNode.execute(getNativeNullNode.execute());
             }
+        }
+
+        @Specialization(guards = {"eq(SHAPE, key)"})
+        static Object getShape(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
+            return intArrayToNativePySSizeArray.execute(object.getBufferShape());
+        }
+
+        @Specialization(guards = {"eq(STRIDES, key)"})
+        static Object getStrides(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
+            return intArrayToNativePySSizeArray.execute(object.getBufferStrides());
+        }
+
+        @Specialization(guards = {"eq(SUBOFFSETS, key)"})
+        static Object getSuboffsets(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
+                        @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
+            if (object.getBufferSuboffsets() != null) {
+                return intArrayToNativePySSizeArray.execute(object.getBufferSuboffsets());
+            } else {
+                return toSulongNode.execute(getNativeNullNode.execute());
+            }
+        }
+
+        @Specialization(guards = {"eq(INTERNAL, key)"})
+        static Object getInternal(@SuppressWarnings("unused") IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+                        @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Fallback
