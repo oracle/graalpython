@@ -907,12 +907,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PBytesLike arg) {
-            return convertStringToDouble(frame, createString(getByteArray(frame, arg)), arg);
-        }
-
-        @TruffleBoundary
-        private static String createString(byte[] bytes) {
-            return new String(bytes);
+            return convertStringToDouble(frame, PythonUtils.newString(getByteArray(frame, arg)), arg);
         }
 
         private double convertStringToDouble(VirtualFrame frame, String src, Object origObj) {
@@ -995,7 +990,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 return convertBytesToDouble(frame, (PBytesLike) obj);
             } else if (lib.isBuffer(obj)) {
                 try {
-                    return convertStringToDouble(frame, createString(lib.getBufferBytes(obj)), obj);
+                    return convertStringToDouble(frame, PythonUtils.newString(lib.getBufferBytes(obj)), obj);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");

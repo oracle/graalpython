@@ -1716,12 +1716,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReprNode reprNode) {
             String repr = (String) reprNode.call(frame, obj);
             byte[] bytes = BytesUtils.unicodeEscape(repr);
-            return newString(bytes);
-        }
-
-        @TruffleBoundary
-        private static String newString(byte[] bytes) {
-            return new String(bytes);
+            return PythonUtils.newString(bytes);
         }
     }
 

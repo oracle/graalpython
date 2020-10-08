@@ -959,7 +959,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 translatedChars[i] = translation;
             }
 
-            return new String(translatedChars);
+            return PythonUtils.newString(translatedChars);
         }
 
         @Specialization
@@ -1723,7 +1723,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 char[] result = new char[right];
                 Arrays.fill(result, left.charAt(0));
-                return new String(result);
+                return PythonUtils.newString(result);
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
@@ -1790,7 +1790,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     PythonUtils.arraycopy(result, 0, result, done, len);
                     done += len;
                 }
-                return new String(result);
+                return PythonUtils.newString(result);
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
@@ -2151,7 +2151,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 chars[i] = '0';
             }
             self.getChars(sStart, len, chars, i);
-            return new String(chars);
+            return PythonUtils.newString(chars);
         }
     }
 
@@ -2308,7 +2308,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     newChars[j++] = primary.charAt(i);
                 }
 
-                return new String(newChars);
+                return PythonUtils.newString(newChars);
             }
         }
 
