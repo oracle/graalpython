@@ -126,6 +126,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -2021,6 +2022,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @Override
+        @TruffleBoundary
         protected List<byte[]> splitWhitespace(byte[] bytes, int len, int maxsplit) {
             int i, j, maxcount = maxsplit;
             List<byte[]> list = new ArrayList<>();

@@ -81,7 +81,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
     /**
      * Use the Truffle stacktrace attached to an exception to populate the information in the
      * {@link PTraceback} and its tb_next chain as far as the stacktrace goes for this segment.
-     * 
+     *
      * @see GetTracebackNode
      */
     abstract static class MaterializeTruffleStacktraceNode extends Node {
@@ -91,6 +91,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         void doExisting(@SuppressWarnings("unused") PTraceback tb) {
         }
 
+        @TruffleBoundary
         @Specialization(guards = "!tb.isMaterialized()")
         void doMaterialize(PTraceback tb,
                         @Cached MaterializeFrameNode materializeFrameNode,

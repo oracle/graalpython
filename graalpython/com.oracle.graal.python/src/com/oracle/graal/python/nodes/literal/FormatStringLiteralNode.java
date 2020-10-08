@@ -123,7 +123,7 @@ public class FormatStringLiteralNode extends LiteralNode {
             PythonUtils.getChars(value, 0, value.length(), result, nextIndex);
             nextIndex += value.length();
         }
-        return new String(result);
+        return PythonUtils.newString(result);
     }
 
     private void ensureCastNodes() {
