@@ -1034,7 +1034,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("open", path.originalObject, PNone.NONE, flags);
             // TODO C-string proxy instead of new String()
-            return posixLib.open(getPosixSupport(), new String(path.path), flags);
+            return posixLib.open(getPosixSupport(), newString(path), flags);
+        }
+
+        @TruffleBoundary
+        private static String newString(PosixPath.Path path) {
+            // TODO: use PythonUtils.newString once merged
+            return new String(path.path);
         }
     }
 
