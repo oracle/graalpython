@@ -211,6 +211,7 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
+POLYGLOT_DECLARE_TYPE(Py_buffer);
 
 
 static void initialize_globals() {

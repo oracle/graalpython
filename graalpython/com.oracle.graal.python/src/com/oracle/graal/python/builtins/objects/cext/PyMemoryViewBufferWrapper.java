@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_PY_BUFFER_TYPEID;
 import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -10,6 +11,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -227,16 +229,59 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
-        // TODO implement native type
-        return false;
+    protected boolean isPointer(
+            @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+        return pIsPointerNode.execute(this);
+    }
+
+    @ExportMessage
+    public long asPointer(
+            @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+            @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+        Object nativePointer = lib.getNativePointer(this);
+        if (nativePointer instanceof Long) {
+            return (long) nativePointer;
+        }
+        return interopLibrary.asPointer(nativePointer);
+    }
+
+    @ExportMessage
+    protected void toNative(
+            @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+            @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
+            @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+        invalidateNode.execute();
+        if (!lib.isNative(this)) {
+            setNativePointer(toPyObjectNode.execute(this));
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object getNativeType() {
-        // TODO implement native type
-        return null;
+    protected boolean hasNativeType() {
+        return true;
+    }
+
+    @ExportMessage
+    abstract static class GetNativeType {
+        @Specialization(assumptions = "singleNativeContextAssumption()")
+        static Object doByteArray(@SuppressWarnings("unused") PyMemoryViewBufferWrapper receiver,
+                        @Exclusive @Cached(value = "callGetThreadStateTypeIDUncached()") Object nativeType) {
+            return nativeType;
+        }
+
+        @Specialization(replaces = "doByteArray")
+        static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PyMemoryViewBufferWrapper receiver,
+                        @Exclusive @Cached CExtNodes.PCallCapiFunction callUnaryNode) {
+            return callUnaryNode.call(FUN_GET_PY_BUFFER_TYPEID);
+        }
+
+        protected static Object callGetThreadStateTypeIDUncached() {
+            return CExtNodes.PCallCapiFunction.getUncached().call(FUN_GET_PY_BUFFER_TYPEID);
+        }
+
+        protected static Assumption singleNativeContextAssumption() {
+            return PythonContext.getSingleNativeContextAssumption();
+        }
     }
 }
