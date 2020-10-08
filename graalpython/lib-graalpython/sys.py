@@ -44,10 +44,11 @@ def make_implementation_info():
     version_info_type = make_named_tuple_class(
         "version_info", ["major", "minor", "micro", "releaselevel", "serial"]
     )
+    _version = version_info_type(version_info)
     result = SimpleNamespace(
         name="graalpython",
-        cache_tag="graalpython",
-        version=version_info_type(version_info),
+        cache_tag="graalpython-"+str(_version.major) + str(_version.minor),
+        version=_version,
         _multiarch=__gmultiarch
     )
     version_info_type.seal()
