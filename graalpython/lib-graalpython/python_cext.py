@@ -1409,11 +1409,6 @@ def run_capi_loaded_hooks(capi_library):
         hook()
 
 
-def import_native_memoryview(capi_library):
-    import _memoryview
-    assert _memoryview is not None
-
-
 def initialize_datetime_capi():
     import datetime
 

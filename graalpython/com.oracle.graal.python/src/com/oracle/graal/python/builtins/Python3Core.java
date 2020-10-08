@@ -241,7 +241,6 @@ public final class Python3Core implements PythonCore {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        "memoryview",
                         "list",
                         "_codecs",
                         "_codecs_truffle",

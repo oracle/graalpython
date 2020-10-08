@@ -349,7 +349,6 @@ class NativeBuiltinModule:
 builtin_exts = (
     NativeBuiltinModule("_cpython_sre"),
     NativeBuiltinModule("_cpython_unicodedata"),
-    NativeBuiltinModule("_memoryview"),
     NativeBuiltinModule("_mmap"),
     NativeBuiltinModule("_cpython_struct"),
     NativeBuiltinModule("_testcapi"),

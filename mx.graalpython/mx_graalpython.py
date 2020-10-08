@@ -1227,7 +1227,6 @@ def import_python_sources(args):
 
     # mappings for files that are renamed
     mapping = {
-        "memoryobject.c": "_memoryview.c",
         "_sre.c": "_cpython_sre.c",
         "unicodedata.c": "_cpython_unicodedata.c",
         "_bz2module.c": "_bz2.c",
