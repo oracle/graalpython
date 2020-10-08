@@ -40,20 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NativeReferenceStack implements Iterable<NativeObjectReference> {
+public final class NativeReferenceStack<T> implements Iterable<T> {
     private static final int INITIAL_CAPACITY = 64;
 
     private final IntegerStack freeList;
-    private NativeObjectReference[] nativeObjectWrapperList;
+    private T[] nativeObjectWrapperList;
 
-    public NativeReferenceStack() {
-        nativeObjectWrapperList = new NativeObjectReference[INITIAL_CAPACITY];
+    @TruffleBoundary
+    public NativeReferenceStack(Class<T> elementClazz) {
+        nativeObjectWrapperList = (T[]) Array.newInstance(elementClazz, INITIAL_CAPACITY);
         freeList = new IntegerStack(INITIAL_CAPACITY);
         freeList.addToFreeList(0, INITIAL_CAPACITY);
     }
@@ -66,14 +67,14 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
         freeList.addToFreeList(oldSize, newSize);
     }
 
-    public NativeObjectReference get(int idx) {
+    public T get(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
         return nativeObjectWrapperList[idx];
     }
 
-    public NativeObjectReference remove(int idx) {
+    public T remove(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        NativeObjectReference ref = nativeObjectWrapperList[idx];
+        T ref = nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = null;
         freeList.push(idx);
         return ref;
@@ -89,21 +90,21 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
         return nativeRefID;
     }
 
-    public void commit(int idx, NativeObjectReference nativeObjectReference) {
+    public void commit(int idx, T nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
         assert nativeObjectWrapperList[idx] == null : "cannot overwrite an allocated native object reference slot";
         nativeObjectWrapperList[idx] = nativeObjectReference;
     }
 
-    public NativeObjectReference resurrect(int idx, NativeObjectReference nativeObjectReference) {
+    public T resurrect(int idx, T nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        NativeObjectReference old = nativeObjectWrapperList[idx];
+        T old = nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = nativeObjectReference;
         return old;
     }
 
     @Override
-    public Iterator<NativeObjectReference> iterator() {
+    public Iterator<T> iterator() {
         return Arrays.asList(nativeObjectWrapperList).iterator();
     }
 
