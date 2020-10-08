@@ -111,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -951,24 +950,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return lib.length(getStorageNode.execute(object));
         }
 
-        @Specialization
-        static Object doMemoryview(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, String key,
-                        @Cached PRaiseNode raise,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
-                        @CachedLibrary(limit = "1") InteropLibrary read,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
-                try {
-                    return read.readMember(PythonNativeObject.cast(delegateObj).getPtr(), key);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, e);
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("delegate of memoryview object is not native");
-        }
-
         @Specialization(guards = "eq(MMAP_DATA, key)")
         static Object doMmapData(PMMap object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object, 1);
@@ -1244,19 +1225,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value;
         }
 
-        @Specialization
-        static Object doMemoryview(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, String key, Object value,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
-                interopLib.writeMember(PythonNativeObject.cast(delegateObj).getPtr(), key, value);
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("delegate of memoryview object is not native");
-        }
-
         @Specialization(guards = "eq(F_LINENO, key)")
         static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode) {
@@ -1294,9 +1262,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         protected static boolean isGenericCase(Object object, String key) {
-            if (object instanceof PMemoryView) {
-                return false;
-            }
             return !(OB_TYPE.getMemberName().equals(key) ||
                             OB_REFCNT.getMemberName().equals(key) ||
                             TP_FLAGS.getMemberName().equals(key) ||
