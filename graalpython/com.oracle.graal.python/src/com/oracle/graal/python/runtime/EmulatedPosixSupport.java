@@ -66,26 +66,26 @@ public final class EmulatedPosixSupport {
     @ImportStatic(ImageInfo.class)
     public static class Getpid {
         @Specialization(guards = "inImageRuntimeCode()")
-        static long inNativeImage(EmulatedPosixSupport receiver) {
+        static long inNativeImage(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
             return ProcessProperties.getProcessID();
         }
 
         @Specialization(guards = "!inImageRuntimeCode()", rewriteOn = Exception.class)
-        static long usingProc(EmulatedPosixSupport receiver,
+        static long usingProc(@SuppressWarnings("unused") EmulatedPosixSupport receiver,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws Exception {
             TruffleFile statFile = ctxRef.get().getPublicTruffleFileRelaxed("/proc/self/stat");
             return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
         }
 
         @Specialization(guards = "!inImageRuntimeCode()", replaces = "usingProc")
-        static long usingMXBean(EmulatedPosixSupport receiver,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) {
+        static long usingMXBean(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
             String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
             return Long.parseLong(info.split("@")[0]);
         }
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public long umask(long umask,
                     @Cached PRaiseNode raiseNode) { // TODO get the raise node only if actually
                                                     // needed like getRaiseNode() in
@@ -104,16 +104,19 @@ public final class EmulatedPosixSupport {
     }
 
     @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
     public int open(String pathname, int flags) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
     public int close(int fd) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
     public long read(int fd, byte[] buf) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }

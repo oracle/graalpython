@@ -1029,7 +1029,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(VirtualFrame frame, PosixPath.Path path, int flags, int mode, int dirFd,
+        Object open(PosixPath.Path path, int flags, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("open", path.originalObject, PNone.NONE, flags);
@@ -1044,8 +1044,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class NfiCloseNode extends PythonFileNode {
 
         @Specialization
-        Object close(VirtualFrame frame, int fd,
-                    @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        Object close(int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.close(getPosixSupport(), fd);
         }
     }
@@ -1056,11 +1056,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class NfiReadNode extends PythonFileNode {
 
         @Specialization
-        Object read(VirtualFrame frame, int fd, int count,
-                     @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        Object read(int fd, int count,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             byte[] buf = new byte[count];
             long result = posixLib.read(getPosixSupport(), fd, buf);
-            return factory().createTuple(new Object[] { result, factory().createBytes(buf) });
+            return factory().createTuple(new Object[]{result, factory().createBytes(buf)});
         }
     }
 
@@ -1808,8 +1808,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class UmaskNode extends PythonBuiltinNode {
 
         @Specialization
-        long umask(long mask,   // TODO handle arg types properly (extend arg clinic to support pid_t, fd etc.)
-                  @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        long umask(long mask,   // TODO handle arg types properly (extend arg clinic to support
+                                // pid_t, fd etc.)
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.umask(getPosixSupport(), mask);
         }
     }
@@ -2172,11 +2173,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      */
     public abstract static class PosixPath {
 
-        public static final PosixPath DEFAULT = new PosixPath() {};
+        public static final PosixPath DEFAULT = new PosixPath() {
+        };
 
         /**
-         * Contains the original object (or the object returned by {@code __fspath__}) for auditing purposes.
-         * This field is {code null} iff the path parameter was optional and the caller did not provide it.
+         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
+         * purposes. This field is {code null} iff the path parameter was optional and the caller
+         * did not provide it.
          */
         public final Object originalObject;
 
@@ -2204,8 +2207,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         /**
-         * Contains the file descriptor if {@link PathConversionNode#allowFd} was {@code true} and the
-         * caller provided an integer instead of a path.
+         * Contains the file descriptor if {@link PathConversionNode#allowFd} was {@code true} and
+         * the caller provided an integer instead of a path.
          */
         public static class Fd extends PosixPath {
             public final int fd;
@@ -2218,8 +2221,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the parameter is
-     * omitted, returns {@link DirFdConversionNode#DEFAULT}.
+     * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
+     * parameter is omitted, returns {@link DirFdConversionNode#DEFAULT}.
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
@@ -2280,7 +2283,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Equivalent of CPython's {@code path_converter()}. Always returns an instance of {@link PosixPath}.
+     * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
+     * {@link PosixPath}.
      */
     public abstract static class PathConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
@@ -2341,7 +2345,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
         PosixPath doBuffer(VirtualFrame frame, Object value,
-                        // TODO when is shared dispatched library better than (non-shared) specialized library?
+                        // TODO when is shared dispatched library better than (non-shared)
+                        // specialized library?
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
             warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
@@ -2373,7 +2378,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                 getAllowedTypes(), value);
             }
             Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
-            // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes by design
+            // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
+            // by design
             if (pathObject instanceof PBytesLike) {
                 return doBytes(frame, (PBytesLike) pathObject, toByteArrayNode);
             }

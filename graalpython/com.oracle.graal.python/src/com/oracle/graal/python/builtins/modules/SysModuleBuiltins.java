@@ -52,7 +52,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -502,7 +502,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void doAudit(String event, Object[] arguments) {
+        void doAudit(@SuppressWarnings("unused") String event, @SuppressWarnings("unused") Object[] arguments) {
         }
 
         public static AuditNode create() {

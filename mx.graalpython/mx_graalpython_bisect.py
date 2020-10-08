@@ -109,7 +109,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
         downstream_good = None
     while True:
         index = bad_index + ((good_index - bad_index) // 2)
-        if index == bad_index or index == good_index:
+        if index in (bad_index, good_index):
             assert good_index - bad_index == 1
             break
         commit = commits[index]

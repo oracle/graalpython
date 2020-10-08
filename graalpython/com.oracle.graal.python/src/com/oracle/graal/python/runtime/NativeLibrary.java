@@ -185,7 +185,7 @@ public class NativeLibrary {
     }
 
     public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String nfiBackendName) {
-        return new TypedNativeLibrary<T>(name, functions.length, nfiBackendName);
+        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName);
     }
 
     public static final class TypedNativeLibrary<T extends Enum<T> & NativeFunction> extends NativeLibrary {
@@ -233,12 +233,12 @@ public class NativeLibrary {
         protected abstract Object execute(NativeLibrary lib, NativeFunction function, Object[] args);
 
         @Specialization(guards = {"function == cachedFunction", "lib == cachedLib"}, assumptions = "singleContextAssumption()", limit = "3")
-        static Object doSingleContext(NativeLibrary lib, NativeFunction function, Object[] args,
-                        @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
+        static Object doSingleContext(@SuppressWarnings("unused") NativeLibrary lib, @SuppressWarnings("unused") NativeFunction function, Object[] args,
+                        @SuppressWarnings("unused") @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
                         @Cached("function") NativeFunction cachedFunction,
                         @Cached(value = "getFunction(lib, function)", weak = true) Object funObj,
                         @CachedLibrary("funObj") InteropLibrary funInterop) {
-            return invoke(function, args, funObj, funInterop);
+            return invoke(cachedFunction, args, funObj, funInterop);
         }
 
         @Specialization(replaces = "doSingleContext")
