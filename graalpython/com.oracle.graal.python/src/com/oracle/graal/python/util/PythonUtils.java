@@ -149,4 +149,39 @@ public final class PythonUtils {
         }
         return ct;
     }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder() {
+        return new StringBuilder();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder(String str) {
+        return new StringBuilder(str);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder newStringBuilder(int capacity) {
+        return new StringBuilder(capacity);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static String sbToString(StringBuilder sb) {
+        return sb.toString();
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, char c) {
+        return sb.append(c);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, String s) {
+        return sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder appendCodePoint(StringBuilder sb, int codePoint) {
+        return sb.appendCodePoint(codePoint);
+    }
 }

@@ -85,6 +85,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -317,13 +318,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = BytesUtils.newStringBuilder();
+            StringBuilder sb = PythonUtils.newStringBuilder();
             String typeName = getNameNode.execute(lib.getLazyPythonClass(self));
-            BytesUtils.sbAppend(sb, typeName);
-            BytesUtils.sbAppend(sb, '(');
+            PythonUtils.append(sb, typeName);
+            PythonUtils.append(sb, '(');
             BytesUtils.reprLoop(sb, bytes, len);
-            BytesUtils.sbAppend(sb, ')');
-            return BytesUtils.sbToString(sb);
+            PythonUtils.append(sb, ')');
+            return PythonUtils.sbToString(sb);
         }
     }
 
@@ -725,9 +726,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     protected static Object commonReduce(int proto, byte[] bytes, int len, Object clazz, Object dict,
                     PythonObjectFactory factory) {
-        StringBuilder sb = BytesUtils.newStringBuilder();
+        StringBuilder sb = PythonUtils.newStringBuilder();
         BytesUtils.repr(sb, bytes, len);
-        String str = BytesUtils.sbToString(sb);
+        String str = PythonUtils.sbToString(sb);
         Object contents;
         if (proto < 3) {
             contents = factory.createTuple(new Object[]{str, "latin-1"});

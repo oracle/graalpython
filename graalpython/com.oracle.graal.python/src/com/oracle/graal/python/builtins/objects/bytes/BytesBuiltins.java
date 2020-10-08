@@ -264,9 +264,9 @@ public class BytesBuiltins extends PythonBuiltins {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = BytesUtils.newStringBuilder();
+            StringBuilder sb = PythonUtils.newStringBuilder();
             BytesUtils.reprLoop(sb, bytes, len);
-            return BytesUtils.sbToString(sb);
+            return PythonUtils.sbToString(sb);
         }
     }
 

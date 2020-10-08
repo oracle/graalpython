@@ -39,6 +39,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -340,31 +341,6 @@ public final class BytesUtils {
         }
     }
 
-    @TruffleBoundary
-    public static StringBuilder newStringBuilder() {
-        return new StringBuilder();
-    }
-
-    @TruffleBoundary
-    public static StringBuilder newStringBuilder(int capacity) {
-        return new StringBuilder(capacity);
-    }
-
-    @TruffleBoundary
-    public static String sbToString(StringBuilder sb) {
-        return sb.toString();
-    }
-
-    @TruffleBoundary
-    public static void sbAppend(StringBuilder sb, char c) {
-        sb.append(c);
-    }
-
-    @TruffleBoundary
-    public static void sbAppend(StringBuilder sb, String s) {
-        sb.append(s);
-    }
-
     @TruffleBoundary(allowInlining = true)
     public static Object doAsciiString(String str) {
         byte[] bytes = unicodeEscape(str);
@@ -377,18 +353,18 @@ public final class BytesUtils {
         }
         boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
         char quote = useDoubleQuotes ? '"' : '\'';
-        StringBuilder sb = newStringBuilder(bytes.length + 2);
-        sbAppend(sb, quote);
+        StringBuilder sb = PythonUtils.newStringBuilder(bytes.length + 2);
+        PythonUtils.append(sb, quote);
         for (int i = 0; i < bytes.length; i++) {
             char c = (char) bytes[i];
             if (c == '\'' && !useDoubleQuotes) {
-                sbAppend(sb, "\\'");
+                PythonUtils.append(sb, "\\'");
             } else {
-                sbAppend(sb, c);
+                PythonUtils.append(sb, c);
             }
         }
-        sbAppend(sb, quote);
-        return sbToString(sb);
+        PythonUtils.append(sb, quote);
+        return PythonUtils.sbToString(sb);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -407,32 +383,32 @@ public final class BytesUtils {
 
     public static void reprLoop(StringBuilder sb, byte[] bytes, int len) {
         char quote = figureOutQuote(bytes, len);
-        sbAppend(sb, 'b');
-        sbAppend(sb, quote);
+        PythonUtils.append(sb, 'b');
+        PythonUtils.append(sb, quote);
         for (int i = 0; i < len; i++) {
             byteRepr(sb, bytes[i], quote == '\'');
         }
-        sbAppend(sb, quote);
+        PythonUtils.append(sb, quote);
     }
 
     @TruffleBoundary
     private static void byteRepr(StringBuilder sb, byte b, boolean isSingleQuote) {
         if (b == '\t') {
-            sbAppend(sb, "\\t");
+            PythonUtils.append(sb, "\\t");
         } else if (b == '\n') {
-            sbAppend(sb, "\\n");
+            PythonUtils.append(sb, "\\n");
         } else if (b == '\r') {
-            sbAppend(sb, "\\r");
+            PythonUtils.append(sb, "\\r");
         } else if (b == '\'') {
-            sbAppend(sb, isSingleQuote ? "\\'" : "\'");
+            PythonUtils.append(sb, isSingleQuote ? "\\'" : "\'");
         } else if (b > 31 && b <= 126) {
             char chr = (char) b;
             if (chr == '\\') {
-                sbAppend(sb, '\\');
+                PythonUtils.append(sb, '\\');
             }
-            sbAppend(sb, chr);
+            PythonUtils.append(sb, chr);
         } else {
-            sbAppend(sb, String.format("\\x%02x", b));
+            PythonUtils.append(sb, String.format("\\x%02x", b));
         }
     }
 
@@ -449,11 +425,11 @@ public final class BytesUtils {
             len = bytes.length;
         }
 
-        StringBuilder sb = newStringBuilder();
-        sbAppend(sb, "b'");
+        StringBuilder sb = PythonUtils.newStringBuilder();
+        PythonUtils.append(sb, "b'");
         repr(sb, bytes, len);
-        sbAppend(sb, "'");
-        return sbToString(sb);
+        PythonUtils.append(sb, "'");
+        return PythonUtils.sbToString(sb);
     }
 
     @TruffleBoundary(transferToInterpreterOnException = false)

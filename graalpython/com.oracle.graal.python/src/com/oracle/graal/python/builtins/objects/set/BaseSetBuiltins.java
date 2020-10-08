@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -102,24 +103,9 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        @CompilerDirectives.TruffleBoundary
-        private static StringBuilder newStringBuilder() {
-            return new StringBuilder();
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        private static String sbToString(StringBuilder sb) {
-            return sb.toString();
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        private static void sbAppend(StringBuilder sb, String s) {
-            sb.append(s);
-        }
-
         private static void fillItems(VirtualFrame frame, StringBuilder sb, LookupAndCallUnaryNode repr, HashingStorageLibrary.HashingStorageIterator<Object> iter) {
             boolean first = true;
-            sbAppend(sb, "{");
+            PythonUtils.append(sb, "{");
             while (iter.hasNext()) {
                 Object reprString = repr.executeObject(frame, iter.next());
                 if (reprString instanceof PString) {
@@ -128,11 +114,11 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                 if (first) {
                     first = false;
                 } else {
-                    sbAppend(sb, ", ");
+                    PythonUtils.append(sb, ", ");
                 }
-                sbAppend(sb, (String) reprString);
+                PythonUtils.append(sb, (String) reprString);
             }
-            sbAppend(sb, "}");
+            PythonUtils.append(sb, "}");
         }
 
         @Specialization(limit = "2")
@@ -142,22 +128,22 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached("create()") TypeNodes.GetNameNode getNameNode,
                         @CachedLibrary("self") PythonObjectLibrary lib,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
-            StringBuilder sb = newStringBuilder();
+            StringBuilder sb = PythonUtils.newStringBuilder();
             int len = hlib.length(self.getDictStorage());
             HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
             Object clazz = lib.getLazyPythonClass(self);
             if (len > 0 && clazz == PythonBuiltinClassType.PSet && isBuiltinClass.profileIsAnyBuiltinClass(clazz)) {
                 fillItems(frame, sb, repr, iter);
-                return sbToString(sb);
+                return PythonUtils.sbToString(sb);
             }
             String typeName = getNameNode.execute(clazz);
-            sbAppend(sb, typeName);
-            sbAppend(sb, "(");
+            PythonUtils.append(sb, typeName);
+            PythonUtils.append(sb, "(");
             if (len > 0) {
                 fillItems(frame, sb, repr, iter);
             }
-            sbAppend(sb, ")");
-            return sbToString(sb);
+            PythonUtils.append(sb, ")");
+            return PythonUtils.sbToString(sb);
         }
     }
 
