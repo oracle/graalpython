@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.objects.cext.common;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;

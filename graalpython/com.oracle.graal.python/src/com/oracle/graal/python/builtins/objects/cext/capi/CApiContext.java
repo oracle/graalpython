@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
