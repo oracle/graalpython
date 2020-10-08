@@ -5,6 +5,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -35,6 +37,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -902,6 +905,26 @@ public class MemoryviewBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile zeroDimProfile) {
             self.checkReleased(this);
             return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+        }
+    }
+
+    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class EnterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object enter(IntrinsifiedPMemoryView self) {
+            return self;
+        }
+    }
+
+    @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    public static abstract class ExitNode extends PythonQuaternaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object exit(IntrinsifiedPMemoryView self, Object type, Object val, Object tb) {
+            // TODO release
+            return PNone.NONE;
         }
     }
 
