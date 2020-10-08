@@ -46,9 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -65,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -93,6 +90,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
@@ -166,19 +164,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "loads", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonBuiltinNode {
-
-        @Child private UnmarshallerNode marshaller = UnmarshallerNode.create();
-
-        @Specialization
-        Object doit(VirtualFrame frame, PBytesLike bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
-        }
-
-        @Specialization
-        Object doit(VirtualFrame frame, PMemoryView bytes,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return marshaller.execute(frame, toBytesNode.execute(frame, bytes), CURRENT_VERSION);
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        static Object doit(VirtualFrame frame, Object buffer,
+                        @Cached UnmarshallerNode unmarshallerNode,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            try {
+                return unmarshallerNode.execute(frame, bufferLib.getBufferBytes(buffer), CURRENT_VERSION);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 
@@ -372,18 +366,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeString(v.string, version, buffer);
         }
 
-        @Specialization
-        void handleBytesLike(VirtualFrame frame, PBytesLike v, int version, DataOutputStream buffer,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            writeByte(TYPE_BYTESLIKE, version, buffer);
-            writeBytes(toBytesNode.execute(frame, v), version, buffer);
-        }
-
-        @Specialization
-        void handleMemoryView(VirtualFrame frame, PMemoryView v, int version, DataOutputStream buffer,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            writeByte(TYPE_BYTESLIKE, version, buffer);
-            writeBytes(toBytesNode.execute(frame, v), version, buffer);
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        void handleBuffer(Object buffer, int version, DataOutputStream out,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            writeByte(TYPE_BYTESLIKE, version, out);
+            try {
+                writeBytes(bufferLib.getBufferBytes(buffer), version, out);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         @Specialization

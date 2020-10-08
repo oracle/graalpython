@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -116,6 +115,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2412,15 +2412,21 @@ public class IntBuiltins extends PythonBuiltins {
             return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
         }
 
-        // from PMemoryView
-        @Specialization
-        Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(frame, view), byteorder, signed);
+        // from buffer
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        Object fromBuffer(Object cl, Object buffer, String byteorder, boolean signed,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            try {
+                return compute(cl, bufferLib.getBufferBytes(buffer), byteorder, signed);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
-        @Specialization
-        Object fromPMemoryView(VirtualFrame frame, Object cl, PMemoryView view, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPMemoryView(frame, cl, view, byteorder, false);
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        Object fromBuffer(Object cl, Object buffer, String byteorder, @SuppressWarnings("unused") PNone signed,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            return fromBuffer(cl, buffer, byteorder, false, bufferLib);
         }
 
         // from PList, only if it is not extended

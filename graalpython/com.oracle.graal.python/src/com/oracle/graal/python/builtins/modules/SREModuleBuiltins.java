@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -156,9 +156,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return factory().createByteArray(bytes);
         }
 
-        @Specialization
-        Object run(VirtualFrame frame, PMemoryView memoryView) {
-            byte[] bytes = doBytes(getToBytesNode().execute(frame, memoryView));
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        Object run(Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            byte[] bytes;
+            try {
+                bytes = bufferLib.getBufferBytes(buffer);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             return factory().createByteArray(bytes);
         }
 
