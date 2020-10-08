@@ -5,6 +5,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -36,8 +37,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void noneAllowed() {
-        Assert.assertEquals(PosixPath.DEFAULT, callAndExpectPathT(true, false, PNone.NONE));
-        Assert.assertEquals(PosixPath.DEFAULT, callAndExpectPathT(true, false, PNone.NO_VALUE));
+        Assert.assertEquals(PosixPath.DEFAULT, call(true, false, PNone.NONE));
+        Assert.assertEquals(PosixPath.DEFAULT, call(true, false, PNone.NO_VALUE));
     }
 
     @Test
@@ -56,8 +57,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void string() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(false, false, "abc").narrow));
-        Assert.assertEquals("abc", new String(callAndExpectPathT(false, false, factory().createString("abc")).narrow));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, "abc"));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString("abc")));
     }
 
     @Test
@@ -69,10 +70,10 @@ public class PathConversionNodeTests {
 
     @Test
     public void bytes() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(false, false, factory().createBytes("abc".getBytes())).narrow));
-        Assert.assertEquals("abc", new String(callAndExpectPathT(false, true, factory().createBytes("abc".getBytes())).narrow));
-        Assert.assertEquals("abc", new String(callAndExpectPathT(true, false, factory().createBytes("abc".getBytes())).narrow));
-        Assert.assertEquals("abc", new String(callAndExpectPathT(true, true, factory().createBytes("abc".getBytes())).narrow));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createBytes("abc".getBytes())));
+        Assert.assertEquals("abc", callAndExpectPath(false, true, factory().createBytes("abc".getBytes())));
+        Assert.assertEquals("abc", callAndExpectPath(true, false, factory().createBytes("abc".getBytes())));
+        Assert.assertEquals("abc", callAndExpectPath(true, true, factory().createBytes("abc".getBytes())));
     }
 
     @Test
@@ -84,7 +85,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void buffer() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(false, false, evalValue("import array\narray.array('B', b'abc')")).narrow));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, evalValue("import array\narray.array('B', b'abc')")));
         // TODO: can we assert somehow that a warning is actually produced?
     }
 
@@ -97,8 +98,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void boolAllowed() {
-        Assert.assertEquals(0, callAndExpectInt(false));
-        Assert.assertEquals(1, callAndExpectInt(true));
+        Assert.assertEquals(0, callAndExpectFd(false));
+        Assert.assertEquals(1, callAndExpectFd(true));
     }
 
     @Test
@@ -110,7 +111,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void intAllowed() {
-        Assert.assertEquals(42, callAndExpectInt(42));
+        Assert.assertEquals(42, callAndExpectFd(42));
     }
 
     @Test
@@ -129,7 +130,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void longFitsInt() {
-        Assert.assertEquals(42, callAndExpectInt(42L));
+        Assert.assertEquals(42, callAndExpectFd(42L));
     }
 
     @Test
@@ -155,7 +156,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void pintFitsInt() {
-        Assert.assertEquals(42, callAndExpectInt(factory().createInt(BigInteger.valueOf(42))));
+        Assert.assertEquals(42, callAndExpectFd(factory().createInt(BigInteger.valueOf(42))));
     }
 
     @Test
@@ -181,7 +182,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void indexFitsInt() {
-        Assert.assertEquals(42, callAndExpectInt(evalValue("class C:\n  def __index__(self):\n    return 42\nC()")));
+        Assert.assertEquals(42, callAndExpectFd(evalValue("class C:\n  def __index__(self):\n    return 42\nC()")));
     }
 
     @Test
@@ -207,22 +208,22 @@ public class PathConversionNodeTests {
 
     @Test
     public void indexInIntSubclass() {
-        Assert.assertEquals(42, callAndExpectInt(evalValue("class C(int):\n  def __index__(self):\n    return 123\nC(42)")));
+        Assert.assertEquals(42, callAndExpectFd(evalValue("class C(int):\n  def __index__(self):\n    return 123\nC(42)")));
     }
 
     @Test
     public void fspathBytes() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(true, true, evalValue("class C:\n  def __fspath__(self):\n    return b'abc'\nC()")).narrow));
+        Assert.assertEquals("abc", callAndExpectPathEx("p = b'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
     }
 
     @Test
     public void fspathString() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 'abc'\nC()")).narrow));
+        Assert.assertEquals("abc", callAndExpectPathEx("p = 'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
     }
 
     @Test
     public void fspathPString() {
-        Assert.assertEquals("abc", new String(callAndExpectPathT(true, true, evalValue("class S(str):\n  pass\nclass C:\n  def __fspath__(self):\n    return S('abc')\nC()")).narrow));
+        Assert.assertEquals("abc", callAndExpectPathEx("class S(str):\n  pass\np = S('abc')\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
     }
 
     @Test
@@ -244,6 +245,13 @@ public class PathConversionNodeTests {
         expectedException.expect(PException.class);
         expectedException.expectMessage("TypeError: expected C.__fspath__() to return str or bytes, not float");
         call(true, true, evalValue("class C:\n  def __fspath__(self):\n    return 3.14\nC()"));
+    }
+
+    @Test
+    public void fspathBufferLike() {
+        expectedException.expect(PException.class);
+        expectedException.expectMessage("TypeError: expected C.__fspath__() to return str or bytes, not array");
+        call(true, true, evalValue("class C:\n  def __fspath__(self):\n    import array\n    return array.array('B', b'abc')\nC()"));
     }
 
     @Test
@@ -284,7 +292,6 @@ public class PathConversionNodeTests {
                 PythonContext pythonContext = getContext();
                 PArguments.setGlobals(arguments, pythonContext.getCore().factory().createDict());
                 PFrame.Reference frameInfo = ExecutionContext.IndirectCalleeContext.enterIndirect(pythonContext, arguments);
-                // TODO is this right? Without this, ReadCallerFrameNode (called by WarnNode) throws NPE
                 PArguments.setCurrentFrameInfo(arguments, frameInfo);
                 try {
                     return node.execute(Truffle.getRuntime().createMaterializedFrame(arguments), arg);
@@ -296,16 +303,31 @@ public class PathConversionNodeTests {
         return callTarget.call();
     }
 
-    private static PosixPath callAndExpectPathT(boolean nullable, boolean allowFd, Object arg) {
+    private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
         Object result = call(nullable, allowFd, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
-        return (PosixPath) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.Path.class));
+        PosixPath.Path path = (PosixPath.Path) result;
+        Assert.assertSame(orig, path.originalObject);
+        return new String(path.path);
     }
 
-    private static int callAndExpectInt(Object arg) {
+    private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg) {
+        return callAndExpectPath(nullable, allowFd, arg, arg);
+    }
+
+    private static String callAndExpectPathEx(String script) {
+        PTuple o = (PTuple) evalValue(script);
+        Object arg = o.getSequenceStorage().getItemNormalized(0);
+        Object orig = o.getSequenceStorage().getItemNormalized(1);
+        return callAndExpectPath(true, true, arg, orig);
+    }
+
+    private static int callAndExpectFd(Object arg) {
         Object result = call(true, true, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(Integer.class));
-        return (int) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.Fd.class));
+        PosixPath.Fd fd = (PosixPath.Fd) result;
+        Assert.assertSame(arg, fd.originalObject);
+        return fd.fd;
     }
 
     private static PythonObjectFactory factory() {

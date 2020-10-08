@@ -52,6 +52,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -489,6 +490,23 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         protected LookupAndCallUnaryNode createWithoutError() {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
+        }
+    }
+
+    // TODO implement support for audit events
+    public abstract static class AuditNode extends PNodeWithContext {
+        public abstract void execute(String event, Object[] arguments);
+
+        public void audit(String event, Object... arguments) {
+            execute(event, arguments);
+        }
+
+        @Specialization
+        void doAudit(String event, Object[] arguments) {
+        }
+
+        public static AuditNode create() {
+            return SysModuleBuiltinsFactory.AuditNodeGen.create();
         }
     }
 }

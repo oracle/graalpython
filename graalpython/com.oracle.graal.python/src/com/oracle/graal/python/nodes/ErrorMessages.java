@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class ErrorMessages {
+
     public static final String ABSOLUTE_VALUE_TOO_LARGE = "absolute value too large";
     public static final String ARG_AFTER_MUST_BE_ITERABLE = "argument after * must be an iterable, not %p";
     public static final String ARG_CONVERTED_NOT_EXECUTABLE = "argument converted is not executable";
@@ -61,6 +62,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
     public static final String ARG_NOT_IN_RANGE = "%s arg not in range(%s)";
     public static final String ARG_SHOULD_BE_INT_BYTESLIKE_OBJ = "argument should be integer or bytes-like object, not '%p'";
+    public static final String ARG_SHOULD_BE_INT_OR_NONE = "argument should be integer or None, not %p";
     public static final String ARG_SHOULD_NOT_EXCEED = "%s argument should not exceed %d";
     public static final String ARGS_MUST_HAVE_SAME_LENGTH = "%s arguments must have same length";
     public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";

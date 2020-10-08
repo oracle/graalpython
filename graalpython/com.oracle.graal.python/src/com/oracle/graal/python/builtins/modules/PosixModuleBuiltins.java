@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -1010,11 +1011,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "path", customConversion = "createPathConversionNode")
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
+    @ArgumentClinic(name = "dir_fd", customConversion = "createDirFdConversionNode")
     @GenerateNodeFactory
     public abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
 
         public static PathConversionNode createPathConversionNode() {
-            return PosixModuleBuiltinsFactory.PathConversionNodeGen.create("open", "path", false, false);
+            return PathConversionNode.create("open", "path", false, false);
+        }
+
+        public static DirFdConversionNode createDirFdConversionNode() {
+            return DirFdConversionNode.create();
         }
 
         @Override
@@ -1023,10 +1029,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(VirtualFrame frame, PosixPath path, int flags, int mode, Object dir_fd,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+        Object open(VirtualFrame frame, PosixPath.Path path, int flags, int mode, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("open", path.originalObject, PNone.NONE, flags);
             // TODO C-string proxy instead of new String()
-            return posixLib.open(getPosixSupport(), new String(path.narrow), flags);
+            return posixLib.open(getPosixSupport(), new String(path.path), flags);
         }
     }
 
@@ -2162,32 +2170,117 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
      * structure, but only contains the results of the conversion.
      */
-    public static class PosixPath {
+    public abstract static class PosixPath {
 
-        public static final PosixPath DEFAULT = new PosixPath();
+        public static final PosixPath DEFAULT = new PosixPath() {};
+
+        /**
+         * Contains the original object (or the object returned by {@code __fspath__}) for auditing purposes.
+         * This field is {code null} iff the path parameter was optional and the caller did not provide it.
+         */
+        public final Object originalObject;
+
+        private PosixPath() {
+            originalObject = null;
+        }
+
+        protected PosixPath(Object originalObject) {
+            assert originalObject != null;
+            this.originalObject = originalObject;
+        }
 
         /**
          * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
          * null character).
          */
-        public final byte[] narrow;
+        public static class Path extends PosixPath {
+            public final byte[] path;
 
-        // TODO: there will be at least one additional field - listdir needs to determine whether it
-        // should return str or bytes
-
-        private PosixPath() {
-            narrow = null;
+            public Path(Object originalObject, byte[] path) {
+                super(originalObject);
+                assert path != null;
+                this.path = path;
+            }
         }
 
-        public PosixPath(byte[] narrow) {
-            assert narrow != null;
-            this.narrow = narrow;
+        /**
+         * Contains the file descriptor if {@link PathConversionNode#allowFd} was {@code true} and the
+         * caller provided an integer instead of a path.
+         */
+        public static class Fd extends PosixPath {
+            public final int fd;
+
+            public Fd(Object originalObject, int fd) {
+                super(originalObject);
+                this.fd = fd;
+            }
         }
     }
 
     /**
-     * Equivalent of CPython's {@code path_converter()}. Returns either an instance of {@code PathT}
-     * or an {@code int} if {@code allowFd} is {@code true} and the caller provides an integer.
+     * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the parameter is
+     * omitted, returns {@link DirFdConversionNode#DEFAULT}.
+     */
+    public abstract static class DirFdConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+
+        public static final int DEFAULT = -100;
+
+        @Specialization
+        int doNone(@SuppressWarnings("unused") PNone value) {
+            return DEFAULT;
+        }
+
+        @Specialization
+        int doFdBool(boolean value) {
+            return PInt.intValue(value);
+        }
+
+        @Specialization
+        int doFdInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        int doFdLong(long value) {
+            return longToFd(value, getRaiseNode());
+        }
+
+        @Specialization
+        int doFdPInt(PInt value,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            return doFdLong(castToLongNode.execute(value));
+        }
+
+        @Specialization(guards = {"!isPNone(value)", "!canBeInteger(value)", "lib.canBeIndex(value)"}, limit = "3")
+        int doIndex(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached CastToJavaLongLossyNode castToLongNode) {
+            Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
+            return doFdLong(castToLongNode.execute(o));
+        }
+
+        @Fallback
+        Object doGeneric(Object value) {
+            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+        }
+
+        private static int longToFd(long value, PRaiseNode raiseNode) {
+            if (value > Integer.MAX_VALUE) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
+            }
+            if (value < Integer.MIN_VALUE) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
+            }
+            return (int) value;
+        }
+
+        public static DirFdConversionNode create() {
+            return PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code path_converter()}. Always returns an instance of {@link PosixPath}.
      */
     public abstract static class PathConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
@@ -2209,48 +2302,41 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "allowFd")
-        int doFdBool(boolean value) {
-            return PInt.intValue(value);
+        PosixPath doFdBool(boolean value) {
+            return new PosixPath.Fd(value, PInt.intValue(value));
         }
 
         @Specialization(guards = "allowFd")
-        int doFdInt(int value) {
-            return value;
+        PosixPath doFdInt(int value) {
+            return new PosixPath.Fd(value, value);
         }
 
         @Specialization(guards = "allowFd")
-        int doFdLong(long value) {
-            if (value > Integer.MAX_VALUE) {
-                throw raise(OverflowError, ErrorMessages.FD_IS_GREATER_THAN_MAXIMUM);
-            }
-            if (value < Integer.MIN_VALUE) {
-                throw raise(OverflowError, ErrorMessages.FD_IS_LESS_THAN_MINIMUM);
-            }
-            return (int) value;
+        PosixPath doFdLong(long value) {
+            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(value, getRaiseNode()));
         }
 
         @Specialization(guards = "allowFd")
-        int doFdPInt(PInt value,
+        PosixPath doFdPInt(PInt value,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
-            return doFdLong(castToLongNode.execute(value));
+            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(castToLongNode.execute(value), getRaiseNode()));
         }
 
         @Specialization
         PosixPath doUnicode(String value) {
-            // TODO replace getStringBytes with PyUnicode_FSConverter equivalent
-            return createPath(getStringBytes(value));
+            return new PosixPath.Path(value, checkPath(getStringBytes(value)));
         }
 
         @Specialization
         PosixPath doUnicode(PString value,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            return doUnicode(castToJavaStringNode.execute(value));
+            return new PosixPath.Path(value, checkPath(getStringBytes(castToJavaStringNode.execute(value))));
         }
 
         @Specialization
         PosixPath doBytes(VirtualFrame frame, PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode) {
-            return createPath(toByteArrayNode.execute(frame, value));
+            return new PosixPath.Path(value, checkPath(toByteArrayNode.execute(frame, value)));
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
@@ -2261,22 +2347,22 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                             ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
             try {
-                return createPath(lib.getBufferBytes(value));
+                return new PosixPath.Path(value, checkPath(lib.getBufferBytes(value)));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
             }
         }
 
         @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "lib.canBeIndex(value)"}, limit = "3")
-        int doIndex(VirtualFrame frame, Object value,
+        PosixPath doIndex(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
             Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
-            return doFdLong(castToLongNode.execute(o));
+            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
         @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !lib.canBeIndex(value)"}, limit = "3")
-        Object doGeneric(VirtualFrame frame, Object value,
+        PosixPath doGeneric(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
@@ -2287,6 +2373,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                 getAllowedTypes(), value);
             }
             Object pathObject = methodLib.callUnboundMethodWithState(func, PArguments.getThreadState(frame), value);
+            // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes by design
             if (pathObject instanceof PBytesLike) {
                 return doBytes(frame, (PBytesLike) pathObject, toByteArrayNode);
             }
@@ -2296,7 +2383,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (pathObject instanceof String) {
                 return doUnicode((String) pathObject);
             }
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
+            throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
 
         protected boolean isHandled(Object value) {
@@ -2308,18 +2395,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
         }
 
-        private PosixPath createPath(byte[] path) {
+        private byte[] checkPath(byte[] path) {
             for (byte b : path) {
                 if (b == 0) {
                     throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
                 }
             }
-            return new PosixPath(path);
+            return path;
         }
 
         @TruffleBoundary
         private static byte[] getStringBytes(String str) {
+            // TODO replace getBytes with PyUnicode_FSConverter equivalent
             return str.getBytes();
+        }
+
+        public static PathConversionNode create(String functionName, String argumentName, boolean nullable, boolean allowFd) {
+            return PosixModuleBuiltinsFactory.PathConversionNodeGen.create(functionName, argumentName, nullable, allowFd);
         }
     }
 }
