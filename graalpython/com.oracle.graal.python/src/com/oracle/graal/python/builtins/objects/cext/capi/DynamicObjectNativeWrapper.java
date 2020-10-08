@@ -144,6 +144,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -840,6 +841,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return object.getFlags();
         }
 
+        @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
+        static int doMemoryViewExports(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getExports().get();
+        }
+
         @Specialization(guards = "eq(MEMORYVIEW_VIEW, key)")
         static Object doMemoryViewView(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMemoryViewBufferWrapper(object);
@@ -1225,6 +1231,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value;
         }
 
+        @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
+        static Object doMemoryViewExports(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                                          @Cached CastToJavaIntExactNode cast) {
+            object.getExports().set(cast.execute(value));
+            return value;
+        }
+
         @Specialization(guards = "eq(F_LINENO, key)")
         static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
                         @Cached CastToJavaIntLossyNode castToJavaIntNode) {
@@ -1291,7 +1304,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         TP_SUBCLASSES.getMemberName().equals(member) ||
                         MD_DEF.getMemberName().equals(member) ||
                         TP_DICT.getMemberName().equals(member) ||
-                        TP_DICTOFFSET.getMemberName().equals(member);
+                        TP_DICTOFFSET.getMemberName().equals(member) ||
+                        MEMORYVIEW_EXPORTS.getMemberName().equals(member);
     }
 
     @ExportMessage

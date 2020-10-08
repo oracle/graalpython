@@ -97,3 +97,124 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
 			buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
 			buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
 }
+
+/* Macros taken from CPython */
+/* Memoryview buffer properties */
+#define MV_C_CONTIGUOUS(flags) (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C))
+#define MV_F_CONTIGUOUS(flags) \
+    (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_FORTRAN))
+#define MV_ANY_CONTIGUOUS(flags) \
+    (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C|_Py_MEMORYVIEW_FORTRAN))
+
+/* getbuffer() requests */
+#define REQ_INDIRECT(flags) ((flags&PyBUF_INDIRECT) == PyBUF_INDIRECT)
+#define REQ_C_CONTIGUOUS(flags) ((flags&PyBUF_C_CONTIGUOUS) == PyBUF_C_CONTIGUOUS)
+#define REQ_F_CONTIGUOUS(flags) ((flags&PyBUF_F_CONTIGUOUS) == PyBUF_F_CONTIGUOUS)
+#define REQ_ANY_CONTIGUOUS(flags) ((flags&PyBUF_ANY_CONTIGUOUS) == PyBUF_ANY_CONTIGUOUS)
+#define REQ_STRIDES(flags) ((flags&PyBUF_STRIDES) == PyBUF_STRIDES)
+#define REQ_SHAPE(flags) ((flags&PyBUF_ND) == PyBUF_ND)
+#define REQ_WRITABLE(flags) (flags&PyBUF_WRITABLE)
+#define REQ_FORMAT(flags) (flags&PyBUF_FORMAT)
+
+#define BASE_INACCESSIBLE(mv) \
+    (((PyMemoryViewObject *)mv)->flags&_Py_MEMORYVIEW_RELEASED)
+#define CHECK_RELEASED(mv) \
+    if (BASE_INACCESSIBLE(mv)) {                                  \
+        PyErr_SetString(PyExc_ValueError,                         \
+            "operation forbidden on released memoryview object"); \
+        return NULL;                                              \
+    }
+#define CHECK_RELEASED_INT(mv) \
+    if (BASE_INACCESSIBLE(mv)) {                                  \
+        PyErr_SetString(PyExc_ValueError,                         \
+            "operation forbidden on released memoryview object"); \
+        return -1;                                                \
+    }
+
+/* Taken from CPython memoryobject.c: memory_getbuf */
+int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags)
+{
+    Py_buffer *base = &self->view;
+    int baseflags = self->flags;
+
+    CHECK_RELEASED_INT(self);
+
+    /* start with complete information */
+    //*view = *base;
+    view->buf = base->buf;
+    view->format = base->format;
+    view->itemsize = base->itemsize;
+    view->len = base->len;
+    view->ndim = base->ndim;
+    view->readonly = base->readonly;
+    view->shape = base->shape;
+    view->strides = base->strides;
+    view->suboffsets = base->suboffsets;
+    view->obj = NULL;
+
+    if (REQ_WRITABLE(flags) && base->readonly) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not writable");
+        return -1;
+    }
+    if (!REQ_FORMAT(flags)) {
+        /* NULL indicates that the buffer's data type has been cast to 'B'.
+           view->itemsize is the _previous_ itemsize. If shape is present,
+           the equality product(shape) * itemsize = len still holds at this
+           point. The equality calcsize(format) = itemsize does _not_ hold
+           from here on! */
+        view->format = NULL;
+    }
+
+    if (REQ_C_CONTIGUOUS(flags) && !MV_C_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not C-contiguous");
+        return -1;
+    }
+    if (REQ_F_CONTIGUOUS(flags) && !MV_F_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not Fortran contiguous");
+        return -1;
+    }
+    if (REQ_ANY_CONTIGUOUS(flags) && !MV_ANY_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not contiguous");
+        return -1;
+    }
+    if (!REQ_INDIRECT(flags) && (baseflags & _Py_MEMORYVIEW_PIL)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer requires suboffsets");
+        return -1;
+    }
+    if (!REQ_STRIDES(flags)) {
+        if (!MV_C_CONTIGUOUS(baseflags)) {
+            PyErr_SetString(PyExc_BufferError,
+                "memoryview: underlying buffer is not C-contiguous");
+            return -1;
+        }
+        view->strides = NULL;
+    }
+    if (!REQ_SHAPE(flags)) {
+        /* PyBUF_SIMPLE or PyBUF_WRITABLE: at this point buf is C-contiguous,
+           so base->buf = ndbuf->data. */
+        if (view->format != NULL) {
+            /* PyBUF_SIMPLE|PyBUF_FORMAT and PyBUF_WRITABLE|PyBUF_FORMAT do
+               not make sense. */
+            PyErr_Format(PyExc_BufferError,
+                "memoryview: cannot cast to unsigned bytes if the format flag "
+                "is present");
+            return -1;
+        }
+        /* product(shape) * itemsize = len and calcsize(format) = itemsize
+           do _not_ hold from here on! */
+        view->ndim = 1;
+        view->shape = NULL;
+    }
+
+
+    view->obj = (PyObject *)self;
+    Py_INCREF(view->obj);
+    self->exports++;
+
+    return 0;
+}

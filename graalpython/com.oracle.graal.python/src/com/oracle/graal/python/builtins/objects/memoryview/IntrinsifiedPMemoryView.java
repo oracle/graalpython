@@ -7,6 +7,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.object.Shape;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 // TODO POL
 // TODO interop lib
 public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
@@ -34,6 +36,7 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final int[] strides;
     private final int[] suboffsets;
 
+    private final AtomicInteger exports = new AtomicInteger();
     private int flags;
 
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
@@ -203,6 +206,10 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
 
     public int getFlags() {
         return flags;
+    }
+
+    public AtomicInteger getExports() {
+        return exports;
     }
 
     // TODO add releasing logic

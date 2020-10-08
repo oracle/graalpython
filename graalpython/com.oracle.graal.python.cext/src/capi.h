@@ -394,6 +394,7 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes);
 
 /* MEMORYVIEW, BUFFERDECORATOR */
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
+int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags);
 
 typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
