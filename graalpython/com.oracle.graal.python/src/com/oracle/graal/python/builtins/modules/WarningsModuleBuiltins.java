@@ -993,6 +993,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 return false;
             }
 
+            @TruffleBoundary
             @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
                 PythonModule _warnings = lookupContextReference(PythonLanguage.class).get().getCore().lookupBuiltinModule("_warnings");

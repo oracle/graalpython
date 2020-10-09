@@ -47,6 +47,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -150,11 +151,13 @@ public class NativeLibrary {
     }
 
     private Object getFunction(PythonContext context, NativeFunction function) {
+        CompilerAsserts.neverPartOfCompilation();
         Object lib = getCachedLibrary(context);
         return getFunction(lib, function);
     }
 
     private Object getFunction(Object lib, NativeFunction function) {
+        CompilerAsserts.neverPartOfCompilation();
         try {
             Object symbol = cachedLibraryInterop.readMember(lib, function.name());
             return InteropLibrary.getUncached().invokeMember(symbol, "bind", function.signature());
@@ -164,6 +167,7 @@ public class NativeLibrary {
     }
 
     private Source getNFILoadSource(PythonContext context) {
+        CompilerAsserts.neverPartOfCompilation();
         String withClause = nfiBackendName == null ? "" : "with " + nfiBackendName;
         String path = getLibPath(context);
         String src = String.format("%s load (RTLD_LOCAL) \"%s\"", withClause, path);
@@ -174,6 +178,7 @@ public class NativeLibrary {
     }
 
     private String getLibPath(PythonContext context) {
+        CompilerAsserts.neverPartOfCompilation();
         String libPythonName = name + ImpModuleBuiltins.ExtensionSuffixesNode.getSoAbi(context);
         TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
         TruffleFile file = homePath.resolve(libPythonName);
