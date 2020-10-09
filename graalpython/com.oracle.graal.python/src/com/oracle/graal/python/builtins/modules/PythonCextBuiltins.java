@@ -2834,6 +2834,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
 
+        @TruffleBoundary
         @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
         Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
@@ -2843,6 +2844,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @TruffleBoundary
         @Specialization(guards = "isNativeClass(clazz)")
         Object doIt(Object clazz, String name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {

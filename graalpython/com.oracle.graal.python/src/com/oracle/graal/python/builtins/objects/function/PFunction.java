@@ -150,6 +150,7 @@ public class PFunction extends PythonObject {
         return code;
     }
 
+    @TruffleBoundary
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";

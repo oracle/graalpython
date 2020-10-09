@@ -959,7 +959,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 translatedChars[i] = translation;
             }
 
-            return new String(translatedChars);
+            return PythonUtils.newString(translatedChars);
         }
 
         @Specialization
@@ -971,7 +971,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached SpliceNode spliceNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
 
-            StringBuilder sb = StringUtils.newStringBuilder(selfStr.length());
+            StringBuilder sb = PythonUtils.newStringBuilder(selfStr.length());
 
             for (int i = 0; i < selfStr.length();) {
                 int original = PString.codePointAt(selfStr, i);
@@ -986,12 +986,12 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (translated != null) {
                     spliceNode.execute(sb, translated);
                 } else {
-                    StringUtils.appendCodePoint(sb, original);
+                    PythonUtils.appendCodePoint(sb, original);
                 }
                 i += PString.charCount(original);
             }
 
-            return StringUtils.toString(sb);
+            return PythonUtils.sbToString(sb);
         }
     }
 
@@ -1723,7 +1723,7 @@ public final class StringBuiltins extends PythonBuiltins {
             try {
                 char[] result = new char[right];
                 Arrays.fill(result, left.charAt(0));
-                return new String(result);
+                return PythonUtils.newString(result);
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
@@ -1790,7 +1790,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     PythonUtils.arraycopy(result, 0, result, done, len);
                     done += len;
                 }
-                return new String(result);
+                return PythonUtils.newString(result);
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             }
@@ -2151,7 +2151,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 chars[i] = '0';
             }
             self.getChars(sStart, len, chars, i);
-            return new String(chars);
+            return PythonUtils.newString(chars);
         }
     }
 
@@ -2308,7 +2308,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     newChars[j++] = primary.charAt(i);
                 }
 
-                return new String(newChars);
+                return PythonUtils.newString(newChars);
             }
         }
 
@@ -2455,7 +2455,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class ExpandTabsNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         static String doString(String self, int tabsize) {
-            StringBuilder sb = StringUtils.newStringBuilder(self.length());
+            StringBuilder sb = PythonUtils.newStringBuilder(self.length());
             int linePos = 0;
             // It's ok to iterate with charAt, we just pass surrogates through
             for (int i = 0; i < self.length(); i++) {
@@ -2463,7 +2463,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (ch == '\t') {
                     int incr = tabsize - (linePos % tabsize);
                     for (int j = 0; j < incr; j++) {
-                        StringUtils.append(sb, ' ');
+                        PythonUtils.append(sb, ' ');
                     }
                     linePos += incr;
                 } else {
@@ -2472,10 +2472,10 @@ public final class StringBuiltins extends PythonBuiltins {
                     } else {
                         linePos++;
                     }
-                    StringUtils.append(sb, ch);
+                    PythonUtils.append(sb, ch);
                 }
             }
-            return StringUtils.toString(sb);
+            return PythonUtils.sbToString(sb);
         }
 
         @Override

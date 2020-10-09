@@ -139,6 +139,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -2777,6 +2778,7 @@ public abstract class CExtNodes {
             return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
+        @TruffleBoundary
         protected String getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;

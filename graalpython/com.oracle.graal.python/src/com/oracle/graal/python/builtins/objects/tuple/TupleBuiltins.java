@@ -81,8 +81,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -254,33 +254,23 @@ public class TupleBuiltins extends PythonBuiltins {
                         @Cached("createRepr()") BuiltinFunctions.ReprNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
-            StringBuilder buf = new StringBuilder();
-            append(buf, "(");
+            StringBuilder buf = PythonUtils.newStringBuilder();
+            PythonUtils.append(buf, "(");
             for (int i = 0; i < len - 1; i++) {
-                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
-                append(buf, ", ");
+                PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
+                PythonUtils.append(buf, ", ");
             }
 
             if (len > 0) {
-                append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
+                PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
             }
 
             if (len == 1) {
-                append(buf, ",");
+                PythonUtils.append(buf, ",");
             }
 
-            append(buf, ")");
-            return toString(buf);
-        }
-
-        @TruffleBoundary
-        private static void append(StringBuilder sb, String s) {
-            sb.append(s);
-        }
-
-        @TruffleBoundary
-        private static String toString(StringBuilder sb) {
-            return sb.toString();
+            PythonUtils.append(buf, ")");
+            return PythonUtils.sbToString(buf);
         }
 
         protected static BuiltinFunctions.ReprNode createRepr() {
