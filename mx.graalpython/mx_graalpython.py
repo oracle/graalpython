@@ -201,18 +201,21 @@ def punittest(ars):
     with _pythonhome_context():
         mx_unittest.unittest(args)
 
-        # test leaks with Python code only
-        assert run_leak_launcher(["--lang", "python", "--code", "pass", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite"]) == 0
+        common_args = ["--lang", "python",
+                       "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+                       "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
 
-        # test leaks when some C module code is involved
-        assert run_leak_launcher(["--lang", "python", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite"]) == 0
-
-        # test leaks with shared engine Python code only
-        assert run_leak_launcher(["--lang", "python", "--shared-engine", "--code", "pass", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]) == 0
-
-        # test leaks with shared engine when some C module code is involved
-        # Not working due to GR-26175
-        # assert run_leak_launcher(["--lang", "python", "--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)", "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject", "--python.ForceImportSite"]) == 0
+        if not all([# test leaks with Python code only
+                run_leak_launcher(common_args + ["--code", "pass", ]),
+                # test leaks when some C module code is involved
+                run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+                # test leaks with shared engine Python code only
+                run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+                # test leaks with shared engine when some C module code is involved
+                # Not working due to GR-26175
+                # run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+        ]):
+            mx.abort(1)
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -1989,8 +1992,13 @@ def run_leak_launcher(args):
     vm_args += mx.get_runtime_jvm_args(dists)
     jdk = mx.get_jdk(tag=None)
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
-    return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env)
-
+    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False)
+    if retval == 0:
+        print("PASSED")
+        return True
+    else:
+        print("FAILED")
+        return False
 
 
 # ----------------------------------------------------------------------------------------------------------------------
