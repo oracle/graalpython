@@ -135,7 +135,7 @@ public class TupleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
         }
 
-        @ArgumentClinic.ConversionFactory(clinicArgs = {ArgumentClinic.ConversionFactory.ClinicArgument.DefaultValue})
+        @ArgumentClinic.ConversionFactory(shortCircuitPrimitive = PrimitiveType.Int, clinicArgs = {ArgumentClinic.ConversionFactory.ClinicArgument.DefaultValue})
         public static SliceIndexNode create(int defaultValue) {
             return SliceIndexNodeGen.create(defaultValue);
         }
@@ -143,8 +143,8 @@ public class TupleBuiltins extends PythonBuiltins {
 
     // index(element)
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value", "start", "stop"})
-    @ArgumentClinic(name = "start", conversionClass = SliceIndexNode.class, defaultValue = "0", shortCircuitPrimitive = PrimitiveType.Int)
-    @ArgumentClinic(name = "stop", conversionClass = SliceIndexNode.class, defaultValue = "Integer.MAX_VALUE", shortCircuitPrimitive = PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversionClass = SliceIndexNode.class, defaultValue = "0")
+    @ArgumentClinic(name = "stop", conversionClass = SliceIndexNode.class, defaultValue = "Integer.MAX_VALUE")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory

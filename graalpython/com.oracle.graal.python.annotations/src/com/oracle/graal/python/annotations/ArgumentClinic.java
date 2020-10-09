@@ -76,9 +76,9 @@ public @interface ArgumentClinic {
      * types and will just pass them directly to the specializations. This does not apply to
      * primitive values that are already boxed: those are always passed to the convertor.
      * 
-     * It is not necessary to set this when using a builtin conversion. Built-in convertors provide
-     * their own list of short circuit types, which is applied if this field is set to its default
-     * value.
+     * It is not necessary to set this when using a builtin conversion or
+     * {@link #conversionClass()}. Built-in convertors and {@link ConversionFactory} provide their
+     * own list of short circuit types, which is applied if this field is set to its default value.
      */
     PrimitiveType[] shortCircuitPrimitive() default {};
 
@@ -162,6 +162,14 @@ public @interface ArgumentClinic {
          * method before the argument supplied in {@link #args()}.
          */
         ClinicArgument[] clinicArgs() default {};
+
+        /**
+         * The boxing optimized execute method variants will not attempt to cast the listed
+         * primitive types and will just pass them directly to the specializations. This does not
+         * apply to primitive values that are already boxed: those are always passed to the
+         * convertor.
+         */
+        PrimitiveType[] shortCircuitPrimitive() default {};
 
         enum ClinicArgument {
             /**

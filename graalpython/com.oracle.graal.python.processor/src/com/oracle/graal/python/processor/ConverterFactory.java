@@ -64,13 +64,13 @@ public class ConverterFactory {
     public final ClinicArgument[] clinicArgs;
     public final PrimitiveType[] acceptedPrimitiveTypes;
 
-    private ConverterFactory(ExecutableElement method, ClinicArgument[] clinicArgs) {
+    private ConverterFactory(ExecutableElement method, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
         fullClassName = method.getEnclosingElement().toString();
         className = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
         methodName = method.getSimpleName().toString();
         paramCount = method.getParameters().size() - clinicArgs.length;
         this.clinicArgs = clinicArgs;
-        acceptedPrimitiveTypes = new PrimitiveType[0];
+        this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
     }
 
     private ConverterFactory(String className, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
@@ -150,7 +150,7 @@ public class ConverterFactory {
                 if (factory != null) {
                     throw new ProcessingError(conversionClass, "Multiple ConversionFactory annotations in a single class.");
                 }
-                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs());
+                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs(), annot.shortCircuitPrimitive());
             }
         }
         if (factory == null) {
