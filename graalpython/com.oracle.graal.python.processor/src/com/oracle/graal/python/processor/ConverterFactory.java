@@ -44,10 +44,18 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ArgumentClinic.ConversionFactory.ClinicArgument;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConverterFactory {
     public static final String CLINIC_PACKAGE = "com.oracle.graal.python.nodes.function.builtins.clinic";
+
+    private static final Map<TypeElement, ConverterFactory> cache = new HashMap<>();
 
     public final String fullClassName;
     public final String className;
@@ -56,7 +64,7 @@ public class ConverterFactory {
     public final ClinicArgument[] clinicArgs;
     public final PrimitiveType[] acceptedPrimitiveTypes;
 
-    public ConverterFactory(ExecutableElement method, ClinicArgument[] clinicArgs) {
+    private ConverterFactory(ExecutableElement method, ClinicArgument[] clinicArgs) {
         fullClassName = method.getEnclosingElement().toString();
         className = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
         methodName = method.getSimpleName().toString();
@@ -127,4 +135,29 @@ public class ConverterFactory {
                 throw new IllegalArgumentException(annotation.conversion().toString());
         }
     }
+
+    public static ConverterFactory getForClass(TypeElement conversionClass) throws ProcessingError {
+        ConverterFactory factory = cache.get(conversionClass);
+        if (factory != null) {
+            return factory;
+        }
+        for (Element e : conversionClass.getEnclosedElements()) {
+            ArgumentClinic.ConversionFactory annot = e.getAnnotation(ArgumentClinic.ConversionFactory.class);
+            if (annot != null) {
+                if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
+                    throw new ProcessingError(conversionClass, "ConversionFactory annotation is applicable only to static methods.");
+                }
+                if (factory != null) {
+                    throw new ProcessingError(conversionClass, "Multiple ConversionFactory annotations in a single class.");
+                }
+                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs());
+            }
+        }
+        if (factory == null) {
+            throw new ProcessingError(conversionClass, "No ConversionFactory annotation found.");
+        }
+        cache.put(conversionClass, factory);
+        return factory;
+    }
+
 }

@@ -63,14 +63,12 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.annotations.ArgumentClinic.ConversionFactory;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ArgumentsClinic;
 import com.oracle.graal.python.processor.ArgumentClinicModel.ArgumentClinicData;
@@ -285,30 +283,10 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             AnnotationValue v = findAnnotationValue(m, "conversionClass");
             if (v != null) {
                 TypeElement conversionClass = (TypeElement) processingEnv.getTypeUtils().asElement((TypeMirror) v.getValue());
-                converterFactories.put(name, createConverterFactory(conversionClass));
+                converterFactories.put(name, ConverterFactory.getForClass(conversionClass));
             }
         }
         return converterFactories;
-    }
-
-    private ConverterFactory createConverterFactory(TypeElement conversionClass) throws ProcessingError {
-        ConverterFactory factory = null;
-        for (Element e : conversionClass.getEnclosedElements()) {
-            ConversionFactory annot = e.getAnnotation(ConversionFactory.class);
-            if (annot != null) {
-                if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
-                    throw error(conversionClass, "ConversionFactory annotation is applicable only to static methods.");
-                }
-                if (factory != null) {
-                    throw error(conversionClass, "Multiple ConversionFactory annotations in a single class.");
-                }
-                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs());
-            }
-        }
-        if (factory == null) {
-            throw error(conversionClass, "No ConversionFactory annotation found.");
-        }
-        return factory;
     }
 
     private static AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
