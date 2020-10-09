@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -77,8 +78,8 @@ public class PFloat extends PythonBuiltinObject {
         return getNativeWrapper() != null && PythonNativeWrapperLibrary.getUncached().isNative(getNativeWrapper());
     }
 
-    public static PFloat create(double value) {
-        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.getInstanceShape(), value);
+    public static PFloat create(PythonLanguage lang, double value) {
+        return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.getInstanceShape(lang), value);
     }
 
     public static PFloat create(Object cls, Shape instanceShape, double value) {

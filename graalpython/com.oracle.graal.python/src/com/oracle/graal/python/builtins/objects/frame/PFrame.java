@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
@@ -91,28 +92,28 @@ public final class PFrame extends PythonBuiltinObject {
             this.callerInfo = callerInfo;
         }
 
-        public void materialize(Frame targetFrame, PRootNode location) {
+        public void materialize(PythonLanguage lang, Frame targetFrame, PRootNode location) {
             Reference curFrameInfo = PArguments.getCurrentFrameInfo(targetFrame);
             boolean inClassScope = PArguments.getSpecialArgument(targetFrame) instanceof ClassBodyRootNode;
             CompilerAsserts.partialEvaluationConstant(location);
             if (location.getFrameEscapedWithoutAllocationProfile().profile(this.pyFrame == null || this.pyFrame.virtualFrameInfo == null)) {
                 if (this.pyFrame == null) {
                     // TODO: frames: this doesn't go through the factory
-                    this.pyFrame = new PFrame(curFrameInfo, location, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location, inClassScope);
                 } else {
                     assert this.pyFrame.localsDict != null : "PFrame was set without a frame or a locals dict";
                     // this is the case when we had custom locals
-                    this.pyFrame = new PFrame(curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
+                    this.pyFrame = new PFrame(lang, curFrameInfo, location, this.pyFrame.localsDict, inClassScope);
                 }
             }
             // TODO: frames: update location
         }
 
-        public void setCustomLocals(Object customLocals) {
+        public void setCustomLocals(PythonLanguage lang, Object customLocals) {
             assert customLocals != null : "cannot set null custom locals";
             assert pyFrame == null : "cannot set customLocals when there's already a PFrame";
             // TODO: frames: this doesn't go through the factory
-            this.pyFrame = new PFrame(customLocals);
+            this.pyFrame = new PFrame(lang, customLocals);
         }
 
         public void setBackref(PFrame.Reference backref) {
@@ -150,28 +151,28 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(Reference virtualFrameInfo, Node location, boolean inClassScope) {
-        this(virtualFrameInfo, location, null, inClassScope);
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, boolean inClassScope) {
+        this(lang, virtualFrameInfo, location, null, inClassScope);
     }
 
-    public PFrame(Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object locals, boolean inClassScope) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.localsDict = locals;
         this.location = location;
         this.inClassScope = inClassScope;
     }
 
-    private PFrame(Object locals) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
+    private PFrame(PythonLanguage lang, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = null;
         this.location = null;
         this.inClassScope = false;
         this.localsDict = locals;
     }
 
-    public PFrame(@SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
-        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape());
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+        super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         Object[] frameArgs = PArguments.create();
         PArguments.setGlobals(frameArgs, globals);

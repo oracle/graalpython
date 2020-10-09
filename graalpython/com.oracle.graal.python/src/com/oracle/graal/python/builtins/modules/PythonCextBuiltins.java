@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.io.PrintWriter;
+import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -61,6 +62,7 @@ import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -113,10 +115,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ObjectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
@@ -128,9 +127,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
@@ -178,12 +174,10 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -220,8 +214,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -1587,19 +1579,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
+    public abstract static class PExternalFunctionWrapper extends Object implements TruffleObject {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
         private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
-            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
             this.checkFunctionResultNodeSupplier = DefaultCheckFunctionResultNodeGen::create;
         }
 
         public PExternalFunctionWrapper(Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
-            super(PythonBuiltinClassType.PythonObject, PythonBuiltinClassType.PythonObject.getInstanceShape());
             this.convertArgsNodeSupplier = convertArgsNodeSupplier;
             this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
         }
@@ -1614,11 +1604,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public CheckFunctionResultNode getCheckFunctionResultNode() {
             return checkFunctionResultNodeSupplier.get();
-        }
-
-        @Override
-        public int compareTo(Object o) {
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -2318,49 +2303,53 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /*
+     * We are creating a special PFunction as a wrapper here - that PFunction has a reference to the
+     * wrapped function's CallTarget. Since the wrapped function is a PFunction anyway, we'll have
+     * to do the full call logic at some point. But instead of doing it when dispatching to the
+     * wrapped function, we copy all relevant bits (signature, mostly) and thus the caller of the
+     * wrapper will already do all that work. The root node embedded in the wrapper call target (a
+     * MayRaiseNode) then just does a direct call with the frame arguments, without doing anything
+     * else anymore. Thus, while there is an extra call, there are really only those Java frames in
+     * between that are caused by the Truffle machinery for calls.
+     */
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-        private static final Builtin unaryBuiltin = MayRaiseUnaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin binaryBuiltin = MayRaiseBinaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin ternaryBuiltin = MayRaiseTernaryNode.class.getAnnotation(Builtin.class);
-        private static final Builtin varargsBuiltin = MayRaiseNode.class.getAnnotation(Builtin.class);
+        private static final WeakHashMap<RootCallTarget, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
+
+        private static final RootCallTarget createWrapperCt(PFunction func, Object errorResult) {
+            CompilerDirectives.transferToInterpreter();
+            assert errorResult instanceof Integer || errorResult instanceof Long || errorResult instanceof Double || errorResult == PNone.NONE ||
+                            InteropLibrary.getUncached().isNull(errorResult) : "invalid wrap";
+            PythonLanguage lang = PythonLanguage.getCurrent();
+            RootNode rootNode = new MayRaiseNode(lang, func.getSignature(), func.getCallTarget(), errorResult);
+            return PythonUtils.getOrCreateCallTarget(rootNode);
+        }
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResult,
-                        @Exclusive @CachedLanguage PythonLanguage lang) {
-            CompilerDirectives.transferToInterpreter();
-            RootNode rootNode = null;
-            Signature funcSignature = func.getSignature();
-            if (funcSignature.takesPositionalOnly()) {
-                switch (funcSignature.getMaxNumOfPositionalArgs()) {
-                    case 1:
-                        rootNode = new BuiltinFunctionRootNode(lang, unaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    case 2:
-                        rootNode = new BuiltinFunctionRootNode(lang, binaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    case 3:
-                        rootNode = new BuiltinFunctionRootNode(lang, ternaryBuiltin,
-                                        new StandaloneBuiltinFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
-                                        true);
-                        break;
-                    default:
-                        break;
-                }
+        Object make(PFunction func, Object errorResult) {
+            RootCallTarget wrappedCt = func.getCallTarget();
+            WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(wrappedCt);
+            RootCallTarget wrapperCt = null;
+            if (wrapperCtRef != null) {
+                wrapperCt = wrapperCtRef.get();
             }
-            if (rootNode == null) {
-                rootNode = new BuiltinFunctionRootNode(lang, varargsBuiltin,
-                                new StandaloneBuiltinFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
-                                true);
+            if (wrapperCt == null) {
+                wrapperCt = createWrapperCt(func, errorResult);
+                weakCallTargetMap.put(wrappedCt, new WeakReference<>(wrapperCt));
             }
-
-            return factory().createBuiltinFunction(func.getName(), null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
+            PCode wrappedCode = func.getCode();
+            PCode wrapperCode = factory().createCode(PythonBuiltinClassType.PCode, wrapperCt, func.getSignature(),
+                            0, 0, 0,
+                            new byte[0], new Object[0], new Object[0],
+                            new Object[0], new Object[0], new Object[0],
+                            wrappedCode.getName(), wrappedCode.getName(), 0,
+                            new byte[0]);
+            return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(),
+                            wrapperCode, func.getGlobals(), func.getDefaults(), func.getKwDefaults(),
+                            func.getClosure(), func.getCodeStableAssumption(), func.getDefaultsStableAssumption());
         }
     }
 
@@ -2834,6 +2823,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonTypes.class)
     public abstract static class PyTruffle_Type_Modified extends PythonTernaryBuiltinNode {
 
+        @TruffleBoundary
         @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
         Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
@@ -2843,6 +2833,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
+        @TruffleBoundary
         @Specialization(guards = "isNativeClass(clazz)")
         Object doIt(Object clazz, String name, PTuple mroTuple,
                         @Cached("createClassProfile()") ValueProfile profile) {

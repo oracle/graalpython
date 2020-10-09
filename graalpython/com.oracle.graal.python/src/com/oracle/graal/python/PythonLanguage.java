@@ -38,6 +38,7 @@ import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -45,7 +46,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
@@ -89,6 +92,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -141,6 +145,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final NodeFactory nodeFactory;
     private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+
+    private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
+    @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
@@ -301,13 +308,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final String[] argumentNames = request.getArgumentNames().toArray(new String[request.getArgumentNames().size()]);
         final Source source = request.getSource();
         CompilerDirectives.transferToInterpreter();
-        final RootNode executableNode = new RootNode(this) {
+        final PythonLanguage lang = this;
+        final RootNode executableNode = new RootNode(lang) {
             @Node.Child private RootNode rootNode;
 
             protected Object[] preparePArguments(VirtualFrame frame) {
                 int argumentsLength = frame.getArguments().length;
                 Object[] arguments = PArguments.create(argumentsLength);
-                PArguments.setGlobals(arguments, new PDict());
+                PArguments.setGlobals(arguments, new PDict(lang));
                 PythonUtils.arraycopy(frame.getArguments(), 0, arguments, PArguments.USER_ARGUMENTS_OFFSET, argumentsLength);
                 return arguments;
             }
@@ -644,5 +652,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
         String key = builtin.name() + nodeClass.getName();
         return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
+    }
+
+    public Shape getEmptyShape() {
+        return emptyShape;
+    }
+
+    public Shape getShapeForClass(PythonManagedClass klass) {
+        if (singleContextAssumption.isValid()) {
+            return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
+        } else {
+            return getEmptyShape();
+        }
+    }
+
+    public Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
+        int ordinal = type.ordinal();
+        Shape shape = builtinTypeInstanceShapes[ordinal];
+        if (shape == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            shape = Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, type, 0).build();
+            builtinTypeInstanceShapes[ordinal] = shape;
+        }
+        return shape;
     }
 }

@@ -176,8 +176,11 @@ public final class PythonOptions {
 
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
-    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine and call the CPython sre engine only as a fallback. Default true") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine. Default true") //
     public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the CPython sre engine as a fallback to the TRegex engine.") //
+    public static final OptionKey<Boolean> TRegexUsesSREFallback = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
     public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);

@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
+import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -51,8 +54,7 @@ import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
-    public static final HiddenKey DICT = new HiddenKey("ob_dict");
-    protected static final HiddenKey CLASS = new HiddenKey("ob_type");
+    public static final HiddenKey DICT = HiddenAttributes.DICT;
     private static final byte CLASS_CHANGED_FLAG = 1;
 
     private final Object initialPythonClass;
@@ -192,15 +194,5 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
-    }
-
-    private static final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
-
-    public static Shape freshShape(Object klass) {
-        return Shape.newBuilder(emptyShape).addConstantProperty(CLASS, klass, 0).build();
-    }
-
-    public static Shape freshShape() {
-        return emptyShape;
     }
 }

@@ -144,8 +144,8 @@ public class ListBuiltins extends PythonBuiltins {
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemNode getItem) {
-            StringBuilder result = new StringBuilder();
-            sbAppend(result, "[");
+            StringBuilder result = PythonUtils.newStringBuilder();
+            PythonUtils.append(result, "[");
             SequenceStorage storage = self.getSequenceStorage();
             boolean initial = true;
             Object value;
@@ -164,24 +164,14 @@ public class ListBuiltins extends PythonBuiltins {
                     if (initial) {
                         initial = false;
                     } else {
-                        sbAppend(result, ", ");
+                        PythonUtils.append(result, ", ");
                     }
-                    sbAppend(result, (String) reprString);
+                    PythonUtils.append(result, (String) reprString);
                 } else {
                     raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
                 }
             }
-            return toString(sbAppend(result, "]"));
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static Object toString(StringBuilder sbAppend) {
-            return sbAppend.toString();
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static StringBuilder sbAppend(StringBuilder result, String s) {
-            return result.append(s);
+            return PythonUtils.sbToString(PythonUtils.append(result, "]"));
         }
     }
 

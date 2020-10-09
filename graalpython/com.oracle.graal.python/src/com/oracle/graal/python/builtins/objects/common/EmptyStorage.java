@@ -43,12 +43,14 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -74,11 +76,12 @@ public class EmptyStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
+                    @CachedLanguage PythonLanguage lang,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
         HashingStorage newStore;
         if (key instanceof String) {
-            newStore = new DynamicObjectStorage();
+            newStore = new DynamicObjectStorage(lang);
         } else {
             newStore = EconomicMapStorage.create();
         }

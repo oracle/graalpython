@@ -49,7 +49,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -64,7 +63,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
-    private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
 
     @Child private ExpressionNode body;
     @Child private CalleeContext calleeContext = CalleeContext.create();
@@ -174,7 +172,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        CalleeContext.enter(frame, customLocalsProfile);
+        calleeContext.enter(frame);
         if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

@@ -42,7 +42,6 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.MapCursor;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -164,6 +165,18 @@ public final class PythonContext {
         }
     }
 
+    private static final class AtExitHook {
+        final Object[] arguments;
+        final PKeyword[] keywords;
+        final CallTarget ct;
+
+        AtExitHook(Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+            this.arguments = arguments;
+            this.keywords = keywords;
+            this.ct = ct;
+        }
+    }
+
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
@@ -178,7 +191,7 @@ public final class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
-    private final EconomicMap<Object, CallTarget> atExitHooks = EconomicMap.create();
+    private final EconomicMap<Object, AtExitHook> atExitHooks = EconomicMap.create(0);
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
@@ -674,8 +687,8 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void registerShutdownHook(Object callable, CallTarget ct) {
-        atExitHooks.put(callable, ct);
+    public void registerShutdownHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+        atExitHooks.put(callable, new AtExitHook(arguments, keywords, ct));
     }
 
     @TruffleBoundary
@@ -687,16 +700,23 @@ public final class PythonContext {
     public void runShutdownHooks() {
         handler.shutdown();
         // run atExitHooks in reverse order they were registered
-        CallTarget[] hooks = new CallTarget[atExitHooks.size()];
-        Iterator<CallTarget> hooksIter = atExitHooks.getValues().iterator();
+        MapCursor<Object, AtExitHook> cursor = atExitHooks.getEntries();
+        AtExitHook[] hooks = new AtExitHook[atExitHooks.size()];
+        Object[] callables = new Object[atExitHooks.size()];
         for (int i = 0; i < hooks.length; i++) {
-            hooks[i] = hooksIter.next();
+            cursor.advance();
+            callables[i] = cursor.getKey();
+            hooks[i] = cursor.getValue();
         }
         for (int i = hooks.length - 1; i >= 0; i--) {
-            hooks[i].call();
+            hooks[i].ct.call(callables[i], hooks[i].arguments, hooks[i].keywords);
         }
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
+        }
+        // destroy thread state
+        if (customThreadState != null) {
+            customThreadState.set(null);
         }
     }
 

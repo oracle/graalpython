@@ -25,12 +25,14 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -85,10 +87,11 @@ public abstract class DictLiteralNode extends LiteralNode {
 
     @Specialization
     public PDict create(VirtualFrame frame,
+                    @CachedLanguage PythonLanguage lang,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         Keys evalKeys = evalKeys(frame);
-        HashingStorage dictStorage = PDict.createNewStorage(evalKeys.allStrings, evalKeys.keys.length);
+        HashingStorage dictStorage = PDict.createNewStorage(lang, evalKeys.allStrings, evalKeys.keys.length);
         dictStorage = evalAndSetValues(frame, dictStorage, evalKeys, hasFrame, lib);
         return factory.createDict(dictStorage);
     }

@@ -484,7 +484,7 @@ class TestObject(object):
                                              * PyObject_New() so we are able to allocate space for the object and
                                              * it's data buffer.
                                              */
-                                            obj = (PyUnicodeObject *) malloc(struct_size + (size + 1) * char_size);
+                                            obj = (PyUnicodeObject *) PyObject_MALLOC(struct_size + (size + 1) * char_size);
                                             if (obj == NULL)
                                                 return NULL;
                                             obj = (PyUnicodeObject *) PyObject_INIT(obj, testStrSubclassPtr);

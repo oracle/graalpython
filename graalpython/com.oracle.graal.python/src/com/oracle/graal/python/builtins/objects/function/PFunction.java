@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -67,18 +68,18 @@ public class PFunction extends PythonObject {
     @CompilationFinal(dimensions = 1) private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] kwDefaultValues;
 
-    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
-        this(name, qualname, enclosingClassName, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
+    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, PCell[] closure) {
+        this(lang, name, qualname, enclosingClassName, code, globals, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, closure);
     }
 
-    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure) {
-        this(name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
+        this(lang, name, qualname, enclosingClassName, code, globals, defaultValues, kwDefaultValues, closure, Truffle.getRuntime().createAssumption(), Truffle.getRuntime().createAssumption());
     }
 
-    public PFunction(String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
+    public PFunction(PythonLanguage lang, String name, String qualname, String enclosingClassName, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
                     PCell[] closure, Assumption codeStableAssumption, Assumption defaultsStableAssumption) {
-        super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape());
+        super(PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PFunction.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         assert code != null;
@@ -150,6 +151,7 @@ public class PFunction extends PythonObject {
         return code;
     }
 
+    @TruffleBoundary
     public void setCode(PCode code) {
         codeStableAssumption.invalidate("code changed for function " + getName());
         assert code != null : "code cannot be null";

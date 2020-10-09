@@ -531,8 +531,9 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
         Object lookup(String chars,
+                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            HashingStorage store = PDict.createNewStorage(false, chars.length());
+            HashingStorage store = PDict.createNewStorage(lang, false, chars.length());
             PDict dict = factory().createDict(store);
             int pos = 0;
             int num = 0;

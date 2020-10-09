@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -801,6 +802,7 @@ final class PEMap implements Iterable<DictKey> {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder builder = new StringBuilder();
         builder.append(isSet ? "set(size=" : "map(size=").append(size()).append(", {");
         String sep = "";
