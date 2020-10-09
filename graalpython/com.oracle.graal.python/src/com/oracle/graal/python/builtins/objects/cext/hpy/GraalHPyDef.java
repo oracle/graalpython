@@ -198,7 +198,6 @@ public abstract class GraalHPyDef {
         HPY_TP_REPR(66, SpecialMethodNames.__REPR__, HPyFuncSignature.REPRFUNC),
         HPY_NB_MATRIX_MULTIPLY(75, SpecialMethodNames.__MATMUL__, HPyFuncSignature.BINARYFUNC),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, SpecialMethodNames.__IMATMUL__, HPyFuncSignature.BINARYFUNC),
-        // TODO(fa): use a hidden key ?
         HPY_TP_DESTROY(1000, TYPE_HPY_DESTROY, HPyFuncSignature.DESTROYFUNC);
 
         /** The corresponding C enum value. */

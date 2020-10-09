@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_GETSET;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_KIND;
@@ -808,8 +809,15 @@ public class GraalHPyNodes {
 
             String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
 
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, slot.getSignature(), methodNameStr, methodFunctionPointer,
-                            HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
+            Object function;
+            if (HPY_TP_DESTROY.equals(slot)) {
+                // special case: DESTROYFUNC
+                // This won't be usable from Python, so we just store the bare pointer object into
+                // the hidden attribute.
+                function = methodFunctionPointer;
+            } else {
+                function = HPyExternalFunctionNodes.createWrapperFunction(language, slot.getSignature(), methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
+            }
             return new HPyProperty(methodName, function);
         }
 

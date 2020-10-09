@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_BASICSIZE;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_DEF_GET_METH;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_FROM_HPY_MODULE_DEF;
@@ -1387,6 +1388,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToObjectNode writeNativeSpaceNode,
+                        @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException {
@@ -1413,16 +1415,14 @@ public abstract class GraalHPyContextFunctions {
                 long basicsize = (long) attrObj;
                 Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbols.GRAAL_HPY_CALLOC, basicsize, 1L);
                 writeNativeSpaceNode.execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                Object destroyFunc = readAttributeFromObjectNode.execute(type, TYPE_HPY_DESTROY);
+                context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
 
                 // write data pointer to out var
                 callWriteDataNode.call(context, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
 
                 LOGGER.fine(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
                 // TODO(fa): add memory tracing
-
-                // TODO(fa): Here we allocated some native memory but we do never free it. We need
-                // to create a weakref to the Python object and if it dies, we need to free the
-                // native space.
             }
             return asHandleNode.execute(pythonObject);
         }

@@ -527,3 +527,17 @@ void graal_hpy_write_ptr(void* object, HPy_ssize_t offset, void* value) {
 
 #undef WRAP
 #undef UNWRAP
+
+/* to be used from Java code only */
+int graal_hpy_bulk_free(void* ptrArray[], int64_t len) {
+	int64_t i;
+	void* obj;
+
+	for (i=0; i < len; i++) {
+		obj = ptrArray[i];
+		if (obj != NULL) {
+			free(obj);
+		}
+	}
+    return 0;
+}

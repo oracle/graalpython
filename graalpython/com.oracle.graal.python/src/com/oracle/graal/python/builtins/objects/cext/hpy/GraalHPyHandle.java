@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;

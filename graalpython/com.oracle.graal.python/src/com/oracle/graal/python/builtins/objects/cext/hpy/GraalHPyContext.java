@@ -56,13 +56,19 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyArithmetic;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
@@ -107,21 +113,35 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromString;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -131,6 +151,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -304,9 +325,168 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @CompilationFinal private Object hpyArrayNativeTypeID;
     @CompilationFinal private long wcharSize = -1;
 
+    @CompilationFinal private ReferenceQueue<Object> nativeSpaceReferenceQueue;
+    @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
+    public final ReferenceStack<GraalHPyHandleReference> references = new ReferenceStack<>(GraalHPyHandleReference.class);
+
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.hpyContextMembers = createMembers(context);
+
+    }
+
+    /**
+     * Reference cleaner action that will be executed by the {@link AsyncHandler}.
+     */
+    private static final class GraalHPyHandleReferenceCleanerAction implements AsyncHandler.AsyncAction {
+
+        private final GraalHPyHandleReference[] nativeObjectReferences;
+
+        public GraalHPyHandleReferenceCleanerAction(GraalHPyHandleReference[] nativeObjectReferences) {
+            this.nativeObjectReferences = nativeObjectReferences;
+        }
+
+        @Override
+        public void execute(PythonContext context) {
+            Object[] pArguments = PArguments.create(1);
+            PArguments.setArgument(pArguments, 0, nativeObjectReferences);
+            GenericInvokeNode.getUncached().execute(context.getHPyContext().getReferenceCleanerCallTarget(), pArguments);
+        }
+    }
+
+    private RootCallTarget getReferenceCleanerCallTarget() {
+        if (referenceCleanerCallTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            referenceCleanerCallTarget = PythonUtils.getOrCreateCallTarget(new HPyNativeSpaceCleanerRootNode(getContext()));
+        }
+        return referenceCleanerCallTarget;
+    }
+
+    /**
+     * Root node that actually runs the destroy functions for the native memory of unreachable
+     * Python objects.
+     */
+    private static final class HPyNativeSpaceCleanerRootNode extends PRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"refs"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
+
+        @Child private CalleeContext calleeContext;
+        @Child private InteropLibrary pointerObjectLib;
+        @Child private InteropLibrary destroyFunLib;
+        @Child private PCallHPyFunction callBulkFree;
+
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
+
+        protected HPyNativeSpaceCleanerRootNode(PythonContext context) {
+            super(context.getLanguage());
+            this.calleeContext = CalleeContext.create();
+            this.callBulkFree = PCallHPyFunctionNodeGen.create();
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            CalleeContext.enter(frame, customLocalsProfile);
+            try {
+                GraalHPyHandleReference[] handleReferences = (GraalHPyHandleReference[]) PArguments.getArgument(frame, 0);
+                int cleaned = 0;
+                long startTime = 0;
+                long middleTime = 0;
+                final int n = handleReferences.length;
+                boolean loggable = LOGGER.isLoggable(Level.FINE);
+
+                if (loggable) {
+                    startTime = System.currentTimeMillis();
+                }
+
+                GraalHPyContext context = getContext().getHPyContext();
+
+                // it's not an OSR loop, so we do this before the loop
+                if (n > 0 && pointerObjectLib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    pointerObjectLib = insert(InteropLibrary.getFactory().create(handleReferences[0].getNativeSpace()));
+                }
+
+                for (int i = 0; i < n; i++) {
+                    GraalHPyHandleReference handleRef = handleReferences[i];
+                    context.references.remove(handleRef.id);
+                    Object pointerObject = handleRef.getNativeSpace();
+                    Object destroyFunc = handleRef.getDestroyFunc();
+                    if (!pointerObjectLib.isNull(pointerObject)) {
+                        LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
+                        cleaned++;
+
+                        // if there is a custom destroy function, run it right now
+                        if (destroyFunc != null) {
+                            try {
+                                ensureCallNode().execute(destroyFunc, pointerObject);
+
+                                // now clear it to avoid another free
+                                handleReferences[i] = null;
+                            } catch (InteropException e) {
+                                LOGGER.fine(() -> String.format("Execution of destroy function %s failed", destroyFunc));
+                            }
+                        }
+                    }
+                }
+
+                if (loggable) {
+                    middleTime = System.currentTimeMillis();
+                }
+
+                callBulkFree.call(context, GraalHPyNativeSymbols.GRAAL_HPY_BULK_FREE, new NativeSpaceArrayWrapper(handleReferences), (long) n);
+
+                if (loggable) {
+                    final long countDuration = middleTime - startTime;
+                    final long duration = System.currentTimeMillis() - middleTime;
+                    final int finalCleaned = cleaned;
+                    LOGGER.fine(() -> "Total queued references: " + n);
+                    LOGGER.fine(() -> "Cleaned references: " + finalCleaned);
+                    LOGGER.fine(() -> "Count duration: " + countDuration);
+                    LOGGER.fine(() -> "Duration: " + duration);
+                }
+            } finally {
+                calleeContext.exit(frame, this);
+            }
+            return PNone.NONE;
+        }
+
+        private InteropLibrary ensureCallNode() {
+            if (destroyFunLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                destroyFunLib = insert(InteropLibrary.getUncached());
+            }
+            return destroyFunLib;
+        }
+
+        private PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            return contextRef.get();
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @Override
+        public String getName() {
+            return "native_reference_cleaner";
+        }
+
+        @Override
+        public boolean isInternal() {
+            return false;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return false;
+        }
     }
 
     void setHPyContextNativeType(Object nativeType) {
@@ -612,13 +792,30 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return hpyHandleTable[handle];
     }
 
+    public void releaseHPyHandleForObject(long handle) {
+        try {
+            releaseHPyHandleForObject(com.oracle.graal.python.builtins.objects.ints.PInt.intValueExact(handle));
+        } catch (OverflowException e) {
+            if (LOGGER.isLoggable(Level.WARNING)) {
+                LOGGER.warning(() -> String.format("tried to release invalid handle %d", handle));
+            }
+            assert false : format("tried to release invalid handle %d", handle);
+        }
+    }
+
     public void releaseHPyHandleForObject(int handle) {
-        assert hpyHandleTable[handle] != null : "releasing handle that has already been released: " + handle;
+        assert handle != 0 : "NULL handle cannot be released";
+        assert hpyHandleTable[handle] != null : format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(() -> "releasing HPy handle " + handle);
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
+    }
+
+    @TruffleBoundary
+    private static String format(String fmt, Object... args) {
+        return String.format(fmt, args);
     }
 
     // nb. keep in sync with 'meth.h'
@@ -661,5 +858,86 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
             return handles[--top];
         }
+    }
+
+    /**
+     * A phantom reference to an object that has an associated HPy native space (
+     * {@link GraalHPyDef#OBJECT_HPY_NATIVE_SPACE} is set).
+     */
+    static final class GraalHPyHandleReference extends PhantomReference<Object> {
+
+        private final int id;
+        private final Object nativeSpace;
+        private final Object destroyFunc;
+
+        public GraalHPyHandleReference(int id, Object referent, ReferenceQueue<Object> q, Object nativeSpace, Object desctroyFunc) {
+            super(referent, q);
+            this.id = id;
+            this.nativeSpace = nativeSpace;
+            this.destroyFunc = desctroyFunc;
+        }
+
+        public Object getNativeSpace() {
+            return nativeSpace;
+        }
+
+        public Object getDestroyFunc() {
+            return destroyFunc;
+        }
+    }
+
+    /**
+     * Registers an HPy native space of a Python object.<br/>
+     * Use this method to register a native memory that is associated with a Python object in order
+     * to ensure that the native memory will be free'd when the owning Python object dies.<br/>
+     * This works by creating a phantom reference to the Python object, using a thread that
+     * concurrently polls the reference queue and then schedules an async action to free the native
+     * memory. So, the destroy function will always be executed on the main thread.
+     *
+     * @param pythonObject The Python object that has associated native memory.
+     * @param dataPtr The pointer object of the native memory.
+     * @param destroyFunc The destroy function to call when the Python object is unreachable (may be
+     *            {@code null}; in this case, bare {@free} will be used).
+     */
+    void createHandleReference(PythonObject pythonObject, Object dataPtr, Object destroyFunc) {
+        ensureReferenceQueue();
+        int id = references.reserve();
+        references.commit(id, new GraalHPyHandleReference(id, pythonObject, ensureReferenceQueue(), dataPtr, destroyFunc));
+    }
+
+    private ReferenceQueue<Object> ensureReferenceQueue() {
+        if (nativeSpaceReferenceQueue == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            final ReferenceQueue referenceQueue = new ReferenceQueue<>();
+
+            // lazily register the runnable that concurrently collects the queued references
+            getContext().registerAsyncAction(() -> {
+                Reference<?> reference = null;
+                try {
+                    reference = referenceQueue.remove();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+                ArrayList<GraalHPyHandleReference> refs = new ArrayList<>();
+                do {
+                    if (reference instanceof GraalHPyHandleReference) {
+                        refs.add((GraalHPyHandleReference) reference);
+                    }
+                    // consume all
+                    reference = referenceQueue.poll();
+                } while (reference != null);
+
+                if (!refs.isEmpty()) {
+                    return new GraalHPyHandleReferenceCleanerAction(refs.toArray(new GraalHPyHandleReference[0]));
+                }
+
+                return null;
+            });
+
+            nativeSpaceReferenceQueue = referenceQueue;
+            return referenceQueue;
+        }
+        return nativeSpaceReferenceQueue;
     }
 }
