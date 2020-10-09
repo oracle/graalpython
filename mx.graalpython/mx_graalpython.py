@@ -1987,7 +1987,7 @@ def run_leak_launcher(args):
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
-    jdk = get_jdk()
+    jdk = mx.get_jdk(tag=None)
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env)
 
