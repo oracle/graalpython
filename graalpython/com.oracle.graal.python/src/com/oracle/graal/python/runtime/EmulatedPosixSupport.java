@@ -48,6 +48,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,6 +78,7 @@ public final class EmulatedPosixSupport {
             return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
         }
 
+        @TruffleBoundary
         @Specialization(guards = "!inImageRuntimeCode()", replaces = "usingProc")
         static long usingMXBean(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
             String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
