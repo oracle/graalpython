@@ -120,6 +120,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONWARNINGS environment variable for the standard launcher.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> WarnOptions = new OptionKey<>("");
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module. Valid values are 'java', 'native', 'llvm'.") //
+    public static final OptionKey<String> PosixModuleBackend = new OptionKey<>("java");
+
     @Option(category = OptionCategory.INTERNAL, help = "Set the location of C API home. Overrides any environment variables or Java options.", stability = OptionStability.STABLE) //
     public static final OptionKey<String> CAPI = new OptionKey<>("");
 

@@ -183,9 +183,7 @@ public final class PythonContext {
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
-    // TODO: initialize depending on Options and/or whether native access is allowed
-    // TODO: make this engine option so that we can cache the specialized library in AST
-    private final Object posixSupport = NFIPosixSupport.createNative();
+    @CompilationFinal private Object posixSupport;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -458,6 +456,7 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        posixSupport = initalizePosixSupport();
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 
@@ -488,6 +487,20 @@ public final class PythonContext {
 
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
+    }
+
+    private Object initalizePosixSupport() {
+        String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
+        switch (option) {
+            case "java":
+                return new EmulatedPosixSupport();
+            case "native":
+                return NFIPosixSupport.createNative();
+            case "llvm":
+                return NFIPosixSupport.createNative();
+            default:
+                throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
+        }
     }
 
     private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;
