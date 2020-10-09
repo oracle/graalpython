@@ -80,6 +80,13 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNod
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySelfHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyCloseArrayWrapperNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1177,6 +1184,13 @@ public class GraalHPyNodes {
     public abstract static class HPyConvertArgsToSulongNode extends PNodeWithContext {
 
         public abstract void executeInto(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset);
+
+        abstract HPyCloseArgHandlesNode createCloseHandleNode();
+    }
+
+    public abstract static class HPyCloseArgHandlesNode extends PNodeWithContext {
+
+        public abstract void executeInto(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset);
     }
 
     public abstract static class HPyVarargsToSulongNode extends HPyConvertArgsToSulongNode {
@@ -1187,6 +1201,37 @@ public class GraalHPyNodes {
             dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPyVarargsHandleCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyVarargsToSulongNode}.
+     */
+    public abstract static class HPyVarargsHandleCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
+        }
+    }
+
+    /**
+     * Always closes parameter at position {@code destOffset} (assuming that it is a handle).
+     */
+    public abstract static class HPySelfHandleCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
         }
     }
 
@@ -1200,6 +1245,26 @@ public class GraalHPyNodes {
             dest[destOffset + 1] = args[argsOffset + 1];
             dest[destOffset + 2] = args[argsOffset + 2];
             dest[destOffset + 3] = kwAsHandleNode.execute(hpyContext, args[argsOffset + 3]);
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPyKeywordsHandleCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyKeywordsToSulongNode}.
+     */
+    public abstract static class HPyKeywordsHandleCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
+            ensureHandleNode.execute(hpyContext, dest[destOffset + 3]).close(hpyContext);
         }
     }
 
@@ -1223,6 +1288,7 @@ public class GraalHPyNodes {
         static void cachedLoop(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached("args.length") int cachedLength,
                         @Cached HPyAsHandleNode toSulongNode) {
+            CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(hpyContext, args[argsOffset + i]);
             }
@@ -1235,6 +1301,46 @@ public class GraalHPyNodes {
             for (int i = 0; i < len - argsOffset; i++) {
                 dest[destOffset + i] = toSulongNode.execute(hpyContext, args[argsOffset + i]);
             }
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPyAllHandleCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyAllAsHandleNode}.
+     */
+    public abstract static class HPyAllHandleCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization(guards = {"dest.length == destOffset"})
+        @SuppressWarnings("unused")
+        static void cached0(GraalHPyContext hpyContext, Object[] dest, int destOffset) {
+        }
+
+        @Specialization(guards = {"dest.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, destOffset, 8)"}, limit = "1", replaces = "cached0")
+        @ExplodeLoop
+        static void cachedLoop(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached("dest.length") int cachedLength,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+            CompilerAsserts.partialEvaluationConstant(destOffset);
+            for (int i = 0; i < cachedLength - destOffset; i++) {
+                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext);
+            }
+        }
+
+        @Specialization(replaces = {"cached0", "cachedLoop"})
+        static void uncached(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+            int len = dest.length;
+            for (int i = 0; i < len - destOffset; i++) {
+                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext);
+            }
+        }
+
+        static boolean isLeArgsOffsetPlus(int len, int off, int plus) {
+            return len < plus + off;
         }
     }
 
@@ -1249,6 +1355,11 @@ public class GraalHPyNodes {
                         @Cached HPyAsHandleNode selfAsHandleNode) {
             dest[destOffset] = selfAsHandleNode.execute(hpyContext, args[argsOffset]);
             dest[destOffset + 1] = args[argsOffset + 1];
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPySelfHandleCloseNodeGen.create();
         }
     }
 
@@ -1265,6 +1376,24 @@ public class GraalHPyNodes {
             dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPyGetSetSetterHandleCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * The counter part of {@link HPyGetSetSetterToSulongNode}.
+     */
+    public abstract static class HPyGetSetSetterHandleCloseNode extends HPyCloseArgHandlesNode {
+
+        @Specialization
+        static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached HPyEnsureHandleNode ensureHandleNode) {
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext);
+        }
     }
 
     /**
@@ -1273,7 +1402,6 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
-        @ExplodeLoop
         static void doHandleSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
@@ -1283,7 +1411,6 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
-        @ExplodeLoop
         static void doHandleSsizeTSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
@@ -1301,6 +1428,11 @@ public class GraalHPyNodes {
             for (int i = 1; i < args.length - argsOffset; i++) {
                 dest[destOffset + i] = asSsizeTNode.execute(frame, args[argsOffset + i], 1, Long.BYTES);
             }
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPySelfHandleCloseNodeGen.create();
         }
 
         static boolean isArity(int len, int off, int expected) {

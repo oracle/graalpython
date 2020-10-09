@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
@@ -99,8 +102,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 
 public abstract class HPyExternalFunctionNodes {
 
@@ -172,6 +173,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
+        @Child private HPyCloseArgHandlesNode handleCloseNode;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -179,18 +181,21 @@ public abstract class HPyExternalFunctionNodes {
         HPyExternalFunctionInvokeNode() {
             this.toSulongNode = HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
+            this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
         }
 
         HPyExternalFunctionInvokeNode(HPyConvertArgsToSulongNode convertArgsNode) {
             CompilerAsserts.neverPartOfCompilation();
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
+            this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
         }
 
         HPyExternalFunctionInvokeNode(HPyCheckFunctionResultNode checkFunctionResultNode, HPyConvertArgsToSulongNode convertArgsNode) {
             CompilerAsserts.neverPartOfCompilation();
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : HPyCheckHandleResultNodeGen.create();
+            this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
         }
 
         public abstract Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs);
@@ -223,6 +228,9 @@ public abstract class HPyExternalFunctionNodes {
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
                 foreignCallContext.exit(frame, ctx, state);
+
+                // close all handles
+                handleCloseNode.executeInto(frame, hPyContext, convertedArguments, 1);
             }
         }
 
@@ -673,6 +681,7 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            // NULL handle must not be closed
             checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
             throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
         }
@@ -683,7 +692,13 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == 0, nativeContext, raiseNode, factory, language);
+            boolean isNullHandle = value == 0;
+            if (!isNullHandle) {
+                // Python land is receiving a handle from an HPy extension, so we are now owning the
+                // handle and we don't need it any longer. So, close it in every case.
+                nativeContext.releaseHPyHandleForObject(value);
+            }
+            checkFunctionResult(name, isNullHandle, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, value);
         }
 
@@ -692,6 +707,7 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            // NULL handle must not be closed
             checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
             throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
         }
@@ -702,25 +718,35 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == 0, nativeContext, raiseNode, factory, language);
+            boolean isNullHandle = value == 0;
+            if (!isNullHandle) {
+                // Python land is receiving a handle from an HPy extension, so we are now owning the
+                // handle and we don't need it any longer. So, close it in every case.
+                nativeContext.releaseHPyHandleForObject(value);
+            }
+            checkFunctionResult(name, isNullHandle, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, value);
         }
 
         @Specialization(guards = "isNullHandle(nativeContext, handle)")
-        Object doNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+        Object doNullHandle(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            // NULL handle must not be closed
             checkFunctionResult(name, true, nativeContext, raiseNode, factory, language);
             throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
         }
 
         @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
-        Object doNonNullHandle(GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
+        Object doNonNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            // Python land is receiving a handle from an HPy extension, so we are now owning the
+            // handle and we don't need it any longer. So, close it in every case.
+            handle.close(nativeContext);
             checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }
@@ -731,7 +757,13 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
+            boolean isNullHandle = isNullHandle(nativeContext, handle);
+            if (!isNullHandle) {
+                // Python land is receiving a handle from an HPy extension, so we are now owning the
+                // handle and we don't need it any longer. So, close it in every case.
+                handle.close(nativeContext);
+            }
+            checkFunctionResult(name, isNullHandle, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }
 
@@ -743,6 +775,9 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
+            // Python land is receiving a handle from an HPy extension, so we are now owning the
+            // handle and we don't need it any longer. So, close it in every case.
+            handle.close(nativeContext);
             checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }

@@ -334,13 +334,13 @@ OutVarPtr* graal_hpy_allocate_outvar() {
  * support passing structs via interop. Therefore, we pretend to have 'void *'
  * array and convert to handle using 'HPy_FromVoidP'.
  */
-HPy* graal_hpy_array_to_native(VoidPtr *source, uint64_t len) {
+void* graal_hpy_array_to_native(VoidPtr *source, uint64_t len) {
 	uint64_t i;
 	HPy *dest = (HPy *)malloc(len*sizeof(HPy));
 	for (i=0; i < len; i++) {
 		dest[i] = HPy_FromVoidP(source[i]);
 	}
-	return dest;
+	return polyglot_from_HPy_array(dest, len);
 }
 
 void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
