@@ -399,9 +399,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (self.getLength() % itemsize != 0) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_LENGTH_NOT_MULTIPLE_OF_ITEMSIZE);
             }
-            for (int i = 0; i < self.getDimensions(); i++) {
-                if (self.getBufferShape()[i] == 0) {
-                    throw raise(TypeError, ErrorMessages.MEMORYVIEW_CANNOT_CAST_VIEW_WITH_ZEROS_IN_SHAPE_OR_STRIDES);
+            if (shape != null || self.getDimensions() != 1) {
+                for (int i = 0; i < self.getDimensions(); i++) {
+                    if (self.getBufferShape()[i] == 0) {
+                        throw raise(TypeError, ErrorMessages.MEMORYVIEW_CANNOT_CAST_VIEW_WITH_ZEROS_IN_SHAPE_OR_STRIDES);
+                    }
                 }
             }
             int[] newShape;
