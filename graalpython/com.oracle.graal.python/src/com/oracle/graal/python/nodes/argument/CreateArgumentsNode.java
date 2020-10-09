@@ -167,11 +167,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         return createAndCheckArgumentsNode.execute(callable, userArguments, keywords, signature, null, defaults, kwdefaults, false);
     }
 
-    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached", "doFunctionCached"})
+    @Specialization(guards = {"getCallTarget(callable) == cachedCallTarget", "cachedCallTarget != null"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = {"doMethodFunctionCached",
+                    "doFunctionCached"})
     Object[] doCallTargetCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
                     @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
                     @SuppressWarnings("unused") @Cached GetSignatureNode getSignatureNode,
-                    @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures are attached to PRootNodes
+                    @Cached("getSignatureNode.execute(callable)") Signature signature, // signatures
+                                                                                       // are
+                                                                                       // attached
+                                                                                       // to
+                                                                                       // PRootNodes
                     @Cached ConditionProfile gotMethod,
                     @Cached GetDefaultsNode getDefaultsNode,
                     @Cached GetKeywordDefaultsNode getKwDefaultsNode,

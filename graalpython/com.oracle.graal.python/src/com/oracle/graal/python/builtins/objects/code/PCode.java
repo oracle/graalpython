@@ -46,8 +46,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;

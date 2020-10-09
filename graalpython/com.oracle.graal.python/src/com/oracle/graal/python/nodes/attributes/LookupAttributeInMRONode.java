@@ -171,10 +171,10 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     protected static boolean canCache(Object value) {
         return value instanceof Long ||
-            value instanceof Integer ||
-            value instanceof Boolean ||
-            value instanceof Double ||
-            value instanceof PNone;
+                        value instanceof Integer ||
+                        value instanceof Boolean ||
+                        value instanceof Double ||
+                        value instanceof PNone;
     }
 
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
