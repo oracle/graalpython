@@ -242,7 +242,7 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    byte[] getBufferBytes(@Cached MemoryviewBuiltins.ToJavaBytesNode toJavaBytesNode) {
+    byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
         return toJavaBytesNode.execute(this);
     }
 }
