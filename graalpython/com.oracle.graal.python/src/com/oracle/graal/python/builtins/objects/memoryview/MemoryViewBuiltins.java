@@ -143,6 +143,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Cached MemoryViewNodes.CopyBytesNode copyBytesNode) {
             self.checkReleased(this);
+            checkReadonly(self);
             if (self.getDimensions() != 1) {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
