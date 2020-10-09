@@ -66,11 +66,13 @@ public final class EmulatedPosixSupport {
     @ExportMessage
     @ImportStatic(ImageInfo.class)
     public static class Getpid {
+        @TruffleBoundary
         @Specialization(guards = "inImageRuntimeCode()")
         static long inNativeImage(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
             return ProcessProperties.getProcessID();
         }
 
+        @TruffleBoundary
         @Specialization(guards = "!inImageRuntimeCode()", rewriteOn = Exception.class)
         static long usingProc(@SuppressWarnings("unused") EmulatedPosixSupport receiver,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws Exception {
