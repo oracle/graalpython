@@ -44,12 +44,15 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -60,20 +63,22 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.JavaFileObject;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ConversionFactory;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ArgumentsClinic;
 import com.oracle.graal.python.processor.ArgumentClinicModel.ArgumentClinicData;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinAnnotation;
-import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinConvertor;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinClinicData;
 import com.oracle.graal.python.processor.CodeWriter.Block;
 
-import static com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinConvertor.CLINIC_PACKAGE;
+import static com.oracle.graal.python.processor.ConverterFactory.CLINIC_PACKAGE;
 
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
@@ -84,6 +89,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         HashSet<String> vals = new HashSet<>();
         vals.add(ArgumentClinic.class.getName());
         vals.add(ArgumentsClinic.class.getName());
+        vals.add(ArgumentClinic.ConversionFactory.class.getName());
         return vals;
     }
 
@@ -147,9 +153,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         imports.add(CLINIC_PACKAGE + ".ArgumentCastNode");
         for (BuiltinClinicData builtin : enclosingType.getValue()) {
             for (ArgumentClinicData arg : builtin.arguments) {
-                if (arg.isClinicArgument()) {
-                    BuiltinConvertor.addImports(arg.annotation, imports);
-                }
+                imports.addAll(arg.imports);
             }
         }
         for (String pkg : imports) {
@@ -245,7 +249,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         return enclosingTypes;
     }
 
-    private static BuiltinClinicData getBuiltinClinicData(TypeElement type, BuiltinAnnotation builtinAnnotation) throws ProcessingError {
+    private BuiltinClinicData getBuiltinClinicData(TypeElement type, BuiltinAnnotation builtinAnnotation) throws ProcessingError {
         ArgumentClinic[] rawArgAnnotations;
         ArgumentsClinic argsClinicAnnotation = type.getAnnotation(ArgumentsClinic.class);
         if (argsClinicAnnotation == null) {
@@ -254,15 +258,84 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             rawArgAnnotations = argsClinicAnnotation.value();
         }
 
+        Map<String, ConverterFactory> converterFactories = getConverterFactories(type);
         String[] argNames = builtinAnnotation.argumentNames;
         List<ArgumentClinicData> arguments = new ArrayList<>(argNames.length);
         for (int i = 0; i < argNames.length; i++) {
             String name = argNames[i];
             ArgumentClinic clinicAnnotation = Arrays.stream(rawArgAnnotations).filter(x -> x.name().equals(name)).findFirst().orElse(null);
-            arguments.add(ArgumentClinicData.create(clinicAnnotation, type, builtinAnnotation, i));
+            arguments.add(ArgumentClinicData.create(clinicAnnotation, type, builtinAnnotation, i, converterFactories.get(name)));
         }
 
         return new BuiltinClinicData(type, builtinAnnotation, arguments);
+    }
+
+    private Map<String, ConverterFactory> getConverterFactories(TypeElement type) throws ProcessingError {
+        List<AnnotationMirror> rawArgMirrors;
+        AnnotationMirror argsClinicMirror = findAnnotationMirror(type, ArgumentsClinic.class.getCanonicalName());
+        if (argsClinicMirror != null) {
+            rawArgMirrors = ((List<?>) getAnnotationValue(argsClinicMirror, "value").getValue()).stream().map(av -> (AnnotationMirror) ((AnnotationValue) av).getValue()).collect(Collectors.toList());
+        } else {
+            rawArgMirrors = Collections.singletonList(findAnnotationMirror(type, ArgumentClinic.class.getCanonicalName()));
+        }
+
+        Map<String, ConverterFactory> converterFactories = new HashMap<>();
+        for (AnnotationMirror m : rawArgMirrors) {
+            String name = (String) getAnnotationValue(m, "name").getValue();
+            AnnotationValue v = findAnnotationValue(m, "conversionClass");
+            if (v != null) {
+                TypeElement conversionClass = (TypeElement) processingEnv.getTypeUtils().asElement((TypeMirror) v.getValue());
+                converterFactories.put(name, createConverterFactory(conversionClass));
+            }
+        }
+        return converterFactories;
+    }
+
+    private ConverterFactory createConverterFactory(TypeElement conversionClass) throws ProcessingError {
+        ConverterFactory factory = null;
+        for (Element e : conversionClass.getEnclosedElements()) {
+            ConversionFactory annot = e.getAnnotation(ConversionFactory.class);
+            if (annot != null) {
+                if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
+                    throw error(conversionClass, "ConversionFactory annotation is applicable only to static methods.");
+                }
+                if (factory != null) {
+                    throw error(conversionClass, "Multiple ConversionFactory annotations in a single class.");
+                }
+                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs());
+            }
+        }
+        if (factory == null) {
+            throw error(conversionClass, "No ConversionFactory annotation found.");
+        }
+        return factory;
+    }
+
+    private static AnnotationMirror findAnnotationMirror(TypeElement type, String annotationQualifiedName) {
+        for (AnnotationMirror annot : type.getAnnotationMirrors()) {
+            String name = ((TypeElement) annot.getAnnotationType().asElement()).getQualifiedName().toString();
+            if (name.equals(annotationQualifiedName)) {
+                return annot;
+            }
+        }
+        return null;
+    }
+
+    private static AnnotationValue findAnnotationValue(AnnotationMirror annotationMirror, String key) {
+        for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues().entrySet()) {
+            if (entry.getKey().getSimpleName().toString().equals(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static AnnotationValue getAnnotationValue(AnnotationMirror annotationMirror, String key) {
+        AnnotationValue v = findAnnotationValue(annotationMirror, key);
+        if (v == null) {
+            throw new IllegalStateException("Annotation value `" + key + "` not found");
+        }
+        return v;
     }
 
     @SuppressWarnings("unchecked")
@@ -270,17 +343,15 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         String builtinName = null;
         Stream<?> parameterNames = null;
         Stream<?> keywordOnlyNames = null;
-        for (AnnotationMirror annot : type.getAnnotationMirrors()) {
-            String name = ((TypeElement) annot.getAnnotationType().asElement()).getQualifiedName().toString();
-            if (name.equals(BuiltinAnnotationClass)) {
-                for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
-                    if (item.getKey().getSimpleName().toString().equals("parameterNames")) {
-                        parameterNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
-                    } else if (item.getKey().getSimpleName().toString().equals("keywordOnlyNames")) {
-                        keywordOnlyNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
-                    } else if (item.getKey().getSimpleName().toString().equals("name")) {
-                        builtinName = (String) item.getValue().getValue();
-                    }
+        AnnotationMirror annot = findAnnotationMirror(type, BuiltinAnnotationClass);
+        if (annot != null) {
+            for (Entry<? extends ExecutableElement, ? extends AnnotationValue> item : annot.getElementValues().entrySet()) {
+                if (item.getKey().getSimpleName().toString().equals("parameterNames")) {
+                    parameterNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
+                } else if (item.getKey().getSimpleName().toString().equals("keywordOnlyNames")) {
+                    keywordOnlyNames = ((List<AnnotationValue>) item.getValue().getValue()).stream().map(AnnotationValue::getValue);
+                } else if (item.getKey().getSimpleName().toString().equals("name")) {
+                    builtinName = (String) item.getValue().getValue();
                 }
             }
         }

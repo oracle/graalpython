@@ -95,6 +95,18 @@ public @interface ArgumentClinic {
      */
     boolean useDefaultForNone() default false;
 
+    /**
+     * Specifies the name of the conversion node class, which must include a static factory method
+     * annotated with {@link ConversionFactory}. Must not be used with {@link #customConversion()}.
+     */
+    Class<?> conversionClass() default void.class;
+
+    /**
+     * Specifies arguments to the factory method, applicable only with {@link #conversionClass()}.
+     * String literals must be explicitly quoted: {@code args = "\"abc\""}
+     */
+    String[] args() default {};
+
     enum PrimitiveType {
         Boolean,
         Int,
@@ -136,5 +148,42 @@ public @interface ArgumentClinic {
          * Corresponds to CPython's {@code Py_buffer} convertor.
          */
         Buffer,
+    }
+
+    /**
+     * Annotates the factory method (which must be static) in the class specified by
+     * {@link #conversionClass()}.
+     */
+    @Target(ElementType.METHOD)
+    @interface ConversionFactory {
+
+        /**
+         * Specifies which arguments will be provided by the clinic. These are passed to the factory
+         * method before the argument supplied in {@link #args()}.
+         */
+        ClinicArgument[] clinicArgs() default {};
+
+        enum ClinicArgument {
+            /**
+             * The default value {@link #defaultValue()}.
+             */
+            DefaultValue,
+            /**
+             * The flag {@link #useDefaultForNone()}.
+             */
+            UseDefaultForNone,
+            /**
+             * The name of the builtin function.
+             */
+            BuiltinName,
+            /**
+             * The index of the argument.
+             */
+            ArgumentIndex,
+            /**
+             * The name of the argument.
+             */
+            ArgumentName,
+        }
     }
 }
