@@ -118,59 +118,67 @@ public class ArgumentClinicModel {
             this.imports = imports;
         }
 
-        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory factory) throws ProcessingError {
-            if (annotation == null) {
-                return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null, Collections.emptySet());
-            }
+        private static ConverterFactory getFactory(ArgumentClinic annotation, TypeElement type, ConverterFactory factory) throws ProcessingError {
             if (factory == null && annotation.args().length != 0) {
                 throw new ProcessingError(type, "No conversionClass specified but arguments were provided");
             }
-            PrimitiveType[] acceptedPrimitives = new PrimitiveType[0];
-            String castNodeFactory;
-            Set<String> imports = new HashSet<>();
-            if (annotation.customConversion().isEmpty()) {
-                if (factory == null) {
-                    if (annotation.conversion() == ClinicConversion.None && annotation.defaultValue().isEmpty()) {
-                        throw new ProcessingError(type, "ArgumentClinic annotation must declare either builtin conversion or custom conversion.");
-                    }
-                    factory = ConverterFactory.getBuiltin(annotation);
-                }
-                if (annotation.args().length != factory.paramCount) {
-                    throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.paramCount);
-                }
-                String args = Stream.concat(
-                                Arrays.stream(factory.clinicArgs).map(ca -> {
-                                    switch (ca) {
-                                        case BuiltinName:
-                                            return String.format("\"%s\"", builtinAnnotation.name);
-                                        case ArgumentIndex:
-                                            return String.valueOf(index);
-                                        case ArgumentName:
-                                            return String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
-                                        case DefaultValue:
-                                            return annotation.defaultValue();
-                                        case UseDefaultForNone:
-                                            return String.valueOf(annotation.useDefaultForNone());
-                                        default:
-                                            throw new IllegalStateException("Unsupported ClinicArgument: " + ca);
-                                    }
-                                }),
-                                Arrays.stream(annotation.args())).collect(Collectors.joining(", "));
-                castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, args);
-                imports.add(factory.fullClassName);
-                acceptedPrimitives = factory.acceptedPrimitiveTypes;
-                if (annotation.defaultValue().startsWith("PNone.")) {
-                    imports.add("com.oracle.graal.python.builtins.objects.PNone");
-                }
-            } else {
+            if (!annotation.customConversion().isEmpty()) {
                 if (factory != null) {
                     throw new ProcessingError(type, "Cannot specify both conversionClass and customConversion");
                 }
-                castNodeFactory = type.getQualifiedName().toString() + '.' + annotation.customConversion() + "()";
+                return ConverterFactory.forCustomConversion(type, annotation.customConversion());
             }
+            if (factory != null) {
+                return factory;
+            }
+            if (annotation.conversion() == ClinicConversion.None && annotation.defaultValue().isEmpty()) {
+                throw new ProcessingError(type, "ArgumentClinic annotation must declare either builtin conversion or custom conversion.");
+            }
+            return ConverterFactory.getBuiltin(annotation);
+        }
+
+        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory ofactory) throws ProcessingError {
+            if (annotation == null) {
+                return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null, Collections.emptySet());
+            }
+            ConverterFactory factory = getFactory(annotation, type, ofactory);
+            if (annotation.args().length != factory.paramCount) {
+                throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.paramCount);
+            }
+
+            PrimitiveType[] acceptedPrimitives;
             if (annotation.shortCircuitPrimitive().length > 0) {
                 acceptedPrimitives = annotation.shortCircuitPrimitive();
+            } else {
+                acceptedPrimitives = factory.acceptedPrimitiveTypes;
             }
+
+            String args = Stream.concat(
+                            Arrays.stream(factory.clinicArgs).map(ca -> {
+                                switch (ca) {
+                                    case BuiltinName:
+                                        return String.format("\"%s\"", builtinAnnotation.name);
+                                    case ArgumentIndex:
+                                        return String.valueOf(index);
+                                    case ArgumentName:
+                                        return String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
+                                    case DefaultValue:
+                                        return annotation.defaultValue();
+                                    case UseDefaultForNone:
+                                        return String.valueOf(annotation.useDefaultForNone());
+                                    default:
+                                        throw new IllegalStateException("Unsupported ClinicArgument: " + ca);
+                                }
+                            }),
+                            Arrays.stream(annotation.args())).collect(Collectors.joining(", "));
+            String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, args);
+
+            Set<String> imports = new HashSet<>();
+            imports.add(factory.fullClassName);
+            if (annotation.defaultValue().startsWith("PNone.")) {
+                imports.add("com.oracle.graal.python.builtins.objects.PNone");
+            }
+
             return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(acceptedPrimitives)), castNodeFactory, imports);
         }
     }

@@ -64,22 +64,17 @@ public class ConverterFactory {
     public final ClinicArgument[] clinicArgs;
     public final PrimitiveType[] acceptedPrimitiveTypes;
 
-    private ConverterFactory(ExecutableElement method, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
-        fullClassName = method.getEnclosingElement().toString();
-        className = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
-        methodName = method.getSimpleName().toString();
-        paramCount = method.getParameters().size() - clinicArgs.length;
+    private ConverterFactory(String fullClassName, String className, String methodName, int paramCount, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
+        this.fullClassName = fullClassName;
+        this.className = className;
+        this.methodName = methodName;
+        this.paramCount = paramCount;
         this.clinicArgs = clinicArgs;
         this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
     }
 
     private ConverterFactory(String className, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
-        this.fullClassName = CLINIC_PACKAGE + "." + className;
-        this.className = className;
-        this.methodName = "create";
-        this.paramCount = 0;
-        this.clinicArgs = clinicArgs;
-        this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
+        this(CLINIC_PACKAGE + "." + className, className, "create", 0, clinicArgs, acceptedPrimitiveTypes);
     }
 
     private static final ConverterFactory BuiltinBoolean = new ConverterFactory("JavaBooleanConvertorNodeGen",
@@ -150,7 +145,11 @@ public class ConverterFactory {
                 if (factory != null) {
                     throw new ProcessingError(conversionClass, "Multiple ConversionFactory annotations in a single class.");
                 }
-                factory = new ConverterFactory((ExecutableElement) e, annot.clinicArgs(), annot.shortCircuitPrimitive());
+                String fullClassName = conversionClass.toString();
+                String className = conversionClass.getSimpleName().toString();
+                String methodName = e.getSimpleName().toString();
+                int paramCount = ((ExecutableElement) e).getParameters().size() - annot.clinicArgs().length;
+                factory = new ConverterFactory(fullClassName, className, methodName, paramCount, annot.clinicArgs(), annot.shortCircuitPrimitive());
             }
         }
         if (factory == null) {
@@ -160,4 +159,9 @@ public class ConverterFactory {
         return factory;
     }
 
+    public static ConverterFactory forCustomConversion(TypeElement type, String methodName) {
+        String fullClassName = type.getQualifiedName().toString();
+        String className = type.getSimpleName().toString();
+        return new ConverterFactory(fullClassName, className, methodName, 0, new ClinicArgument[0], new PrimitiveType[0]);
+    }
 }
