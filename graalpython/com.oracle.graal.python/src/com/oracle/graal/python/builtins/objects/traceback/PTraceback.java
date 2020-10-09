@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.traceback;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -54,20 +55,20 @@ public final class PTraceback extends PythonBuiltinObject {
     private PTraceback next;
     private LazyTraceback lazyTraceback;
 
-    public PTraceback(PFrame frame, int lineno, PTraceback next) {
-        this(frame, lineno, -1, next);
+    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, PTraceback next) {
+        this(lang, frame, lineno, -1, next);
     }
 
-    public PTraceback(PFrame frame, int lineno, int lasti, PTraceback next) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape());
+    public PTraceback(PythonLanguage lang, PFrame frame, int lineno, int lasti, PTraceback next) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape(lang));
         this.frame = frame;
         this.lineno = lineno;
         this.lasti = lasti;
         this.next = next;
     }
 
-    public PTraceback(LazyTraceback lazyTraceback) {
-        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape());
+    public PTraceback(PythonLanguage lang, LazyTraceback lazyTraceback) {
+        super(PythonBuiltinClassType.PTraceback, PythonBuiltinClassType.PTraceback.getInstanceShape(lang));
         this.lazyTraceback = lazyTraceback;
         this.frameInfo = lazyTraceback.getFrameInfo();
         this.frame = lazyTraceback.getFrame();

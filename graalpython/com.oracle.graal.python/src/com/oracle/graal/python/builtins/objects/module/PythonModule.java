@@ -31,14 +31,17 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -47,13 +50,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
+@ImportStatic(HiddenAttributes.class)
 public final class PythonModule extends PythonObject {
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
     }
 
-    private PythonModule(String moduleName) {
-        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape());
+    private PythonModule(PythonLanguage lang, String moduleName) {
+        super(PythonBuiltinClassType.PythonModule, PythonBuiltinClassType.PythonModule.getInstanceShape(lang));
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);
@@ -65,7 +69,7 @@ public final class PythonModule extends PythonObject {
      * Only to be used during context creation
      */
     public static PythonModule createInternal(String moduleName) {
-        PythonModule pythonModule = new PythonModule(moduleName);
+        PythonModule pythonModule = new PythonModule(PythonLanguage.getCurrent(), moduleName);
         PDict dict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonModule);
         try {
             PythonObjectLibrary.getUncached().setDict(pythonModule, dict);

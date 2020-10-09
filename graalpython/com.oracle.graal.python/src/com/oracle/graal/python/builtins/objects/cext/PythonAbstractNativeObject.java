@@ -85,7 +85,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.utilities.TriState;
@@ -102,12 +101,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     public int compareTo(Object o) {
         return 0;
-    }
-
-    @SuppressWarnings("static-method")
-    public Shape getInstanceShape() {
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException("native class does not have a shape");
     }
 
     public void lookupChanged() {

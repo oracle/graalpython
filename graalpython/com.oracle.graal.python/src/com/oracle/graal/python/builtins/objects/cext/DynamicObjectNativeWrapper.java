@@ -154,6 +154,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -185,9 +186,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         super(delegate);
     }
 
-    public DynamicObjectStorage createNativeMemberStore() {
+    public DynamicObjectStorage createNativeMemberStore(PythonLanguage lang) {
         if (nativeMemberStore == null) {
-            nativeMemberStore = new DynamicObjectStorage();
+            nativeMemberStore = new DynamicObjectStorage(lang);
         }
         return nativeMemberStore;
     }
@@ -1165,8 +1166,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
         static Object doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @CachedLibrary("nativeWrapper.createNativeMemberStore()") HashingStorageLibrary lib) {
-            lib.setItem(nativeWrapper.createNativeMemberStore(), MD_DEF.getMemberName(), value);
+                        @CachedLanguage PythonLanguage lang,
+                        @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) {
+            lib.setItem(nativeWrapper.createNativeMemberStore(lang), MD_DEF.getMemberName(), value);
             return value;
         }
 
@@ -1235,13 +1237,14 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "isGenericCase(object, key)", limit = "1")
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key, Object value,
-                        @CachedLibrary("nativeWrapper.createNativeMemberStore()") HashingStorageLibrary lib) throws UnknownIdentifierException {
+                        @CachedLanguage PythonLanguage lang,
+                        @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (nativeWrapper.isMemberModifiable(key)) {
                 logGeneric(key);
-                lib.setItem(nativeWrapper.createNativeMemberStore(), key, value);
+                lib.setItem(nativeWrapper.createNativeMemberStore(lang), key, value);
                 return value;
             }
             throw UnknownIdentifierException.create(key);

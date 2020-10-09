@@ -201,6 +201,22 @@ def punittest(ars):
     with _pythonhome_context():
         mx_unittest.unittest(args)
 
+        common_args = ["--lang", "python",
+                       "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
+                       "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+
+        if not all([# test leaks with Python code only
+                run_leak_launcher(common_args + ["--code", "pass", ]),
+                # test leaks when some C module code is involved
+                run_leak_launcher(common_args + ["--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"]),
+                # test leaks with shared engine Python code only
+                run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
+                # test leaks with shared engine when some C module code is involved
+                # Not working due to GR-26175
+                # run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+        ]):
+            mx.abort(1)
+
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
 PYTHON_NATIVE_PROJECTS = ["com.oracle.graal.python.cext"]
@@ -1961,6 +1977,29 @@ def update_hpy_import_cmd(args):
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
 
 
+def run_leak_launcher(args):
+    print("Leak test: " + " ".join(args))
+    capi_home = _get_capi_home()
+    args.insert(0, "--experimental-options")
+    args.insert(0, "--python.CAPI=%s" % capi_home)
+
+    env = os.environ.copy()
+    env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
+
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG', 'GRAALPYTHON_UNIT_TESTS']
+
+    vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
+    vm_args += mx.get_runtime_jvm_args(dists)
+    jdk = mx.get_jdk(tag=None)
+    vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
+    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False)
+    if retval == 0:
+        print("PASSED")
+        return True
+    else:
+        print("FAILED")
+        return False
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -1992,4 +2031,5 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, ''],
     'python-update-hpy-import': [update_hpy_import_cmd, '[--no-pull] PATH_TO_HPY'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
+    'python-leak-test': [run_leak_launcher, '']
 })

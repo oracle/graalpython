@@ -134,6 +134,16 @@ suite = {
               "version" : "66.1",
             },
         },
+        "NETBEANS-LIB-PROFILER" : {
+            "moduleName" : "org.netbeans.modules.org-netbeans-lib-profiler",
+            "sha1" : "2bcd32411df5d9c5348c98cf7024ac8b76137868",
+            "sourceSha1" : "9943534904689dcf93d3bcaca8293583e9d56266",
+            "maven" : {
+              "groupId" : "org.netbeans.modules",
+              "artifactId" : "org-netbeans-lib-profiler",
+              "version" : "RELEASE120-1",
+            },
+        },
     },
 
     # --------------------------------------------------------------------------------------------------------------
@@ -273,7 +283,8 @@ suite = {
                 "com.oracle.graal.python.shell",
                 "com.oracle.graal.python",
                 "truffle:TRUFFLE_TCK",
-                "mx:JUNIT"
+                "mx:JUNIT",
+                "NETBEANS-LIB-PROFILER",
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",

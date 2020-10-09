@@ -29,7 +29,6 @@ import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -77,7 +76,6 @@ import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
-import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
 import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
@@ -233,10 +231,6 @@ public class NodeFactory {
 
     public ExpressionNode createDoubleLiteral(double value) {
         return new DoubleLiteralNode(value);
-    }
-
-    public ExpressionNode createComplexLiteral(PComplex value) {
-        return new ComplexLiteralNode(value);
     }
 
     public ExpressionNode createStringLiteral(String value) {

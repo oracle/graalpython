@@ -91,7 +91,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
 
@@ -176,8 +175,6 @@ public abstract class HPyExternalFunctionNodes {
         @Child private HPyExternalFunctionInvokeNode invokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
 
-        @CompilationFinal private ConditionProfile customLocalsProfile;
-
         private final String name;
         private final Object callable;
 
@@ -192,7 +189,7 @@ public abstract class HPyExternalFunctionNodes {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, getCustomLocalsProfile());
+            getCalleeContext().enter(frame);
             try {
                 return invokeNode.execute(frame, name, callable, prepareCArguments(frame));
             } finally {
@@ -208,14 +205,6 @@ public abstract class HPyExternalFunctionNodes {
                 readSelfNode = insert(ReadIndexedArgumentNode.create(0));
             }
             return readSelfNode.execute(frame);
-        }
-
-        private ConditionProfile getCustomLocalsProfile() {
-            if (customLocalsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                customLocalsProfile = ConditionProfile.createCountingProfile();
-            }
-            return customLocalsProfile;
         }
 
         private CalleeContext getCalleeContext() {

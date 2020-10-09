@@ -67,7 +67,7 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isDict(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
     Object deleteDictCached(VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
                     @Cached DeleteItemNode deleteNode) {
         deleteNode.executeWith(frame, cachedGlobals, attributeId);
         return PNone.NONE;
@@ -82,7 +82,7 @@ public abstract class DeleteGlobalNode extends StatementNode implements GlobalNo
 
     @Specialization(guards = {"getGlobals(frame) == cachedGlobals", "isModule(cachedGlobals)"}, assumptions = "singleContextAssumption", limit = "1")
     Object deleteModuleCached(VirtualFrame frame,
-                    @Cached("getGlobals(frame)") Object cachedGlobals,
+                    @Cached(value = "getGlobals(frame)", weak = true) Object cachedGlobals,
                     @Cached DeleteAttributeNode storeNode) {
         storeNode.execute(frame, cachedGlobals, attributeId);
         return PNone.NONE;
