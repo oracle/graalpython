@@ -227,6 +227,7 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -234,7 +235,7 @@ public abstract class GraalHPyContextFunctions {
             }
             GraalHPyContext hpyContext = asContextNode.execute(arguments[0]);
             GraalHPyHandle handle = ensureHandleNode.execute(hpyContext, arguments[1]);
-            handle.close(hpyContext);
+            handle.close(hpyContext, isAllocatedProfile);
             return 0;
         }
     }
@@ -1830,6 +1831,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode) throws ArityException, UnsupportedTypeException {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1837,7 +1839,7 @@ public abstract class GraalHPyContextFunctions {
             }
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             GraalHPyHandle hpyHandle = ensureHandleNode.execute(nativeContext, arguments[1]);
-            hpyHandle.close(nativeContext);
+            hpyHandle.close(nativeContext, isAllocatedProfile);
 
             // be pedantic and also check what we are cancelling
             ObjectSequenceStorage builder = cast(asPythonObjectNode.execute(nativeContext, hpyHandle));

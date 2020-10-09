@@ -740,19 +740,21 @@ public abstract class HPyExternalFunctionNodes {
 
         @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
         Object doNonNullHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             // Python land is receiving a handle from an HPy extension, so we are now owning the
             // handle and we don't need it any longer. So, close it in every case.
-            handle.close(nativeContext);
+            handle.close(nativeContext, isAllocatedProfile);
             checkFunctionResult(name, false, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }
 
         @Specialization(replaces = {"doIntegerNull", "doNonNullHandle"})
         Object doHandle(GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
@@ -761,7 +763,7 @@ public abstract class HPyExternalFunctionNodes {
             if (!isNullHandle) {
                 // Python land is receiving a handle from an HPy extension, so we are now owning the
                 // handle and we don't need it any longer. So, close it in every case.
-                handle.close(nativeContext);
+                handle.close(nativeContext, isAllocatedProfile);
             }
             checkFunctionResult(name, isNullHandle, nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
@@ -770,6 +772,7 @@ public abstract class HPyExternalFunctionNodes {
         @Specialization(replaces = {"doIntegerNull", "doInteger", "doLongNull", "doLong", "doNullHandle", "doNonNullHandle", "doHandle"})
         Object doGeneric(GraalHPyContext nativeContext, String name, Object value,
                         @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
@@ -777,7 +780,7 @@ public abstract class HPyExternalFunctionNodes {
             GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
             // Python land is receiving a handle from an HPy extension, so we are now owning the
             // handle and we don't need it any longer. So, close it in every case.
-            handle.close(nativeContext);
+            handle.close(nativeContext, isAllocatedProfile);
             checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }

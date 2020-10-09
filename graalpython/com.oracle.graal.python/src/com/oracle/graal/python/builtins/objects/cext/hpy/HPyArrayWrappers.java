@@ -321,12 +321,13 @@ public class HPyArrayWrappers {
         static void doCachedLen(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
                         @CachedLibrary("wrapper") InteropLibrary lib,
                         @Cached("size(lib, wrapper)") int cachedLen,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles) {
             try {
                 for (int i = 0; i < cachedLen; i++) {
                     Object element = lib.readArrayElement(wrapper, i);
                     if (profiles[i].profile(isAllocatedHandle(element))) {
-                        ((GraalHPyHandle) element).close(hPyContext);
+                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
                     }
                 }
             } catch (InteropException e) {
@@ -336,12 +337,13 @@ public class HPyArrayWrappers {
 
         @Specialization(replaces = "doCachedLen")
         static void doLoop(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached ConditionProfile profile) {
             Object[] array = wrapper.getDelegate();
             for (int i = 0; i < array.length; i++) {
                 Object element = array[i];
                 if (profile.profile(isAllocatedHandle(element))) {
-                    ((GraalHPyHandle) element).close(hPyContext);
+                    ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
                 }
             }
         }
@@ -358,7 +360,9 @@ public class HPyArrayWrappers {
         }
 
         static boolean isAllocatedHandle(Object element) {
-            return element instanceof GraalHPyHandle && ((GraalHPyHandle) element).isPointer();
+            // n.b. we pass the uncached instance to 'isPointer' since we profile this whole
+            // condition
+            return element instanceof GraalHPyHandle && ((GraalHPyHandle) element).isPointer(ConditionProfile.getUncached());
         }
 
         static ConditionProfile[] createProfiles(int n) {

@@ -138,6 +138,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class GraalHPyNodes {
 
@@ -1225,8 +1226,9 @@ public class GraalHPyNodes {
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
                         @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
         }
     }
@@ -1238,8 +1240,9 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
         }
     }
 
@@ -1269,10 +1272,11 @@ public class GraalHPyNodes {
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
                         @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyCloseArrayWrapperNode closeArrayWrapperNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             closeArrayWrapperNode.execute(hpyContext, (HPyArrayWrapper) dest[destOffset + 1]);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 3]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset + 3]).close(hpyContext, isAllocatedProfile);
         }
     }
 
@@ -1331,19 +1335,21 @@ public class GraalHPyNodes {
         @ExplodeLoop
         static void cachedLoop(GraalHPyContext hpyContext, Object[] dest, int destOffset,
                         @Cached("dest.length") int cachedLength,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             CompilerAsserts.partialEvaluationConstant(destOffset);
             for (int i = 0; i < cachedLength - destOffset; i++) {
-                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext);
+                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext, isAllocatedProfile);
             }
         }
 
         @Specialization(replaces = {"cached0", "cachedLoop"})
         static void uncached(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             int len = dest.length;
             for (int i = 0; i < len - destOffset; i++) {
-                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext);
+                ensureHandleNode.execute(hpyContext, dest[destOffset + i]).close(hpyContext, isAllocatedProfile);
             }
         }
 
@@ -1398,9 +1404,10 @@ public class GraalHPyNodes {
 
         @Specialization
         static void doConvert(GraalHPyContext hpyContext, Object[] dest, int destOffset,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
-            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext);
-            ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext);
+            ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
+            ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
         }
     }
 
