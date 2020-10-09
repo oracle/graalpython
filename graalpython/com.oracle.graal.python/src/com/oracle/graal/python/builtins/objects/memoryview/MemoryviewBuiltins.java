@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -21,6 +22,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
@@ -58,6 +60,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -524,7 +527,8 @@ public class MemoryviewBuiltins extends PythonBuiltins {
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            self.getBufferStructPointer(), self.getOwner(), lenght, self.isReadOnly(), self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
+                            self.getManagedBuffer(), self.getOwner(), lenght, self.isReadOnly(),
+                            self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
 
@@ -821,7 +825,8 @@ public class MemoryviewBuiltins extends PythonBuiltins {
             self.checkReleased(this);
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), true, self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
+                            self.getManagedBuffer(), self.getOwner(), self.getLength(), true,
+                            self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets(), self.getFlags());
         }
     }
@@ -915,7 +920,8 @@ public class MemoryviewBuiltins extends PythonBuiltins {
             }
             // TODO factory
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            self.getBufferStructPointer(), self.getOwner(), self.getLength(), self.isReadOnly(), itemsize, formatString, ndim, self.getBufferPointer(),
+                            self.getManagedBuffer(), self.getOwner(), self.getLength(), self.isReadOnly(),
+                            itemsize, formatString, ndim, self.getBufferPointer(),
                             self.getOffset(), newShape, newStrides, null, flags);
         }
 
@@ -940,7 +946,8 @@ public class MemoryviewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public static abstract class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object enter(IntrinsifiedPMemoryView self) {
+        Object enter(IntrinsifiedPMemoryView self) {
+            self.checkReleased(this);
             return self;
         }
     }
@@ -950,8 +957,65 @@ public class MemoryviewBuiltins extends PythonBuiltins {
     public static abstract class ExitNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        static Object exit(IntrinsifiedPMemoryView self, Object type, Object val, Object tb) {
-            // TODO release
+        static Object exit(IntrinsifiedPMemoryView self, Object type, Object val, Object tb,
+                        @Cached ReleaseNode releaseNode) {
+            releaseNode.execute(self);
+            return PNone.NONE;
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class ReleaseBufferOfManagedObjectNode extends Node {
+        public abstract void execute(Object object);
+
+        @Specialization
+        static void bytearray(PByteArray object) {
+            // TODO
+        }
+    }
+
+    @GenerateUncached
+    public static abstract class ReleaseBufferNode extends Node {
+        public abstract void execute(ManagedBuffer buffer);
+
+        @Specialization(guards = "buffer.getReleaseFunction() == null")
+        static void releaseManaged(ManagedBuffer buffer,
+                        @Cached ReleaseBufferOfManagedObjectNode releaseNode) {
+            releaseNode.execute(buffer.getOwner());
+        }
+
+        @Specialization(guards = "buffer.getReleaseFunction() != null", limit = "1")
+        static void releaseNative(ManagedBuffer buffer,
+                        @CachedLibrary("buffer.getReleaseFunction()") InteropLibrary lib) {
+            try {
+                lib.execute(buffer.getReleaseFunction(), buffer.getOwner(), buffer.getBufferStructPointer());
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("Failed to invoke bf_releasebuffer", e);
+            }
+            // TODO remove from ref queue
+        }
+    }
+
+    @Builtin(name = "release", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class ReleaseNode extends PythonUnaryBuiltinNode {
+        public abstract Object execute(IntrinsifiedPMemoryView self);
+
+        @Specialization
+        static Object release(IntrinsifiedPMemoryView self,
+                        @Cached ReleaseBufferNode releaseBufferNode,
+                        @Cached PRaiseNode raiseNode) {
+            int exports = self.getExports().get();
+            if (exports > 0) {
+                throw raiseNode.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
+            }
+            if (self.getManagedBuffer() != null) {
+                if (self.getManagedBuffer().decrementExports() == 0) {
+                    releaseBufferNode.execute(self.getManagedBuffer());
+                }
+            }
+            self.setReleased();
+            // TODO remove from reference queue
             return PNone.NONE;
         }
     }

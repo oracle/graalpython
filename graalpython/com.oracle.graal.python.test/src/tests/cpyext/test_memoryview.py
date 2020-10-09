@@ -39,7 +39,7 @@
 
 import sys
 import itertools
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare_with_message, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
 
 indices = (-2, 2, 10)
@@ -284,3 +284,45 @@ class TestPyMemoryView(CPyExtTestCase):
         callfunction="test_write",
         cmpfunc=unhandled_error_compare_with_message,
     )
+
+
+class TestObject(object):
+    def test_memoryview_acquire_release(self):
+        TestWithBuffer = CPyExtType(
+            "TestWithBuffer",
+            """
+            int bufcount = 0;
+            char buf[] = {123, 124, 125, 126};
+            int getbuffer(TestWithBufferObject *self, Py_buffer *view, int flags) {
+                bufcount++;
+                return PyBuffer_FillInfo(view, (PyObject*)self, buf, 4, 1, flags);
+            }
+            void releasebuffer(TestWithBufferObject *self, Py_buffer *view) {
+                bufcount--;
+            }
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)releasebuffer,
+            };
+            PyObject* get_bufcount(PyObject* self, PyObject* args) {
+                return PyLong_FromLong(bufcount);
+            }
+            """,
+            tp_as_buffer='&as_buffer',
+            tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
+        )
+        obj = TestWithBuffer()
+        assert obj.get_bufcount() == 0
+        mv1 = memoryview(obj)
+        assert mv1[3] == 126
+        assert obj.get_bufcount() == 1
+        mv2 = memoryview(obj)
+        mv3 = mv2[1:]
+        assert obj.get_bufcount() == 2
+        mv1.release()
+        assert obj.get_bufcount() == 1
+        assert mv2[3] == 126
+        mv2.release()
+        assert obj.get_bufcount() == 1
+        mv3.release()
+        assert obj.get_bufcount() == 0

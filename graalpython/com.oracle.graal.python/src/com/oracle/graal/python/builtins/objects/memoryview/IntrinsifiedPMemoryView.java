@@ -24,8 +24,8 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     public static final int FLAG_SCALAR = 0x008;
     public static final int FLAG_PIL = 0x010;
 
-    private final Object bufferStructPointer;
-    private final Object owner;
+    private ManagedBuffer managedBuffer;
+    private Object owner;
     private final int len;
     private final boolean readonly;
     private final int itemsize;
@@ -43,11 +43,14 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final AtomicInteger exports = new AtomicInteger();
     private int flags;
 
-    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, Object bufferStructPointer, Object owner,
+    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
-        this.bufferStructPointer = bufferStructPointer;
+        this.managedBuffer = managedBuffer;
+        if (managedBuffer != null) {
+            managedBuffer.incrementExports();
+        }
         this.owner = owner;
         this.len = len;
         this.readonly = readonly;
@@ -144,8 +147,8 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         return strides;
     }
 
-    public Object getBufferStructPointer() {
-        return bufferStructPointer;
+    public ManagedBuffer getManagedBuffer() {
+        return managedBuffer;
     }
 
     public Object getOwner() {
@@ -216,7 +219,12 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         return exports;
     }
 
-    // TODO add releasing logic
+    public void setReleased() {
+        flags |= FLAG_RELEASED;
+        managedBuffer = null;
+        owner = null;
+    }
+
     public void checkReleased(PythonBuiltinBaseNode node) {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);

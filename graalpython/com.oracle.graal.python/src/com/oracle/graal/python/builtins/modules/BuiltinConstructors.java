@@ -153,6 +153,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -3332,7 +3333,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), true, "B");
+            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false);
         }
 
         @Specialization
@@ -3340,13 +3341,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), false, "B");
+            // TODO needsRelease=true
+            return fromManaged(object, 1, lenNode.execute(storage), false, "B", false);
         }
 
         @Specialization
-        static IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
-            // TODO CPython makes a copy, do we need to do that too?
-            return object;
+        IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
+            object.checkReleased(this);
+            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
+                            object.getManagedBuffer(), object.getOwner(), object.getLength(),
+                            object.isReadOnly(), object.getItemSize(), object.getFormatString(), object.getDimensions(),
+                            object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
+                            object.getBufferSuboffsets(), object.getFlags());
         }
 
         @Specialization
@@ -3362,11 +3368,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
 
-        private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format) {
+        private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease) {
             // TODO factory
-            // TODO We should lock the underlying storage for resizing
+            ManagedBuffer managedBuffer = null;
+            if (needsRelease) {
+                // TODO We should lock the underlying storage for resizing
+                managedBuffer = new ManagedBuffer(object);
+            }
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            null, object, length * itemsize, readonly, itemsize, format, 1,
+                            managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
                             null, 0, new int[]{length}, new int[]{itemsize}, null,
                             IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN);
         }
