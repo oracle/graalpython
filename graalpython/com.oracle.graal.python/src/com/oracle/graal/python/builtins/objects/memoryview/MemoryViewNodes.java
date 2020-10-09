@@ -19,8 +19,10 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -284,7 +286,7 @@ public class MemoryViewNodes {
         static void managedToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached.Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             // TODO assumes bytes storage
             // TODO avoid byte->int conversion
             // TODO explode?
@@ -303,7 +305,7 @@ public class MemoryViewNodes {
         static void nativeToManaged(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
-                        @Cached.Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             // TODO assumes bytes storage
             // TODO avoid byte->int conversion
             // TODO explode?
@@ -320,7 +322,7 @@ public class MemoryViewNodes {
         @Specialization(guards = {"destPtr != null", "srcPtr != null"})
         @SuppressWarnings("unused")
         static void nativeToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
-                        @Cached.Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             // TODO call native memcpy?
             // TODO explode?
             try {
@@ -394,7 +396,7 @@ public class MemoryViewNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached.Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             int ndim = self.getDimensions();
             checkTupleLength(lenNode, indicesStorage, ndim);
@@ -409,7 +411,7 @@ public class MemoryViewNodes {
 
         @Specialization(guards = "!isPTuple(indexObj)")
         MemoryPointer resolveInt(IntrinsifiedPMemoryView self, Object indexObj,
-                        @Cached.Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return resolveInt(self, convertIndex(lib, indexObj));
         }
 
@@ -480,7 +482,7 @@ public class MemoryViewNodes {
             return bytes;
         }
 
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private void convertBoundary(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
             convert(dest, self, ndim, readBytesAtNode, callCapiFunction);
         }

@@ -9,6 +9,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.List;
@@ -21,6 +22,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
@@ -39,6 +44,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -47,6 +53,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -291,6 +298,39 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "hex", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "bytes_per_sep"})
+    @ArgumentClinic(name = "sep", conversionClass = SepExpectByteNode.class, defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "bytes_per_sep", conversionClass = ExpectIntNode.class, defaultValue = "1")
+    @GenerateNodeFactory
+    abstract static class HexNode extends PythonTernaryClinicBuiltinNode {
+
+        @Specialization
+        String none(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
+                    @Shared("p") @Cached ConditionProfile earlyExit,
+                    @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                    @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
+            return hex(self, (byte) 0, 0, earlyExit, toJavaBytesNode, toHexNode);
+        }
+
+        @Specialization
+        String hex(IntrinsifiedPMemoryView self, byte sep, int bytesPerSepGroup,
+                   @Shared("p") @Cached ConditionProfile earlyExit,
+                   @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                   @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
+            self.checkReleased(this);
+            if (earlyExit.profile(self.getLength() == 0)) {
+                return "";
+            }
+            byte[] b = toJavaBytesNode.execute(self);
+            return toHexNode.execute(b, b.length, sep, bytesPerSepGroup);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MemoryViewBuiltinsClinicProviders.HexNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "toreadonly", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public static abstract class ToReadonlyNode extends PythonUnaryBuiltinNode {
@@ -413,6 +453,20 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile zeroDimProfile) {
             self.checkReleased(this);
             return zeroDimProfile.profile(self.getDimensions() == 0) ? 1 : self.getBufferShape()[0];
+        }
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static String repr(IntrinsifiedPMemoryView self) {
+            if (self.isReleased()) {
+                return String.format("<released memory at 0x%x>", System.identityHashCode(self));
+            } else {
+                return String.format("<memory at 0x%x>", System.identityHashCode(self));
+            }
         }
     }
 
