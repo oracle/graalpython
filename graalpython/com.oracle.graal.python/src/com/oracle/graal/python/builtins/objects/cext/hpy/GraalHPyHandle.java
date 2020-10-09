@@ -183,6 +183,7 @@ public final class GraalHPyHandle implements TruffleObject {
         if (isPointer()) {
             try {
                 hpyContext.releaseHPyHandleForObject((int) asPointer());
+                id = -1;
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("trying to release non-native handle that claims to be native");
