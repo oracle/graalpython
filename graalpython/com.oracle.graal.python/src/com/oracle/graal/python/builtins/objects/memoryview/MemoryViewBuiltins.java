@@ -8,10 +8,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -307,17 +309,17 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         String none(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                    @Shared("p") @Cached ConditionProfile earlyExit,
-                    @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
-                    @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
+                        @Shared("p") @Cached ConditionProfile earlyExit,
+                        @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                        @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             return hex(self, (byte) 0, 0, earlyExit, toJavaBytesNode, toHexNode);
         }
 
         @Specialization
         String hex(IntrinsifiedPMemoryView self, byte sep, int bytesPerSepGroup,
-                   @Shared("p") @Cached ConditionProfile earlyExit,
-                   @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
-                   @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
+                        @Shared("p") @Cached ConditionProfile earlyExit,
+                        @Shared("b") @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                        @Shared("h") @Cached BytesNodes.ByteToHexNode toHexNode) {
             self.checkReleased(this);
             if (earlyExit.profile(self.getLength() == 0)) {
                 return "";
@@ -468,6 +470,29 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             } else {
                 return String.format("<memory at 0x%x>", System.identityHashCode(self));
             }
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public static abstract class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int hash(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile readonlyProfile,
+                        @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
+            self.checkReleased(this);
+            if (readonlyProfile.profile(self.isReadOnly())) {
+                throw raise(ValueError, ErrorMessages.CANNOT_HASH_WRITEABLE_MEMORYVIEW);
+            } else {
+                // TODO avoid copying
+                // TODO save the value
+                return hashArray(toJavaBytesNode.execute(self));
+            }
+        }
+
+        @TruffleBoundary
+        private static int hashArray(byte[] array) {
+            return Arrays.hashCode(array);
         }
     }
 

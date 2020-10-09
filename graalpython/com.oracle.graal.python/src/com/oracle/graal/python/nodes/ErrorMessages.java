@@ -133,6 +133,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
+    public static final String CANNOT_HASH_WRITEABLE_MEMORYVIEW = "cannot hash writable memoryview object";
     public static final String CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D = "cannot index %d-dimension view with %d-element tuple";
     public static final String IMPORT_NOT_FOUND = "__import__ not found";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s' from '%s' (%s)";
