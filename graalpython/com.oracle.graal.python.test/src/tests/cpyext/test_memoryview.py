@@ -108,6 +108,38 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
+    test_memoryview_fromobject = CPyExtFunction(
+        lambda args: args[2],
+        lambda: (
+            (b'123', 2, ord('3')),
+            (bytearray(b'123'), 2, ord('3')),
+            (memoryview(bytearray(b'123')), 2, ord('3')),
+            ([1, 2, 3], 0, TypeError("memoryview: a bytes-like object is required, not 'list'")),
+            # This tests that exceptions are properly converted on C boundary
+            (None, 0, None),
+        ),
+        code='''
+            static PyObject* test_fromobject(PyObject *object, PyObject *key, PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromObject(object);
+                if (!mv) {
+                    if (object == Py_None) {
+                        PyErr_Clear();
+                        Py_RETURN_NONE;
+                    }
+                    return NULL;
+                }
+                PyObject *item = PyObject_GetItem(mv, key);
+                Py_DECREF(mv);
+                return item;
+            }
+        ''',
+        resultspec='O',
+        argspec='OOO',
+        arguments=["PyObject* object", "PyObject* key", "PyObject* expected"],
+        callfunction="test_fromobject",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
     test_memoryview_tolist = CPyExtFunction(
         lambda args: args[0],
         lambda: [

@@ -1550,33 +1550,40 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromObject extends NativeBuiltin {
         @Specialization
-        static Object wrap(Object object,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
+        Object wrap(VirtualFrame frame, Object object,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
-                        @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.execute(memoryViewNode.create(asPythonObjectNode.execute(object)));
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return memoryViewNode.create(object);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute();
+            }
         }
     }
 
+    // Called without landing node
     @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 12)
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 
         @Specialization
-        static Object wrap(Object bufferStructPointer, Object ownerObj, Object releasefn, Object lenObj, Object readonlyObj, Object itemsizeObj, Object formatObj,
+        Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object releasefn, Object lenObj,
+                        Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached ToNewRefNode toNewRefNode) {
-            int ndim = castToIntNode.execute(ndimObj);
-            int itemsize = castToIntNode.execute(itemsizeObj);
-            int len = castToIntNode.execute(lenObj);
-            boolean readonly = castToIntNode.execute(readonlyObj) != 0;
-            String format = (String) asPythonObjectNode.execute(formatObj);
-            Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
             try {
+                int ndim = castToIntNode.execute(ndimObj);
+                int itemsize = castToIntNode.execute(itemsizeObj);
+                int len = castToIntNode.execute(lenObj);
+                boolean readonly = castToIntNode.execute(readonlyObj) != 0;
+                String format = (String) asPythonObjectNode.execute(formatObj);
+                Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
                 int[] shape = null;
                 int[] strides = null;
                 int[] suboffsets = null;
@@ -1617,6 +1624,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                                 PythonBuiltinClassType.PMemoryView.getInstanceShape(),
                                 managedBuffer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return toNewRefNode.execute(getNativeNullNode.execute());
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
