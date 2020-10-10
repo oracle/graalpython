@@ -760,9 +760,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
         @Specialization
-        String doGeneric(VirtualFrame frame, Object obj,
+        String doGeneric(Object obj,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            return ntoa(toBytesNode.execute(frame, obj));
+            return ntoa(toBytesNode.execute(obj));
         }
 
         @TruffleBoundary
@@ -776,7 +776,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         static BytesNodes.ToBytesNode createToBytes() {
-            return BytesNodes.ToBytesNode.create(true, PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
+            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
         }
     }
 
@@ -822,9 +822,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryBuiltinNode {
         @Specialization
-        String doGeneric(VirtualFrame frame, int addrFamily, Object obj,
+        String doGeneric(int addrFamily, Object obj,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            return ntoa(addrFamily, toBytesNode.execute(frame, obj));
+            return ntoa(addrFamily, toBytesNode.execute(obj));
         }
 
         @TruffleBoundary
@@ -848,7 +848,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
 
         static BytesNodes.ToBytesNode createToBytes() {
-            return BytesNodes.ToBytesNode.create(true, PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
+            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
         }
     }
 

@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -133,7 +132,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-        @Child private BytesNodes.ToBytesNode toBytesNode;
 
         @Specialization
         Object run(PString str) {
@@ -195,14 +193,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 toByteArrayNode = insert(ToByteArrayNodeGen.create());
             }
             return toByteArrayNode;
-        }
-
-        private BytesNodes.ToBytesNode getToBytesNode() {
-            if (toBytesNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toBytesNode = insert(BytesNodes.ToBytesNode.create());
-            }
-            return toBytesNode;
         }
     }
 

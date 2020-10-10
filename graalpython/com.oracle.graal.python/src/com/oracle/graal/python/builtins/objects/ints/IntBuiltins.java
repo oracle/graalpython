@@ -2390,13 +2390,13 @@ public class IntBuiltins extends PythonBuiltins {
 
         // from PBytesLike
         @Specialization
-        Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(frame, bytes), byteorder, signed);
+        Object fromPBytes(Object cl, PBytesLike bytes, String byteorder, boolean signed) {
+            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
         }
 
         @Specialization
-        Object fromPBytes(VirtualFrame frame, Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPBytes(frame, cl, bytes, byteorder, false);
+        Object fromPBytes(Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
+            return fromPBytes(cl, bytes, byteorder, false);
         }
 
         // from PArray
@@ -2476,7 +2476,7 @@ public class IntBuiltins extends PythonBuiltins {
                 if (!(result instanceof PBytesLike)) {
                     raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", result);
                 }
-                BigInteger bi = createBigInteger(getToBytesNode().execute(frame, result), isBigEndian(byteorder), false);
+                BigInteger bi = createBigInteger(getToBytesNode().execute(result), isBigEndian(byteorder), false);
                 return createIntObject(cl, bi);
             }
             if (PythonObjectLibrary.checkIsIterable(dataModelLibrary, ctxRef, frame, object, this)) {

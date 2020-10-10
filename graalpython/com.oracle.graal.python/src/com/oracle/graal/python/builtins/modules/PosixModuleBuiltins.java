@@ -357,7 +357,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             ProcessBuilder builder = new ProcessBuilder(cmd);
             Map<String, String> environment = builder.environment();
             environ.entries().forEach(entry -> {
-                environment.put(new String(toBytes.execute(null, entry.key)), new String(toBytes.execute(null, entry.value)));
+                environment.put(new String(toBytes.execute(entry.key)), new String(toBytes.execute(entry.value)));
             });
             Process pr = builder.start();
             BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));

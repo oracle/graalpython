@@ -65,7 +65,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PLZMACompressor)
 public class LZMACompressorBuiltins extends PythonBuiltins {
@@ -81,11 +80,11 @@ public class LZMACompressorBuiltins extends PythonBuiltins {
     abstract static class CompressNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        PBytes doBytesLike(VirtualFrame frame, PLZMACompressor self, PBytesLike bytesLike,
+        PBytes doBytesLike(PLZMACompressor self, PBytesLike bytesLike,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] compressed;
             try {
-                compressed = addBytes(self, toBytesNode.execute(frame, bytesLike));
+                compressed = addBytes(self, toBytesNode.execute(bytesLike));
             } catch (IOException e) {
                 throw raise(LZMAError, "%m", e);
 
