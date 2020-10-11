@@ -46,9 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -56,7 +53,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
@@ -68,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory.SliceIndexNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -76,11 +71,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,49 +97,10 @@ public class TupleBuiltins extends PythonBuiltins {
         return TupleBuiltinsFactory.getFactories();
     }
 
-    // CPython narrows the result down to long range, but in Java we can use only int range for
-    // array indices
-    public abstract static class SliceIndexNode extends ArgumentCastNodeWithRaise {
-        private final int defaultValue;
-
-        protected SliceIndexNode(int defaultValue) {
-            this.defaultValue = defaultValue;
-        }
-
-        @Override
-        public abstract Object execute(VirtualFrame frame, Object value);
-
-        @Specialization(guards = "isNoValue(none)")
-        int handleNone(@SuppressWarnings("unused") PNone none) {
-            return defaultValue;
-        }
-
-        @Specialization
-        static int doInt(int i) {
-            // fast-path for the most common case
-            return i;
-        }
-
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
-        int doOthers(VirtualFrame frame, Object value,
-                        @Cached CastToJavaIntLossyNode castToInt,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            if (lib.canBeIndex(value)) {
-                return castToInt.execute(lib.asIndexWithFrame(value, frame));
-            }
-            throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
-        }
-
-        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
-        public static SliceIndexNode create(@DefaultValue int defaultValue) {
-            return SliceIndexNodeGen.create(defaultValue);
-        }
-    }
-
     // index(element)
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value", "start", "stop"})
-    @ArgumentClinic(name = "start", conversionClass = SliceIndexNode.class, defaultValue = "0")
-    @ArgumentClinic(name = "stop", conversionClass = SliceIndexNode.class, defaultValue = "Integer.MAX_VALUE")
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0")
+    @ArgumentClinic(name = "stop", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE")
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory

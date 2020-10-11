@@ -94,6 +94,7 @@ public class ConverterFactory {
     private static ConverterFactory BuiltinCodePoint;
     private static ConverterFactory BuiltinBuffer;
     private static ConverterFactory BuiltinIndex;
+    private static ConverterFactory BuiltinSliceIndex;
     private static ConverterFactory BuiltinNone;
 
     public final String fullClassName;
@@ -126,6 +127,8 @@ public class ConverterFactory {
                 return BuiltinBuffer;
             case Index:
                 return BuiltinIndex;
+            case SliceIndex:
+                return BuiltinSliceIndex;
             case None:
                 assert !annotation.defaultValue().isEmpty();
                 return BuiltinNone;
@@ -203,6 +206,7 @@ public class ConverterFactory {
         BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
         BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
         BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");
+        BuiltinSliceIndex = forBuiltin(elementUtils, "SliceIndexConversionNode");
         BuiltinNone = forBuiltin(elementUtils, "DefaultValueNode");
     }
 }

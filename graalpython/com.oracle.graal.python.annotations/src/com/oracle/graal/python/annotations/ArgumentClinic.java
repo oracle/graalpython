@@ -142,6 +142,11 @@ public @interface ArgumentClinic {
          */
         Index,
         /**
+         * Corresponds to CPython's {@code slice_index} converter. Supports {@link #defaultValue()},
+         * and {@link #useDefaultForNone()}.
+         */
+        SliceIndex,
+        /**
          * Corresponds to CPython's {@code int(accept={str})} converter. Supports
          * {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
