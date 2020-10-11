@@ -77,7 +77,7 @@ public @interface ArgumentClinic {
      * primitive values that are already boxed: those are always passed to the convertor.
      * 
      * It is not necessary to set this when using a builtin conversion or
-     * {@link #conversionClass()}. Built-in convertors and {@link ConversionFactory} provide their
+     * {@link #conversionClass()}. Built-in convertors and {@link ClinicConverterFactory} provide their
      * own list of short circuit types, which is applied if this field is set to its default value.
      */
     PrimitiveType[] shortCircuitPrimitive() default {};
@@ -97,7 +97,7 @@ public @interface ArgumentClinic {
 
     /**
      * Specifies the name of the conversion node class, which must include a static factory method
-     * annotated with {@link ConversionFactory}. Must not be used with {@link #customConversion()}.
+     * annotated with {@link ClinicConverterFactory}. Must not be used with {@link #customConversion()}.
      */
     Class<?> conversionClass() default void.class;
 
@@ -148,50 +148,5 @@ public @interface ArgumentClinic {
          * Corresponds to CPython's {@code Py_buffer} convertor.
          */
         Buffer,
-    }
-
-    /**
-     * Annotates the factory method (which must be static) in the class specified by
-     * {@link #conversionClass()}.
-     */
-    @Target(ElementType.METHOD)
-    @interface ConversionFactory {
-
-        /**
-         * Specifies which arguments will be provided by the clinic. These are passed to the factory
-         * method before the argument supplied in {@link #args()}.
-         */
-        ClinicArgument[] clinicArgs() default {};
-
-        /**
-         * The boxing optimized execute method variants will not attempt to cast the listed
-         * primitive types and will just pass them directly to the specializations. This does not
-         * apply to primitive values that are already boxed: those are always passed to the
-         * convertor.
-         */
-        PrimitiveType[] shortCircuitPrimitive() default {};
-
-        enum ClinicArgument {
-            /**
-             * The default value {@link #defaultValue()}.
-             */
-            DefaultValue,
-            /**
-             * The flag {@link #useDefaultForNone()}.
-             */
-            UseDefaultForNone,
-            /**
-             * The name of the builtin function.
-             */
-            BuiltinName,
-            /**
-             * The index of the argument.
-             */
-            ArgumentIndex,
-            /**
-             * The name of the argument.
-             */
-            ArgumentName,
-        }
     }
 }

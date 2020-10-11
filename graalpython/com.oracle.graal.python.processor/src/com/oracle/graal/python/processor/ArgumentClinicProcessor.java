@@ -71,6 +71,7 @@ import javax.tools.JavaFileObject;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ArgumentsClinic;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.processor.ArgumentClinicModel.ArgumentClinicData;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinAnnotation;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinClinicData;
@@ -87,7 +88,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
         HashSet<String> vals = new HashSet<>();
         vals.add(ArgumentClinic.class.getName());
         vals.add(ArgumentsClinic.class.getName());
-        vals.add(ArgumentClinic.ConversionFactory.class.getName());
+        vals.add(ClinicConverterFactory.class.getName());
         return vals;
     }
 

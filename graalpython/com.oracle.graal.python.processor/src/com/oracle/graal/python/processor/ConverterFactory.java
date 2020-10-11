@@ -42,7 +42,8 @@ package com.oracle.graal.python.processor;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
-import com.oracle.graal.python.annotations.ArgumentClinic.ConversionFactory.ClinicArgument;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.ClinicArgument;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -137,7 +138,7 @@ public class ConverterFactory {
             return factory;
         }
         for (Element e : conversionClass.getEnclosedElements()) {
-            ArgumentClinic.ConversionFactory annot = e.getAnnotation(ArgumentClinic.ConversionFactory.class);
+            ClinicConverterFactory annot = e.getAnnotation(ClinicConverterFactory.class);
             if (annot != null) {
                 if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
                     throw new ProcessingError(conversionClass, "ConversionFactory annotation is applicable only to static methods.");
