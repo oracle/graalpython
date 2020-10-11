@@ -184,12 +184,6 @@ public class ConverterFactory {
         return factory;
     }
 
-    public static ConverterFactory forCustomConversion(TypeElement type, String methodName) {
-        String fullClassName = type.getQualifiedName().toString();
-        String className = type.getSimpleName().toString();
-        return new ConverterFactory(fullClassName, className, methodName, 0, new Param[0], new PrimitiveType[0]);
-    }
-
     private static ConverterFactory forBuiltin(Elements elementUtils, String className) throws ProcessingError {
         TypeElement type = elementUtils.getTypeElement(CLINIC_PACKAGE + "." + className);
         if (type == null) {

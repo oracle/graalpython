@@ -65,25 +65,6 @@ public @interface ArgumentClinic {
     ClinicConversion conversion() default ClinicConversion.None;
 
     /**
-     * Overrides the {@link #conversion()} value. Name of a method of the builtin class that should
-     * be used as a factory to create the conversion node. When this value is set, then other
-     * conversion options are ignored.
-     */
-    String customConversion() default "";
-
-    /**
-     * The boxing optimized execute method variants will not attempt to cast the listed primitive
-     * types and will just pass them directly to the specializations. This does not apply to
-     * primitive values that are already boxed: those are always passed to the converter.
-     * 
-     * It is not necessary to set this when using a builtin conversion or
-     * {@link #conversionClass()}. Built-in converters and {@link ClinicConverterFactory} provide
-     * their own list of short circuit types, which is applied if this field is set to its default
-     * value.
-     */
-    PrimitiveType[] shortCircuitPrimitive() default {};
-
-    /**
      * The string should contain valid Java constant value expression, for example, {@code true}, or
      * {@code \"some string\"}. You may have to update the annotation processor to include import of
      * necessary packages or use fully qualified names.
@@ -98,14 +79,13 @@ public @interface ArgumentClinic {
 
     /**
      * Specifies the name of the conversion node class, which must include a static factory method
-     * annotated with {@link ClinicConverterFactory}. Must not be used with
-     * {@link #customConversion()}.
+     * annotated with {@link ClinicConverterFactory}.
      */
     Class<?> conversionClass() default void.class;
 
     /**
-     * Specifies arguments to the factory method, applicable only with {@link #conversionClass()}.
-     * String literals must be explicitly quoted: {@code args = "\"abc\""}
+     * Specifies arguments to the factory method. String literals must be explicitly quoted:
+     * {@code args = "\"abc\""}
      */
     String[] args() default {};
 

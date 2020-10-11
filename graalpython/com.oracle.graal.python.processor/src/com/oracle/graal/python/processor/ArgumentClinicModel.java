@@ -120,12 +120,6 @@ public class ArgumentClinicModel {
             if (factory == null && annotation.args().length != 0) {
                 throw new ProcessingError(type, "No conversionClass specified but arguments were provided");
             }
-            if (!annotation.customConversion().isEmpty()) {
-                if (factory != null) {
-                    throw new ProcessingError(type, "Cannot specify both conversionClass and customConversion");
-                }
-                return ConverterFactory.forCustomConversion(type, annotation.customConversion());
-            }
             if (factory != null) {
                 return factory;
             }
@@ -135,20 +129,14 @@ public class ArgumentClinicModel {
             return ConverterFactory.getBuiltin(annotation);
         }
 
-        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory ofactory) throws ProcessingError {
+        public static ArgumentClinicData create(ArgumentClinic annotation, TypeElement type, BuiltinAnnotation builtinAnnotation, int index, ConverterFactory annotationFactory)
+                        throws ProcessingError {
             if (annotation == null) {
                 return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null, Collections.emptySet());
             }
-            ConverterFactory factory = getFactory(annotation, type, ofactory);
+            ConverterFactory factory = getFactory(annotation, type, annotationFactory);
             if (annotation.args().length != factory.extraParamCount) {
                 throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.extraParamCount);
-            }
-
-            PrimitiveType[] acceptedPrimitives;
-            if (annotation.shortCircuitPrimitive().length > 0) {
-                acceptedPrimitives = annotation.shortCircuitPrimitive();
-            } else {
-                acceptedPrimitives = factory.acceptedPrimitiveTypes;
             }
 
             String[] args = new String[factory.params.length];
@@ -184,7 +172,7 @@ public class ArgumentClinicModel {
                 imports.add("com.oracle.graal.python.builtins.objects.PNone");
             }
 
-            return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(acceptedPrimitives)), castNodeFactory, imports);
+            return new ArgumentClinicData(annotation, index, new HashSet<>(Arrays.asList(factory.acceptedPrimitiveTypes)), castNodeFactory, imports);
         }
     }
 }
