@@ -43,71 +43,100 @@ package com.oracle.graal.python.processor;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.ClinicArgument;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ConverterFactory {
     public static final String CLINIC_PACKAGE = "com.oracle.graal.python.nodes.function.builtins.clinic";
+
+    enum Param {
+        /**
+         * The default value {@link ArgumentClinic#defaultValue()}.
+         */
+        DefaultValue,
+        /**
+         * The flag {@link ArgumentClinic#useDefaultForNone()}.
+         */
+        UseDefaultForNone,
+        /**
+         * The name of the builtin function.
+         */
+        BuiltinName,
+        /**
+         * The index of the argument.
+         */
+        ArgumentIndex,
+        /**
+         * The name of the argument.
+         */
+        ArgumentName,
+        /**
+         * Extra argument provided in {@link ArgumentClinic#args()}.
+         */
+        Extra,
+    }
+
 
     private static final Map<TypeElement, ConverterFactory> cache = new HashMap<>();
 
     public final String fullClassName;
     public final String className;
     public final String methodName;
-    public final int paramCount;
-    public final ClinicArgument[] clinicArgs;
+    public final int extraParamCount;
+    public final Param[] params;
     public final PrimitiveType[] acceptedPrimitiveTypes;
 
-    private ConverterFactory(String fullClassName, String className, String methodName, int paramCount, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
+    private ConverterFactory(String fullClassName, String className, String methodName, int extraParamCount, Param[] params, PrimitiveType[] acceptedPrimitiveTypes) {
         this.fullClassName = fullClassName;
         this.className = className;
         this.methodName = methodName;
-        this.paramCount = paramCount;
-        this.clinicArgs = clinicArgs;
+        this.extraParamCount = extraParamCount;
+        this.params = params;
         this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
     }
 
-    private ConverterFactory(String className, ClinicArgument[] clinicArgs, PrimitiveType[] acceptedPrimitiveTypes) {
-        this(CLINIC_PACKAGE + "." + className, className, "create", 0, clinicArgs, acceptedPrimitiveTypes);
+    private ConverterFactory(String className, Param[] params, PrimitiveType[] acceptedPrimitiveTypes) {
+        this(CLINIC_PACKAGE + "." + className, className, "create", 0, params, acceptedPrimitiveTypes);
     }
 
     private static final ConverterFactory BuiltinBoolean = new ConverterFactory("JavaBooleanConvertorNodeGen",
-                    new ClinicArgument[]{ClinicArgument.DefaultValue},
+                    new Param[]{Param.DefaultValue},
                     new PrimitiveType[]{PrimitiveType.Boolean});
 
     private static final ConverterFactory BuiltinString = new ConverterFactory("JavaStringConvertorNodeGen",
-                    new ClinicArgument[]{ClinicArgument.BuiltinName},
+                    new Param[]{Param.BuiltinName},
                     new PrimitiveType[]{});
 
     private static final ConverterFactory BuiltinStringWithDefault = new ConverterFactory("JavaStringConvertorWithDefaultValueNodeGen",
-                    new ClinicArgument[]{ClinicArgument.BuiltinName, ClinicArgument.DefaultValue, ClinicArgument.UseDefaultForNone},
+                    new Param[]{Param.BuiltinName, Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{});
 
     private static final ConverterFactory BuiltinInt = new ConverterFactory("JavaIntConversionNodeGen",
-                    new ClinicArgument[]{ClinicArgument.DefaultValue, ClinicArgument.UseDefaultForNone},
+                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{PrimitiveType.Int});
 
     private static final ConverterFactory BuiltinCodePoint = new ConverterFactory("CodePointConversionNodeGen",
-                    new ClinicArgument[]{ClinicArgument.BuiltinName, ClinicArgument.DefaultValue, ClinicArgument.UseDefaultForNone},
+                    new Param[]{Param.BuiltinName, Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{});
 
     private static final ConverterFactory BuiltinBuffer = new ConverterFactory("BufferConversionNodeGen",
-                    new ClinicArgument[]{},
+                    new Param[]{},
                     new PrimitiveType[]{});
 
     private static final ConverterFactory BuiltinIndex = new ConverterFactory("IndexConversionNodeGen",
-                    new ClinicArgument[]{ClinicArgument.DefaultValue, ClinicArgument.UseDefaultForNone},
+                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{PrimitiveType.Int});
 
     private static final ConverterFactory BuiltinNone = new ConverterFactory("DefaultValueNode",
-                    new ClinicArgument[]{ClinicArgument.DefaultValue, ClinicArgument.UseDefaultForNone},
+                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double});
 
     public static ConverterFactory getBuiltin(ArgumentClinic annotation) {
@@ -149,8 +178,27 @@ public class ConverterFactory {
                 String fullClassName = conversionClass.toString();
                 String className = conversionClass.getSimpleName().toString();
                 String methodName = e.getSimpleName().toString();
-                int paramCount = ((ExecutableElement) e).getParameters().size() - annot.clinicArgs().length;
-                factory = new ConverterFactory(fullClassName, className, methodName, paramCount, annot.clinicArgs(), annot.shortCircuitPrimitive());
+                List<? extends VariableElement> params = ((ExecutableElement) e).getParameters();
+                Param[] args = new Param[params.size()];
+                int extraParamCount = 0;
+                for (int i = 0; i < args.length; ++i) {
+                    VariableElement param = params.get(i);
+                    if (param.getAnnotation(ClinicConverterFactory.ArgumentIndex.class) != null) {
+                        args[i] = Param.ArgumentIndex;
+                    } else if (param.getAnnotation(ClinicConverterFactory.ArgumentName.class) != null) {
+                        args[i] = Param.ArgumentName;
+                    } else if (param.getAnnotation(ClinicConverterFactory.BuiltinName.class) != null) {
+                        args[i] = Param.BuiltinName;
+                    } else if (param.getAnnotation(ClinicConverterFactory.DefaultValue.class) != null) {
+                        args[i] = Param.DefaultValue;
+                    } else if (param.getAnnotation(ClinicConverterFactory.UseDefaultForNone.class) != null) {
+                        args[i] = Param.UseDefaultForNone;
+                    } else {
+                        args[i] = Param.Extra;
+                        extraParamCount++;
+                    }
+                }
+                factory = new ConverterFactory(fullClassName, className, methodName, extraParamCount, args, annot.shortCircuitPrimitive());
             }
         }
         if (factory == null) {
@@ -163,6 +211,6 @@ public class ConverterFactory {
     public static ConverterFactory forCustomConversion(TypeElement type, String methodName) {
         String fullClassName = type.getQualifiedName().toString();
         String className = type.getSimpleName().toString();
-        return new ConverterFactory(fullClassName, className, methodName, 0, new ClinicArgument[0], new PrimitiveType[0]);
+        return new ConverterFactory(fullClassName, className, methodName, 0, new Param[0], new PrimitiveType[0]);
     }
 }

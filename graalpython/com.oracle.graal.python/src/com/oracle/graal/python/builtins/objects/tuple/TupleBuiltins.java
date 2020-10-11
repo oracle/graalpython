@@ -48,6 +48,7 @@ import java.util.List;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -136,8 +137,8 @@ public class TupleBuiltins extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
         }
 
-        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int, clinicArgs = {ClinicConverterFactory.ClinicArgument.DefaultValue})
-        public static SliceIndexNode create(int defaultValue) {
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        public static SliceIndexNode create(@DefaultValue int defaultValue) {
             return SliceIndexNodeGen.create(defaultValue);
         }
     }

@@ -46,8 +46,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.lang.model.element.TypeElement;
 
@@ -142,8 +140,8 @@ public class ArgumentClinicModel {
                 return new ArgumentClinicData(null, index, new HashSet<>(Arrays.asList(PrimitiveType.values())), null, Collections.emptySet());
             }
             ConverterFactory factory = getFactory(annotation, type, ofactory);
-            if (annotation.args().length != factory.paramCount) {
-                throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.paramCount);
+            if (annotation.args().length != factory.extraParamCount) {
+                throw new ProcessingError(type, "Conversion %s.%s expects %d arguments", factory.fullClassName, factory.methodName, factory.extraParamCount);
             }
 
             PrimitiveType[] acceptedPrimitives;
@@ -153,26 +151,33 @@ public class ArgumentClinicModel {
                 acceptedPrimitives = factory.acceptedPrimitiveTypes;
             }
 
-            String args = Stream.concat(
-                            Arrays.stream(factory.clinicArgs).map(ca -> {
-                                switch (ca) {
-                                    case BuiltinName:
-                                        return String.format("\"%s\"", builtinAnnotation.name);
-                                    case ArgumentIndex:
-                                        return String.valueOf(index);
-                                    case ArgumentName:
-                                        return String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
-                                    case DefaultValue:
-                                        return annotation.defaultValue();
-                                    case UseDefaultForNone:
-                                        return String.valueOf(annotation.useDefaultForNone());
-                                    default:
-                                        throw new IllegalStateException("Unsupported ClinicArgument: " + ca);
-                                }
-                            }),
-                            Arrays.stream(annotation.args())).collect(Collectors.joining(", "));
-            String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, args);
-
+            String[] args = new String[factory.params.length];
+            int extraParamIndex = 0;
+            for (int i = 0; i < args.length; ++i) {
+                switch (factory.params[i]) {
+                    case BuiltinName:
+                        args[i] = String.format("\"%s\"", builtinAnnotation.name);
+                        break;
+                    case ArgumentIndex:
+                        args[i] = String.valueOf(index);
+                        break;
+                    case ArgumentName:
+                        args[i] =  String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
+                        break;
+                    case DefaultValue:
+                        args[i] = annotation.defaultValue();
+                        break;
+                    case UseDefaultForNone:
+                        args[i] = String.valueOf(annotation.useDefaultForNone());
+                        break;
+                    case Extra:
+                        args[i] = annotation.args()[extraParamIndex++];
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
+                }
+            }
+            String castNodeFactory = String.format("%s.%s(%s)", factory.className, factory.methodName, String.join(", ", args));
             Set<String> imports = new HashSet<>();
             imports.add(factory.fullClassName);
             if (annotation.defaultValue().startsWith("PNone.")) {
