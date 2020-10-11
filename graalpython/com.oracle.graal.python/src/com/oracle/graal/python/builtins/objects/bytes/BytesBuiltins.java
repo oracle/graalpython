@@ -69,6 +69,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1210,25 +1211,22 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             return b;
         }
+
+        @ClinicConverterFactory
+        public static SepExpectByteNode create(@ClinicConverterFactory.DefaultValue Object defaultValue) {
+            return BytesBuiltinsFactory.SepExpectByteNodeGen.create(defaultValue);
+        }
     }
 
     @Builtin(name = "hex", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "bytes_per_sep_group"})
-    @ArgumentClinic(name = "sep", customConversion = "createSepExpectByteNode")
-    @ArgumentClinic(name = "bytes_per_sep_group", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = SepExpectByteNode.class, defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "bytes_per_sep_group", conversionClass = ExpectIntNode.class, defaultValue = "1")
     @GenerateNodeFactory
     abstract static class HexNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.HexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SepExpectByteNode createSepExpectByteNode() {
-            return BytesBuiltinsFactory.SepExpectByteNodeGen.create(PNone.NO_VALUE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(1);
         }
 
         @Specialization
@@ -1603,17 +1601,13 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 3, parameterNames = {"$self", "old", "replacement", "count"})
-    @ArgumentClinic(name = "count", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "count", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     abstract static class ReplaceNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1799,6 +1793,11 @@ public class BytesBuiltins extends PythonBuiltins {
         protected ExpectIntNode createRec() {
             return BytesBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
         }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+        public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue int defaultValue) {
+            return BytesBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
+        }
     }
 
     public abstract static class ExpectByteLikeNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
@@ -1831,6 +1830,11 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+        }
+
+        @ClinicConverterFactory
+        public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue) {
+            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);
         }
     }
 
@@ -1938,8 +1942,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "split", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "maxsplit"})
-    @ArgumentClinic(name = "sep", customConversion = "createExpectByteLikeNode")
-    @ArgumentClinic(name = "maxsplit", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = ExpectByteLikeNode.class, defaultValue = "BytesBuiltins.AbstractSplitNode.WHITESPACE")
+    @ArgumentClinic(name = "maxsplit", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SplitNode extends AbstractSplitNode {
@@ -1953,14 +1957,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.SplitNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectByteLikeNode createExpectByteLikeNode() {
-            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(WHITESPACE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Override
@@ -2042,8 +2038,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
-    @ArgumentClinic(name = "sep", customConversion = "createExpectByteLikeNode")
-    @ArgumentClinic(name = "maxsplit", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = ExpectByteLikeNode.class, defaultValue = "BytesBuiltins.AbstractSplitNode.WHITESPACE")
+    @ArgumentClinic(name = "maxsplit", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RSplitNode extends AbstractSplitNode {
@@ -2057,14 +2053,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.RSplitNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectByteLikeNode createExpectByteLikeNode() {
-            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(WHITESPACE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @CompilerDirectives.TruffleBoundary
