@@ -69,6 +69,7 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -113,7 +114,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -775,22 +775,14 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.startswith(prefix[, start[, end]])
     // bytearray.startswith(prefix[, start[, end]])
     @Builtin(name = "startswith", minNumOfPositionalArgs = 2, parameterNames = {"$self", "prefix", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class StartsWithNode extends PrefixSuffixBaseNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.StartsWithNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Override
@@ -814,22 +806,14 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.endswith(suffix[, start[, end]])
     // bytearray.endswith(suffix[, start[, end]])
     @Builtin(name = "endswith", minNumOfPositionalArgs = 2, parameterNames = {"$self", "suffix", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class EndsWithNode extends PrefixSuffixBaseNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.EndsWithNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Override
@@ -854,21 +838,13 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.index(x)
     // bytearray.index(x)
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.IndexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -892,21 +868,13 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.rindex(x)
     // bytearray.rindex(x)
     @Builtin(name = "rindex", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class RIndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.RIndexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1025,8 +993,8 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.count(x)
     // bytearray.count(x)
     @Builtin(name = "count", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     public abstract static class CountNode extends PythonQuaternaryClinicBuiltinNode {
@@ -1034,14 +1002,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.CountNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1152,21 +1112,13 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.find(bytes[, start[, end]])
     // bytearray.find(bytes[, start[, end]])
     @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.FindNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1183,21 +1135,13 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.rfind(bytes[, start[, end]])
     // bytearray.rfind(bytes[, start[, end]])
     @Builtin(name = "rfind", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class RFindNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.RFindNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1268,25 +1212,22 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             return b;
         }
+
+        @ClinicConverterFactory
+        public static SepExpectByteNode create(@ClinicConverterFactory.DefaultValue Object defaultValue) {
+            return BytesBuiltinsFactory.SepExpectByteNodeGen.create(defaultValue);
+        }
     }
 
     @Builtin(name = "hex", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "bytes_per_sep_group"})
-    @ArgumentClinic(name = "sep", customConversion = "createSepExpectByteNode")
-    @ArgumentClinic(name = "bytes_per_sep_group", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = SepExpectByteNode.class, defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "bytes_per_sep_group", conversionClass = ExpectIntNode.class, defaultValue = "1")
     @GenerateNodeFactory
     abstract static class HexNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.HexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static SepExpectByteNode createSepExpectByteNode() {
-            return BytesBuiltinsFactory.SepExpectByteNodeGen.create(PNone.NO_VALUE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(1);
         }
 
         @Specialization
@@ -1661,17 +1602,13 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 3, parameterNames = {"$self", "old", "replacement", "count"})
-    @ArgumentClinic(name = "count", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "count", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     abstract static class ReplaceNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1857,6 +1794,11 @@ public class BytesBuiltins extends PythonBuiltins {
         protected ExpectIntNode createRec() {
             return BytesBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
         }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+        public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue int defaultValue) {
+            return BytesBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
+        }
     }
 
     public abstract static class ExpectByteLikeNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
@@ -1889,6 +1831,11 @@ public class BytesBuiltins extends PythonBuiltins {
         @Fallback
         byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
             throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+        }
+
+        @ClinicConverterFactory
+        public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue) {
+            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);
         }
     }
 
@@ -1996,8 +1943,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "split", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "maxsplit"})
-    @ArgumentClinic(name = "sep", customConversion = "createExpectByteLikeNode")
-    @ArgumentClinic(name = "maxsplit", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = ExpectByteLikeNode.class, defaultValue = "BytesBuiltins.AbstractSplitNode.WHITESPACE")
+    @ArgumentClinic(name = "maxsplit", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SplitNode extends AbstractSplitNode {
@@ -2011,14 +1958,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.SplitNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectByteLikeNode createExpectByteLikeNode() {
-            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(WHITESPACE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Override
@@ -2101,8 +2040,8 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "rsplit", minNumOfPositionalArgs = 1, parameterNames = {"self", "sep", "maxsplit"})
-    @ArgumentClinic(name = "sep", customConversion = "createExpectByteLikeNode")
-    @ArgumentClinic(name = "maxsplit", customConversion = "createExpectIntNode", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "sep", conversionClass = ExpectByteLikeNode.class, defaultValue = "BytesBuiltins.AbstractSplitNode.WHITESPACE")
+    @ArgumentClinic(name = "maxsplit", conversionClass = ExpectIntNode.class, defaultValue = "Integer.MAX_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RSplitNode extends AbstractSplitNode {
@@ -2116,14 +2055,6 @@ public class BytesBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BytesBuiltinsClinicProviders.RSplitNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static ExpectByteLikeNode createExpectByteLikeNode() {
-            return BytesBuiltinsFactory.ExpectByteLikeNodeGen.create(WHITESPACE);
-        }
-
-        public static ExpectIntNode createExpectIntNode() {
-            return BytesBuiltinsFactory.ExpectIntNodeGen.create(Integer.MAX_VALUE);
         }
 
         @CompilerDirectives.TruffleBoundary
@@ -2798,38 +2729,6 @@ public class BytesBuiltins extends PythonBuiltins {
             return ErrorMessages.BYTE_MUST_BE_IN_RANGE;
         }
 
-    }
-
-    public abstract static class SliceIndexNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
-        private final int defaultValue;
-
-        protected SliceIndexNode(int defaultValue) {
-            this.defaultValue = defaultValue;
-        }
-
-        @Override
-        public abstract Object execute(VirtualFrame frame, Object value);
-
-        @Specialization
-        int handleNone(@SuppressWarnings("unused") PNone none) {
-            return defaultValue;
-        }
-
-        @Specialization
-        static int doInt(int i) {
-            // fast-path for the most common case
-            return i;
-        }
-
-        @Specialization(guards = "!isPNone(value)", limit = "3")
-        int doOthers(VirtualFrame frame, Object value,
-                        @Cached CastToJavaIntLossyNode castToInt,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            if (lib.canBeIndex(value)) {
-                return castToInt.execute(lib.asIndexWithFrame(value, frame));
-            }
-            throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
-        }
     }
 
     protected static int adjustStartIndex(int startIn, int len) {
