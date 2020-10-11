@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
@@ -73,5 +75,10 @@ public abstract class JavaStringConverterNode extends ArgumentCastNodeWithRaise 
     // to be overridden in the subclass
     protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
         return false;
+    }
+
+    @ClinicConverterFactory
+    public static JavaStringConverterNode create(@BuiltinName String builtinName) {
+        return JavaStringConverterNodeGen.create(builtinName);
     }
 }

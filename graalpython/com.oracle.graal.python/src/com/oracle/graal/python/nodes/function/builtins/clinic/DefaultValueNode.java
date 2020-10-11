@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,7 +56,8 @@ public final class DefaultValueNode extends ArgumentCastNode {
 
     private final ConditionProfile profileArg = ConditionProfile.createBinaryProfile();
 
-    public static DefaultValueNode create(Object defaultValue, boolean useDefaultForNone) {
+    @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double})
+    public static DefaultValueNode create(@DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return new DefaultValueNode(defaultValue, useDefaultForNone);
     }
 

@@ -40,14 +40,18 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class JavaStringConverterWithDefaultValue extends JavaStringConverterNode {
+public abstract class JavaStringConverterWithDefaultValueNode extends JavaStringConverterNode {
     private final Object defaultValue;
     protected final boolean useDefaultForNone;
 
-    public JavaStringConverterWithDefaultValue(String builtinName, Object defaultValue, boolean useDefaultForNone) {
+    public JavaStringConverterWithDefaultValueNode(String builtinName, Object defaultValue, boolean useDefaultForNone) {
         super(builtinName);
         this.defaultValue = defaultValue;
         this.useDefaultForNone = useDefaultForNone;
@@ -66,5 +70,10 @@ public abstract class JavaStringConverterWithDefaultValue extends JavaStringConv
     @Override
     protected final boolean shouldUseDefaultValue(Object value) {
         return isHandledPNone(useDefaultForNone, value);
+    }
+
+    @ClinicConverterFactory
+    public static JavaStringConverterWithDefaultValueNode create(@BuiltinName String builtinName, @DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+        return JavaStringConverterWithDefaultValueNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }
 }

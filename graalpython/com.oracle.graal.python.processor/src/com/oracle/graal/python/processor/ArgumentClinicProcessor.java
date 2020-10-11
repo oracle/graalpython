@@ -103,6 +103,7 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             return false;
         }
         try {
+            ConverterFactory.initBuiltins(processingEnv.getElementUtils());
             doProcess(roundEnv);
         } catch (IOException ex) {
             ex.printStackTrace();

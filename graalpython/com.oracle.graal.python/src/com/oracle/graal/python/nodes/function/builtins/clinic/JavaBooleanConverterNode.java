@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,5 +84,10 @@ public abstract class JavaBooleanConverterNode extends ArgumentCastNode {
     static Object doOthers(VirtualFrame frame, Object value,
                     @CachedLibrary("value") PythonObjectLibrary lib) {
         return lib.isTrue(value, frame);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
+    public static JavaBooleanConverterNode create(@DefaultValue boolean defaultValue) {
+        return JavaBooleanConverterNodeGen.create(defaultValue);
     }
 }

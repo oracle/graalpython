@@ -42,6 +42,10 @@ package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -89,5 +93,10 @@ public abstract class CodePointConversionNode extends ArgumentCastNodeWithRaise 
         } catch (CannotCastException ex) {
             throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
         }
+    }
+
+    @ClinicConverterFactory
+    public static CodePointConversionNode create(@BuiltinName String builtinName, @DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+        return CodePointConversionNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }
 }

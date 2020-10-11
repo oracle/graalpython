@@ -50,6 +50,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ import java.util.Map;
 public class ConverterFactory {
     public static final String CLINIC_PACKAGE = "com.oracle.graal.python.nodes.function.builtins.clinic";
 
-    enum Param {
+    public enum Param {
         /**
          * The default value {@link ArgumentClinic#defaultValue()}.
          */
@@ -86,6 +87,15 @@ public class ConverterFactory {
 
     private static final Map<TypeElement, ConverterFactory> cache = new HashMap<>();
 
+    private static ConverterFactory BuiltinBoolean;
+    private static ConverterFactory BuiltinString;
+    private static ConverterFactory BuiltinStringWithDefaultValue;
+    private static ConverterFactory BuiltinInt;
+    private static ConverterFactory BuiltinCodePoint;
+    private static ConverterFactory BuiltinBuffer;
+    private static ConverterFactory BuiltinIndex;
+    private static ConverterFactory BuiltinNone;
+
     public final String fullClassName;
     public final String className;
     public final String methodName;
@@ -102,48 +112,12 @@ public class ConverterFactory {
         this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
     }
 
-    private ConverterFactory(String className, Param[] params, PrimitiveType[] acceptedPrimitiveTypes) {
-        this(CLINIC_PACKAGE + "." + className, className, "create", 0, params, acceptedPrimitiveTypes);
-    }
-
-    private static final ConverterFactory BuiltinBoolean = new ConverterFactory("JavaBooleanConverterNodeGen",
-                    new Param[]{Param.DefaultValue},
-                    new PrimitiveType[]{PrimitiveType.Boolean});
-
-    private static final ConverterFactory BuiltinString = new ConverterFactory("JavaStringConverterNodeGen",
-                    new Param[]{Param.BuiltinName},
-                    new PrimitiveType[]{});
-
-    private static final ConverterFactory BuiltinStringWithDefault = new ConverterFactory("JavaStringConverterWithDefaultValueNodeGen",
-                    new Param[]{Param.BuiltinName, Param.DefaultValue, Param.UseDefaultForNone},
-                    new PrimitiveType[]{});
-
-    private static final ConverterFactory BuiltinInt = new ConverterFactory("JavaIntConversionNodeGen",
-                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
-                    new PrimitiveType[]{PrimitiveType.Int});
-
-    private static final ConverterFactory BuiltinCodePoint = new ConverterFactory("CodePointConversionNodeGen",
-                    new Param[]{Param.BuiltinName, Param.DefaultValue, Param.UseDefaultForNone},
-                    new PrimitiveType[]{});
-
-    private static final ConverterFactory BuiltinBuffer = new ConverterFactory("BufferConversionNodeGen",
-                    new Param[]{},
-                    new PrimitiveType[]{});
-
-    private static final ConverterFactory BuiltinIndex = new ConverterFactory("IndexConversionNodeGen",
-                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
-                    new PrimitiveType[]{PrimitiveType.Int});
-
-    private static final ConverterFactory BuiltinNone = new ConverterFactory("DefaultValueNode",
-                    new Param[]{Param.DefaultValue, Param.UseDefaultForNone},
-                    new PrimitiveType[]{PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double});
-
     public static ConverterFactory getBuiltin(ArgumentClinic annotation) {
         switch (annotation.conversion()) {
             case Boolean:
                 return BuiltinBoolean;
             case String:
-                return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefault;
+                return annotation.defaultValue().isEmpty() ? BuiltinString : BuiltinStringWithDefaultValue;
             case Int:
                 return BuiltinInt;
             case CodePoint:
@@ -169,10 +143,10 @@ public class ConverterFactory {
             ClinicConverterFactory annot = e.getAnnotation(ClinicConverterFactory.class);
             if (annot != null) {
                 if (!e.getModifiers().contains(Modifier.STATIC) || e.getKind() != ElementKind.METHOD) {
-                    throw new ProcessingError(conversionClass, "ConversionFactory annotation is applicable only to static methods.");
+                    throw new ProcessingError(conversionClass, "ClinicConverterFactory annotation is applicable only to static methods.");
                 }
                 if (factory != null) {
-                    throw new ProcessingError(conversionClass, "Multiple ConversionFactory annotations in a single class.");
+                    throw new ProcessingError(conversionClass, "Multiple ClinicConverterFactory annotations in a single class.");
                 }
                 String fullClassName = conversionClass.toString();
                 String className = conversionClass.getSimpleName().toString();
@@ -201,7 +175,7 @@ public class ConverterFactory {
             }
         }
         if (factory == null) {
-            throw new ProcessingError(conversionClass, "No ConversionFactory annotation found.");
+            throw new ProcessingError(conversionClass, "No ClinicConverterFactory annotation found.");
         }
         cache.put(conversionClass, factory);
         return factory;
@@ -211,5 +185,24 @@ public class ConverterFactory {
         String fullClassName = type.getQualifiedName().toString();
         String className = type.getSimpleName().toString();
         return new ConverterFactory(fullClassName, className, methodName, 0, new Param[0], new PrimitiveType[0]);
+    }
+
+    private static ConverterFactory forBuiltin(Elements elementUtils, String className) throws ProcessingError {
+        TypeElement type = elementUtils.getTypeElement(CLINIC_PACKAGE + "." + className);
+        if (type == null) {
+            throw new ProcessingError(null, "Unable to find built-in argument clinic conversion node " + CLINIC_PACKAGE + "." + className);
+        }
+        return getForClass(type);
+    }
+
+    public static void initBuiltins(Elements elementUtils) throws ProcessingError {
+        BuiltinBoolean = forBuiltin(elementUtils, "JavaBooleanConverterNode");
+        BuiltinString = forBuiltin(elementUtils, "JavaStringConverterNode");
+        BuiltinStringWithDefaultValue = forBuiltin(elementUtils, "JavaStringConverterWithDefaultValueNode");
+        BuiltinInt = forBuiltin(elementUtils, "JavaIntConversionNode");
+        BuiltinCodePoint = forBuiltin(elementUtils, "CodePointConversionNode");
+        BuiltinBuffer = forBuiltin(elementUtils, "BufferConversionNode");
+        BuiltinIndex = forBuiltin(elementUtils, "IndexConversionNode");
+        BuiltinNone = forBuiltin(elementUtils, "DefaultValueNode");
     }
 }
