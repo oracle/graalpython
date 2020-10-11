@@ -48,10 +48,10 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class JavaStringConvertorNode extends ArgumentCastNodeWithRaise {
+public abstract class JavaStringConverterNode extends ArgumentCastNodeWithRaise {
     private final String builtinName;
 
-    public JavaStringConvertorNode(String builtinName) {
+    public JavaStringConverterNode(String builtinName) {
         this.builtinName = builtinName;
     }
 

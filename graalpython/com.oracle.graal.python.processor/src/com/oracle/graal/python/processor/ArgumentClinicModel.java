@@ -162,7 +162,7 @@ public class ArgumentClinicModel {
                         args[i] = String.valueOf(index);
                         break;
                     case ArgumentName:
-                        args[i] =  String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
+                        args[i] = String.format("\"%s\"", builtinAnnotation.argumentNames[index]);
                         break;
                     case DefaultValue:
                         args[i] = annotation.defaultValue();

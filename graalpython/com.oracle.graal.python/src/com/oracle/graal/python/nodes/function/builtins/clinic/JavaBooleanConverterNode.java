@@ -41,30 +41,45 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
-public abstract class JavaStringConvertorWithDefaultValue extends JavaStringConvertorNode {
-    private final Object defaultValue;
-    protected final boolean useDefaultForNone;
+/**
+ * Implements the {@code bool} argument clinic conversion, which in CPython calls to
+ * {@code PyObject_IsTrue}.
+ */
+public abstract class JavaBooleanConverterNode extends ArgumentCastNode {
+    private final boolean defaultValue;
 
-    public JavaStringConvertorWithDefaultValue(String builtinName, Object defaultValue, boolean useDefaultForNone) {
-        super(builtinName);
+    protected JavaBooleanConverterNode(boolean defaultValue) {
         this.defaultValue = defaultValue;
-        this.useDefaultForNone = useDefaultForNone;
     }
 
-    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
-    Object doNoValue(@SuppressWarnings("unused") PNone none) {
+    @Specialization(guards = "isNoValue(none)")
+    boolean doNoValue(@SuppressWarnings("unused") PNone none) {
         return defaultValue;
     }
 
-    @Specialization(guards = "useDefaultForNone")
-    Object doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
+    @Specialization(guards = "isNone(none)")
+    static boolean doNone(@SuppressWarnings("unused") PNone none) {
+        return false;
     }
 
-    @Override
-    protected final boolean shouldUseDefaultValue(Object value) {
-        return isHandledPNone(useDefaultForNone, value);
+    @Specialization
+    static boolean doBoolean(boolean b) {
+        return b;
+    }
+
+    @Specialization
+    static boolean doInt(int i) {
+        return i != 0;
+    }
+
+    @Specialization(guards = "!isPNone(value)", limit = "3")
+    static Object doOthers(VirtualFrame frame, Object value,
+                    @CachedLibrary("value") PythonObjectLibrary lib) {
+        return lib.isTrue(value, frame);
     }
 }

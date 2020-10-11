@@ -84,7 +84,6 @@ public class ConverterFactory {
         Extra,
     }
 
-
     private static final Map<TypeElement, ConverterFactory> cache = new HashMap<>();
 
     public final String fullClassName;
@@ -107,15 +106,15 @@ public class ConverterFactory {
         this(CLINIC_PACKAGE + "." + className, className, "create", 0, params, acceptedPrimitiveTypes);
     }
 
-    private static final ConverterFactory BuiltinBoolean = new ConverterFactory("JavaBooleanConvertorNodeGen",
+    private static final ConverterFactory BuiltinBoolean = new ConverterFactory("JavaBooleanConverterNodeGen",
                     new Param[]{Param.DefaultValue},
                     new PrimitiveType[]{PrimitiveType.Boolean});
 
-    private static final ConverterFactory BuiltinString = new ConverterFactory("JavaStringConvertorNodeGen",
+    private static final ConverterFactory BuiltinString = new ConverterFactory("JavaStringConverterNodeGen",
                     new Param[]{Param.BuiltinName},
                     new PrimitiveType[]{});
 
-    private static final ConverterFactory BuiltinStringWithDefault = new ConverterFactory("JavaStringConvertorWithDefaultValueNodeGen",
+    private static final ConverterFactory BuiltinStringWithDefault = new ConverterFactory("JavaStringConverterWithDefaultValueNodeGen",
                     new Param[]{Param.BuiltinName, Param.DefaultValue, Param.UseDefaultForNone},
                     new PrimitiveType[]{});
 
