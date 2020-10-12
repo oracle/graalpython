@@ -58,7 +58,6 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
-
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
     private final MroSequenceStorage methodResolutionOrder;
@@ -73,12 +72,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private Object sulongType;
 
     @TruffleBoundary
-    protected PythonManagedClass(Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
-        this(typeClass, classShape, instanceShape, name, true, baseClasses);
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
+        this(lang, typeClass, classShape, instanceShape, name, true, baseClasses);
     }
 
     @TruffleBoundary
-    protected PythonManagedClass(Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass... baseClasses) {
+    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass... baseClasses) {
         super(typeClass, classShape);
         this.name = getBaseName(name);
         this.qualName = name;
@@ -104,11 +103,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.instanceShape = instanceShape;
         } else {
             // provide our instances with a fresh shape tree
-            if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
-                this.instanceShape = PythonObject.freshShape(this);
-            } else {
-                this.instanceShape = PythonObject.freshShape();
-            }
+            this.instanceShape = lang.getShapeForClass(this);
         }
     }
 

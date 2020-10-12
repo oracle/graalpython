@@ -87,6 +87,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -190,8 +191,8 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
-        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col,
-                        @SuppressWarnings("unused") PKeyword[] kwargs,
+        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
+                        @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
@@ -199,7 +200,7 @@ public abstract class HashingStorage {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
             return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
@@ -210,18 +211,20 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
         HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
+                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
             return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
+                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary("iterable") PythonObjectLibrary iterableLib,
                         @Cached PRaiseNode raise,
@@ -233,7 +236,8 @@ public abstract class HashingStorage {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
-            return addSequenceToStorage(frame, iterable, kwargs, PDict::createNewStorage, iterableLib, nextNode, createListNode, seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
+            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(lang, isStringKey, expectedSize), iterableLib, nextNode, createListNode,
+                            seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
                             errorProfile, lib);
         }
 

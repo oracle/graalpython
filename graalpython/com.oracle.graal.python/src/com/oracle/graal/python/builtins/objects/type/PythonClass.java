@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -44,12 +45,12 @@ import com.oracle.truffle.api.source.SourceSection;
 @ExportLibrary(InteropLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    public PythonClass(Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {
-        super(typeClass, instanceShape, null, name, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, instanceShape, null, name, baseClasses);
     }
 
-    public PythonClass(Object typeClass, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
-        super(typeClass, instanceShape, null, name, invokeMro, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, instanceShape, null, name, invokeMro, baseClasses);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")

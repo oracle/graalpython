@@ -43,10 +43,8 @@ package com.oracle.graal.python.nodes.expression;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A simple base class for root nodes that call an arithmetic operation.
@@ -54,7 +52,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 abstract class CallArithmeticRootNode extends PRootNode {
 
     @Child private CalleeContext calleeContext;
-    @CompilationFinal private ConditionProfile customLocalsProfile;
 
     protected CallArithmeticRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -71,12 +68,8 @@ abstract class CallArithmeticRootNode extends PRootNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             calleeContext = insert(CalleeContext.create());
         }
-        if (customLocalsProfile == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            customLocalsProfile = ConditionProfile.create();
-        }
 
-        CalleeContext.enter(frame, customLocalsProfile);
+        calleeContext.enter(frame);
         try {
             return doCall(frame);
         } finally {

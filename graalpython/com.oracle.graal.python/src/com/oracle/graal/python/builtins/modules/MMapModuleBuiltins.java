@@ -98,19 +98,23 @@ public class MMapModuleBuiltins extends PythonBuiltins {
         private final BranchProfile invalidLengthProfile = BranchProfile.create();
 
         @Specialization(guards = {"isAnonymous(fd)", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doAnonymous(Object clazz, @SuppressWarnings("unused") long fd, int length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
+        PMMap doAnonymous(Object clazz, @SuppressWarnings("unused") long fd, long length, @SuppressWarnings("unused") Object tagname, @SuppressWarnings("unused") PNone access,
                         @SuppressWarnings("unused") PNone offset) {
             checkLength(length);
-            return factory().createMMap(clazz, new AnonymousMap(length), length, 0);
+            if (length > Integer.MAX_VALUE) {
+                invalidLengthProfile.enter();
+                throw raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
+            }
+            return factory().createMMap(clazz, new AnonymousMap((int) length), length, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(access)", "isNoValue(offset)"})
-        PMMap doFile(Object clazz, long fd, int length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(Object clazz, long fd, long length, Object tagname, @SuppressWarnings("unused") PNone access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, ACCESS_DEFAULT, 0);
         }
 
         @Specialization(guards = {"fd >= 0", "isNoValue(offset)"})
-        PMMap doFile(Object clazz, long fd, int length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
+        PMMap doFile(Object clazz, long fd, long length, Object tagname, int access, @SuppressWarnings("unused") PNone offset) {
             return doFile(clazz, fd, length, tagname, access, 0);
         }
 
@@ -200,30 +204,36 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             this.data = new byte[cap];
         }
 
+        @Override
         public boolean isOpen() {
             return open;
         }
 
+        @Override
         public void close() throws IOException {
             open = false;
         }
 
+        @Override
         public int read(ByteBuffer dst) throws IOException {
             int nread = Math.min(dst.remaining(), data.length - cur);
             dst.put(data, cur, nread);
             return nread;
         }
 
+        @Override
         public int write(ByteBuffer src) throws IOException {
             int nwrite = Math.min(src.remaining(), data.length - cur);
             src.get(data, cur, nwrite);
             return nwrite;
         }
 
+        @Override
         public long position() throws IOException {
             return cur;
         }
 
+        @Override
         public SeekableByteChannel position(long newPosition) throws IOException {
             if (newPosition < 0) {
                 throw new IllegalArgumentException();
@@ -232,10 +242,12 @@ public class MMapModuleBuiltins extends PythonBuiltins {
             return this;
         }
 
+        @Override
         public long size() throws IOException {
             return data.length;
         }
 
+        @Override
         public SeekableByteChannel truncate(long size) throws IOException {
             for (int i = 0; i < size; i++) {
                 data[i] = 0;

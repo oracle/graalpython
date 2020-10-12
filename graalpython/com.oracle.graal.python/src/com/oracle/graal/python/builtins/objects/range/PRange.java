@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -36,8 +37,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(PythonObjectLibrary.class)
 public abstract class PRange extends PythonBuiltinObject {
 
-    public PRange() {
-        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.getInstanceShape());
+    public PRange(PythonLanguage lang) {
+        super(PythonBuiltinClassType.PRange, PythonBuiltinClassType.PRange.getInstanceShape(lang));
     }
 
     public abstract Object getStart();

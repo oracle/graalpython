@@ -85,8 +85,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -102,23 +102,16 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.FunctionInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -136,8 +129,11 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -156,6 +152,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
@@ -2443,144 +2440,25 @@ public abstract class CExtNodes {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 1)
-    public abstract static class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
-        @Child private CreateArgumentsNode createArgsNode;
-        @Child private FunctionInvokeNode invokeNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        private final PFunction func;
-        private final Object errorResult;
-
-        public MayRaiseUnaryNode(PFunction func, Object errorResult) {
-            this.createArgsNode = CreateArgumentsNode.create();
-            this.func = func;
-            this.invokeNode = FunctionInvokeNode.create(func);
-            this.errorResult = errorResult;
-        }
-
-        @Specialization
-        Object doit(VirtualFrame frame, Object argument) {
-            try {
-                Object[] arguments = createArgsNode.execute(func, new Object[]{argument});
-                return invokeNode.execute(frame, arguments);
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return errorResult;
-            }
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 2)
-    public abstract static class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
-        @Child private CreateArgumentsNode createArgsNode;
-        @Child private FunctionInvokeNode invokeNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        private final PFunction func;
-        private final Object errorResult;
-
-        public MayRaiseBinaryNode(PFunction func, Object errorResult) {
-            this.createArgsNode = CreateArgumentsNode.create();
-            this.func = func;
-            this.invokeNode = FunctionInvokeNode.create(func);
-            this.errorResult = errorResult;
-        }
-
-        @Specialization
-        Object doit(VirtualFrame frame, Object arg1, Object arg2) {
-            try {
-                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2});
-                return invokeNode.execute(frame, arguments);
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return errorResult;
-            }
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(minNumOfPositionalArgs = 3)
-    public abstract static class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
-        @Child private CreateArgumentsNode createArgsNode;
-        @Child private FunctionInvokeNode invokeNode;
-        @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-
-        private final PFunction func;
-        private final Object errorResult;
-
-        public MayRaiseTernaryNode(PFunction func, Object errorResult) {
-            this.createArgsNode = CreateArgumentsNode.create();
-            this.func = func;
-            this.invokeNode = FunctionInvokeNode.create(func);
-            this.errorResult = errorResult;
-        }
-
-        @Specialization
-        Object doit(VirtualFrame frame, Object arg1, Object arg2, Object arg3) {
-            try {
-                Object[] arguments = createArgsNode.execute(func, new Object[]{arg1, arg2, arg3});
-                return invokeNode.execute(frame, arguments);
-            } catch (PException e) {
-                // transformExceptionToNativeNode acts as a branch profile
-                ensureTransformExceptionToNativeNode().execute(frame, e);
-                return errorResult;
-            }
-        }
-
-        private TransformExceptionToNativeNode ensureTransformExceptionToNativeNode() {
-            if (transformExceptionToNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
-            }
-            return transformExceptionToNativeNode;
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     @Builtin(takesVarArgs = true)
-    public static class MayRaiseNode extends PythonBuiltinNode {
-        @Child private FunctionInvokeNode invokeNode;
-        @Child private ReadVarArgsNode readVarargsNode;
-        @Child private CreateArgumentsNode createArgsNode;
+    public static class MayRaiseNode extends PRootNode {
+        @Child private DirectCallNode callNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
 
-        private final PFunction func;
+        private final Signature signature;
         private final Object errorResult;
 
-        public MayRaiseNode(PFunction callable, Object errorResult) {
-            this.readVarargsNode = ReadVarArgsNode.create(0, true);
-            this.createArgsNode = CreateArgumentsNode.create();
-            this.func = callable;
-            this.invokeNode = FunctionInvokeNode.create(callable);
+        public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, Object errorResult) {
+            super(lang);
+            this.signature = sign;
+            this.callNode = Truffle.getRuntime().createDirectCallNode(ct);
             this.errorResult = errorResult;
         }
 
         @Override
         public final Object execute(VirtualFrame frame) {
-            Object[] args = readVarargsNode.executeObjectArray(frame);
             try {
-                Object[] arguments = createArgsNode.execute(func, args);
-                return invokeNode.execute(frame, arguments);
+                return callNode.call(frame.getArguments());
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 ensureTransformExceptionToNativeNode().execute(frame, e);
@@ -2597,8 +2475,13 @@ public abstract class CExtNodes {
         }
 
         @Override
-        protected ReadArgumentNode[] getArguments() {
-            throw new IllegalAccessError();
+        public Signature getSignature() {
+            return signature;
+        }
+
+        @Override
+        public boolean isPythonInternal() {
+            return true;
         }
     }
 
@@ -2692,6 +2575,7 @@ public abstract class CExtNodes {
             return getUncachedForMember(memberName).execute(PCallCapiFunction.getUncached().call(getterFuncName, ToSulongNode.getUncached().execute(obj)));
         }
 
+        @TruffleBoundary
         protected String getterFuncName(NativeMember memberName) {
             String name = "get_" + memberName.getMemberName();
             assert NativeCAPISymbols.isValid(name) : "invalid native member getter function " + name;

@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -76,7 +77,7 @@ public final class PGenerator extends PythonBuiltinObject {
     // running means it is currently on the stack, not just started
     private boolean running;
 
-    public static PGenerator create(String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
+    public static PGenerator create(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure,
                     ExecutionCellSlots cellSlots, GeneratorInfo generatorInfo, PythonObjectFactory factory,
                     Object iterator) {
         /*
@@ -108,7 +109,7 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         assignCells(generatorFrame, cellVarSlots, cellVarAssumptions);
         PArguments.setGeneratorFrameLocals(generatorFrameArguments, factory.createDictLocals(generatorFrame));
-        return new PGenerator(name, qualname, callTargets, generatorInfo, frameDescriptor, arguments, closure, iterator);
+        return new PGenerator(lang, name, qualname, callTargets, generatorInfo, frameDescriptor, arguments, closure, iterator);
     }
 
     @ExplodeLoop
@@ -127,8 +128,9 @@ public final class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private PGenerator(String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, Object iterator) {
-        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape());
+    private PGenerator(PythonLanguage lang, String name, String qualname, RootCallTarget[] callTargets, GeneratorInfo generatorInfo, FrameDescriptor frameDescriptor, Object[] arguments,
+                    PCell[] closure, Object iterator) {
+        super(PythonBuiltinClassType.PGenerator, PythonBuiltinClassType.PGenerator.getInstanceShape(lang));
         this.name = name;
         this.qualname = qualname;
         this.callTargets = callTargets;

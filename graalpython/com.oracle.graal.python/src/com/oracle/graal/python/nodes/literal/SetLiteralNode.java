@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -35,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -54,10 +56,11 @@ public abstract class SetLiteralNode extends LiteralNode {
     @Specialization
     @ExplodeLoop
     public PSet expand(VirtualFrame frame,
+                    @CachedLanguage PythonLanguage lang,
                     @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         // we will usually have more than 'values.length' elements
-        HashingStorage storage = PDict.createNewStorage(true, values.length);
+        HashingStorage storage = PDict.createNewStorage(lang, true, values.length);
         ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
         for (ExpressionNode n : values) {
             Object element = n.execute(frame);

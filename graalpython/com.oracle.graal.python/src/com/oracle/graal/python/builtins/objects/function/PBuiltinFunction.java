@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -74,8 +75,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
-        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape());
+    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
+        super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
         this.name = name;
         if (enclosingType != null) {
             this.qualname = PString.cat(GetNameNode.doSlowPath(enclosingType), ".", name);

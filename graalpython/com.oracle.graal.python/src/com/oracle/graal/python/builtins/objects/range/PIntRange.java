@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -56,7 +57,8 @@ public final class PIntRange extends PRange {
     private final int step;
     private final int length;
 
-    public PIntRange(int start, int stop, int step, int length) {
+    public PIntRange(PythonLanguage lang, int start, int stop, int step, int length) {
+        super(lang);
         this.start = start;
         this.stop = stop;
         this.step = step;

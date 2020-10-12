@@ -312,7 +312,6 @@ public final class CApiContext extends CExtContext {
         @Child private InteropLibrary pointerObjectLib;
         @Child private PCallCapiFunction callBulkSubref;
 
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
         private final CApiContext cApiContext;
 
         protected CApiReferenceCleanerRootNode(PythonContext context) {
@@ -324,7 +323,7 @@ public final class CApiContext extends CExtContext {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
+            calleeContext.enter(frame);
             try {
                 NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
                 int cleaned = 0;

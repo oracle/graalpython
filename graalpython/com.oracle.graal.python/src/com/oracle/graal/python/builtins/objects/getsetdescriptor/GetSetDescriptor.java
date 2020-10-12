@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -52,12 +53,12 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
     private final boolean allowsDelete;
     private final Object type;
 
-    public GetSetDescriptor(Object get, Object set, String name, Object type) {
-        this(get, set, name, type, false);
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type) {
+        this(lang, get, set, name, type, false);
     }
 
-    public GetSetDescriptor(Object get, Object set, String name, Object type, boolean allowsDelete) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape());
+    public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type, boolean allowsDelete) {
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
         this.get = get;
         this.set = set;
         this.name = name;

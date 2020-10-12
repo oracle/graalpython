@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 
@@ -47,8 +48,8 @@ public final class HiddenKeyDescriptor extends PythonBuiltinObject {
     private final HiddenPythonKey key;
     private final Object type;
 
-    public HiddenKeyDescriptor(HiddenPythonKey key, Object type) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape());
+    public HiddenKeyDescriptor(PythonLanguage lang, HiddenPythonKey key, Object type) {
+        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
         this.key = key;
         this.type = type;
     }

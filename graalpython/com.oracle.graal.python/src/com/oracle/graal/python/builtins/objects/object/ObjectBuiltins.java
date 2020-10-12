@@ -232,28 +232,44 @@ public class ObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         public PNone init(Object self, Object[] arguments, PKeyword[] keywords,
                         @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached ConditionProfile overridesNew,
+                        @Cached ConditionProfile overridesInit,
                         @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
-                        @Cached("createIdentityProfile()") ValueProfile profileInit,
+                        @Cached("createLookupProfile()") ValueProfile profileInit,
+                        @Cached("createIdentityProfile()") ValueProfile profileInitFactory,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
-                        @Cached("createIdentityProfile()") ValueProfile profileNew) {
+                        @Cached("createLookupProfile()") ValueProfile profileNew,
+                        @Cached("createIdentityProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
                 Object type = lib.getLazyPythonClass(self);
-                if (overridesBuiltinMethod(type, profileInit, lookupInit, ObjectBuiltinsFactory.InitNodeFactory.class)) {
+                if (overridesNew.profile(overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
 
-                if (!overridesBuiltinMethod(type, profileInit, lookupNew, BuiltinConstructorsFactory.ObjectNodeFactory.class)) {
+                if (overridesInit.profile(!overridesBuiltinMethod(type, profileInit, lookupNew, profileNewFactory, BuiltinConstructorsFactory.ObjectNodeFactory.class))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG, type);
                 }
             }
             return PNone.NONE;
         }
 
+        protected static ValueProfile createLookupProfile() {
+            if (PythonLanguage.getCurrent().singleContextAssumption.isValid()) {
+                return ValueProfile.createIdentityProfile();
+            } else {
+                return ValueProfile.createClassProfile();
+            }
+        }
+
+        /**
+         * Simple utility method to check if a method was overridden. The {@code profile} parameter
+         * must {@emph not} be an identity profile when AST sharing is enabled.
+         */
         public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup,
-                        Class<T> builtinNodeFactoryClass) {
+                        ValueProfile factoryProfile, Class<T> builtinNodeFactoryClass) {
             Object method = profile.profile(lookup.execute(type));
             if (method instanceof PBuiltinFunction) {
-                NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) method).getBuiltinNodeFactory();
+                NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
             }
             return true;

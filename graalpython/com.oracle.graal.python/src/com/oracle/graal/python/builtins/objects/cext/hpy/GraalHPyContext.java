@@ -154,7 +154,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
@@ -380,8 +379,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createBinaryProfile();
-
         protected HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
             this.calleeContext = CalleeContext.create();
@@ -390,7 +387,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
+            calleeContext.enter(frame);
             try {
                 GraalHPyHandleReference[] handleReferences = (GraalHPyHandleReference[]) PArguments.getArgument(frame, 0);
                 int cleaned = 0;

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 
 public final class PIntSlice extends PSlice {
@@ -51,7 +52,8 @@ public final class PIntSlice extends PSlice {
     protected final boolean startIsNone;
     protected final boolean stepIsNone;
 
-    public PIntSlice(int start, int stop, int step, boolean startIsNone, boolean stepIsNone) {
+    public PIntSlice(PythonLanguage lang, int start, int stop, int step, boolean startIsNone, boolean stepIsNone) {
+        super(lang);
         this.start = startIsNone ? 0 : start;
         this.stop = stop;
         this.step = stepIsNone ? 1 : step;
@@ -59,8 +61,8 @@ public final class PIntSlice extends PSlice {
         this.stepIsNone = stepIsNone;
     }
 
-    public PIntSlice(int start, int stop, int step) {
-        this(start, stop, step, false, false);
+    public PIntSlice(PythonLanguage lang, int start, int stop, int step) {
+        this(lang, start, stop, step, false, false);
     }
 
     public final int getIntStart() {

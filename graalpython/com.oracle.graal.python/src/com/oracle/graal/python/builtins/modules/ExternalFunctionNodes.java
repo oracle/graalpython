@@ -123,8 +123,6 @@ public abstract class ExternalFunctionNodes {
         private final String name;
         private final Object callable;
 
-        @CompilationFinal private ConditionProfile customLocalsProfile;
-
         private MethDirectRoot(PythonLanguage lang, String name, Object callable) {
             super(lang);
             this.name = name;
@@ -134,7 +132,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, ensureCustomLocalsProfile());
+            calleeContext.enter(frame);
             try {
                 return ensureInvokeNode().execute(frame, name, callable, PArguments.getVariableArguments(frame), 0);
             } finally {
@@ -166,14 +164,6 @@ public abstract class ExternalFunctionNodes {
         public boolean isPythonInternal() {
             // everything that is implemented in C is internal
             return true;
-        }
-
-        private ConditionProfile ensureCustomLocalsProfile() {
-            if (customLocalsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                customLocalsProfile = ConditionProfile.createBinaryProfile();
-            }
-            return customLocalsProfile;
         }
 
         private ExternalFunctionInvokeNode ensureInvokeNode() {
@@ -377,8 +367,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
         @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
 
-        private final ConditionProfile customLocalsProfile = ConditionProfile.createCountingProfile();
-
         private final String name;
         private final Object callable;
 
@@ -400,7 +388,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, customLocalsProfile);
+            calleeContext.enter(frame);
             try {
                 if (externalInvokeNode != null) {
                     Object[] cArguments = prepareCArguments(frame);

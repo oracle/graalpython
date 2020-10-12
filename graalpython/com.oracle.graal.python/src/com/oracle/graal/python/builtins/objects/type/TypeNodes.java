@@ -135,12 +135,14 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -1448,13 +1450,15 @@ public abstract class TypeNodes {
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
         Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
-            return cachedClazz.getInstanceShape();
+            return cachedClazz.getInstanceShape(lang);
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
-            return clazz.getInstanceShape();
+        Shape doBuiltinClassType(PythonBuiltinClassType clazz,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return clazz.getInstanceShape(lang);
         }
 
         @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")

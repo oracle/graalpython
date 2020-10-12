@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -333,9 +334,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             SequenceStorage store = path.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
-            StringBuilder sb = BytesUtils.newStringBuilder();
+            StringBuilder sb = PythonUtils.newStringBuilder();
             BytesUtils.repr(sb, bytes, len);
-            initZipImporter(self, BytesUtils.sbToString(sb));
+            initZipImporter(self, PythonUtils.sbToString(sb));
             return PNone.NONE;
         }
 

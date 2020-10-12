@@ -289,3 +289,21 @@ To run the JVM configuration:
 To run the Native Image configuration:
 
     mx --env ../../graal/vm/mx.vm/ce --exclude-components=slgm --dynamicimports /vm benchmark meso:nbody3 -- --python-vm=graalpython --jvm=graalvm-ce-python --jvm-config=native --python-vm-config=default --
+
+### Finding Memory Leaks
+
+For best performance we keep references to long-lived user objects (mostly
+functions, classes, and modules) directly in the AST nodes when using the
+default configuration of a single Python context (as is used when running the
+launcher). For better sharing of warmup and where absolutely best peak
+performance is not needed, contexts can be configured with a shared engine and
+the ASTs will be shared across contexts. However, that implies we *must* not
+store any user objects strongly in the ASTs. We test that we have no
+PythonObjects alive after a Context is closed that are run as part of our JUnit
+tests. These can be run by themselves, for example, like so:
+
+    $ mx python-leak-test --lang python --shared-engine --code 'import site, json' --forbidden-class com.oracle.graal.python.builtins.objects.object.PythonObject --keep-dump
+
+The `--keep-dump` option will print the heapdump location and leave the file
+there rather than deleting it. It can then be opened for example with VisualVM
+to check for the paths of any leaked object, if there are any.

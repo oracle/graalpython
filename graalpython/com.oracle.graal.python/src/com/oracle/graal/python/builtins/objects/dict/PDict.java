@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -58,8 +59,8 @@ public final class PDict extends PHashingCollection {
 
     protected HashingStorage dictStorage;
 
-    public PDict() {
-        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape());
+    public PDict(PythonLanguage lang) {
+        this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(lang));
     }
 
     public PDict(Object cls, Shape instanceShape, HashingStorage dictStorage) {
@@ -85,12 +86,12 @@ public final class PDict extends PHashingCollection {
         dictStorage = HashingStorageLibrary.getUncached().setItem(dictStorage, key, value);
     }
 
-    public static HashingStorage createNewStorage(boolean isStringKey, int expectedSize) {
+    public static HashingStorage createNewStorage(PythonLanguage lang, boolean isStringKey, int expectedSize) {
         HashingStorage newDictStorage;
         if (expectedSize == 0) {
             newDictStorage = new EmptyStorage();
         } else if (isStringKey && expectedSize < DynamicObjectStorage.SIZE_THRESHOLD) {
-            newDictStorage = new DynamicObjectStorage();
+            newDictStorage = new DynamicObjectStorage(lang);
         } else {
             newDictStorage = EconomicMapStorage.create(expectedSize);
         }

@@ -196,8 +196,7 @@ def PYFUNCTYPE(restype, *argtypes):
     return CFunctionType
 
 
-_cast_addr = 0xFF00000000000000
+_cast_addr = 0xFF0000000000000 << 4 # avoid freezing a constant PInt into the AST
 _cast = PYFUNCTYPE(py_object, c_void_p, py_object, py_object)(_cast_addr)
 def cast(obj, typ):
     return _cast(obj, obj, typ)
-

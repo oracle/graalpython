@@ -249,6 +249,10 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private IsSubtypeNode isSubTypeNode;
         @Child private TypeNodes.GetNameNode getNameNode;
 
+        @CompilationFinal private ConditionProfile hasNew = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile hasInit = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ConditionProfile gotInitResult = ConditionProfile.createBinaryProfile();
+
         @CompilationFinal private boolean newWasDescriptor = false;
 
         public static CallNode create() {
@@ -379,7 +383,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         private Object op(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs, PythonObjectLibrary lib) {
             Object newMethod = lookupNew.execute(self);
-            if (newMethod != PNone.NO_VALUE) {
+            if (hasNew.profile(newMethod != PNone.NO_VALUE)) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments) : arguments;
                 Object newInstance;
@@ -396,7 +400,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object newInstanceKlass = lib.getLazyPythonClass(newInstance);
                 if (isSubType(newInstanceKlass, self)) {
                     Object initMethod = lookupInit.execute(frame, newInstanceKlass, newInstance);
-                    if (initMethod != PNone.NO_VALUE) {
+                    if (hasInit.profile(initMethod != PNone.NO_VALUE)) {
                         Object[] initArgs;
                         if (doCreateArgs) {
                             initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments);
@@ -406,7 +410,7 @@ public class TypeBuiltins extends PythonBuiltins {
                             initArgs = arguments;
                         }
                         Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
-                        if (initResult != PNone.NONE && initResult != PNone.NO_VALUE) {
+                        if (gotInitResult.profile(initResult != PNone.NONE && initResult != PNone.NO_VALUE)) {
                             throw raise(TypeError, ErrorMessages.SHOULD_RETURN_NONE, "__init__()");
                         }
                     }

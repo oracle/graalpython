@@ -80,15 +80,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
             private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
-            private Object callable;
-            private Object[] arguments;
-            private PKeyword[] keywords;
-
-            protected AtExitCallTarget(TruffleLanguage<?> language, Object callable, Object[] arguments, PKeyword[] keywords) {
+            protected AtExitCallTarget(TruffleLanguage<?> language) {
                 super(language);
-                this.callable = callable;
-                this.arguments = arguments;
-                this.keywords = keywords;
             }
 
             @Override
@@ -97,6 +90,10 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 PythonContext context = contextRef.get();
                 context.setTopFrameInfo(PFrame.Reference.EMPTY);
                 context.setCaughtException(PException.NO_EXCEPTION);
+
+                Object callable = frame.getArguments()[0];
+                Object[] arguments = (Object[]) frame.getArguments()[1];
+                PKeyword[] keywords = (PKeyword[]) frame.getArguments()[2];
 
                 // We deliberately pass 'null' frame here, the execution state will then be taken
                 // from the context.
@@ -112,8 +109,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage(), callable, arguments, keywords);
-            getContext().registerShutdownHook(callable, PythonUtils.getOrCreateCallTarget(atExitCallTarget));
+            AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage());
+            getContext().registerShutdownHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitCallTarget));
             return callable;
         }
     }

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -134,7 +134,7 @@ public class AsyncHandler {
         }
     });
 
-    private final PythonContext context;
+    private final WeakReference<PythonContext> context;
     private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
     private volatile boolean hasScheduledAction = false;
     private final Lock executingScheduledActions = new ReentrantLock();
@@ -172,15 +172,13 @@ public class AsyncHandler {
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
-        private final ConditionProfile profile = ConditionProfile.createCountingProfile();
-
         protected CallRootNode(TruffleLanguage<?> language) {
             super(language);
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
-            CalleeContext.enter(frame, profile);
+            calleeContext.enter(frame);
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, ASYNC_CALLABLE_INDEX);
             int frameIndex = (int) PArguments.getArgument(frameArguments, ASYNC_FRAME_INDEX_INDEX);
@@ -215,7 +213,7 @@ public class AsyncHandler {
     private final RootCallTarget callTarget;
 
     AsyncHandler(PythonContext context) {
-        this.context = context;
+        this.context = new WeakReference<>(context);
         this.callTarget = PythonUtils.getOrCreateCallTarget(new CallRootNode(context.getLanguage()));
     }
 
@@ -230,12 +228,12 @@ public class AsyncHandler {
     void triggerAsyncActions(VirtualFrame frame, BranchProfile actionProfile) {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, hasScheduledAction)) {
             actionProfile.enter();
-            IndirectCallContext.enter(frame, context, null);
+            IndirectCallContext.enter(frame, context.get(), null);
             try {
                 CompilerDirectives.transferToInterpreter();
                 processAsyncActions();
             } finally {
-                IndirectCallContext.exit(frame, context, null);
+                IndirectCallContext.exit(frame, context.get(), null);
             }
         }
     }
@@ -273,13 +271,17 @@ public class AsyncHandler {
      * for weakref finalizers, 1 for signals, 1 for destructors).
      */
     private void processAsyncActions() {
+        PythonContext ctx = context.get();
+        if (ctx == null) {
+            return;
+        }
         if (executingScheduledActions.tryLock()) {
             hasScheduledAction = false;
             try {
                 ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
                 AsyncAction action;
                 while ((action = actions.poll()) != null) {
-                    action.execute(context);
+                    action.execute(ctx);
                 }
             } finally {
                 executingScheduledActions.unlock();

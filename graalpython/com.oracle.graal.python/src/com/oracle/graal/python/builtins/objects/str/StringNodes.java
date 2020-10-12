@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -304,7 +305,7 @@ public abstract class StringNodes {
                 return "";
             }
 
-            StringBuilder sb = StringUtils.newStringBuilder();
+            StringBuilder sb = PythonUtils.newStringBuilder();
             int i = 0;
 
             try {
@@ -314,14 +315,14 @@ public abstract class StringNodes {
                 if (isSingleItemProfile.profile(len == 1)) {
                     return castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item);
                 }
-                StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
 
                 for (i = 1; i < len; i++) {
-                    StringUtils.append(sb, self);
+                    PythonUtils.append(sb, self);
                     item = getItemNode.execute(frame, storage, i);
-                    StringUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
+                    PythonUtils.append(sb, castToJavaStringNode.cast(item, INVALID_SEQ_ITEM, i, item));
                 }
-                return StringUtils.toString(sb);
+                return PythonUtils.sbToString(sb);
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);
             }
@@ -344,9 +345,9 @@ public abstract class StringNodes {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
-                StringBuilder str = StringUtils.newStringBuilder();
+                StringBuilder str = PythonUtils.newStringBuilder();
                 try {
-                    StringUtils.append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
+                    PythonUtils.append(str, checkItem(nextNode.execute(frame, iterator), 0, castStrNode, raise));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return "";
@@ -358,10 +359,10 @@ public abstract class StringNodes {
                         value = nextNode.execute(frame, iterator);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile2);
-                        return StringUtils.toString(str);
+                        return PythonUtils.sbToString(str);
                     }
-                    StringUtils.append(str, string);
-                    StringUtils.append(str, checkItem(value, i++, castStrNode, raise));
+                    PythonUtils.append(str, string);
+                    PythonUtils.append(str, checkItem(value, i++, castStrNode, raise));
                 }
             } catch (OutOfMemoryError e) {
                 throw raise.raise(MemoryError);

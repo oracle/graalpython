@@ -34,6 +34,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -75,6 +76,7 @@ public final class PList extends PSequence {
 
     @Override
     public final String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder buf = new StringBuilder("[");
 
         for (int i = 0; i < store.length(); i++) {

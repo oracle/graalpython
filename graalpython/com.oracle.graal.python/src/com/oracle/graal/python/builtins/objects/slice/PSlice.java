@@ -40,8 +40,8 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 public abstract class PSlice extends PythonBuiltinObject {
 
-    public PSlice() {
-        super(PythonBuiltinClassType.PSlice, PythonBuiltinClassType.PSlice.getInstanceShape());
+    public PSlice(PythonLanguage lang) {
+        super(PythonBuiltinClassType.PSlice, PythonBuiltinClassType.PSlice.getInstanceShape(lang));
     }
 
     @Override

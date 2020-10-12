@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PBigRangeIterator;
@@ -64,7 +65,8 @@ public class PBigRange extends PRange {
     private final PInt step;
     protected final PInt length;
 
-    public PBigRange(PInt start, PInt stop, PInt step, PInt length) {
+    public PBigRange(PythonLanguage lang, PInt start, PInt stop, PInt step, PInt length) {
+        super(lang);
         this.start = start;
         this.stop = stop;
         this.step = step;
