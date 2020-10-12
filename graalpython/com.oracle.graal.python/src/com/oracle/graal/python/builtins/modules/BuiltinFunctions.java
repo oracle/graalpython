@@ -119,6 +119,7 @@ import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -1729,16 +1730,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = ROUND, minNumOfPositionalArgs = 1, parameterNames = {"number", "ndigits"})
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
-        @Specialization
+        @Specialization(limit = "1")
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, x, PNone.NONE);
+                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
+            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__);
         }
 
-        @Specialization(guards = "!isNoValue(n)")
+        @Specialization(guards = "!isNoValue(n)", limit = "1")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @Shared("callNode") @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
-            return callNode.executeObject(frame, x, n);
+                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
+            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__, n);
         }
     }
 

@@ -722,6 +722,34 @@ def test_bytes_mod():
         raised = True
     assert raised
     
+def test__bytes__():
+    class C: pass
+    setattr(C, "__bytes__", bytes)
+    assert bytes(C()) == b''
+
+    class C(int): pass
+    setattr(C, "__bytes__", bytes)
+    assert bytes(C()) == b''
+    assert bytes(C(1)) == b''
+    
+    setattr(C, "__bytes__", complex)
+    raised = False
+    try:
+        bytes(C(1))
+    except(TypeError):
+        raised = True
+    assert raised    
+
+    def b(o):
+        return b'abc'
+
+    class BA(bytearray): pass
+    setattr(BA, "__bytes__", b)
+    assert bytes(BA(b'cde')) == b'abc'
+
+    class BAA(BA): pass
+    assert bytes(BAA(b'cde')) == b'abc'
+        
 class BaseLikeBytes:
 
     def test_maketrans(self):
