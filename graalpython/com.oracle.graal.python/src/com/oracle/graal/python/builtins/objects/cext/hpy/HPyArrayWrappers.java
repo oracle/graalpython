@@ -335,16 +335,21 @@ public class HPyArrayWrappers {
             }
         }
 
-        @Specialization(replaces = "doCachedLen")
+        @Specialization(replaces = "doCachedLen", limit = "1")
         static void doLoop(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+                        @CachedLibrary("wrapper") InteropLibrary lib,
                         @Cached ConditionProfile isAllocatedProfile,
                         @Cached ConditionProfile profile) {
-            Object[] array = wrapper.getDelegate();
-            for (int i = 0; i < array.length; i++) {
-                Object element = array[i];
-                if (profile.profile(isAllocatedHandle(element))) {
-                    ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+            int n = size(lib, wrapper);
+            try {
+                for (int i = 0; i < n; i++) {
+                    Object element = lib.readArrayElement(wrapper, i);
+                    if (profile.profile(isAllocatedHandle(element))) {
+                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    }
                 }
+            } catch (InteropException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
