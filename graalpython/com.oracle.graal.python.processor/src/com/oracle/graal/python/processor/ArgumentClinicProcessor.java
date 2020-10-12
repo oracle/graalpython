@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.processor;
 
+import static com.oracle.graal.python.processor.ConverterFactory.CLINIC_PACKAGE;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -76,8 +78,6 @@ import com.oracle.graal.python.processor.ArgumentClinicModel.ArgumentClinicData;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinAnnotation;
 import com.oracle.graal.python.processor.ArgumentClinicModel.BuiltinClinicData;
 import com.oracle.graal.python.processor.CodeWriter.Block;
-
-import static com.oracle.graal.python.processor.ConverterFactory.CLINIC_PACKAGE;
 
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
@@ -148,12 +148,14 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
     private void writeImports(CodeWriter w, Entry<TypeElement, Set<BuiltinClinicData>> enclosingType) throws IOException {
         log("Writing imports...");
         TreeSet<String> imports = new TreeSet<>();
-        imports.add("com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode");
         imports.add(CLINIC_PACKAGE + ".ArgumentClinicProvider");
-        imports.add(CLINIC_PACKAGE + ".ArgumentCastNode");
         for (BuiltinClinicData builtin : enclosingType.getValue()) {
             for (ArgumentClinicData arg : builtin.arguments) {
                 imports.addAll(arg.imports);
+                if (arg.castNodeFactory != null) {
+                    imports.add("com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode");
+                    imports.add(CLINIC_PACKAGE + ".ArgumentCastNode");
+                }
             }
         }
         for (String pkg : imports) {
