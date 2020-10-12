@@ -139,7 +139,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -374,55 +373,20 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyArithmetic extends GraalHPyContextFunction {
-        private final UnaryArithmetic unaryOperator;
-        private final BinaryArithmetic binaryOperator;
-        private final InplaceArithmetic inplaceOperator;
-        private final TernaryArithmetic ternaryOperator;
+    abstract static class GraalHPyArithmetic extends GraalHPyContextFunction {
 
         @CompilationFinal private RootCallTarget callTarget;
 
-        public GraalHPyArithmetic(UnaryArithmetic unaryOperator) {
-            this.unaryOperator = unaryOperator;
-            this.binaryOperator = null;
-            this.inplaceOperator = null;
-            this.ternaryOperator = null;
-        }
-
-        public GraalHPyArithmetic(BinaryArithmetic binaryOperator) {
-            this.unaryOperator = null;
-            this.binaryOperator = binaryOperator;
-            this.inplaceOperator = null;
-            this.ternaryOperator = null;
-        }
-
-        public GraalHPyArithmetic(InplaceArithmetic inplaceOperator) {
-            this.unaryOperator = null;
-            this.binaryOperator = null;
-            this.inplaceOperator = inplaceOperator;
-            this.ternaryOperator = null;
-        }
-
-        public GraalHPyArithmetic(TernaryArithmetic ternaryOperator) {
-            this.unaryOperator = null;
-            this.binaryOperator = null;
-            this.inplaceOperator = null;
-            this.ternaryOperator = ternaryOperator;
-        }
-
         @ExportMessage
         Object execute(Object[] arguments,
-                        @CachedLanguage @SuppressWarnings("unused") PythonLanguage language,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached GenericInvokeNode invokeNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
 
-            // We need to do argument checking at this position because our helper root node that
-            // just dispatches to the appropriate 'LookupAndCallXXXNode' won't do any argument
-            // checking. So it would just crash if there are too few arguments or just ignore if
-            // there are too many.
+            // We need to do argument checking at this position because our helper root node won't
+            // do it.
             checkArguments(arguments);
 
             GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -433,7 +397,7 @@ public abstract class GraalHPyContextFunctions {
             }
 
             try {
-                Object result = invokeNode.execute(getCallTarget(language), pythonArguments);
+                Object result = invokeNode.execute(ensureCallTarget(), pythonArguments);
                 return asHandleNode.execute(result);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
@@ -441,44 +405,113 @@ public abstract class GraalHPyContextFunctions {
             }
         }
 
-        private void checkArguments(Object[] arguments) throws ArityException {
-            // note: we always add 1 for the context
-            int min;
-            int max;
-            if (unaryOperator != null) {
-                min = max = 2;
-            } else if (binaryOperator != null) {
-                min = max = 3;
-            } else if (inplaceOperator != null) {
-                min = 3;
-                max = 4;
-            } else if (ternaryOperator != null) {
-                min = max = 4;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            if (min > arguments.length || max < arguments.length) {
+        private RootCallTarget ensureCallTarget() {
+            if (callTarget == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                int expected = min > arguments.length ? min : max;
-                throw ArityException.create(expected, arguments.length);
+                callTarget = createCallTarget(PythonLanguage.getCurrent());
+            }
+            return callTarget;
+        }
+
+        protected abstract void checkArguments(Object[] arguments) throws ArityException;
+
+        protected abstract RootCallTarget createCallTarget(PythonLanguage language);
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyUnaryArithmetic extends GraalHPyArithmetic {
+        private final UnaryArithmetic unaryOperator;
+
+        public GraalHPyUnaryArithmetic(UnaryArithmetic unaryOperator) {
+            this.unaryOperator = unaryOperator;
+        }
+
+        @Override
+        protected void checkArguments(Object[] arguments) throws ArityException {
+            // we also need to account for the HPy context
+            if (arguments.length != 2) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(2, arguments.length);
             }
         }
 
-        private RootCallTarget getCallTarget(PythonLanguage language) {
-            if (callTarget == null) {
+        @Override
+        protected RootCallTarget createCallTarget(PythonLanguage language) {
+            return language.getOrCreateUnaryArithmeticCallTarget(unaryOperator);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBinaryArithmetic extends GraalHPyArithmetic {
+        private final BinaryArithmetic binaryOperator;
+
+        public GraalHPyBinaryArithmetic(BinaryArithmetic unaryOperator) {
+            this.binaryOperator = unaryOperator;
+        }
+
+        @Override
+        protected void checkArguments(Object[] arguments) throws ArityException {
+            // we also need to account for the HPy context
+            if (arguments.length != 3) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (unaryOperator != null) {
-                    callTarget = language.getOrCreateUnaryArithmeticCallTarget(unaryOperator);
-                } else if (binaryOperator != null) {
-                    callTarget = language.getOrCreateBinaryArithmeticCallTarget(binaryOperator);
-                } else if (inplaceOperator != null) {
-                    callTarget = language.getOrCreateInplaceArithmeticCallTarget(inplaceOperator);
-                } else if (ternaryOperator != null) {
-                    callTarget = language.getOrCreateTernaryArithmeticCallTarget(ternaryOperator);
-                }
-                throw CompilerDirectives.shouldNotReachHere();
+                throw ArityException.create(3, arguments.length);
             }
-            return callTarget;
+        }
+
+        @Override
+        protected RootCallTarget createCallTarget(PythonLanguage language) {
+            return language.getOrCreateBinaryArithmeticCallTarget(binaryOperator);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTernaryArithmetic extends GraalHPyArithmetic {
+        private final TernaryArithmetic ternaryOperator;
+
+        public GraalHPyTernaryArithmetic(TernaryArithmetic unaryOperator) {
+            this.ternaryOperator = unaryOperator;
+        }
+
+        @Override
+        protected void checkArguments(Object[] arguments) throws ArityException {
+            // we also need to account for the HPy context
+            if (arguments.length != 4) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(4, arguments.length);
+            }
+        }
+
+        @Override
+        protected RootCallTarget createCallTarget(PythonLanguage language) {
+            return language.getOrCreateTernaryArithmeticCallTarget(ternaryOperator);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyInplaceArithmetic extends GraalHPyArithmetic {
+        private final InplaceArithmetic inplaceOperator;
+
+        public GraalHPyInplaceArithmetic(InplaceArithmetic unaryOperator) {
+            this.inplaceOperator = unaryOperator;
+        }
+
+        @Override
+        protected void checkArguments(Object[] arguments) throws ArityException {
+            // we also need to account for the HPy context
+            if (inplaceOperator.isTernary() && arguments.length != 4) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(4, arguments.length);
+            }
+            if (!inplaceOperator.isTernary() && arguments.length != 3) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw ArityException.create(3, arguments.length);
+            }
+        }
+
+        @Override
+        protected RootCallTarget createCallTarget(PythonLanguage language) {
+            return language.getOrCreateInplaceArithmeticCallTarget(inplaceOperator);
         }
     }
 
