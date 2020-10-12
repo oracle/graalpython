@@ -94,8 +94,8 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static long hash(Boolean value) {
-        return hash((boolean) value);
+    static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore

@@ -102,7 +102,7 @@ final class DefaultPythonStringExports {
 
     @ExportMessage
     @TruffleBoundary
-    static long hash(String self) {
+    static long hashWithState(String self, @SuppressWarnings("unused") ThreadState state) {
         return self.hashCode();
     }
 

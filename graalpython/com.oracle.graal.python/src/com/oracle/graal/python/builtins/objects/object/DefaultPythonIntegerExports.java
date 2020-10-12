@@ -93,8 +93,8 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static long hash(Integer value) {
-        return hash(value.intValue());
+    static long hashWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore

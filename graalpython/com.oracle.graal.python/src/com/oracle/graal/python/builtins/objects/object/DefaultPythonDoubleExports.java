@@ -80,8 +80,8 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static long hash(Double number) {
-        return hash(number.doubleValue());
+    static long hashWithState(Double number, @SuppressWarnings("unused") ThreadState state) {
+        return hash(number);
     }
 
     // Adapted from CPython _Py_HashDouble

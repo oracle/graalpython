@@ -115,8 +115,8 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static long hash(Long value) {
-        return hash(value.longValue());
+    static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore

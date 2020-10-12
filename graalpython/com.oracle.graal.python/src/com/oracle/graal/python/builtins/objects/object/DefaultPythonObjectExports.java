@@ -135,7 +135,7 @@ final class DefaultPythonObjectExports {
 
     @ExportMessage
     @TruffleBoundary
-    static long hash(Object receiver) {
+    static long hashWithState(Object receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver.hashCode();
     }
 
