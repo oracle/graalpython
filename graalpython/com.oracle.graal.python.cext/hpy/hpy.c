@@ -99,7 +99,7 @@ void* graal_hpy_from_i8_array(void *arr, uint64_t len) {
 	return polyglot_from_i8_array(arr, len);
 }
 
-wchar_t* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
+void* graal_hpy_from_wchar_array(wchar_t *arr, uint64_t len) {
     if (len == -1) {
         len = (uint64_t) wcslen(arr);
     }
@@ -114,11 +114,11 @@ void* graal_hpy_from_HPyModuleDef(void *ptr) {
 	return polyglot_from_HPyModuleDef(ptr);
 }
 
-HPyType_Spec* graal_hpy_from_HPyType_Spec(HPyType_Spec *ptr) {
+void* graal_hpy_from_HPyType_Spec(HPyType_Spec *ptr) {
 	return polyglot_from_HPyType_Spec(ptr);
 }
 
-HPyType_SpecParam* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
+void* graal_hpy_from_HPyType_SpecParam_array(HPyType_SpecParam *ptr) {
 	if (ptr != NULL) {
 	    uint64_t len=0;
 	    while (ptr[len].kind) {
@@ -324,7 +324,7 @@ typedef union {
 POLYGLOT_DECLARE_TYPE(OutVar);
 typedef struct { OutVar *content; } OutVarPtr;
 POLYGLOT_DECLARE_TYPE(OutVarPtr);
-OutVarPtr* graal_hpy_allocate_outvar() {
+void* graal_hpy_allocate_outvar() {
 	return polyglot_from_OutVarPtr(truffle_managed_malloc(sizeof(OutVarPtr)));
 }
 
