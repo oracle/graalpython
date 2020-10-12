@@ -107,12 +107,12 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static int length(String self) {
+    static int lengthWithState(String self, @SuppressWarnings("unused") ThreadState threadState) {
         return self.length();
     }
 
     @ExportMessage
-    static boolean isTrue(String self) {
+    static boolean isTrueWithState(String self, @SuppressWarnings("unused") ThreadState threadState) {
         return self.length() > 0;
     }
 
@@ -243,7 +243,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static PStringIterator getIterator(String receiver,
+    static PStringIterator getIteratorWithState(String receiver, @SuppressWarnings("unused") ThreadState threadState,
                     @Cached PythonObjectFactory factory) {
         return factory.createStringIterator(receiver);
     }

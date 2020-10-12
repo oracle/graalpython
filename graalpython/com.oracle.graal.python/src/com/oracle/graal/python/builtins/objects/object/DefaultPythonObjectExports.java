@@ -139,7 +139,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static int length(Object receiver,
+    static int lengthWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @CachedLibrary("receiver") InteropLibrary interopLib) {
         if (interopLib.hasArrayElements(receiver)) {
@@ -161,9 +161,9 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static class IsTrue {
+    static class IsTrueWithState {
         @Specialization(guards = "lib.isBoolean(receiver)")
-        static boolean bool(Object receiver,
+        static boolean bool(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             try {
                 return lib.asBoolean(receiver);
@@ -174,7 +174,7 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(guards = "lib.fitsInLong(receiver)")
-        static boolean integer(Object receiver,
+        static boolean integer(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             try {
                 return lib.asLong(receiver) != 0;
@@ -185,7 +185,7 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(guards = "lib.fitsInDouble(receiver)")
-        static boolean floatingPoint(Object receiver,
+        static boolean floatingPoint(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             try {
                 return lib.asDouble(receiver) != 0.0;
@@ -196,7 +196,7 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(guards = "lib.hasArrayElements(receiver)")
-        static boolean array(Object receiver,
+        static boolean array(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             try {
                 return lib.getArraySize(receiver) > 0;
@@ -210,7 +210,7 @@ final class DefaultPythonObjectExports {
                         "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
                         "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
         })
-        static boolean generic(Object receiver,
+        static boolean generic(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             return !lib.isNull(receiver);
         }
@@ -361,10 +361,10 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    abstract static class GetIterator {
+    abstract static class GetIteratorWithState {
 
         @Specialization(guards = "lib.hasArrayElements(receiver)")
-        static PForeignArrayIterator doForeignArray(Object receiver,
+        static PForeignArrayIterator doForeignArray(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @CachedLibrary("receiver") InteropLibrary lib) {
@@ -380,7 +380,7 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(guards = "lib.isString(receiver)")
-        static PStringIterator doBoxedString(Object receiver,
+        static PStringIterator doBoxedString(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @CachedLibrary("receiver") InteropLibrary lib) {
             try {
@@ -391,15 +391,15 @@ final class DefaultPythonObjectExports {
         }
 
         @Specialization(replaces = {"doForeignArray", "doBoxedString"})
-        static PythonBuiltinObject doGeneric(Object receiver,
+        static PythonBuiltinObject doGeneric(Object receiver, ThreadState threadState,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @CachedLibrary("receiver") InteropLibrary lib) {
 
             if (lib.hasArrayElements(receiver)) {
-                return doForeignArray(receiver, factory, raiseNode, lib);
+                return doForeignArray(receiver, threadState, factory, raiseNode, lib);
             } else if (lib.isString(receiver)) {
-                return doBoxedString(receiver, factory, lib);
+                return doBoxedString(receiver, threadState, factory, lib);
             }
             throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }

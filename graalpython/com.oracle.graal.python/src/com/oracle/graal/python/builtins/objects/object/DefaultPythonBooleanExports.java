@@ -104,7 +104,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Boolean value) {
+    static boolean isTrueWithState(Boolean value, @SuppressWarnings("unused") ThreadState threadState) {
         return value;
     }
 

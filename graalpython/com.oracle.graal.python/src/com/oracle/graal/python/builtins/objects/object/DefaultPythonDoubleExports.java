@@ -121,7 +121,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Double value) {
+    static boolean isTrueWithState(Double value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0.0;
     }
 

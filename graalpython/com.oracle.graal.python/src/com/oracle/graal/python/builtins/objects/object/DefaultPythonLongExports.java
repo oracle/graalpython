@@ -126,7 +126,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Long value) {
+    static boolean isTrueWithState(Long value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0;
     }
 

@@ -932,16 +932,13 @@ public abstract class PythonObjectLibrary extends Library {
      * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
      */
     public boolean isTrueWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            return true;
-        }
-        return isTrue(receiver);
+        return true;
     }
 
     /**
      * @see #isTrueWithState
      */
-    public boolean isTrue(Object receiver) {
+    public final boolean isTrue(Object receiver) {
         return isTrueWithState(receiver, null);
     }
 
@@ -967,16 +964,13 @@ public abstract class PythonObjectLibrary extends Library {
      * that slot.
      */
     public int lengthWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
-        }
-        return length(receiver);
+        throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
     }
 
     /**
      * @see #lengthWithState
      */
-    public int length(Object receiver) {
+    public final int length(Object receiver) {
         return lengthWithState(receiver, null);
     }
 
@@ -1102,16 +1096,13 @@ public abstract class PythonObjectLibrary extends Library {
      * Implements the logic from {@code PyObject_GetIter}.
      */
     public Object getIteratorWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
-        }
-        return getIterator(receiver);
+        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }
 
     /**
      * @see #getIteratorWithState
      */
-    public Object getIterator(Object receiver) {
+    public final Object getIterator(Object receiver) {
         return getIteratorWithState(receiver, null);
     }
 

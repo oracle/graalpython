@@ -103,7 +103,7 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Integer value) {
+    static boolean isTrueWithState(Integer value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0;
     }
 
