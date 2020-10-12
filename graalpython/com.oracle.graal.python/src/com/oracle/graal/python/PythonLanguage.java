@@ -26,6 +26,7 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +50,11 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -141,6 +146,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final NodeFactory nodeFactory;
     private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+    /**
+     * A thread-safe map that maps arithmetic operators (i.e.
+     * {@link com.oracle.graal.python.nodes.expression.UnaryArithmetic},
+     * {@link com.oracle.graal.python.nodes.expression.BinaryArithmetic},
+     * {@link com.oracle.graal.python.nodes.expression.TernaryArithmetic}, and
+     * {@link com.oracle.graal.python.nodes.expression.InplaceArithmetic}) to call targets. Use this
+     * map to retrieve a singleton instance (per engine) such that proper AST sharing is possible.
+     */
+    private ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOperatorCallTargetCache;
 
     @CompilationFinal(dimensions = 1) private static final Object[] CONTEXT_INSENSITIVE_SINGLETONS = new Object[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE, PNotImplemented.NOT_IMPLEMENTED};
 
@@ -644,5 +658,73 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget getOrComputeBuiltinCallTarget(Builtin builtin, Class<? extends PythonBuiltinBaseNode> nodeClass, Function<Builtin, RootCallTarget> supplier) {
         String key = builtin.name() + nodeClass.getName();
         return builtinCallTargetCache.computeIfAbsent(key, (k) -> supplier.apply(builtin));
+    }
+
+    /**
+     * Retrieve a call target for the given {@link UnaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    public RootCallTarget getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link BinaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    public RootCallTarget getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link TernaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    public RootCallTarget getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link InplaceArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    public RootCallTarget getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    private RootCallTarget getOrCreateArithmeticCallTarget(Object arithmeticOperator, Function<PythonLanguage, RootCallTarget> supplier) {
+        if (arithmeticOperatorCallTargetCache == null) {
+            synchronized (this) {
+                // need to do check a second time (now synchronized)
+                if (arithmeticOperatorCallTargetCache == null) {
+                    arithmeticOperatorCallTargetCache = new ConcurrentHashMap<>();
+                }
+            }
+        }
+        WeakReference<RootCallTarget> ctRef = arithmeticOperatorCallTargetCache.compute(arithmeticOperator, (k, v) -> {
+            RootCallTarget cachedCallTarget = v != null ? v.get() : null;
+            if (cachedCallTarget == null) {
+                return new WeakReference<>(supplier.apply(this));
+            }
+            return v;
+        });
+
+        RootCallTarget callTarget = ctRef.get();
+        if (callTarget == null) {
+            // Bad luck: we ensured that there is a mapping in the cache but the weak value got
+            // collected before we could strongly reference it. Now, we need to be conservative and
+            // create the call target eagerly, hold a strong reference to it until we've put it into
+            // the map.
+            final RootCallTarget callTargetToCache = supplier.apply(this);
+            callTarget = callTargetToCache;
+            arithmeticOperatorCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
+        }
+        assert callTarget != null;
+        return callTarget;
+
     }
 }

@@ -42,10 +42,21 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public enum InplaceArithmetic {
     IAdd(SpecialMethodNames.__IADD__, "+="),
@@ -54,7 +65,7 @@ public enum InplaceArithmetic {
     ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/="),
     IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//="),
     IMod(SpecialMethodNames.__IMOD__, "%="),
-    IPow(SpecialMethodNames.__IPOW__, "**="),
+    IPow(SpecialMethodNames.__IPOW__, "**=", true),
     ILShift(SpecialMethodNames.__ILSHIFT__, "<<="),
     IRShift(SpecialMethodNames.__IRSHIFT__, ">>="),
     IAnd(SpecialMethodNames.__IAND__, "&="),
@@ -93,6 +104,49 @@ public enum InplaceArithmetic {
         return operator;
     }
 
+    public boolean isTernary() {
+        return isTernary;
+    }
+
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallInplaceNode} to execute the
+     * provided in-place operator. This node is mostly useful to use such operators from a location
+     * without a frame (e.g. from interop). Note: this is just a root node and won't do any
+     * signature checking.
+     */
+    static final class CallInplaceArithmeticRootNode extends CallArithmeticRootNode {
+
+        @Child private LookupAndCallInplaceNode callInplaceNode;
+
+        private final InplaceArithmetic inplaceOperator;
+
+        CallInplaceArithmeticRootNode(PythonLanguage language, InplaceArithmetic inplaceOperator) {
+            super(language);
+            this.inplaceOperator = inplaceOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            if (inplaceOperator.isTernary()) {
+                return CallTernaryArithmeticRootNode.SIGNATURE_TERNARY;
+            }
+            return CallBinaryArithmeticRootNode.SIGNATURE_BINARY;
+        }
+
+        @Override
+        protected Object doCall(VirtualFrame frame) {
+            if (callInplaceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callInplaceNode = insert(inplaceOperator.create());
+            }
+            // most of the in-place operators are binary but there can also be ternary
+            if (inplaceOperator.isTernary()) {
+                return callInplaceNode.executeTernary(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
+            }
+            return callInplaceNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+        }
+    }
+
     public LookupAndCallInplaceNode create(ExpressionNode left, ExpressionNode right) {
         return LookupAndCallInplaceNode.createWithBinary(methodName, left, right, notImplementedHandler);
     }
@@ -102,5 +156,16 @@ public enum InplaceArithmetic {
             return LookupAndCallInplaceNode.createWithTernary(methodName, null, null, null, notImplementedHandler);
         }
         return LookupAndCallInplaceNode.createWithBinary(methodName, null, null, notImplementedHandler);
+    }
+
+    /**
+     * Creates a call target with a specific root node for this in-place operator such that the
+     * operator can be executed via a full call. This is in particular useful, if you want to
+     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
+     * method directly. In order to enable AST sharing, you should use
+     * {@link PythonLanguage#getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic)}.
+     */
+    public RootCallTarget createCallTarget(PythonLanguage language) {
+        return PythonUtils.getOrCreateCallTarget(new CallInplaceArithmeticRootNode(language, this));
     }
 }

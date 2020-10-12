@@ -42,13 +42,19 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -106,11 +112,55 @@ public enum TernaryArithmetic {
         }
     }
 
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallTernaryNode} to execute the
+     * provided ternary operator. This node is mostly useful to use such operators from a location
+     * without a frame (e.g. from interop). Note: this is just a root node and won't do any
+     * signature checking.
+     */
+    static final class CallTernaryArithmeticRootNode extends CallArithmeticRootNode {
+        static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
+
+        @Child private LookupAndCallTernaryNode callTernaryNode;
+
+        private final TernaryArithmetic ternaryOperator;
+
+        CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
+            super(language);
+            this.ternaryOperator = ternaryOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE_TERNARY;
+        }
+
+        @Override
+        protected Object doCall(VirtualFrame frame) {
+            if (callTernaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callTernaryNode = insert(ternaryOperator.create());
+            }
+            return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
+        }
+    }
+
     public ExpressionNode create(ExpressionNode x, ExpressionNode y) {
         return new TernaryArithmeticExpression(LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler), x, y);
     }
 
     public LookupAndCallTernaryNode create() {
         return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler);
+    }
+
+    /**
+     * Creates a call target with a specific root node for this ternary operator such that the
+     * operator can be executed via a full call. This is in particular useful, if you want to
+     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
+     * method directly. In order to enable AST sharing, you should use
+     * {@link PythonLanguage#getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic)}.
+     */
+    public RootCallTarget createCallTarget(PythonLanguage language) {
+        return PythonUtils.getOrCreateCallTarget(new CallTernaryArithmeticRootNode(language, this));
     }
 }

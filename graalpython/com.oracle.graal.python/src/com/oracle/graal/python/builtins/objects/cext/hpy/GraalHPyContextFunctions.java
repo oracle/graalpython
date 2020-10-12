@@ -58,11 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbols.GRAAL_HPY_WRITE_PTR;
 
-import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
-import java.util.WeakHashMap;
-
-import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -103,7 +99,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -113,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -123,13 +117,9 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
-import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -138,7 +128,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -147,13 +136,11 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -386,110 +373,8 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    static final class CallArithmeticRootNode extends PRootNode {
-        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
-        private static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
-        private static final Signature SIGNATURE_TERNARY = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, null);
-
-        @Child private LookupAndCallUnaryNode callUnaryNode;
-        @Child private LookupAndCallBinaryNode callBinaryNode;
-        @Child private LookupAndCallInplaceNode callInplaceNode;
-        @Child private LookupAndCallTernaryNode callTernaryNode;
-        @Child private CalleeContext calleeContext;
-
-        private final UnaryArithmetic unaryOperator;
-        private final BinaryArithmetic binaryOperator;
-        private final InplaceArithmetic inplaceOperator;
-        private final TernaryArithmetic ternaryOperator;
-
-        @CompilationFinal private ConditionProfile customLocalsProfile;
-
-        CallArithmeticRootNode(PythonLanguage language, UnaryArithmetic unaryOperator, BinaryArithmetic binaryOperator, InplaceArithmetic inplaceOperator,
-                        TernaryArithmetic ternaryOperator) {
-            super(language);
-            this.unaryOperator = unaryOperator;
-            this.binaryOperator = binaryOperator;
-            this.inplaceOperator = inplaceOperator;
-            this.ternaryOperator = ternaryOperator;
-        }
-
-        @Override
-        public Signature getSignature() {
-            if (unaryOperator != null) {
-                return SIGNATURE_UNARY;
-            } else if (binaryOperator != null) {
-                return SIGNATURE_BINARY;
-            } else if (inplaceOperator != null || ternaryOperator != null) {
-                return SIGNATURE_TERNARY;
-            } else {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            ensureCallNode();
-            if (calleeContext == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                calleeContext = insert(CalleeContext.create());
-            }
-            if (customLocalsProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                customLocalsProfile = ConditionProfile.create();
-            }
-
-            CalleeContext.enter(frame, customLocalsProfile);
-            try {
-                if (unaryOperator != null) {
-                    return callUnaryNode.executeObject(frame, PArguments.getArgument(frame, 0));
-                } else if (binaryOperator != null) {
-                    return callBinaryNode.executeObject(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
-                } else if (inplaceOperator != null) {
-                    // most of the in-place operators are binary but there can also be ternary
-                    if (PArguments.getUserArgumentLength(frame) == 2) {
-                        return callInplaceNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
-                    } else if (PArguments.getUserArgumentLength(frame) == 3) {
-                        return callInplaceNode.executeTernary(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
-                    }
-                    throw CompilerDirectives.shouldNotReachHere();
-                } else if (ternaryOperator != null) {
-                    return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            } finally {
-                calleeContext.exit(frame, this);
-            }
-        }
-
-        private void ensureCallNode() {
-            if (callUnaryNode == null && callBinaryNode == null && callInplaceNode == null && callTernaryNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                if (unaryOperator != null) {
-                    callUnaryNode = insert(unaryOperator.create());
-                } else if (binaryOperator != null) {
-                    callBinaryNode = insert(binaryOperator.create());
-                } else if (inplaceOperator != null) {
-                    callInplaceNode = insert(inplaceOperator.create());
-                } else if (ternaryOperator != null) {
-                    callTernaryNode = insert(ternaryOperator.create());
-                } else {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-        }
-    }
-
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyArithmetic extends GraalHPyContextFunction {
-        // TODO(fa): move to PythonLanguage ?
-        private static final WeakHashMap<Pair<PythonLanguage, Object>, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
-
         private final UnaryArithmetic unaryOperator;
         private final BinaryArithmetic binaryOperator;
         private final InplaceArithmetic inplaceOperator;
@@ -535,7 +420,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
 
             // We need to do argument checking at this position because our helper root node that
-            // just dispatches to the appropriate 'LookupAndCallXXXNode' won't do any arguemnt
+            // just dispatches to the appropriate 'LookupAndCallXXXNode' won't do any argument
             // checking. So it would just crash if there are too few arguments or just ignore if
             // there are too many.
             checkArguments(arguments);
@@ -582,38 +467,18 @@ public abstract class GraalHPyContextFunctions {
         private RootCallTarget getCallTarget(PythonLanguage language) {
             if (callTarget == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callTarget = createCallTarget(language);
+                if (unaryOperator != null) {
+                    callTarget = language.getOrCreateUnaryArithmeticCallTarget(unaryOperator);
+                } else if (binaryOperator != null) {
+                    callTarget = language.getOrCreateBinaryArithmeticCallTarget(binaryOperator);
+                } else if (inplaceOperator != null) {
+                    callTarget = language.getOrCreateInplaceArithmeticCallTarget(inplaceOperator);
+                } else if (ternaryOperator != null) {
+                    callTarget = language.getOrCreateTernaryArithmeticCallTarget(ternaryOperator);
+                }
+                throw CompilerDirectives.shouldNotReachHere();
             }
             return callTarget;
-        }
-
-        @TruffleBoundary
-        private RootCallTarget createCallTarget(PythonLanguage language) {
-            Pair<PythonLanguage, Object> key = Pair.create(language, getOp());
-            RootCallTarget cachedCallTarget;
-            synchronized (weakCallTargetMap) {
-                WeakReference<RootCallTarget> ctRef = weakCallTargetMap.get(key);
-                cachedCallTarget = ctRef != null ? ctRef.get() : null;
-                if (cachedCallTarget == null) {
-                    cachedCallTarget = PythonUtils.getOrCreateCallTarget(new CallArithmeticRootNode(language, unaryOperator, binaryOperator, inplaceOperator, ternaryOperator));
-                    weakCallTargetMap.put(key, new WeakReference<>(cachedCallTarget));
-                }
-            }
-            assert cachedCallTarget != null;
-            return cachedCallTarget;
-        }
-
-        private Object getOp() {
-            if (unaryOperator != null) {
-                return unaryOperator;
-            } else if (binaryOperator != null) {
-                return binaryOperator;
-            } else if (inplaceOperator != null) {
-                return inplaceOperator;
-            } else if (ternaryOperator != null) {
-                return ternaryOperator;
-            }
-            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
