@@ -525,6 +525,55 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
+    static Object asIndexWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asIndexWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static String asPathWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asPathWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static int asFileDescriptorWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asFileDescriptorWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static double asJavaDoubleWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asJavaDoubleWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static Object asPIntWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asPIntWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static long asJavaLongWithState(PythonBuiltinClassType type, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asJavaLongWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    static int asSizeWithState(PythonBuiltinClassType type, Object errorType, ThreadState state,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        return lib.asSizeWithState(context.getCore().lookupType(type), errorType, state);
+    }
+
+    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
         return PythonClass;
     }
@@ -611,12 +660,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
      * TypeBuiltins.ReprNode}
      */
     @ExportMessage
-    String asPString() {
-        return getQualifiedName();
-    }
-
-    @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return asPString();
+        return getQualifiedName();
     }
 }

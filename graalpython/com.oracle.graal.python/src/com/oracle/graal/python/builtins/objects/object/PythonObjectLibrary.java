@@ -511,17 +511,14 @@ public abstract class PythonObjectLibrary extends Library {
      * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
      * object cannot be interpreted as an index.
      */
-    public Object asIndexWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
-        }
-        return asIndex(receiver);
+    public Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
     }
 
     /**
      * @see #asIndexWithState
      */
-    public Object asIndex(Object receiver) {
+    public final Object asIndex(Object receiver) {
         return asIndexWithState(receiver, null);
     }
 
@@ -541,17 +538,14 @@ public abstract class PythonObjectLibrary extends Library {
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
      */
-    public String asPathWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
-        }
-        return asPath(receiver);
+    public String asPathWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
     }
 
     /**
      * @see #asPathWithState
      */
-    public String asPath(Object receiver) {
+    public final String asPath(Object receiver) {
         return asPathWithState(receiver, null);
     }
 
@@ -560,18 +554,12 @@ public abstract class PythonObjectLibrary extends Library {
      *
      * Return a Python string from the receiver. Raise TypeError if the result is not a string.
      */
-    public Object asPStringWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asPString(receiver);
-    }
+    public abstract Object asPStringWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asPStringWithState
      */
-    public Object asPString(Object receiver) {
+    public final Object asPString(Object receiver) {
         return asPStringWithState(receiver, null);
     }
 
@@ -582,17 +570,14 @@ public abstract class PythonObjectLibrary extends Library {
      * Converted to int if possible, or if the object defines __fileno__(), then return the result
      * of that method. Raise TypeError otherwise.
      */
-    public int asFileDescriptorWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-        }
-        return asFileDescriptor(receiver);
+    public int asFileDescriptorWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
     }
 
     /**
      * @see #asFileDescriptorWithState
      */
-    public int asFileDescriptor(Object receiver) {
+    public final int asFileDescriptor(Object receiver) {
         return asFileDescriptorWithState(receiver, null);
     }
 
@@ -794,18 +779,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Java {@code double}. This method follows the
      * semantics of CPython's function {@code PyFloat_AsDouble}.
      */
-    public double asJavaDoubleWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asJavaDouble(receiver);
-    }
+    public abstract double asJavaDoubleWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asJavaDoubleWithState
      */
-    public double asJavaDouble(Object receiver) {
+    public final double asJavaDouble(Object receiver) {
         return asJavaDoubleWithState(receiver, null);
     }
 
@@ -827,18 +806,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Python {@code int}. This method follows the
      * semantics of CPython's function {@code _PyLong_AsInt}.
      */
-    public Object asPIntWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asPInt(receiver);
-    }
+    public abstract Object asPIntWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asPIntWithState
      */
-    public Object asPInt(Object receiver) {
+    public final Object asPInt(Object receiver) {
         return asPIntWithState(receiver, null);
     }
 
@@ -860,18 +833,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
      * of CPython's function {@code PyLong_AsLong}.
      */
-    public long asJavaLongWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asJavaLong(receiver);
-    }
+    public abstract long asJavaLongWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asJavaLongWithState
      */
-    public long asJavaLong(Object receiver) {
+    public final long asJavaLong(Object receiver) {
         return asJavaLongWithState(receiver, null);
     }
 
@@ -898,20 +865,17 @@ public abstract class PythonObjectLibrary extends Library {
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
     public int asSizeWithState(Object receiver, Object errorType, ThreadState threadState) {
-        if (threadState == null) {
-            // this will very likely always raise an integer interpretation error in
-            // asIndexWithState
-            long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, null));
-            int intResult = (int) result;
-            if (intResult == result) {
-                return intResult;
-            } else if (errorType == null) {
-                return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-            } else {
-                throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
-            }
+        // this will very likely always raise an integer interpretation error in
+        // asIndexWithState
+        long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, threadState));
+        int intResult = (int) result;
+        if (intResult == result) {
+            return intResult;
+        } else if (errorType == null) {
+            return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        } else {
+            throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
         }
-        return asSize(receiver, errorType);
     }
 
     /**
@@ -935,7 +899,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asSizeWithState(Object, Object, ThreadState)
      */
-    public int asSize(Object receiver, Object errorClass) {
+    public final int asSize(Object receiver, Object errorClass) {
         return asSizeWithState(receiver, errorClass, null);
     }
 

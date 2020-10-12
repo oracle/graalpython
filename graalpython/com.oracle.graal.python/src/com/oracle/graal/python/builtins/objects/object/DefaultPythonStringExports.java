@@ -158,12 +158,12 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static String asPath(String value) {
+    static String asPathWithState(String value, @SuppressWarnings("unused") ThreadState state) {
         return value;
     }
 
     @ExportMessage
-    static String asPString(String receiver) {
+    static String asPStringWithState(String receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 
@@ -174,7 +174,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static int asPInt(String receiver,
+    static int asPIntWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
@@ -185,7 +185,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static long asJavaLong(String receiver,
+    static long asJavaLongWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
     }
@@ -196,7 +196,7 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(String receiver,
+    static double asJavaDoubleWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
     }

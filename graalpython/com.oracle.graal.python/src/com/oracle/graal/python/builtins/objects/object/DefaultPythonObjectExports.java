@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -89,7 +88,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object asIndex(Object receiver,
+    static Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @CachedLibrary("receiver") InteropLibrary interopLib) {
         if (interopLib.fitsInLong(receiver)) {
@@ -112,10 +111,10 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static int asSize(Object receiver, Object type,
+    static int asSizeWithState(Object receiver, Object type, ThreadState state,
                     @Shared("raiseNode") @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "2") InteropLibrary interopLib) {
-        Object index = asIndex(receiver, raise, interopLib);
+        Object index = asIndexWithState(receiver, state, raise, interopLib);
         if (interopLib.fitsInInt(index)) {
             try {
                 return interopLib.asInt(index);
@@ -267,7 +266,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(Object receiver,
+    static double asJavaDoubleWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
@@ -290,7 +289,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static long asJavaLong(Object receiver,
+    static long asJavaLongWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise,
                     @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         if (canBeJavaDouble(receiver, interopLib)) {
@@ -312,7 +311,7 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static long asPInt(Object receiver,
+    static long asPIntWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("receiver") InteropLibrary lib,
                     @Exclusive @Cached PRaiseNode raise) {
         if (lib.fitsInLong(receiver)) {
@@ -405,8 +404,5 @@ final class DefaultPythonObjectExports {
             throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
-        static int getLimit() {
-            return PythonOptions.getCallSiteInlineCacheMaxDepth();
-        }
     }
 }
