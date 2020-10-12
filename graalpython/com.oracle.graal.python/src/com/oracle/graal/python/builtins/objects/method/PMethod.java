@@ -87,8 +87,12 @@ public final class PMethod extends PythonBuiltinObject {
         return true;
     }
 
+    public long hash() {
+        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
+    }
+
     @ExportMessage
     protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
-        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
+        return hash();
     }
 }
