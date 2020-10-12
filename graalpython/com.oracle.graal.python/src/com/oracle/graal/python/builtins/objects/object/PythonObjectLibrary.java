@@ -465,7 +465,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #equalsWithState
      */
-    public boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
+    public final boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
         return equalsWithState(receiver, other, otherLibrary, null);
     }
 
