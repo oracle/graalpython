@@ -327,7 +327,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @CompilationFinal private ReferenceQueue<Object> nativeSpaceReferenceQueue;
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
-    public final ReferenceStack<GraalHPyHandleReference> references = new ReferenceStack<>(GraalHPyHandleReference.class);
+    public final ReferenceStack<GraalHPyHandleReference> references = new ReferenceStack<>();
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
@@ -908,7 +908,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private ReferenceQueue<Object> ensureReferenceQueue() {
         if (nativeSpaceReferenceQueue == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            final ReferenceQueue referenceQueue = new ReferenceQueue<>();
+            final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
             // lazily register the runnable that concurrently collects the queued references
             getContext().registerAsyncAction(() -> {

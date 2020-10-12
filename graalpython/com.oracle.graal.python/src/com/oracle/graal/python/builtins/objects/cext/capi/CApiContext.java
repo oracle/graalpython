@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -136,7 +136,7 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
-        nativeObjectWrapperList = new ReferenceStack<>(NativeObjectReference.class);
+        nativeObjectWrapperList = new ReferenceStack<>();
 
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();

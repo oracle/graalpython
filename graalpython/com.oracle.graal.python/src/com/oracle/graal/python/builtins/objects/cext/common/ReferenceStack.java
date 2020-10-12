@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -50,11 +49,11 @@ public final class ReferenceStack<T> implements Iterable<T> {
     private static final int INITIAL_CAPACITY = 64;
 
     private final IntegerStack freeList;
-    private T[] nativeObjectWrapperList;
+    private Object[] nativeObjectWrapperList;
 
     @TruffleBoundary
-    public ReferenceStack(Class<T> elementClazz) {
-        nativeObjectWrapperList = (T[]) Array.newInstance(elementClazz, INITIAL_CAPACITY);
+    public ReferenceStack() {
+        nativeObjectWrapperList = new Object[INITIAL_CAPACITY];
         freeList = new IntegerStack(INITIAL_CAPACITY);
         freeList.addToFreeList(0, INITIAL_CAPACITY);
     }
@@ -67,14 +66,16 @@ public final class ReferenceStack<T> implements Iterable<T> {
         freeList.addToFreeList(oldSize, newSize);
     }
 
+    @SuppressWarnings("unchecked")
     public T get(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        return nativeObjectWrapperList[idx];
+        return (T) nativeObjectWrapperList[idx];
     }
 
+    @SuppressWarnings("unchecked")
     public T remove(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        T ref = nativeObjectWrapperList[idx];
+        T ref = (T) nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = null;
         freeList.push(idx);
         return ref;
@@ -96,16 +97,18 @@ public final class ReferenceStack<T> implements Iterable<T> {
         nativeObjectWrapperList[idx] = nativeObjectReference;
     }
 
+    @SuppressWarnings("unchecked")
     public T resurrect(int idx, T nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        T old = nativeObjectWrapperList[idx];
+        T old = (T) nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = nativeObjectReference;
         return old;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Iterator<T> iterator() {
-        return Arrays.asList(nativeObjectWrapperList).iterator();
+        return (Iterator<T>) Arrays.asList(nativeObjectWrapperList).iterator();
     }
 
     static final class IntegerStack {
