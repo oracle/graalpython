@@ -57,6 +57,7 @@ final class NativeSpaceArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean hasArrayElements() {
         return true;
     }

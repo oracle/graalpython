@@ -101,10 +101,10 @@ public enum BinaryArithmetic {
     }
 
     /**
-     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the
-     * provided binary operator. This node is mostly useful to use such operators from a
-     * location without a frame (e.g. from interop). Note: this is just a root node and won't do any
-     * signature checking.
+     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the provided
+     * binary operator. This node is mostly useful to use such operators from a location without a
+     * frame (e.g. from interop). Note: this is just a root node and won't do any signature
+     * checking.
      */
     public static final class BinaryArithmeticExpression extends ExpressionNode {
         @Child private LookupAndCallBinaryNode callNode;
