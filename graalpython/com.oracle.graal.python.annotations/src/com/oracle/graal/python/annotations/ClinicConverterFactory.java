@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,48 +38,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.annotations;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 
 /**
- * Implements the {@code bool} argument clinic conversion, which in CPython calls to
- * {@code PyObject_IsTrue}.
+ * Annotates the factory method (which must be static) in the class specified by
+ * {@link ArgumentClinic#conversionClass()}.
  */
-public abstract class JavaBooleanConvertorNode extends ArgumentCastNode {
-    private final boolean defaultValue;
+@Target(ElementType.METHOD)
+public @interface ClinicConverterFactory {
 
-    protected JavaBooleanConvertorNode(boolean defaultValue) {
-        this.defaultValue = defaultValue;
+    /**
+     * The boxing optimized execute method variants will not attempt to cast the listed primitive
+     * types and will just pass them directly to the specializations. This does not apply to
+     * primitive values that are already boxed: those are always passed to the converter.
+     */
+    ArgumentClinic.PrimitiveType[] shortCircuitPrimitive() default {};
+
+    /**
+     * Annotates parameter of the factory method which will receive the default value
+     * {@link ArgumentClinic#defaultValue()}.
+     */
+    @Target(ElementType.PARAMETER)
+    @interface DefaultValue {
     }
 
-    @Specialization(guards = "isNoValue(none)")
-    boolean doNoValue(@SuppressWarnings("unused") PNone none) {
-        return defaultValue;
+    /**
+     * Annotates parameter of the factory method which will receive the value of
+     * {@link ArgumentClinic#useDefaultForNone()}.
+     */
+    @Target(ElementType.PARAMETER)
+    @interface UseDefaultForNone {
     }
 
-    @Specialization(guards = "isNone(none)")
-    static boolean doNone(@SuppressWarnings("unused") PNone none) {
-        return false;
+    /**
+     * Annotates parameter of the factory method which will receive the name of the builtin
+     * function.
+     */
+    @Target(ElementType.PARAMETER)
+    @interface BuiltinName {
     }
 
-    @Specialization
-    static boolean doBoolean(boolean b) {
-        return b;
+    /**
+     * Annotates parameter of the factory method which will receive the index of the argument of the
+     * builtin functions.
+     */
+    @Target(ElementType.PARAMETER)
+    @interface ArgumentIndex {
     }
 
-    @Specialization
-    static boolean doInt(int i) {
-        return i != 0;
-    }
-
-    @Specialization(guards = "!isPNone(value)", limit = "3")
-    static Object doOthers(VirtualFrame frame, Object value,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        return lib.isTrue(value, frame);
+    /**
+     * Annotates parameter of the factory method which will receive the name of the argument of the
+     * builtin functions.
+     */
+    @Target(ElementType.PARAMETER)
+    @interface ArgumentName {
     }
 }

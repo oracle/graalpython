@@ -49,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -577,6 +579,11 @@ public abstract class BytesNodes {
         @Fallback
         Object doOthers(@SuppressWarnings("unused") VirtualFrame frame, Object value) {
             throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, className(), argNum, PythonBuiltinClassType.PString, value);
+        }
+
+        @ClinicConverterFactory
+        public static ExpectStringNode create(@ArgumentIndex int argNum, String className) {
+            return BytesNodesFactory.ExpectStringNodeGen.create(argNum, className);
         }
     }
 

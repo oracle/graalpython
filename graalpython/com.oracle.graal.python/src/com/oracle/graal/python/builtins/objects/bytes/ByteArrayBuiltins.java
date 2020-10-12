@@ -127,22 +127,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     // bytearray([source[, encoding[, errors]]])
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"})
-    @ArgumentClinic(name = "encoding", customConversion = "createExpectStringNodeEncoding")
-    @ArgumentClinic(name = "errors", customConversion = "createExpectStringNodeErrors")
+    @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
+    @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytearray()\"")
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ByteArrayBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesNodes.ExpectStringNode createExpectStringNodeEncoding() {
-            return BytesNodesFactory.ExpectStringNodeGen.create(2, "bytearray()");
-        }
-
-        public static BytesNodes.ExpectStringNode createExpectStringNodeErrors() {
-            return BytesNodesFactory.ExpectStringNodeGen.create(3, "bytearray()");
         }
 
         @Specialization(guards = "!isNone(source)")

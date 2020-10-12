@@ -44,34 +44,34 @@ import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.library.CachedLibrary;
 
-/**
- * Substitutes a default value if no argument was given.
- */
-public final class DefaultValueNode extends ArgumentCastNode {
-    private final Object defaultValue;
-    private final boolean useDefaultForNone;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-    private final ConditionProfile profileArg = ConditionProfile.createBinaryProfile();
+public abstract class SliceIndexConversionNode extends IntConversionBaseNode {
 
-    @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double})
-    public static DefaultValueNode create(@DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return new DefaultValueNode(defaultValue, useDefaultForNone);
+    protected SliceIndexConversionNode(int defaultValue, boolean useDefaultForNone) {
+        super(defaultValue, useDefaultForNone);
     }
 
-    protected DefaultValueNode(Object defaultValue, boolean useDefaultForNone) {
-        this.defaultValue = defaultValue;
-        this.useDefaultForNone = useDefaultForNone;
-    }
-
-    @Override
-    public Object execute(VirtualFrame frame, Object value) {
-        if (profileArg.profile(isHandledPNone(useDefaultForNone, value))) {
-            return defaultValue;
-        } else {
-            return value;
+    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    int doOthers(VirtualFrame frame, Object value,
+                    @Cached CastToJavaIntLossyNode castToInt,
+                    @CachedLibrary("value") PythonObjectLibrary lib) {
+        if (lib.canBeIndex(value)) {
+            return castToInt.execute(lib.asIndexWithFrame(value, frame));
         }
+        throw raise(TypeError, ErrorMessages.SLICE_INDICES_TYPE_ERROR);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static SliceIndexConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+        return SliceIndexConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 }

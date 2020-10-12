@@ -76,8 +76,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
@@ -756,22 +754,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // str.rfind(str[, start[, end]])
     @Builtin(name = "rfind", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class RFindNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.RFindNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -798,22 +788,14 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // str.find(str[, start[, end]])
     @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.FindNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1539,21 +1521,13 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "index", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class IndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.IndexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization
@@ -1587,21 +1561,13 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "rindex", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "start", customConversion = "createSliceIndexStart", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
-    @ArgumentClinic(name = "end", customConversion = "createSliceIndexEnd", shortCircuitPrimitive = ArgumentClinic.PrimitiveType.Int)
+    @ArgumentClinic(name = "start", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "0", useDefaultForNone = true)
+    @ArgumentClinic(name = "end", conversion = ArgumentClinic.ClinicConversion.SliceIndex, defaultValue = "Integer.MAX_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class RIndexNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StringBuiltinsClinicProviders.RIndexNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexStart() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(0);
-        }
-
-        public static BytesBuiltins.SliceIndexNode createSliceIndexEnd() {
-            return BytesBuiltinsFactory.SliceIndexNodeGen.create(Integer.MAX_VALUE);
         }
 
         @Specialization

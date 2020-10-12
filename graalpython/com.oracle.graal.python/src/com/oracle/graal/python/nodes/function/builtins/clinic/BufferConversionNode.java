@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
@@ -62,5 +63,10 @@ public abstract class BufferConversionNode extends ArgumentCastNodeWithRaise {
             }
         }
         throw raise(PythonErrorType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+    }
+
+    @ClinicConverterFactory
+    public static BufferConversionNode create() {
+        return BufferConversionNodeGen.create();
     }
 }

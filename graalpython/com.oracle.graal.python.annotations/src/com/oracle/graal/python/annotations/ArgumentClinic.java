@@ -58,29 +58,11 @@ public @interface ArgumentClinic {
      * configuration for the conversion routine. Note that not all routines support all the
      * configuration options.
      * 
-     * Conversion routines are implemented in {@code ArgumentClinicModel#BuiltinConvertor}. It
-     * creates Java code snippets that instantiate the actual cast nodes, which should implement
+     * Conversion routines are implemented in {@code ConverterFactory}. It creates Java code
+     * snippets that instantiate the actual cast nodes, which should implement
      * {@code ArgumentCastNode}.
      */
     ClinicConversion conversion() default ClinicConversion.None;
-
-    /**
-     * Overrides the {@link #conversion()} value. Name of a method of the builtin class that should
-     * be used as a factory to create the conversion node. When this value is set, then other
-     * conversion options are ignored.
-     */
-    String customConversion() default "";
-
-    /**
-     * The boxing optimized execute method variants will not attempt to cast the listed primitive
-     * types and will just pass them directly to the specializations. This does not apply to
-     * primitive values that are already boxed: those are always passed to the convertor.
-     * 
-     * It is not necessary to set this when using a builtin conversion. Built-in convertors provide
-     * their own list of short circuit types, which is applied if this field is set to its default
-     * value.
-     */
-    PrimitiveType[] shortCircuitPrimitive() default {};
 
     /**
      * The string should contain valid Java constant value expression, for example, {@code true}, or
@@ -95,6 +77,18 @@ public @interface ArgumentClinic {
      */
     boolean useDefaultForNone() default false;
 
+    /**
+     * Specifies the name of the conversion node class, which must include a static factory method
+     * annotated with {@link ClinicConverterFactory}.
+     */
+    Class<?> conversionClass() default void.class;
+
+    /**
+     * Specifies arguments to the factory method. String literals must be explicitly quoted:
+     * {@code args = "\"abc\""}
+     */
+    String[] args() default {};
+
     enum PrimitiveType {
         Boolean,
         Int,
@@ -104,36 +98,41 @@ public @interface ArgumentClinic {
 
     enum ClinicConversion {
         /**
-         * No builtin convertor will be used.
+         * No builtin converter will be used.
          */
         None,
         /**
-         * Corresponds to CPython's {@code bool} convertor. Supports {@link #defaultValue()}.
+         * Corresponds to CPython's {@code bool} converter. Supports {@link #defaultValue()}.
          * {@code PNone.NONE} is, for now, always converted to {@code false}.
          */
         Boolean,
         /**
-         * GraalPython specific convertor that narrows any String representation to Java String.
+         * GraalPython specific converter that narrows any String representation to Java String.
          * Supports {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
         String,
         /**
-         * Corresponds to CPython's {@code int} convertor. Supports {@link #defaultValue()}, and
+         * Corresponds to CPython's {@code int} converter. Supports {@link #defaultValue()}, and
          * {@link #useDefaultForNone()}.
          */
         Int,
         /**
-         * Corresponds to CPython's {@code Py_ssize_t} convertor. Supports {@link #defaultValue()},
+         * Corresponds to CPython's {@code Py_ssize_t} converter. Supports {@link #defaultValue()},
          * and {@link #useDefaultForNone()}.
          */
         Index,
         /**
-         * Corresponds to CPython's {@code int(accept={str})} convertor. Supports
+         * Corresponds to CPython's {@code slice_index} converter. Supports {@link #defaultValue()},
+         * and {@link #useDefaultForNone()}.
+         */
+        SliceIndex,
+        /**
+         * Corresponds to CPython's {@code int(accept={str})} converter. Supports
          * {@link #defaultValue()}, and {@link #useDefaultForNone()}.
          */
         CodePoint,
         /**
-         * Corresponds to CPython's {@code Py_buffer} convertor.
+         * Corresponds to CPython's {@code Py_buffer} converter.
          */
         Buffer,
     }

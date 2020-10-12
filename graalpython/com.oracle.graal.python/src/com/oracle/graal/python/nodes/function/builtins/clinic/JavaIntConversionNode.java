@@ -42,6 +42,10 @@ package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -71,5 +75,10 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
             throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
         }
         return (int) result;
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+    public static JavaIntConversionNode create(@DefaultValue int defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+        return JavaIntConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 }

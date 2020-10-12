@@ -40,38 +40,45 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-/**
- * Substitutes a default value if no argument was given.
- */
-public final class DefaultValueNode extends ArgumentCastNode {
-    private final Object defaultValue;
-    private final boolean useDefaultForNone;
+public abstract class JavaStringConverterNode extends ArgumentCastNodeWithRaise {
+    private final String builtinName;
 
-    private final ConditionProfile profileArg = ConditionProfile.createBinaryProfile();
-
-    @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Boolean, PrimitiveType.Int, PrimitiveType.Long, PrimitiveType.Double})
-    public static DefaultValueNode create(@DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return new DefaultValueNode(defaultValue, useDefaultForNone);
+    public JavaStringConverterNode(String builtinName) {
+        this.builtinName = builtinName;
     }
 
-    protected DefaultValueNode(Object defaultValue, boolean useDefaultForNone) {
-        this.defaultValue = defaultValue;
-        this.useDefaultForNone = useDefaultForNone;
+    @Specialization
+    static Object doString(String value) {
+        return value;
     }
 
-    @Override
-    public Object execute(VirtualFrame frame, Object value) {
-        if (profileArg.profile(isHandledPNone(useDefaultForNone, value))) {
-            return defaultValue;
-        } else {
-            return value;
+    @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
+    Object doOthers(Object value,
+                    @Cached CastToJavaStringNode castToJavaStringNode) {
+        try {
+            return castToJavaStringNode.execute(value);
+        } catch (CannotCastException ex) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
         }
+    }
+
+    // to be overridden in the subclass
+    protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
+        return false;
+    }
+
+    @ClinicConverterFactory
+    public static JavaStringConverterNode create(@BuiltinName String builtinName) {
+        return JavaStringConverterNodeGen.create(builtinName);
     }
 }

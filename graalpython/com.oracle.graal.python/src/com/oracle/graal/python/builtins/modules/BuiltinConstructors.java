@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -272,22 +271,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // bytes([source[, encoding[, errors]]])
     @Builtin(name = BYTES, minNumOfPositionalArgs = 1, parameterNames = {"$self", "source", "encoding", "errors"}, constructsClass = PythonBuiltinClassType.PBytes)
-    @ArgumentClinic(name = "encoding", customConversion = "createExpectStringNodeEncoding")
-    @ArgumentClinic(name = "errors", customConversion = "createExpectStringNodeErrors")
+    @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
+    @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @GenerateNodeFactory
     public abstract static class BytesNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BuiltinConstructorsClinicProviders.BytesNodeClinicProviderGen.INSTANCE;
-        }
-
-        public static BytesNodes.ExpectStringNode createExpectStringNodeEncoding() {
-            return BytesNodesFactory.ExpectStringNodeGen.create(2, "bytes()");
-        }
-
-        public static BytesNodes.ExpectStringNode createExpectStringNodeErrors() {
-            return BytesNodesFactory.ExpectStringNodeGen.create(3, "bytes()");
         }
 
         @SuppressWarnings("unused")

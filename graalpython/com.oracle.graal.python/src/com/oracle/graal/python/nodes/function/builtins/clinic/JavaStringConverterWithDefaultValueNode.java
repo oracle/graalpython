@@ -40,38 +40,40 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.dsl.Specialization;
 
-public abstract class JavaStringConvertorNode extends ArgumentCastNodeWithRaise {
-    private final String builtinName;
+public abstract class JavaStringConverterWithDefaultValueNode extends JavaStringConverterNode {
+    private final Object defaultValue;
+    protected final boolean useDefaultForNone;
 
-    public JavaStringConvertorNode(String builtinName) {
-        this.builtinName = builtinName;
+    public JavaStringConverterWithDefaultValueNode(String builtinName, Object defaultValue, boolean useDefaultForNone) {
+        super(builtinName);
+        this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
     }
 
-    @Specialization
-    static Object doString(String value) {
-        return value;
+    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
+    Object doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
     }
 
-    @Specialization(guards = {"!shouldUseDefaultValue(value)"}, replaces = "doString")
-    Object doOthers(Object value,
-                    @Cached CastToJavaStringNode castToJavaStringNode) {
-        try {
-            return castToJavaStringNode.execute(value);
-        } catch (CannotCastException ex) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "str", value);
-        }
+    @Specialization(guards = "useDefaultForNone")
+    Object doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
     }
 
-    // to be overridden in the subclass
-    protected boolean shouldUseDefaultValue(@SuppressWarnings("unused") Object value) {
-        return false;
+    @Override
+    protected final boolean shouldUseDefaultValue(Object value) {
+        return isHandledPNone(useDefaultForNone, value);
+    }
+
+    @ClinicConverterFactory
+    public static JavaStringConverterWithDefaultValueNode create(@BuiltinName String builtinName, @DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+        return JavaStringConverterWithDefaultValueNodeGen.create(builtinName, defaultValue, useDefaultForNone);
     }
 }

@@ -88,6 +88,10 @@ import java.util.concurrent.TimeUnit;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentName;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1008,20 +1012,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "nfi_open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"}, keywordOnlyNames = {"dir_fd"})
-    @ArgumentClinic(name = "path", customConversion = "createPathConversionNode")
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
-    @ArgumentClinic(name = "dir_fd", customConversion = "createDirFdConversionNode")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
     public abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
-
-        public static PathConversionNode createPathConversionNode() {
-            return PathConversionNode.create("open", "path", false, false);
-        }
-
-        public static DirFdConversionNode createDirFdConversionNode() {
-            return DirFdConversionNode.create();
-        }
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -2284,6 +2280,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return (int) value;
         }
 
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
         public static DirFdConversionNode create() {
             return PosixModuleBuiltinsFactory.DirFdConversionNodeGen.create();
         }
@@ -2423,7 +2420,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return str.getBytes();
         }
 
-        public static PathConversionNode create(String functionName, String argumentName, boolean nullable, boolean allowFd) {
+        @ClinicConverterFactory
+        public static PathConversionNode create(@BuiltinName String functionName, @ArgumentName String argumentName, boolean nullable, boolean allowFd) {
             return PosixModuleBuiltinsFactory.PathConversionNodeGen.create(functionName, argumentName, nullable, allowFd);
         }
     }
