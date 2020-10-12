@@ -44,6 +44,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
+import com.oracle.graal.python.runtime.PosixFileHandle.PosixPath;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -108,10 +110,11 @@ public final class NFIPosixSupport {
     }
 
     @ExportMessage
-    public int open(String pathname, int flags,
+    public int open(PosixPath pathname, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         // TODO error handling
-        return invokeNode.callInt(lib, NativeFunctions.call_open, pathname, flags);
+        // TODO C-string proxy instead of newString()
+        return invokeNode.callInt(lib, NativeFunctions.call_open, PythonUtils.newString(pathname.path), flags);
     }
 
     @ExportMessage

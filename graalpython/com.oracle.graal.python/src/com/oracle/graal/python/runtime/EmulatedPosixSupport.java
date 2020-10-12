@@ -47,6 +47,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PosixFileHandle.PosixPath;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -109,7 +110,7 @@ public final class EmulatedPosixSupport {
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int open(String pathname, int flags) {
+    public int open(PosixPath pathname, int flags) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

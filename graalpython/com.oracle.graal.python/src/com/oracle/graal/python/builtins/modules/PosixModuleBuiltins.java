@@ -141,6 +141,9 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.runtime.PosixFileHandle;
+import com.oracle.graal.python.runtime.PosixFileHandle.PosixFd;
+import com.oracle.graal.python.runtime.PosixFileHandle.PosixPath;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1025,18 +1028,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(PosixPath.Path path, int flags, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") int dirFd,
+        Object open(PosixPath path, int flags, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("open", path.originalObject, PNone.NONE, flags);
-            // TODO C-string proxy instead of new String()
-            return posixLib.open(getPosixSupport(), newString(path), flags);
-        }
-
-        @TruffleBoundary
-        private static String newString(PosixPath.Path path) {
-            // TODO: use PythonUtils.newString once merged
-            return new String(path.path);
+            return posixLib.open(getPosixSupport(), path, flags);
         }
     }
 
@@ -2171,59 +2167,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
-     * structure, but only contains the results of the conversion.
-     */
-    public abstract static class PosixPath {
-
-        public static final PosixPath DEFAULT = new PosixPath() {
-        };
-
-        /**
-         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
-         * purposes. This field is {code null} iff the path parameter was optional and the caller
-         * did not provide it.
-         */
-        public final Object originalObject;
-
-        private PosixPath() {
-            originalObject = null;
-        }
-
-        protected PosixPath(Object originalObject) {
-            assert originalObject != null;
-            this.originalObject = originalObject;
-        }
-
-        /**
-         * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
-         * null character).
-         */
-        public static class Path extends PosixPath {
-            public final byte[] path;
-
-            public Path(Object originalObject, byte[] path) {
-                super(originalObject);
-                assert path != null;
-                this.path = path;
-            }
-        }
-
-        /**
-         * Contains the file descriptor if {@link PathConversionNode#allowFd} was {@code true} and
-         * the caller provided an integer instead of a path.
-         */
-        public static class Fd extends PosixPath {
-            public final int fd;
-
-            public Fd(Object originalObject, int fd) {
-                super(originalObject);
-                this.fd = fd;
-            }
-        }
-    }
-
-    /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
      * parameter is omitted, returns {@link DirFdConversionNode#DEFAULT}.
      */
@@ -2288,7 +2231,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
-     * {@link PosixPath}.
+     * {@link PosixFileHandle}.
      */
     public abstract static class PathConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
@@ -2305,73 +2248,71 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "nullable")
-        PosixPath doNone(@SuppressWarnings("unused") PNone value) {
-            return PosixPath.DEFAULT;
+        PosixFileHandle doNone(@SuppressWarnings("unused") PNone value) {
+            return PosixFileHandle.DEFAULT;
         }
 
         @Specialization(guards = "allowFd")
-        PosixPath doFdBool(boolean value) {
-            return new PosixPath.Fd(value, PInt.intValue(value));
+        PosixFileHandle doFdBool(boolean value) {
+            return new PosixFd(value, PInt.intValue(value));
         }
 
         @Specialization(guards = "allowFd")
-        PosixPath doFdInt(int value) {
-            return new PosixPath.Fd(value, value);
+        PosixFileHandle doFdInt(int value) {
+            return new PosixFd(value, value);
         }
 
         @Specialization(guards = "allowFd")
-        PosixPath doFdLong(long value) {
-            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(value, getRaiseNode()));
+        PosixFileHandle doFdLong(long value) {
+            return new PosixFd(value, DirFdConversionNode.longToFd(value, getRaiseNode()));
         }
 
         @Specialization(guards = "allowFd")
-        PosixPath doFdPInt(PInt value,
+        PosixFileHandle doFdPInt(PInt value,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
-            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(castToLongNode.execute(value), getRaiseNode()));
+            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(value), getRaiseNode()));
         }
 
         @Specialization
-        PosixPath doUnicode(String value) {
-            return new PosixPath.Path(value, checkPath(getStringBytes(value)));
+        PosixFileHandle doUnicode(String value) {
+            return new PosixPath(value, checkPath(getStringBytes(value)));
         }
 
         @Specialization
-        PosixPath doUnicode(PString value,
+        PosixFileHandle doUnicode(PString value,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            return new PosixPath.Path(value, checkPath(getStringBytes(castToJavaStringNode.execute(value))));
+            return new PosixPath(value, checkPath(getStringBytes(castToJavaStringNode.execute(value))));
         }
 
         @Specialization
-        PosixPath doBytes(VirtualFrame frame, PBytesLike value,
+        PosixFileHandle doBytes(VirtualFrame frame, PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode) {
-            return new PosixPath.Path(value, checkPath(toByteArrayNode.execute(frame, value)));
+            return new PosixPath(value, checkPath(toByteArrayNode.execute(frame, value)));
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
-        PosixPath doBuffer(VirtualFrame frame, Object value,
-                        // TODO when is shared dispatched library better than (non-shared)
-                        // specialized library?
+        PosixFileHandle doBuffer(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
             warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                             ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
             try {
-                return new PosixPath.Path(value, checkPath(lib.getBufferBytes(value)));
+                return new PosixPath(value, checkPath(lib.getBufferBytes(value)));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
             }
         }
 
         @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "lib.canBeIndex(value)"}, limit = "3")
-        PosixPath doIndex(VirtualFrame frame, Object value,
+        PosixFileHandle doIndex(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
             Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
-            return new PosixPath.Fd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
+            return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
         @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !lib.canBeIndex(value)"}, limit = "3")
-        PosixPath doGeneric(VirtualFrame frame, Object value,
+        PosixFileHandle doGeneric(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,

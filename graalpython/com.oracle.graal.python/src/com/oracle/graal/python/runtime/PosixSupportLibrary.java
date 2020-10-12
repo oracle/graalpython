@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
+import com.oracle.graal.python.runtime.PosixFileHandle.PosixPath;
 
 /**
  * Internal abstraction layer for POSIX functionality. Instance of the implementation is stored in
@@ -53,7 +54,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long umask(Object receiver, long mask);
 
-    public abstract int open(Object receiver, String pathname, int flags);
+    public abstract int open(Object receiver, PosixPath pathname, int flags);
 
     public abstract int close(Object receiver, int fd);
 

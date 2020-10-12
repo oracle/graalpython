@@ -41,12 +41,12 @@
 package com.oracle.graal.python.builtins.modules;
 
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PosixFileHandle;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -77,8 +77,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void noneAllowed() {
-        Assert.assertEquals(PosixPath.DEFAULT, call(true, false, PNone.NONE));
-        Assert.assertEquals(PosixPath.DEFAULT, call(true, false, PNone.NO_VALUE));
+        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NONE));
+        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NO_VALUE));
     }
 
     @Test
@@ -345,8 +345,8 @@ public class PathConversionNodeTests {
 
     private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
         Object result = call(nullable, allowFd, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.Path.class));
-        PosixPath.Path path = (PosixPath.Path) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFileHandle.PosixPath.class));
+        PosixFileHandle.PosixPath path = (PosixFileHandle.PosixPath) result;
         Assert.assertSame(orig, path.originalObject);
         return new String(path.path);
     }
@@ -364,8 +364,8 @@ public class PathConversionNodeTests {
 
     private static int callAndExpectFd(Object arg) {
         Object result = call(true, true, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.Fd.class));
-        PosixPath.Fd fd = (PosixPath.Fd) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFileHandle.PosixFd.class));
+        PosixFileHandle.PosixFd fd = (PosixFileHandle.PosixFd) result;
         Assert.assertSame(arg, fd.originalObject);
         return fd.fd;
     }
