@@ -768,9 +768,12 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
-            // Python land is receiving a handle from an HPy extension, so we are now owning the
-            // handle and we don't need it any longer. So, close it in every case.
-            handle.close(nativeContext, isAllocatedProfile);
+            boolean isNullHandle = isNullHandle(nativeContext, handle);
+            if (!isNullHandle) {
+                // Python land is receiving a handle from an HPy extension, so we are now owning the
+                // handle and we don't need it any longer. So, close it in every case.
+                handle.close(nativeContext, isAllocatedProfile);
+            }
             checkFunctionResult(name, isNullHandle(nativeContext, handle), nativeContext, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }
