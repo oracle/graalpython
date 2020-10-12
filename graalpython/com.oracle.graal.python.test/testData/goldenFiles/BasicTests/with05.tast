@@ -43,16 +43,11 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                             Identifier: open
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [22,25]`'x'`
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        CallNodeGen SourceSection: None
-                        CallNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
+                        CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None

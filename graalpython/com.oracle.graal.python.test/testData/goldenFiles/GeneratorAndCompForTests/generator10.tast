@@ -96,16 +96,11 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                         ReadGeneratorFrameVariableNode SourceSection: [41,45]`path`
                           Frame: [0,path,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                      LookupInheritedAttributeNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                        CachedDispatchFirst SourceSection: None
-                      CallNodeGen SourceSection: None
-                      CallNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      CachedDispatchFirst SourceSection: None
+                      CallUnaryMethodNodeGen SourceSection: None
+                      CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
                           CachedDispatchFirst SourceSection: None

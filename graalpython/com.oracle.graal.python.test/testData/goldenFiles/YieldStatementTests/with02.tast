@@ -58,16 +58,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                         ReadGeneratorFrameVariableNode SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]
                           ReadVariableFromFrameNodeGen SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        CallNodeGen SourceSection: None
-                        CallNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
+                        CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
@@ -92,16 +87,11 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                           ReadGlobalOrBuiltinNodeGen SourceSection: [49,51]`fn`
                             Identifier: fn
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        LookupInheritedAttributeNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                          CachedDispatchFirst SourceSection: None
-                        CallNodeGen SourceSection: None
-                        CallNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        CachedDispatchFirst SourceSection: None
+                        CallUnaryMethodNodeGen SourceSection: None
+                        CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
