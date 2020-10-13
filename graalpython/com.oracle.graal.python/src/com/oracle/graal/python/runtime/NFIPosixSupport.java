@@ -71,7 +71,7 @@ public final class NFIPosixSupport {
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
-        call_strerror("(sint32):string"),
+        call_strerror("(sint32, [sint8], sint32):sint32"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
         call_open_at("(sint32, string, sint32, sint32):sint32"),
@@ -122,6 +122,7 @@ public final class NFIPosixSupport {
 
     @ExportMessage
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         // TODO C-string proxy instead of newString()
         while (true) {
@@ -132,7 +133,7 @@ public final class NFIPosixSupport {
             }
             int errno = errno(invokeNode);
             if (errno != EINTR) {
-                throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
+                throw new PosixException(errno, strerror(ctx, invokeNode, errno), pathname.originalObject);
             }
             // TODO check signals
         }
@@ -157,13 +158,23 @@ public final class NFIPosixSupport {
         return invokeNode.callInt(lib, NativeFunctions.get_errno);
     }
 
-    private String strerror(InvokeNativeFunction invokeNode, int error) {
-        // TODO strerror is not thread safe
-        // TODO what does NFI do with the pointer?
-        try {
-            return invokeNode.ensureResultInterop().asString(invokeNode.call(lib, NativeFunctions.call_strerror, error));
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(NativeFunctions.call_strerror.name(), e);
+    private String strerror(PythonContext ctx, InvokeNativeFunction invokeNode, int error) {
+        // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
+        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r().
+        byte[] buf = new byte[1024];
+        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, error, ctx.getEnv().asGuestValue(buf), buf.length);
+        if (result != 0) {
+            return "Unknown error";
         }
+        return cStringToJavaString(buf);
+    }
+
+    private static String cStringToJavaString(byte[] buf) {
+        for (int i = 0; i < buf.length; ++i) {
+            if (buf[i] == 0) {
+                return PythonUtils.newString(buf, 0, i);
+            }
+        }
+        return PythonUtils.newString(buf);
     }
 }

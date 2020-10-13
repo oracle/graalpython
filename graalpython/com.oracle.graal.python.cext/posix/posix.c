@@ -49,6 +49,17 @@
 #include <string.h>
 #include <unistd.h>
 
+/*
+  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
+  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
+  Then we explicitly declare the function with POSIX signature which should force the compiler to
+  report an error in case we got the GNU version somehow.
+*/
+#ifdef _GNU_SOURCE
+#error "Someone defined _GNU_SOURCE"
+#endif
+int strerror_r(int errnum, char *buf, size_t buflen);
+
 int64_t call_getpid() {
   return getpid();
 }
@@ -74,6 +85,6 @@ int32_t get_errno() {
     return errno;
 }
 
-const char *call_strerror(int32_t error) {
-    return strerror(error);
+int32_t call_strerror(int32_t error, char *buf, int32_t buflen) {
+    return strerror_r(error, buf, buflen);
 }
