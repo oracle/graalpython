@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -175,8 +176,8 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 
-    public final PException raiseOSError(VirtualFrame frame, int errorCode, String message, Object filename, Object filename2) {
-        return getConstructAndRaiseNode().raiseOSError(frame, errorCode, message, filename, filename2);
+    public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
+        return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2());
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {

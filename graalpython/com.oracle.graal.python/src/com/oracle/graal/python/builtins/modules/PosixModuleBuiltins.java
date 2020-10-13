@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -1039,20 +1040,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return posixLib.openAt(getPosixSupport(), dirFd, path, fixedFlags, mode);
             } catch (PosixException e) {
-                throw raiseOSError(frame, e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2());
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
 
     @Builtin(name = "nfi_close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class NfiCloseNode extends PythonFileNode {
+    public abstract static class NfiCloseNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiCloseNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object close(int fd,
+        Object close(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.close(getPosixSupport(), fd);
+            try {
+                posixLib.close(getPosixSupport(), fd);
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

@@ -115,7 +115,7 @@ public final class EmulatedPosixSupport {
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int close(int fd) {
+    public void close(int fd) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

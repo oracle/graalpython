@@ -40,21 +40,16 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-
-import java.util.Arrays;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -137,10 +132,11 @@ public final class NFIPosixSupport {
     }
 
     @ExportMessage
-    public int close(int fd,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        // TODO error handling
-        return invokeNode.callInt(lib, NativeFunctions.call_close, fd);
+    public void close(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (invokeNode.callInt(lib, NativeFunctions.call_close, fd) < 0) {
+            throw posixExceptionFromErrno(invokeNode);
+        }
     }
 
     @ExportMessage
@@ -164,6 +160,11 @@ public final class NFIPosixSupport {
             return "Unknown error";
         }
         return cStringToJavaString(buf);
+    }
+
+    private PosixException posixExceptionFromErrno(InvokeNativeFunction invokeNode) throws PosixException {
+        int errno = errno(invokeNode);
+        throw new PosixException(errno, strerror(invokeNode, errno));
     }
 
     private Object wrap(byte[] bytes) {
