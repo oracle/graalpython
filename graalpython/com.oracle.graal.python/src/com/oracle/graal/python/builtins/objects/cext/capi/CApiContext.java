@@ -132,6 +132,9 @@ public final class CApiContext extends CExtContext {
     /** Cache for polyglot types of primitive and pointer types. */
     @CompilationFinal(dimensions = 1) private final TruffleObject[] llvmTypeCache;
 
+    /** same as {@code moduleobject.c: max_module_number} */
+    private long maxModuleNumber;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
@@ -191,6 +194,10 @@ public final class CApiContext extends CExtContext {
 
     public void setLLVMTypeID(LLVMType llvmType, TruffleObject llvmTypeId) {
         llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
+    }
+
+    public long getAndIncMaxModuleNumber() {
+        return maxModuleNumber++;
     }
 
     @TruffleBoundary
@@ -802,5 +809,4 @@ public final class CApiContext extends CExtContext {
             return false;
         }
     }
-
 }

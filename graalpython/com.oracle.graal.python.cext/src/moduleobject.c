@@ -42,7 +42,29 @@
 
 PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
 
-/* Modules */
+PyTypeObject PyModuleDef_Type = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    "moduledef",                                /* tp_name */
+    sizeof(struct PyModuleDef),                 /* tp_basicsize */
+    0,                                          /* tp_itemsize */
+};
+
+
+UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
+// partially taken from CPython "Objects/moduleobject.c"
+PyObject*
+PyModuleDef_Init(struct PyModuleDef* def)
+{
+    if (PyType_Ready(&PyModuleDef_Type) < 0)
+         return NULL;
+    if (def->m_base.m_index == 0) {
+        Py_REFCNT(def) = 1;
+        Py_TYPE(def) = &PyModuleDef_Type;
+        def->m_base.m_index = UPCALL_CEXT_L(_jls__PyModule_GetAndIncMaxModuleNumber);
+    }
+    return (PyObject*)def;
+}
+
 int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     if (!methods) {
         return -1;
