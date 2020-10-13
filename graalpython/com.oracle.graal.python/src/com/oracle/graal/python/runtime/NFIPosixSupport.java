@@ -87,18 +87,20 @@ public final class NFIPosixSupport {
         }
     }
 
+    private final PythonContext context;
     private final TypedNativeLibrary<NativeFunctions> lib;
 
-    private NFIPosixSupport(String backend) {
+    private NFIPosixSupport(PythonContext context, String backend) {
+        this.context = context;
         lib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, NativeFunctions.values(), backend);
     }
 
-    public static NFIPosixSupport createNative() {
-        return new NFIPosixSupport(null);
+    public static NFIPosixSupport createNative(PythonContext context) {
+        return new NFIPosixSupport(context, null);
     }
 
-    public static NFIPosixSupport createLLVM() {
-        return new NFIPosixSupport("llvm");
+    public static NFIPosixSupport createLLVM(PythonContext context) {
+        return new NFIPosixSupport(context, "llvm");
     }
 
     @ExportMessage
@@ -119,17 +121,16 @@ public final class NFIPosixSupport {
 
     @ExportMessage
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(ctx, pathname), flags, mode);
+            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
                 // TODO set inheritable, O_CLOEXEC support etc.
                 return fd;
             }
             int errno = errno(invokeNode);
             if (errno != EINTR) {
-                throw new PosixException(errno, strerror(ctx, invokeNode, errno), pathname.originalObject);
+                throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
             }
             // TODO check signals
         }
@@ -144,26 +145,29 @@ public final class NFIPosixSupport {
 
     @ExportMessage
     public long read(int fd, byte[] buf,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         // TODO error handling
-        return invokeNode.callLong(lib, NativeFunctions.call_read, fd, ctx.getEnv().asGuestValue(buf), buf.length);
+        return invokeNode.callLong(lib, NativeFunctions.call_read, wrap(buf), buf.length);
     }
 
     private int errno(InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(lib, NativeFunctions.get_errno);
     }
 
-    private String strerror(PythonContext ctx, InvokeNativeFunction invokeNode, int error) {
+    private String strerror(InvokeNativeFunction invokeNode, int error) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
         byte[] buf = new byte[1024];
-        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, error, ctx.getEnv().asGuestValue(buf), buf.length);
+        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, error, wrap(buf), buf.length);
         if (result != 0) {
             return "Unknown error";
         }
         return cStringToJavaString(buf);
+    }
+
+    private Object wrap(byte[] bytes) {
+        return context.getEnv().asGuestValue(bytes);
     }
 
     private static String cStringToJavaString(byte[] buf) {
@@ -175,8 +179,8 @@ public final class NFIPosixSupport {
         return PythonUtils.newString(buf);
     }
 
-    private static Object pathToCString(PythonContext ctx, PosixPath path) {
-        return ctx.getEnv().asGuestValue(nullTerminate(path.path));
+    private Object pathToCString(PosixPath path) {
+        return wrap(nullTerminate(path.path));
     }
 
     @TruffleBoundary
