@@ -41,23 +41,20 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+
+import java.util.Arrays;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -74,7 +71,7 @@ public final class NFIPosixSupport {
         call_strerror("(sint32, [sint8], sint32):sint32"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
-        call_open_at("(sint32, string, sint32, sint32):sint32"),
+        call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64");
 
@@ -124,9 +121,8 @@ public final class NFIPosixSupport {
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
                     @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        // TODO C-string proxy instead of newString()
         while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, PythonUtils.newString(pathname.path), flags, mode);
+            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(ctx, pathname), flags, mode);
             if (fd >= 0) {
                 // TODO set inheritable, O_CLOEXEC support etc.
                 return fd;
@@ -176,5 +172,14 @@ public final class NFIPosixSupport {
             }
         }
         return PythonUtils.newString(buf);
+    }
+
+    private static Object pathToCString(PythonContext ctx, PosixPath path) {
+        return ctx.getEnv().asGuestValue(nullTerminate(path.path));
+    }
+
+    @TruffleBoundary
+    private static byte[] nullTerminate(byte[] str) {
+        return Arrays.copyOf(str, str.length + 1);
     }
 }
