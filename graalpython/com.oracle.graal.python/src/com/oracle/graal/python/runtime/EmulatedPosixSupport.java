@@ -109,7 +109,7 @@ public final class EmulatedPosixSupport {
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int open(String pathname, int flags) {
+    public int openAt(int dirFd, PosixSupportLibrary.PosixPath pathname, int flags, int mode) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

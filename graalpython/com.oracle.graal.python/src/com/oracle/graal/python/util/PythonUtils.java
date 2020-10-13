@@ -156,6 +156,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String newString(byte[] bytes, int offset, int length) {
+        return new String(bytes, offset, length);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static String newString(char[] chars) {
         return new String(chars);
     }

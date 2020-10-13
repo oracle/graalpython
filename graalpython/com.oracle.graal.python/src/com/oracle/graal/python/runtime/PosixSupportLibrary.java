@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 
@@ -49,14 +50,112 @@ import com.oracle.truffle.api.library.Library;
  */
 @GenerateLibrary
 public abstract class PosixSupportLibrary extends Library {
+
+    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is equal to AT_FDCWD
+
     public abstract long getpid(Object receiver);
 
     public abstract long umask(Object receiver, long mask);
 
-    public abstract int open(Object receiver, String pathname, int flags);
+    public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
 
     public abstract int close(Object receiver, int fd);
 
     public abstract long read(Object receiver, int fd, byte[] buf);
 
+    public static class PosixException extends Exception {
+
+        private static final long serialVersionUID = -115762483478883093L;
+
+        private final int errorCode;
+        private final Object filename1;
+        private final Object filename2;
+
+        public PosixException(int errorCode, String message) {
+            this(errorCode, message, null, null);
+        }
+
+        public PosixException(int errorCode, String message, Object filename) {
+            this(errorCode, message, filename, null);
+        }
+
+        public PosixException(int errorCode, String message, Object filename1, Object filename2) {
+            super(message);
+            this.errorCode = errorCode;
+            this.filename1 = filename1;
+            this.filename2 = filename2;
+        }
+
+        public int getErrorCode() {
+            return errorCode;
+        }
+
+        public Object getFilename1() {
+            return filename1;
+        }
+
+        public Object getFilename2() {
+            return filename2;
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    /**
+     * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
+     * structure, but only contains the results of the conversion, not the conversion parameters.
+     */
+    public static abstract class PosixFileHandle {
+
+        public static final PosixFileHandle DEFAULT = new PosixFileHandle() {
+        };
+
+        /**
+         * Contains the original object (or the object returned by {@code __fspath__}) for auditing
+         * purposes. This field is {code null} iff the path parameter was optional and the caller did
+         * not provide it.
+         */
+        public final Object originalObject;
+
+        private PosixFileHandle() {
+            originalObject = null;
+        }
+
+        protected PosixFileHandle(Object originalObject) {
+            assert originalObject != null;
+            this.originalObject = originalObject;
+        }
+    }
+
+    /**
+     * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
+     * null character).
+     */
+    public static class PosixPath extends PosixFileHandle {
+        public final byte[] path;
+
+        public PosixPath(Object originalObject, byte[] path) {
+            super(originalObject);
+            assert path != null;
+            this.path = path;
+        }
+    }
+
+    /**
+     * Contains the file descriptor if it was allowed in
+     * {@link PosixModuleBuiltins.PathConversionNode} and the caller provided an integer instead of
+     * a path.
+     */
+    public static class PosixFd extends PosixFileHandle {
+        public final int fd;
+
+        public PosixFd(Object originalObject, int fd) {
+            super(originalObject);
+            this.fd = fd;
+        }
+    }
 }

@@ -42,10 +42,23 @@
 // Helper functions that mostly delegate to POSIX functions
 // These functions are called from NFIPosixSupport Java class using NFI
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
+
+/*
+  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
+  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
+  Then we explicitly declare the function with POSIX signature which should force the compiler to
+  report an error in case we got the GNU version somehow.
+*/
+#ifdef _GNU_SOURCE
+#error "Someone defined _GNU_SOURCE"
+#endif
+int strerror_r(int errnum, char *buf, size_t buflen);
 
 int64_t call_getpid() {
   return getpid();
@@ -56,8 +69,8 @@ int64_t call_umask(int64_t mask) {
   return umask(mask);
 }
 
-int32_t call_open(const char *pathname, int32_t flags) {
-    return open(pathname, flags);
+int32_t call_open_at(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+    return openat(dirFd, pathname, flags, mode);
 }
 
 int32_t call_close(int32_t fd) {
@@ -68,3 +81,10 @@ int64_t call_read(int32_t fd, void *buf, uint64_t count) {
     return read(fd, buf, count);
 }
 
+int32_t get_errno() {
+    return errno;
+}
+
+int32_t call_strerror(int32_t error, char *buf, int32_t buflen) {
+    return strerror_r(error, buf, buflen);
+}

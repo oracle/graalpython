@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -75,8 +76,8 @@ public class DirFdConversionNodeTests {
 
     @Test
     public void none() {
-        Assert.assertEquals(DirFdConversionNode.DEFAULT, call(PNone.NONE));
-        Assert.assertEquals(DirFdConversionNode.DEFAULT, call(PNone.NO_VALUE));
+        Assert.assertEquals(PosixSupportLibrary.DEFAULT_DIR_FD, call(PNone.NONE));
+        Assert.assertEquals(PosixSupportLibrary.DEFAULT_DIR_FD, call(PNone.NO_VALUE));
     }
 
     @Test
