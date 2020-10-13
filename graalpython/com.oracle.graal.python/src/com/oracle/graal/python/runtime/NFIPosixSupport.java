@@ -183,8 +183,9 @@ public final class NFIPosixSupport {
         return wrap(nullTerminate(path.path));
     }
 
-    @TruffleBoundary
     private static byte[] nullTerminate(byte[] str) {
-        return Arrays.copyOf(str, str.length + 1);
+        byte[] terminated = new byte[str.length + 1];
+        PythonUtils.arraycopy(str, 0, terminated, 0, str.length);
+        return terminated;
     }
 }
