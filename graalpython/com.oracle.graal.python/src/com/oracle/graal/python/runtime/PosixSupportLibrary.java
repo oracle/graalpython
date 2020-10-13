@@ -50,15 +50,60 @@ import com.oracle.truffle.api.library.Library;
  */
 @GenerateLibrary
 public abstract class PosixSupportLibrary extends Library {
+
+    public static final int DEFAULT_DIR_FD = -100;  // TODO AT_FDCWD
+
     public abstract long getpid(Object receiver);
 
     public abstract long umask(Object receiver, long mask);
 
-    public abstract int open(Object receiver, PosixPath pathname, int flags);
+    public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
 
     public abstract int close(Object receiver, int fd);
 
     public abstract long read(Object receiver, int fd, byte[] buf);
+
+    public static class PosixException extends Exception {
+
+        private static final long serialVersionUID = -115762483478883093L;
+
+        private final int errorCode;
+        private final Object filename1;
+        private final Object filename2;
+
+        public PosixException(int errorCode, String message) {
+            this(errorCode, message, null, null);
+        }
+
+        public PosixException(int errorCode, String message, Object filename) {
+            this(errorCode, message, filename, null);
+        }
+
+        public PosixException(int errorCode, String message, Object filename1, Object filename2) {
+            super(message);
+            this.errorCode = errorCode;
+            this.filename1 = filename1;
+            this.filename2 = filename2;
+        }
+
+        public int getErrorCode() {
+            return errorCode;
+        }
+
+        public Object getFilename1() {
+            return filename1;
+        }
+
+        public Object getFilename2() {
+            return filename2;
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
 
     /**
      * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}

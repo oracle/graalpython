@@ -41,14 +41,21 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
-import com.oracle.graal.python.runtime.PosixFileHandle.PosixPath;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -60,10 +67,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int EINTR = 4;
+
     enum NativeFunctions implements NativeFunction {
+        get_errno("():sint32"),
+        call_strerror("(sint32):string"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
-        call_open("(string, sint32):sint32"),
+        call_open_at("(sint32, string, sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64");
 
@@ -110,11 +121,21 @@ public final class NFIPosixSupport {
     }
 
     @ExportMessage
-    public int open(PosixPath pathname, int flags,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        // TODO error handling
+    public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         // TODO C-string proxy instead of newString()
-        return invokeNode.callInt(lib, NativeFunctions.call_open, PythonUtils.newString(pathname.path), flags);
+        while (true) {
+            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, PythonUtils.newString(pathname.path), flags, mode);
+            if (fd >= 0) {
+                // TODO set inheritable, O_CLOEXEC support etc.
+                return fd;
+            }
+            int errno = errno(invokeNode);
+            if (errno != EINTR) {
+                throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
+            }
+            // TODO check signals
+        }
     }
 
     @ExportMessage
@@ -130,5 +151,19 @@ public final class NFIPosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         // TODO error handling
         return invokeNode.callLong(lib, NativeFunctions.call_read, fd, ctx.getEnv().asGuestValue(buf), buf.length);
+    }
+
+    private int errno(InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(lib, NativeFunctions.get_errno);
+    }
+
+    private String strerror(InvokeNativeFunction invokeNode, int error) {
+        // TODO strerror is not thread safe
+        // TODO what does NFI do with the pointer?
+        try {
+            return invokeNode.ensureResultInterop().asString(invokeNode.call(lib, NativeFunctions.call_strerror, error));
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(NativeFunctions.call_strerror.name(), e);
+        }
     }
 }

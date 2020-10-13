@@ -175,6 +175,10 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 
+    public final PException raiseOSError(VirtualFrame frame, int errorCode, String message, Object filename, Object filename2) {
+        return getConstructAndRaiseNode().raiseOSError(frame, errorCode, message, filename, filename2);
+    }
+
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {
         return getConstructAndRaiseNode().raiseOSError(frame, num);
     }

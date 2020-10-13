@@ -42,9 +42,11 @@
 // Helper functions that mostly delegate to POSIX functions
 // These functions are called from NFIPosixSupport Java class using NFI
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
 int64_t call_getpid() {
@@ -56,8 +58,8 @@ int64_t call_umask(int64_t mask) {
   return umask(mask);
 }
 
-int32_t call_open(const char *pathname, int32_t flags) {
-    return open(pathname, flags);
+int32_t call_open_at(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+    return openat(dirFd, pathname, flags, mode);
 }
 
 int32_t call_close(int32_t fd) {
@@ -68,3 +70,10 @@ int64_t call_read(int32_t fd, void *buf, uint64_t count) {
     return read(fd, buf, count);
 }
 
+int32_t get_errno() {
+    return errno;
+}
+
+const char *call_strerror(int32_t error) {
+    return strerror(error);
+}

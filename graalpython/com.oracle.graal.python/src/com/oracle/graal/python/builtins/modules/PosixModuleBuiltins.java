@@ -143,6 +143,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
@@ -185,6 +186,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int TEMPORARY = 4259840;
     private static final int SYNC = 1052672;
     private static final int RSYNC = 1052672;
+    private static final int CLOEXEC = 524288;
     private static final int DIRECT = 16384;
     private static final int DSYNC = 4096;
     private static final int NDELAY = 2048;
@@ -267,6 +269,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_NDELAY", NDELAY);
         builtinConstants.put("O_DSYNC", DSYNC);
         builtinConstants.put("O_DIRECT", DIRECT);
+        builtinConstants.put("O_CLOEXEC", CLOEXEC);
         builtinConstants.put("O_RSYNC", RSYNC);
         builtinConstants.put("O_SYNC", SYNC);
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
@@ -1028,11 +1031,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(PosixPath path, int flags, @SuppressWarnings("unused") int mode, @SuppressWarnings("unused") int dirFd,
+        Object open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            auditNode.audit("open", path.originalObject, PNone.NONE, flags);
-            return posixLib.open(getPosixSupport(), path, flags);
+            int fixedFlags = flags | CLOEXEC;
+            auditNode.audit("open", path.originalObject, PNone.NONE, fixedFlags);
+            try {
+                return posixLib.openAt(getPosixSupport(), dirFd, path, fixedFlags, mode);
+            } catch (PosixException e) {
+                throw raiseOSError(frame, e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2());
+            }
         }
     }
 
@@ -2172,7 +2180,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
-        public static final int DEFAULT = -100;
+        public static final int DEFAULT = PosixSupportLibrary.DEFAULT_DIR_FD;
 
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone value) {

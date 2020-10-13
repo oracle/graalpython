@@ -154,6 +154,13 @@ public abstract class PConstructAndRaiseNode extends Node {
         return exception.getMessage();
     }
 
+    private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
+        return new Object[]{errno, message,
+                (filename1 != null) ? filename1 : PNone.NONE,
+                PNone.NONE,
+                (filename2 != null) ? filename2 : PNone.NONE};
+    }
+
     private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {
         return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage(),
                         (filename1 != null) ? filename1 : PNone.NONE,
@@ -199,6 +206,14 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSError(Frame frame, OSErrorEnum osErrorEnum, Exception exception) {
         return raiseOSError(frame, osErrorEnum, getMessage(exception));
+    }
+
+    public final PException raiseOSError(Frame frame, int errno, String message, Object filename) {
+        return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, null));
+    }
+
+    public final PException raiseOSError(Frame frame, int errno, String message, Object filename, Object filename2) {
+        return raiseOSErrorInternal(frame, createOsErrorArgs(errno, message, filename, filename2));
     }
 
     public static PConstructAndRaiseNode create() {
