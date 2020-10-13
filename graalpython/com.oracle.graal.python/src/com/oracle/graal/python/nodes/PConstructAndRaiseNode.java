@@ -156,9 +156,9 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     private static Object[] createOsErrorArgs(int errno, String message, Object filename1, Object filename2) {
         return new Object[]{errno, message,
-                (filename1 != null) ? filename1 : PNone.NONE,
-                PNone.NONE,
-                (filename2 != null) ? filename2 : PNone.NONE};
+                        (filename1 != null) ? filename1 : PNone.NONE,
+                        PNone.NONE,
+                        (filename2 != null) ? filename2 : PNone.NONE};
     }
 
     private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum, String filename1, String filename2) {

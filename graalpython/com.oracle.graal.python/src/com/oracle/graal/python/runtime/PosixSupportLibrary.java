@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 
@@ -51,7 +50,8 @@ import com.oracle.truffle.api.library.Library;
 @GenerateLibrary
 public abstract class PosixSupportLibrary extends Library {
 
-    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is equal to AT_FDCWD
+    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
+                                                    // equal to AT_FDCWD
 
     public abstract long getpid(Object receiver);
 
@@ -109,15 +109,15 @@ public abstract class PosixSupportLibrary extends Library {
      * Represents the result of {@code path_t} conversion. Similar to CPython's {@code path_t}
      * structure, but only contains the results of the conversion, not the conversion parameters.
      */
-    public static abstract class PosixFileHandle {
+    public abstract static class PosixFileHandle {
 
         public static final PosixFileHandle DEFAULT = new PosixFileHandle() {
         };
 
         /**
          * Contains the original object (or the object returned by {@code __fspath__}) for auditing
-         * purposes. This field is {code null} iff the path parameter was optional and the caller did
-         * not provide it.
+         * purposes. This field is {code null} iff the path parameter was optional and the caller
+         * did not provide it.
          */
         public final Object originalObject;
 
@@ -146,9 +146,8 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
-     * Contains the file descriptor if it was allowed in
-     * {@link PosixModuleBuiltins.PathConversionNode} and the caller provided an integer instead of
-     * a path.
+     * Contains the file descriptor if it was allowed in the argument conversion node and the caller
+     * provided an integer instead of a path.
      */
     public static class PosixFd extends PosixFileHandle {
         public final int fd;

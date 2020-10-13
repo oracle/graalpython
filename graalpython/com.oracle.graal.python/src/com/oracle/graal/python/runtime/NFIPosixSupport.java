@@ -156,7 +156,8 @@ public final class NFIPosixSupport {
 
     private String strerror(PythonContext ctx, InvokeNativeFunction invokeNode, int error) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
-        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling strerror_r().
+        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
+        // strerror_r().
         byte[] buf = new byte[1024];
         int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, error, ctx.getEnv().asGuestValue(buf), buf.length);
         if (result != 0) {
