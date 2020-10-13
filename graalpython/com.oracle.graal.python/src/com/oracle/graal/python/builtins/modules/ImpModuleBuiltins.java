@@ -47,6 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -354,7 +355,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
-            Object nativeResult = interop.execute(pyinitFunc);
+            Object nativeResult;
+            try {
+                nativeResult = interop.execute(pyinitFunc);
+            } catch (ArityException e) {
+                // In case of multi-phase init, the init function may take more than one arguments.
+                // However, CPython gracefully ignores that. So, we pass just NULL pointers.
+                Object[] arguments = new Object[e.getExpectedArity()];
+                Arrays.fill(arguments, PNone.NO_VALUE);
+                nativeResult = interop.execute(pyinitFunc, arguments);
+            }
+
             getCheckResultNode().execute(initFuncName, nativeResult);
 
             Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
