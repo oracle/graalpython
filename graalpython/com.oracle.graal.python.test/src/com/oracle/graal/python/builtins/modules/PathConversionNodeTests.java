@@ -46,7 +46,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PosixFileHandle;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -345,8 +347,8 @@ public class PathConversionNodeTests {
 
     private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
         Object result = call(nullable, allowFd, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFileHandle.PosixPath.class));
-        PosixFileHandle.PosixPath path = (PosixFileHandle.PosixPath) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
+        PosixPath path = (PosixPath) result;
         Assert.assertSame(orig, path.originalObject);
         return new String(path.path);
     }
@@ -364,8 +366,8 @@ public class PathConversionNodeTests {
 
     private static int callAndExpectFd(Object arg) {
         Object result = call(true, true, arg);
-        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFileHandle.PosixFd.class));
-        PosixFileHandle.PosixFd fd = (PosixFileHandle.PosixFd) result;
+        Assert.assertThat(result, CoreMatchers.instanceOf(PosixFd.class));
+        PosixFd fd = (PosixFd) result;
         Assert.assertSame(arg, fd.originalObject);
         return fd.fd;
     }
