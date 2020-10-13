@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
@@ -158,7 +159,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * {@link com.oracle.graal.python.nodes.expression.InplaceArithmetic}) to call targets. Use this
      * map to retrieve a singleton instance (per engine) such that proper AST sharing is possible.
      */
-    private ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOperatorCallTargetCache;
+    private final AtomicReference<ConcurrentHashMap<Object, WeakReference<RootCallTarget>>> arithmeticOpCallTargetCacheRef = new AtomicReference<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -696,6 +697,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * target exists yet, it will be created lazily. This method is thread-safe and should be used
      * for all contexts in this engine to enable AST sharing.
      */
+    @TruffleBoundary
     public RootCallTarget getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic unaryOperator) {
         return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
     }
@@ -705,6 +707,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * target exists yet, it will be created lazily. This method is thread-safe and should be used
      * for all contexts in this engine to enable AST sharing.
      */
+    @TruffleBoundary
     public RootCallTarget getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic unaryOperator) {
         return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
     }
@@ -714,6 +717,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * target exists yet, it will be created lazily. This method is thread-safe and should be used
      * for all contexts in this engine to enable AST sharing.
      */
+    @TruffleBoundary
     public RootCallTarget getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic unaryOperator) {
         return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
     }
@@ -723,20 +727,26 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * target exists yet, it will be created lazily. This method is thread-safe and should be used
      * for all contexts in this engine to enable AST sharing.
      */
+    @TruffleBoundary
     public RootCallTarget getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic unaryOperator) {
         return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
     }
 
     private RootCallTarget getOrCreateArithmeticCallTarget(Object arithmeticOperator, Function<PythonLanguage, RootCallTarget> supplier) {
-        if (arithmeticOperatorCallTargetCache == null) {
-            synchronized (this) {
-                // need to do check a second time (now synchronized)
-                if (arithmeticOperatorCallTargetCache == null) {
-                    arithmeticOperatorCallTargetCache = new ConcurrentHashMap<>();
+        CompilerAsserts.neverPartOfCompilation();
+        ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.get();
+        if (arithmeticOpCallTargetCache == null) {
+            arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.updateAndGet((v) -> {
+                // IMPORTANT: only create a new instance if we still see 'null'; otherwise we would
+                // overwrite the update of a different thread
+                if (v == null) {
+                    return new ConcurrentHashMap<>();
                 }
-            }
+                return v;
+            });
         }
-        WeakReference<RootCallTarget> ctRef = arithmeticOperatorCallTargetCache.compute(arithmeticOperator, (k, v) -> {
+
+        WeakReference<RootCallTarget> ctRef = arithmeticOpCallTargetCache.compute(arithmeticOperator, (k, v) -> {
             RootCallTarget cachedCallTarget = v != null ? v.get() : null;
             if (cachedCallTarget == null) {
                 return new WeakReference<>(supplier.apply(this));
@@ -752,7 +762,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // the map.
             final RootCallTarget callTargetToCache = supplier.apply(this);
             callTarget = callTargetToCache;
-            arithmeticOperatorCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
+            arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
         }
         assert callTarget != null;
         return callTarget;
