@@ -154,7 +154,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, Object cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
     }
 
     /**
@@ -287,6 +287,7 @@ public abstract class PythonObjectLibrary extends Library {
 
         @Child private IsSubtypeNode isSubtype;
         @Child private IsSameTypeNode isSameType;
+        @Child private PRaiseNode raiseNode;
         @CompilationFinal byte state = 0;
 
         protected IsSubtypeNode getIsSubtypeNode() {
@@ -304,6 +305,14 @@ public abstract class PythonObjectLibrary extends Library {
                 isSameType = insert(IsSameTypeNodeGen.create());
             }
             return isSameType;
+        }
+
+        protected PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
         }
 
         protected void enterReverseCompare() {
@@ -341,6 +350,11 @@ public abstract class PythonObjectLibrary extends Library {
             @Override
             protected IsSameTypeNode getIsSameTypeNode() {
                 return IsSameTypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected PRaiseNode getRaiseNode() {
+                return PRaiseNode.getUncached();
             }
 
             @Override
@@ -512,7 +526,7 @@ public abstract class PythonObjectLibrary extends Library {
      * object cannot be interpreted as an index.
      */
     public Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
+        throw getDefaultNodes().getRaiseNode().raiseIntegerInterpretationError(receiver);
     }
 
     /**
@@ -539,7 +553,7 @@ public abstract class PythonObjectLibrary extends Library {
      * method. All other types raise a TypeError.
      */
     public String asPathWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
     }
 
     /**
@@ -571,7 +585,7 @@ public abstract class PythonObjectLibrary extends Library {
      * of that method. Raise TypeError otherwise.
      */
     public int asFileDescriptorWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
     }
 
     /**
@@ -672,7 +686,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Call a callable object.
      */
     public Object callObjectWithState(Object callable, ThreadState state, Object... arguments) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
+        throw getDefaultNodes().getRaiseNode().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
     }
 
     /**
@@ -697,7 +711,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @see #callUnboundMethod(Object, VirtualFrame, Object, Object...)
      */
     public Object callUnboundMethodWithState(Object method, ThreadState state, Object receiver, Object... arguments) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
+        throw getDefaultNodes().getRaiseNode().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
     }
 
     /**
@@ -874,7 +888,7 @@ public abstract class PythonObjectLibrary extends Library {
         } else if (errorType == null) {
             return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
         } else {
-            throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
+            throw getDefaultNodes().getRaiseNode().raiseNumberTooLarge(errorType, result);
         }
     }
 
@@ -964,7 +978,7 @@ public abstract class PythonObjectLibrary extends Library {
      * that slot.
      */
     public int lengthWithState(Object receiver, ThreadState state) {
-        throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
+        throw getDefaultNodes().getRaiseNode().raiseHasNoLength(receiver);
     }
 
     /**
@@ -1096,7 +1110,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Implements the logic from {@code PyObject_GetIter}.
      */
     public Object getIteratorWithState(Object receiver, ThreadState state) {
-        throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }
 
     /**
