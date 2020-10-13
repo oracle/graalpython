@@ -51,7 +51,7 @@ import com.oracle.truffle.api.library.Library;
 @GenerateLibrary
 public abstract class PosixSupportLibrary extends Library {
 
-    public static final int DEFAULT_DIR_FD = -100;  // TODO AT_FDCWD
+    public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is equal to AT_FDCWD
 
     public abstract long getpid(Object receiver);
 

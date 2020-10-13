@@ -2176,15 +2176,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
-     * parameter is omitted, returns {@link DirFdConversionNode#DEFAULT}.
+     * parameter is omitted, returns {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
-        public static final int DEFAULT = PosixSupportLibrary.DEFAULT_DIR_FD;
-
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone value) {
-            return DEFAULT;
+            return PosixSupportLibrary.DEFAULT_DIR_FD;
         }
 
         @Specialization
