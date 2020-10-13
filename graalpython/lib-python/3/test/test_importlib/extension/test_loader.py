@@ -104,7 +104,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
     # Handling failure on reload is the up to the module.
     test_state_after_failure = None
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_module(self):
         '''Test loading an extension module'''
         with util.uncache(self.name):
@@ -119,7 +119,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
             self.assertIsInstance(module.__loader__,
                                   self.machinery.ExtensionFileLoader)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_functionality(self):
         '''Test basic functionality of stuff defined in an extension module'''
         with util.uncache(self.name):
@@ -140,7 +140,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
             self.assertEqual(module.int_const, 1969)
             self.assertEqual(module.str_const, 'something different')
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_reload(self):
         '''Test that reload didn't re-set the module's attributes'''
         with util.uncache(self.name):
@@ -149,7 +149,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
             importlib.reload(module)
             self.assertIs(ex_class, module.Example)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_try_registration(self):
         '''Assert that the PyState_{Find,Add,Remove}Module C API doesn't work'''
         module = self.load_module()
@@ -175,7 +175,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         loader.exec_module(module)
         return module
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_load_submodule(self):
         '''Test loading a simulated submodule'''
         module = self.load_module_by_name('pkg.' + self.name)
@@ -183,7 +183,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         self.assertEqual(module.__name__, 'pkg.' + self.name)
         self.assertEqual(module.str_const, 'something different')
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_load_short_name(self):
         '''Test loading module with a one-character name'''
         module = self.load_module_by_name('x')
@@ -192,7 +192,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         self.assertEqual(module.str_const, 'something different')
         self.assertNotIn('x', sys.modules)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_load_twice(self):
         '''Test that 2 loads result in 2 module objects'''
         module1 = self.load_module_by_name(self.name)
@@ -213,7 +213,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
             self.load_module_by_name(name)
         self.assertEqual(cm.exception.name, name)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_nonmodule(self):
         '''Test returning a non-module object from create works'''
         name = self.name + '_nonmodule'
@@ -222,7 +222,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         self.assertEqual(mod.three, 3)
 
     # issue 27782
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_nonmodule_with_methods(self):
         '''Test creating a non-module object with methods defined'''
         name = self.name + '_nonmodule_with_methods'
@@ -231,7 +231,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         self.assertEqual(mod.three, 3)
         self.assertEqual(mod.bar(10, 1), 9)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_null_slots(self):
         '''Test that NULL slots aren't a problem'''
         name = self.name + '_null_slots'
@@ -239,7 +239,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
         self.assertIsInstance(module, types.ModuleType)
         self.assertEqual(module.__name__, name)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_bad_modules(self):
         '''Test SystemError is raised for misbehaving extensions'''
         for name_base in [
@@ -264,7 +264,7 @@ class MultiPhaseExtensionModuleTests(abc.LoaderTests):
                 with self.assertRaises(SystemError):
                     self.load_module_by_name(name)
 
-    @impl_detail("GR-26524 arrity error", graalvm=False)
+    @impl_detail("GR-26683 multi-phase init not supported", graalvm=False)
     def test_nonascii(self):
         '''Test that modules with non-ASCII names can be loaded'''
         # punycode behaves slightly differently in some-ASCII and no-ASCII
