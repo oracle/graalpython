@@ -35,6 +35,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -87,6 +88,7 @@ public final class PMethod extends PythonBuiltinObject {
         return true;
     }
 
+    @Ignore
     public long hash() {
         return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
     }
