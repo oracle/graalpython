@@ -142,6 +142,31 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
+    test_memoryview_frommemory = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (1, 50),
+            (2, 60),
+            (3, IndexError("index out of bounds on dimension 1"))
+        ),
+        code='''
+            char mem[] = {40, 50, 60};
+            static PyObject* test_frommemory(PyObject *key, PyObject* expected) {
+                PyObject *mv = PyMemoryView_FromMemory(mem, 3, PyBUF_READ);
+                if (!mv)
+                    return NULL;
+                PyObject *item = PyObject_GetItem(mv, key);
+                Py_DECREF(mv);
+                return item;
+            }
+        ''',
+        resultspec='O',
+        argspec='OO',
+        arguments=["PyObject* key", "PyObject* expected"],
+        callfunction="test_frommemory",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
     test_memoryview_tolist = CPyExtFunction(
         lambda args: args[0],
         lambda: [

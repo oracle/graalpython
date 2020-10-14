@@ -107,6 +107,15 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
                 buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
 }
 
+PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+{
+    assert(mem != NULL);
+    assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
+    int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+            NULL, NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL);
+}
+
 /* Macros taken from CPython */
 /* Memoryview buffer properties */
 #define MV_C_CONTIGUOUS(flags) (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C))
