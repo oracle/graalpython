@@ -224,6 +224,32 @@ class TestPyMemoryView(CPyExtTestCase):
         cmpfunc=unhandled_error_compare_with_message,
     )
 
+    test_memoryview_getcontiguous = CPyExtFunction(
+        lambda args: args[1],
+        lambda: [
+            (bytearray(b'12345678'), b'12345678'),
+            (memoryview(b'12345678'), b'12345678'),
+            (memoryview(b'12345678')[::2], b'1357'),
+            (memoryview(b'12345678abcd').cast('i')[::2], b'1234abcd'),
+        ],
+        code='''
+            static PyObject* test_getcontiguous(PyObject* obj, PyObject* expected) {
+                PyObject *mv = PyMemoryView_GetContiguous(obj, PyBUF_READ, 'C');
+                if (!mv)
+                    return NULL;
+                Py_buffer *view = PyMemoryView_GET_BUFFER(mv);
+                PyObject *bytes = PyBytes_FromStringAndSize(view->buf, view->len);
+                Py_DECREF(mv);
+                return bytes;
+            }
+        ''',
+        resultspec='O',
+        argspec='OO',
+        arguments=["PyObject* order", "PyObject* expected"],
+        callfunction="test_getcontiguous",
+        cmpfunc=unhandled_error_compare_with_message,
+    )
+
     test_memoryview_slice = CPyExtFunction(
         lambda args: bytes((5, 6, 255, 128, 99))[args[0]][args[1]][args[2]],
         lambda: list(itertools.product(slices, slices, range(-2, 5))),

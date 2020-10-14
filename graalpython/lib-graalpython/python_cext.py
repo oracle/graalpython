@@ -800,6 +800,36 @@ def PyUnicode_Replace(s, substr, replstr, count):
     return s.replace(substr, replstr, count)
 
 
+##################### MEMORY_VIEW
+def PyMemoryView_GetContiguous(obj, buffertype, order_int):
+    PyBUF_READ = 0x100
+    PyBUF_WRITE = 0x200
+    assert buffertype == PyBUF_READ or buffertype == PyBUF_WRITE
+    order = chr(order_int)
+    assert order == 'C' or order == 'F' or order == 'A'
+    mv = memoryview(obj)
+    release = True
+    try:
+        if buffertype == PyBUF_WRITE and mv.readonly:
+            raise BufferError("underlying buffer is not writable")
+        if mv.contiguous:
+            release = False
+            return mv
+        if buffertype == PyBUF_WRITE:
+            raise BufferError("writable contiguous buffer requested for a non-contiguous object.")
+        mv_bytes = memoryview(mv.tobytes(order))
+        if mv.format == 'B':
+            return mv_bytes
+        else:
+            try:
+                return mv_bytes.cast(mv.format)
+            finally:
+                mv_bytes.release()
+    finally:
+        if release:
+            mv.release()
+
+
 ##################### CAPSULE
 
 
