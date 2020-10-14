@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -119,7 +120,8 @@ public final class NFIPosixSupport {
 
     @ExportMessage
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Cached BranchProfile asyncProfile) throws PosixException {
         while (true) {
             int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
@@ -130,8 +132,7 @@ public final class NFIPosixSupport {
             if (errno != EINTR) {
                 throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
             }
-
-            // TODO check signals
+            context.triggerAsyncActions(null, asyncProfile);
         }
     }
 
@@ -145,7 +146,8 @@ public final class NFIPosixSupport {
 
     @ExportMessage
     public Buffer read(int fd, long length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Cached BranchProfile asyncProfile) throws PosixException {
         if (length < 0) {
             // TODO this check should really be in PosixModuleBuiltins, but we need to deal with the constants first
             throw newPosixException(invokeNode, EINVAL);
@@ -161,7 +163,7 @@ public final class NFIPosixSupport {
             if (errno != EINTR) {
                 throw newPosixException(invokeNode, errno);
             }
-            // TODO check signals
+            context.triggerAsyncActions(null, asyncProfile);
         }
     }
 
