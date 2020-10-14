@@ -157,14 +157,15 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             self.checkReleased(this);
-            // TODO ndim == 0
-            // TODO profile ndim == 1
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            if (self.getDimensions() == 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            }
+            int[] shape = self.getBufferShape();
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(shape[0], sliceUnpack.execute(slice));
             int[] strides = self.getBufferStrides();
             int[] newStrides = new int[strides.length];
             newStrides[0] = strides[0] * sliceInfo.step;
             PythonUtils.arraycopy(strides, 1, newStrides, 1, strides.length - 1);
-            int[] shape = self.getBufferShape();
             int[] newShape = new int[shape.length];
             newShape[0] = sliceInfo.sliceLength;
             PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
