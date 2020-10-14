@@ -61,9 +61,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
-    private static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
-    private static final int EINVAL = 22;
-
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
@@ -103,6 +100,20 @@ public final class NFIPosixSupport {
     }
 
     @ExportMessage
+    public String strerror(int errorCode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
+        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
+        // strerror_r().
+        byte[] buf = new byte[1024];
+        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
+        if (result != 0) {
+            return "Unknown error";
+        }
+        return cStringToJavaString(buf);
+    }
+
+    @ExportMessage
     public long getpid(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callLong(lib, NativeFunctions.call_getpid);
     }
@@ -121,7 +132,7 @@ public final class NFIPosixSupport {
     @ExportMessage
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Cached BranchProfile asyncProfile) throws PosixException {
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         while (true) {
             int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
@@ -129,8 +140,8 @@ public final class NFIPosixSupport {
                 return fd;
             }
             int errno = getErrno(invokeNode);
-            if (errno != EINTR) {
-                throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
+            if (errno != PosixSupportLibrary.EINTR) {
+                throw newPosixException(invokeNode, errno, pathname.originalObject);
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
@@ -147,11 +158,7 @@ public final class NFIPosixSupport {
     @ExportMessage
     public Buffer read(int fd, long length,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Cached BranchProfile asyncProfile) throws PosixException {
-        if (length < 0) {
-            // TODO this check should really be in PosixModuleBuiltins, but we need to deal with the constants first
-            throw newPosixException(invokeNode, EINVAL);
-        }
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         Buffer buffer = Buffer.allocate(length);
         while (true) {
             setErrno(invokeNode, 0);
@@ -160,7 +167,7 @@ public final class NFIPosixSupport {
                 return buffer.withLength(n);
             }
             int errno = getErrno(invokeNode);
-            if (errno != EINTR) {
+            if (errno != PosixSupportLibrary.EINTR) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -175,24 +182,16 @@ public final class NFIPosixSupport {
         invokeNode.call(lib, NativeFunctions.set_errno, errno);
     }
 
-    private String strerror(InvokeNativeFunction invokeNode, int error) {
-        // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().
-        // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
-        // strerror_r().
-        byte[] buf = new byte[1024];
-        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, error, wrap(buf), buf.length);
-        if (result != 0) {
-            return "Unknown error";
-        }
-        return cStringToJavaString(buf);
-    }
-
     private PosixException getErrnoAndThrowPosixException(InvokeNativeFunction invokeNode) throws PosixException {
         throw newPosixException(invokeNode, getErrno(invokeNode));
     }
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
-        throw new PosixException(errno, strerror(invokeNode, errno));
+        throw new PosixException(errno, strerror(errno, invokeNode));
+    }
+
+    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
+        throw new PosixException(errno, strerror(errno, invokeNode), filename);
     }
 
     private Object wrap(byte[] bytes) {

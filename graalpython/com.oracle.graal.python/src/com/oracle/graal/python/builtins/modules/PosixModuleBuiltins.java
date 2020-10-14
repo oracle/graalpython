@@ -1082,6 +1082,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            if (length < 0) {
+                int error = PosixSupportLibrary.EINVAL;
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
             try {
                 Buffer result = posixLib.read(getPosixSupport(), fd, length);
                 if (result.length > Integer.MAX_VALUE) {
@@ -1092,6 +1096,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
+        }
+    }
+
+    @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
+    @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class NfiStrErrorNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiStrErrorNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        String getStrError(int code,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.strerror(getPosixSupport(), code);
         }
     }
 
