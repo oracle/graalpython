@@ -58,6 +58,8 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
     public static final int EINVAL = 22;
 
+    public static final int O_CLOEXEC = 524288;
+
     public abstract String strerror(Object receiver, int errorCode);
 
     public abstract long getpid(Object receiver);
@@ -71,6 +73,10 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 
     public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
+
+    public abstract int dup(Object receiver, int fd) throws PosixException;
+
+    public abstract int dup2(Object receiver, int fd, int fd2, boolean inheritable) throws PosixException;
 
     public static class PosixException extends Exception {
 

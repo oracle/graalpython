@@ -138,4 +138,16 @@ public final class EmulatedPosixSupport {
     public long write(int fd, Buffer data) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int dup(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int dup2(int fd, int fd2, boolean inheritable) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

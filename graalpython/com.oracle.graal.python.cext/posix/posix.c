@@ -85,6 +85,18 @@ int64_t call_write(int32_t fd, void *buf, uint64_t count) {
     return write(fd, buf, count);
 }
 
+int32_t call_fcntl_int(int32_t fd, int32_t cmd, int32_t arg) {
+    return fcntl(fd, cmd, arg);
+}
+
+int32_t call_dup2(int32_t oldfd, int32_t newfd) {
+    return dup2(oldfd, newfd);
+}
+
+int32_t call_dup3(int32_t oldfd, int32_t newfd, int32_t flags) {
+    return dup3(oldfd, newfd, flags);
+}
+
 int32_t get_errno() {
     return errno;
 }

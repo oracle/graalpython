@@ -132,6 +132,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -188,7 +189,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int TEMPORARY = 4259840;
     private static final int SYNC = 1052672;
     private static final int RSYNC = 1052672;
-    private static final int CLOEXEC = 524288;
+    private static final int CLOEXEC = PosixSupportLibrary.O_CLOEXEC;
     private static final int DIRECT = 16384;
     private static final int DSYNC = 4096;
     private static final int NDELAY = 2048;
@@ -1116,6 +1117,57 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_dup", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class NfiDupNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiDupNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int dup(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dup(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_dup2", minNumOfPositionalArgs = 2, parameterNames = {"fd", "fd2", "inheritable"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "fd2", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    public abstract static class NfiDup2Node extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiDup2NodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int dup2(VirtualFrame frame, int fd, int fd2, boolean inheritable,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            if (fd < 0 || fd2 < 0) {
+                // CPython does not set errno here and raises a 'random' OSError
+                // (possibly with errno=0 Success)
+                int error = PosixSupportLibrary.EINVAL;
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
+
+            try {
+                return posixLib.dup2(getPosixSupport(), fd, fd2, inheritable);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }

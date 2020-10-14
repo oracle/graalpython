@@ -61,6 +61,8 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int F_DUPFD_CLOEXEC = 1030;
+
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
@@ -70,7 +72,10 @@ public final class NFIPosixSupport {
         call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
-        call_write("(sint32, [sint8], uint64):sint64");
+        call_write("(sint32, [sint8], uint64):sint64"),
+        call_fcntl_int("(sint32, sint32, sint32):sint32"),
+        call_dup2("(sint32, sint32):sint32"),
+        call_dup3("(sint32, sint32, sint32):sint32");
 
         private final String signature;
 
@@ -191,6 +196,31 @@ public final class NFIPosixSupport {
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
+    }
+
+    @ExportMessage
+    public int dup(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int newFd = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_DUPFD_CLOEXEC, 0);
+        if (newFd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return newFd;
+    }
+
+    @ExportMessage
+    public int dup2(int fd, int fd2, boolean inheritable,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int newFd;
+        if (!inheritable) {
+            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup3, fd, fd2, PosixSupportLibrary.O_CLOEXEC);
+        } else {
+            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup2, fd, fd2);
+        }
+        if (newFd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return newFd;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {
