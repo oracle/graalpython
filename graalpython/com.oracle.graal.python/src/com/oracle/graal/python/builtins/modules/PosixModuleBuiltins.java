@@ -144,6 +144,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
@@ -1067,17 +1068,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nfi_read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "count"})
+    @Builtin(name = "nfi_read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class NfiReadNode extends PythonFileNode {
+    public abstract static class NfiReadNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiReadNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object read(int fd, int count,
+        Object read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            byte[] buf = new byte[count];
-            long result = posixLib.read(getPosixSupport(), fd, buf);
-            return factory().createTuple(new Object[]{result, factory().createBytes(buf)});
+            try {
+                Buffer result = posixLib.read(getPosixSupport(), fd, length);
+                if (result.length > Integer.MAX_VALUE) {
+                    // sanity check that it is safe to cast result.length to int, to be removed once we support large arrays
+                    throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
+                }
+                return factory().createBytes(result.data, 0, (int) result.length);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

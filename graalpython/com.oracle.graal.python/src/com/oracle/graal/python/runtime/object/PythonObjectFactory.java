@@ -304,6 +304,15 @@ public abstract class PythonObjectFactory extends Node {
         return createBytes(PythonBuiltinClassType.PBytes, array);
     }
 
+    public PBytes createBytes(byte[] array, int offset, int length) {
+        if (length != array.length) {
+            byte[] buf = new byte[length];
+            PythonUtils.arraycopy(array, offset, buf, 0, buf.length);
+            return createBytes(PythonBuiltinClassType.PBytes, buf);
+        }
+        return createBytes(PythonBuiltinClassType.PBytes, array);
+    }
+
     public PBytes createBytes(Object cls, byte[] array) {
         return trace(new PBytes(cls, getShape(cls), array));
     }

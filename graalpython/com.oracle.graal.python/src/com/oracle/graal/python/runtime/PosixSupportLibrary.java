@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 
@@ -61,7 +63,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void close(Object receiver, int fd) throws PosixException;
 
-    public abstract long read(Object receiver, int fd, byte[] buf);
+    public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 
     public static class PosixException extends Exception {
 
@@ -101,6 +103,33 @@ public abstract class PosixSupportLibrary extends Library {
         @SuppressWarnings("sync-override")
         @Override
         public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    @ValueType
+    public static class Buffer {
+        public final byte[] data;
+        public long length;
+
+        public Buffer(byte[] data, long length) {
+            assert data != null && length >= 0 && length <= data.length;
+            this.data = data;
+            this.length = length;
+        }
+
+        public static Buffer allocate(long capacity) {
+            if (capacity > Integer.MAX_VALUE) {
+                throw CompilerDirectives.shouldNotReachHere("Long arrays are not supported yet");
+            }
+            return new Buffer(new byte[(int) capacity], 0);
+        }
+
+        public Buffer withLength(long newLength) {
+            if (newLength > data.length) {
+                throw CompilerDirectives.shouldNotReachHere("Actual length cannot be greater than capacity");
+            }
+            length = newLength;
             return this;
         }
     }

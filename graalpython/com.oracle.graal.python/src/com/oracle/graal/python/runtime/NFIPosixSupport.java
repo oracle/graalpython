@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.util.PythonUtils;
@@ -59,10 +60,12 @@ import com.oracle.truffle.api.library.ExportMessage;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
-    private static final int EINTR = 4;
+    private static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
+    private static final int EINVAL = 22;
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
+        set_errno("(sint32):void"),
         call_strerror("(sint32, [sint8], sint32):sint32"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
@@ -123,10 +126,11 @@ public final class NFIPosixSupport {
                 // TODO set inheritable, O_CLOEXEC support etc.
                 return fd;
             }
-            int errno = errno(invokeNode);
+            int errno = getErrno(invokeNode);
             if (errno != EINTR) {
                 throw new PosixException(errno, strerror(invokeNode, errno), pathname.originalObject);
             }
+
             // TODO check signals
         }
     }
@@ -135,19 +139,38 @@ public final class NFIPosixSupport {
     public void close(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         if (invokeNode.callInt(lib, NativeFunctions.call_close, fd) < 0) {
-            throw posixExceptionFromErrno(invokeNode);
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
     @ExportMessage
-    public long read(int fd, byte[] buf,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        // TODO error handling
-        return invokeNode.callLong(lib, NativeFunctions.call_read, wrap(buf), buf.length);
+    public Buffer read(int fd, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (length < 0) {
+            // TODO this check should really be in PosixModuleBuiltins, but we need to deal with the constants first
+            throw newPosixException(invokeNode, EINVAL);
+        }
+        Buffer buffer = Buffer.allocate(length);
+        while (true) {
+            setErrno(invokeNode, 0);
+            long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
+            if (n >= 0) {
+                return buffer.withLength(n);
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != EINTR) {
+                throw newPosixException(invokeNode, errno);
+            }
+            // TODO check signals
+        }
     }
 
-    private int errno(InvokeNativeFunction invokeNode) {
+    private int getErrno(InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(lib, NativeFunctions.get_errno);
+    }
+
+    private void setErrno(InvokeNativeFunction invokeNode, int errno) {
+        invokeNode.call(lib, NativeFunctions.set_errno, errno);
     }
 
     private String strerror(InvokeNativeFunction invokeNode, int error) {
@@ -162,13 +185,20 @@ public final class NFIPosixSupport {
         return cStringToJavaString(buf);
     }
 
-    private PosixException posixExceptionFromErrno(InvokeNativeFunction invokeNode) throws PosixException {
-        int errno = errno(invokeNode);
+    private PosixException getErrnoAndThrowPosixException(InvokeNativeFunction invokeNode) throws PosixException {
+        throw newPosixException(invokeNode, getErrno(invokeNode));
+    }
+
+    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
         throw new PosixException(errno, strerror(invokeNode, errno));
     }
 
     private Object wrap(byte[] bytes) {
         return context.getEnv().asGuestValue(bytes);
+    }
+
+    private Object wrap(Buffer buffer) {
+        return context.getEnv().asGuestValue(buffer.data);
     }
 
     private static String cStringToJavaString(byte[] buf) {

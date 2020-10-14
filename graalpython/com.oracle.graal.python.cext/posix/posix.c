@@ -85,6 +85,10 @@ int32_t get_errno() {
     return errno;
 }
 
+void set_errno(int e) {
+    errno = e;
+}
+
 int32_t call_strerror(int32_t error, char *buf, int32_t buflen) {
     return strerror_r(error, buf, buflen);
 }
