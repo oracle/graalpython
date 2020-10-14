@@ -69,7 +69,8 @@ public final class NFIPosixSupport {
         call_umask("(sint64):sint64"),
         call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
-        call_read("(sint32, [sint8], uint64):sint64");
+        call_read("(sint32, [sint8], uint64):sint64"),
+        call_write("(sint32, [sint8], uint64):sint64");
 
         private final String signature;
 
@@ -165,6 +166,24 @@ public final class NFIPosixSupport {
             long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
             if (n >= 0) {
                 return buffer.withLength(n);
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != PosixSupportLibrary.EINTR) {
+                throw newPosixException(invokeNode, errno);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public long write(int fd, Buffer data,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            setErrno(invokeNode, 0);
+            long n = invokeNode.callLong(lib, NativeFunctions.call_write, fd, wrap(data), data.length);
+            if (n >= 0) {
+                return n;
             }
             int errno = getErrno(invokeNode);
             if (errno != PosixSupportLibrary.EINTR) {

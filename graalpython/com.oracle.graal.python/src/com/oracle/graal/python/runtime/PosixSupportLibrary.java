@@ -70,6 +70,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 
+    public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;
@@ -128,6 +130,10 @@ public abstract class PosixSupportLibrary extends Library {
                 throw CompilerDirectives.shouldNotReachHere("Long arrays are not supported yet");
             }
             return new Buffer(new byte[(int) capacity], 0);
+        }
+
+        public static Buffer wrap(byte[] data) {
+            return new Buffer(data, data.length);
         }
 
         public Buffer withLength(long newLength) {

@@ -109,7 +109,6 @@ public final class EmulatedPosixSupport {
         }
     }
 
-
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
     public String strerror(int errorCode) {
@@ -134,4 +133,9 @@ public final class EmulatedPosixSupport {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public long write(int fd, Buffer data) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

@@ -1089,10 +1089,33 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 Buffer result = posixLib.read(getPosixSupport(), fd, length);
                 if (result.length > Integer.MAX_VALUE) {
-                    // sanity check that it is safe to cast result.length to int, to be removed once we support large arrays
+                    // sanity check that it is safe to cast result.length to int, to be removed once
+                    // we support large arrays
                     throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
                 }
                 return factory().createBytes(result.data, 0, (int) result.length);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
+    @GenerateNodeFactory
+    public abstract static class NfiWriteNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiWriteNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long write(VirtualFrame frame, int fd, byte[] data,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
