@@ -1023,13 +1023,18 @@ public abstract class CExtParseArgumentsNode {
         static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) {
 
             Object out = null;
             assert !keywordsOnly;
             int l = lenNode.execute(state.v.argv);
             if (state.v.argnum < l) {
                 out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
+            }
+            if (out == null && !state.restOptional) {
+                raiseNode.raiseIntWithoutFrame(0, TypeError, "%s missing required argument (pos %d)", state.funName, state.v.argnum);
+                throw ParseArgumentsException.raise();
             }
             state.v.argnum++;
             return out;
@@ -1043,7 +1048,8 @@ public abstract class CExtParseArgumentsNode {
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached PCallCExtFunction callCStringToString) throws InteropException {
+                        @Cached PCallCExtFunction callCStringToString,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
             Object out = null;
             if (!keywordsOnly) {
@@ -1063,6 +1069,10 @@ public abstract class CExtParseArgumentsNode {
                     // the guards)
                     out = lib.getItem(getDictStorageNode.execute((PDict) kwds), kwdname);
                 }
+            }
+            if (out == null && !state.restOptional) {
+                raiseNode.raiseIntWithoutFrame(0, TypeError, "%s missing required argument (pos %d)", state.funName, state.v.argnum);
+                throw ParseArgumentsException.raise();
             }
             state.v.argnum++;
             return out;
