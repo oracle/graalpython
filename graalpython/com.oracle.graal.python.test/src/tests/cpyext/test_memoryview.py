@@ -38,6 +38,8 @@
 # SOFTWARE.
 
 import sys
+import time
+import gc
 import itertools
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare_with_message, unhandled_error_compare
 __dir__ = __file__.rpartition("/")[0]
@@ -351,10 +353,11 @@ class TestObject(object):
         mv2 = memoryview(obj)
         mv3 = mv2[1:]
         assert obj.get_bufcount() == 2
-        mv1.release()
-        assert obj.get_bufcount() == 1
         assert mv2[3] == 126
         mv2.release()
-        assert obj.get_bufcount() == 1
-        mv3.release()
+        assert mv3[2] == 126
+        del mv1
+        del mv3
+        gc.collect()
+        time.sleep(1)
         assert obj.get_bufcount() == 0

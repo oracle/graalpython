@@ -154,6 +154,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -3330,26 +3331,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // complex, because they don't have an underlying byte array
         @Specialization
         static IntrinsifiedPMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false);
+            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false, getQueue.execute());
         }
 
         @Specialization
         static IntrinsifiedPMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            // TODO needsRelease=true
-            return fromManaged(object, 1, lenNode.execute(storage), false, "B", false);
+            return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
         }
 
         @Specialization
-        IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object) {
+        IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             object.checkReleased(this);
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            object.getManagedBuffer(), object.getOwner(), object.getLength(),
+                            getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
                             object.isReadOnly(), object.getItemSize(), object.getFormatString(), object.getDimensions(),
                             object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                             object.getBufferSuboffsets(), object.getFlags());
@@ -3368,7 +3371,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
 
-        private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease) {
+        private static IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
+                        MemoryViewNodes.BufferReferences refQueue) {
             // TODO factory
             ManagedBuffer managedBuffer = null;
             if (needsRelease) {
@@ -3376,7 +3380,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 managedBuffer = new ManagedBuffer(object);
             }
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
+                            refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
                             null, 0, new int[]{length}, new int[]{itemsize}, null,
                             IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN);
         }

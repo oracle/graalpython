@@ -5,6 +5,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.lang.ref.ReferenceQueue;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
@@ -16,6 +21,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -23,11 +30,11 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -555,27 +562,29 @@ public class MemoryViewNodes {
         static void bytearray(PByteArray object) {
             // TODO
         }
+
+        public static ReleaseBufferOfManagedObjectNode create() {
+            return MemoryViewNodesFactory.ReleaseBufferOfManagedObjectNodeGen.create();
+        }
+
+        public static ReleaseBufferOfManagedObjectNode getUncached() {
+            return MemoryViewNodesFactory.ReleaseBufferOfManagedObjectNodeGen.getUncached();
+        }
     }
 
-    @GenerateUncached
-    public static abstract class ReleaseBufferNode extends Node {
-        public abstract void execute(ManagedBuffer buffer);
+    public static abstract class GetBufferReferences extends Node {
+        public abstract BufferReferences execute();
 
-        @Specialization(guards = "buffer.getReleaseFunction() == null")
-        static void releaseManaged(ManagedBuffer buffer,
-                        @Cached ReleaseBufferOfManagedObjectNode releaseNode) {
-            releaseNode.execute(buffer.getOwner());
+        @Specialization
+        @SuppressWarnings("unchecked")
+        static BufferReferences getRefs(@CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ReadAttributeFromObjectNode readNode) {
+            return (BufferReferences) readNode.execute(context.getCore().lookupType(PythonBuiltinClassType.PMemoryView), MemoryViewBuiltins.bufferReferencesKey);
         }
+    }
 
-        @Specialization(guards = "buffer.getReleaseFunction() != null", limit = "1")
-        static void releaseNative(ManagedBuffer buffer,
-                        @CachedLibrary("buffer.getReleaseFunction()") InteropLibrary lib) {
-            try {
-                lib.execute(buffer.getReleaseFunction(), buffer.getOwner(), buffer.getBufferStructPointer());
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Failed to invoke bf_releasebuffer", e);
-            }
-            // TODO remove from ref queue
-        }
+    public static class BufferReferences {
+        public final ReferenceQueue<Object> queue = new ReferenceQueue<>();
+        public final Set<BufferReference> set = new HashSet<>();
     }
 }

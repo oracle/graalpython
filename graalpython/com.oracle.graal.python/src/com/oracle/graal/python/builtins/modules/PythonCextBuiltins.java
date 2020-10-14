@@ -1576,7 +1576,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached ToNewRefNode toNewRefNode,
-                        @Cached GetNativeNullNode getNativeNullNode) {
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             try {
                 int ndim = castToIntNode.execute(ndimObj);
                 int itemsize = castToIntNode.execute(itemsizeObj);
@@ -1620,9 +1621,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (!lib.isNull(releasefn)) {
                     managedBuffer = new ManagedBuffer(owner, bufferStructPointer, releasefn);
                 }
-                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView,
-                                PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                                managedBuffer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
+                                getQueue.execute(), managedBuffer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {
                 transformToNative(frame, e);

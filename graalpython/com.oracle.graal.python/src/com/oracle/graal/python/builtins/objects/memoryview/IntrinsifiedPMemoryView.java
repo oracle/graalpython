@@ -24,7 +24,6 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     public static final int FLAG_SCALAR = 0x008;
     public static final int FLAG_PIL = 0x010;
 
-    private ManagedBuffer managedBuffer;
     private Object owner;
     private final int len;
     private final boolean readonly;
@@ -40,17 +39,16 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private final int[] strides;
     private final int[] suboffsets;
 
+    // Count of exports via native buffer interface
     private final AtomicInteger exports = new AtomicInteger();
+    // Phantom ref to this object that will decref/release the managed buffer if any
+    private BufferReference reference;
     private int flags;
 
-    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, ManagedBuffer managedBuffer, Object owner,
+    public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
-        this.managedBuffer = managedBuffer;
-        if (managedBuffer != null) {
-            managedBuffer.incrementExports();
-        }
         this.owner = owner;
         this.len = len;
         this.readonly = readonly;
@@ -64,6 +62,10 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         this.strides = strides;
         this.suboffsets = suboffsets;
         this.flags = flags;
+        if (managedBuffer != null) {
+            this.reference = new BufferReference(this, managedBuffer, references.queue);
+            references.set.add(this.reference);
+        }
     }
 
     public enum BufferFormat {
@@ -148,7 +150,7 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     }
 
     public ManagedBuffer getManagedBuffer() {
-        return managedBuffer;
+        return (reference != null) ? reference.getManagedBuffer() : null;
     }
 
     public Object getOwner() {
@@ -219,9 +221,16 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
         return exports;
     }
 
+    public BufferReference getReference() {
+        return reference;
+    }
+
     public void setReleased() {
         flags |= FLAG_RELEASED;
-        managedBuffer = null;
+        if (reference != null) {
+            reference.markReleased();
+            reference = null;
+        }
         owner = null;
     }
 
