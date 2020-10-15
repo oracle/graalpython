@@ -92,9 +92,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
@@ -543,6 +543,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public static TruffleLogger getLogger(Class<?> clazz) {
         return TruffleLogger.getLogger(ID, clazz);
+    }
+
+    /**
+     * Loggers that should report any known incompatibility with CPython, which is silently ignored
+     * in order to be able to continue the execution. Example is setting the stack size limit: it
+     * would be too drastic measure to raise error, because the program may continue and work
+     * correctly even if it is ignored.
+     *
+     * The logger name is prefixed with "compatibility" such that
+     * {@code --log.python.compatibility.level=LEVEL} can turn on compatibility related logging for
+     * all classes.
+     */
+    @TruffleBoundary
+    public static TruffleLogger getCompatibilityLogger(Class<?> clazz) {
+        return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {

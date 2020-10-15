@@ -53,6 +53,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 // TODO: user documentation that "java" POSIX support
@@ -89,8 +92,17 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 /**
  * Implementation that emulates as much as possible using the Truffle API.
  *
- * Note: this implementation ignores {@code PyUnicode_FSConverter} and takes any String paths as-is
- * and bytes objects that are passed as paths are always converted to Strings using UTF-8.
+ * Limitations of the POSIX emulation:
+ * <ul>
+ * <li>Any global state that is changes in Python extensions native code is not reflected in this
+ * emulation layer. Namely: umask, current working directory.</li>
+ * <li>umask is set to hard-coded default of 0022 and not inherited from the OS. We may add an
+ * option that would allow to change this.</li>
+ * <li>It ignores {@code PyUnicode_FSConverter} and takes any String paths as-is and bytes objects
+ * that are passed as paths are always converted to Strings using UTF-8.</li>>
+ * <li>Fork does not actually for the process, any arguments related to resources inheritance for
+ * the child process, are silently ignored.</li>
+ * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public final class EmulatedPosixSupport extends PosixResources {
@@ -155,6 +167,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     private final PythonContext context;
     private int currentUmask = 0022;
+    private boolean hasDefaultUmask = true;
 
     public EmulatedPosixSupport(PythonContext context) {
         this.context = context;
@@ -189,8 +202,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public long umask(long umask) {
-        long prev = this.currentUmask;
-        this.currentUmask = (int) (umask & 00777);
+        long prev = currentUmask;
+        currentUmask = (int) (umask & 00777);
+        if (hasDefaultUmask && COMPATIBILITY.isLoggable(Level.INFO)) {
+            compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
+        }
+        hasDefaultUmask = false;
         return umask;
     }
 
@@ -249,7 +266,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
     public long write(int fd, Buffer data,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
@@ -262,8 +278,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             return doWriteOp(data.getByteBuffer(), (WritableByteChannel) channel);
         } catch (Exception e) {
             errorBranch.enter();
-            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-            throw posixException(errAndMsg.oserror, errAndMsg.message);
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -282,19 +297,105 @@ public final class EmulatedPosixSupport extends PosixResources {
         return new Buffer(array.getInternalByteArray(), array.length());
     }
 
+    @Override
+    @ExportMessage
+    public int dup(int fd) {
+        // TODO: will disappear once the super class is merged with this class
+        return super.dup(fd);
+    }
+
+    @ExportMessage
+    public int dup2(int fd, int fd2, @SuppressWarnings("unused") boolean inheritable) throws PosixException {
+        // TODO: will merge with super.dup2 once the super class is merged with this class
+        try {
+            return super.dup2(fd, fd2);
+        } catch (IOException ex) {
+            throw posixException(OSErrorEnum.fromException(ex));
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean getInheritable(int fd) {
+        compatibilityIgnored("getting inheritable for file descriptor %d in POSIX emulation layer (not supported, always returns false)", fd);
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void setInheritable(int fd, boolean inheritable) {
+        compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
+    }
+
+    @ExportMessage(name = "pipe")
+    public int[] pipeMessage() throws PosixException {
+        // TODO: will merge with super.pipe once the super class is merged with this class
+        try {
+            return super.pipe();
+        } catch (IOException ex) {
+            throw posixException(OSErrorEnum.fromException(ex));
+        }
+    }
+
+    @ExportMessage
+    public long lseek(int fd, long offset, int how,
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Cached ConditionProfile noFile) throws PosixException {
+        Channel channel = getFileChannel(fd, channelClassProfile);
+        if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
+            throw posixException(OSErrorEnum.ESPIPE);
+        }
+        SeekableByteChannel fc = (SeekableByteChannel) channel;
+        try {
+            return setPosition(offset, how, fc);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static long setPosition(long pos, int how, SeekableByteChannel fc) throws IOException {
+        switch (how) {
+            case SEEK_CUR:
+                fc.position(fc.position() + pos);
+                break;
+            case SEEK_END:
+                fc.position(fc.size() + pos);
+                break;
+            case SEEK_SET:
+                fc.position(pos);
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        return fc.position();
+    }
+
+    @ExportMessage(name = "ftruncate")
+    public void ftruncateMessage(int fd, long length) throws PosixException {
+        // TODO: will merge with super.ftruncate once the super class is merged with this class
+        try {
+            ftruncate(fd, length);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+    }
+
     // ------------------
     // Helpers
 
-    PosixException posixException(OSErrorEnum osError) throws PosixException {
+    static PosixException posixException(OSErrorEnum osError) throws PosixException {
         throw new PosixException(osError.getNumber(), osError.getMessage());
     }
 
-    PosixException posixException(OSErrorEnum osError, String customMessage) throws PosixException {
-        throw new PosixException(osError.getNumber(), customMessage);
+    static PosixException posixException(OSErrorEnum osError, String customMessage, PosixPath path1) throws PosixException {
+        throw new PosixException(osError.getNumber(), customMessage, path1.originalObject);
     }
 
-    PosixException posixException(OSErrorEnum osError, String customMessage, PosixPath path1) throws PosixException {
-        throw new PosixException(osError.getNumber(), customMessage, path1.originalObject);
+    private static PosixException posixException(ErrorAndMessagePair pair) throws PosixException {
+        throw new PosixException(pair.oserror.getNumber(), pair.message);
     }
 
     @GenerateUncached
@@ -361,45 +462,15 @@ public final class EmulatedPosixSupport extends PosixResources {
         return options;
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public int dup(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    private static final TruffleLogger COMPATIBILITY_LOGGER = PythonLanguage.getCompatibilityLogger(EmulatedPosixSupport.class);
+
+    @TruffleBoundary
+    public static void compatibilityInfo(String fmt, Object... args) {
+        COMPATIBILITY_LOGGER.info(String.format(fmt, args));
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public int dup2(int fd, int fd2, boolean inheritable) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public boolean getInheritable(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public void setInheritable(int fd, boolean inheritable) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public int[] pipe() {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public long lseek(int fd, long offset, int how) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public void ftruncate(int fd, long length) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    @TruffleBoundary
+    public static void compatibilityIgnored(String fmt, Object... args) {
+        COMPATIBILITY_LOGGER.info("Ignored: " + String.format(fmt, args));
     }
 }
