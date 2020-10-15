@@ -71,7 +71,7 @@ public final class NFIPosixSupport {
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
-        call_strerror("(sint32, [sint8], sint32):sint32"),
+        call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
         call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
@@ -120,10 +120,7 @@ public final class NFIPosixSupport {
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
         byte[] buf = new byte[1024];
-        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
-        if (result != 0) {
-            return "Unknown error";
-        }
+        invokeNode.call(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
         return cStringToJavaString(buf);
     }
 
