@@ -508,9 +508,9 @@ public final class PythonContext {
             case "java":
                 return new EmulatedPosixSupport();
             case "native":
-                return NFIPosixSupport.createNative();
+                return NFIPosixSupport.createNative(this);
             case "llvm":
-                return NFIPosixSupport.createNative();
+                return NFIPosixSupport.createNative(this);
             default:
                 throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
         }

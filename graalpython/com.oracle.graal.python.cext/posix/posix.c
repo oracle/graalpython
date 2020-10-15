@@ -81,8 +81,16 @@ int64_t call_read(int32_t fd, void *buf, uint64_t count) {
     return read(fd, buf, count);
 }
 
+int64_t call_write(int32_t fd, void *buf, uint64_t count) {
+    return write(fd, buf, count);
+}
+
 int32_t get_errno() {
     return errno;
+}
+
+void set_errno(int e) {
+    errno = e;
 }
 
 int32_t call_strerror(int32_t error, char *buf, int32_t buflen) {

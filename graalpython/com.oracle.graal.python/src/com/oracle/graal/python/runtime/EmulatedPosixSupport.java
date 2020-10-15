@@ -47,6 +47,8 @@ import org.graalvm.nativeimage.ProcessProperties;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -109,20 +111,31 @@ public final class EmulatedPosixSupport {
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int openAt(int dirFd, PosixSupportLibrary.PosixPath pathname, int flags, int mode) {
+    public String strerror(int errorCode) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public int close(int fd) {
+    public int openAt(int dirFd, PosixPath pathname, int flags, int mode) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
     @SuppressWarnings({"unused", "static-method"})
-    public long read(int fd, byte[] buf) {
+    public void close(int fd) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public Buffer read(int fd, long length) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public long write(int fd, Buffer data) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

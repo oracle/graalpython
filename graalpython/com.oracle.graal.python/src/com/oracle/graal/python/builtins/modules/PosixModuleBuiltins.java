@@ -133,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -143,6 +144,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
@@ -1039,34 +1041,101 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 return posixLib.openAt(getPosixSupport(), dirFd, path, fixedFlags, mode);
             } catch (PosixException e) {
-                throw raiseOSError(frame, e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2());
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
     }
 
     @Builtin(name = "nfi_close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class NfiCloseNode extends PythonFileNode {
+    public abstract static class NfiCloseNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiCloseNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object close(int fd,
+        Object close(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.close(getPosixSupport(), fd);
+            try {
+                posixLib.close(getPosixSupport(), fd);
+                return PNone.NONE;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
-    @Builtin(name = "nfi_read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "count"})
+    @Builtin(name = "nfi_read", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "length", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class NfiReadNode extends PythonFileNode {
+    public abstract static class NfiReadNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiReadNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object read(int fd, int count,
+        Object read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            byte[] buf = new byte[count];
-            long result = posixLib.read(getPosixSupport(), fd, buf);
-            return factory().createTuple(new Object[]{result, factory().createBytes(buf)});
+            if (length < 0) {
+                int error = PosixSupportLibrary.EINVAL;
+                throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
+            }
+            try {
+                Buffer result = posixLib.read(getPosixSupport(), fd, length);
+                if (result.length > Integer.MAX_VALUE) {
+                    // sanity check that it is safe to cast result.length to int, to be removed once
+                    // we support large arrays
+                    throw CompilerDirectives.shouldNotReachHere("Posix read() returned more bytes than requested");
+                }
+                return factory().createBytes(result.data, 0, (int) result.length);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
+    @GenerateNodeFactory
+    public abstract static class NfiWriteNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiWriteNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long write(VirtualFrame frame, int fd, byte[] data,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
+    @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class NfiStrErrorNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiStrErrorNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        String getStrError(int code,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.strerror(getPosixSupport(), code);
         }
     }
 

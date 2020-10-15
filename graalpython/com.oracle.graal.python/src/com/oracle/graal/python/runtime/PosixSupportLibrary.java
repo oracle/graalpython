@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 
@@ -53,15 +55,22 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
                                                     // equal to AT_FDCWD
 
+    public static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
+    public static final int EINVAL = 22;
+
+    public abstract String strerror(Object receiver, int errorCode);
+
     public abstract long getpid(Object receiver);
 
     public abstract long umask(Object receiver, long mask);
 
     public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
 
-    public abstract int close(Object receiver, int fd);
+    public abstract void close(Object receiver, int fd) throws PosixException;
 
-    public abstract long read(Object receiver, int fd, byte[] buf);
+    public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
+
+    public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
 
     public static class PosixException extends Exception {
 
@@ -101,6 +110,37 @@ public abstract class PosixSupportLibrary extends Library {
         @SuppressWarnings("sync-override")
         @Override
         public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    @ValueType
+    public static class Buffer {
+        public final byte[] data;
+        public long length;
+
+        public Buffer(byte[] data, long length) {
+            assert data != null && length >= 0 && length <= data.length;
+            this.data = data;
+            this.length = length;
+        }
+
+        public static Buffer allocate(long capacity) {
+            if (capacity > Integer.MAX_VALUE) {
+                throw CompilerDirectives.shouldNotReachHere("Long arrays are not supported yet");
+            }
+            return new Buffer(new byte[(int) capacity], 0);
+        }
+
+        public static Buffer wrap(byte[] data) {
+            return new Buffer(data, data.length);
+        }
+
+        public Buffer withLength(long newLength) {
+            if (newLength > data.length) {
+                throw CompilerDirectives.shouldNotReachHere("Actual length cannot be greater than capacity");
+            }
+            length = newLength;
             return this;
         }
     }
