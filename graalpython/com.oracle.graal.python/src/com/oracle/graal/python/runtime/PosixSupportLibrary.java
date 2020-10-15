@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.nio.ByteBuffer;
+
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
@@ -49,7 +52,7 @@ import com.oracle.truffle.api.library.Library;
  * Internal abstraction layer for POSIX functionality. Instance of the implementation is stored in
  * the context. Use {@link PythonContext#getPosixSupport()} to access it.
  */
-@GenerateLibrary
+@GenerateLibrary(receiverType = PosixSupport.class)
 public abstract class PosixSupportLibrary extends Library {
 
     public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
@@ -156,6 +159,11 @@ public abstract class PosixSupportLibrary extends Library {
             length = newLength;
             return this;
         }
+
+        @TruffleBoundary
+        public ByteBuffer getByteBuffer() {
+            return ByteBuffer.wrap(data);
+        }
     }
 
     /**
@@ -191,10 +199,21 @@ public abstract class PosixSupportLibrary extends Library {
     public static class PosixPath extends PosixFileHandle {
         public final byte[] path;
 
-        public PosixPath(Object originalObject, byte[] path) {
+        /**
+         * Contains the materialized Java String if this {@link PosixPath} was constructed by
+         * encoding a string Python object.
+         */
+        public final String originalString;
+
+        public PosixPath(Object originalObject, String originalString, byte[] path) {
             super(originalObject);
             assert path != null;
             this.path = path;
+            this.originalString = originalString;
+        }
+
+        public PosixPath(Object originalObject, byte[] path) {
+            this(originalObject, null, path);
         }
     }
 

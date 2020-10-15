@@ -65,8 +65,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -95,7 +97,7 @@ public abstract class ChannelNodes {
         }
     }
 
-    abstract static class ReadFromChannelBaseNode extends PNodeWithContext implements ChannelBaseNode {
+    abstract static class ReadFromChannelBaseNode extends Node implements ChannelBaseNode {
 
         @TruffleBoundary(allowInlining = true)
         protected static byte[] getByteBufferArray(ByteBuffer dst) {
@@ -140,6 +142,7 @@ public abstract class ChannelNodes {
     }
 
     @GenerateNodeFactory
+    @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class ReadFromChannelNode extends ReadFromChannelBaseNode {
         public static final int MAX_READ = Integer.MAX_VALUE / 2;

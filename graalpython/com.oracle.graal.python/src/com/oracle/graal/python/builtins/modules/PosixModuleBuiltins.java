@@ -2519,13 +2519,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PosixFileHandle doUnicode(String value) {
-            return new PosixPath(value, checkPath(getStringBytes(value)));
+            return new PosixPath(value, value, checkPath(getStringBytes(value)));
         }
 
         @Specialization
         PosixFileHandle doUnicode(PString value,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            return new PosixPath(value, checkPath(getStringBytes(castToJavaStringNode.execute(value))));
+            String str = castToJavaStringNode.execute(value);
+            return new PosixPath(value, str, checkPath(getStringBytes(str)));
         }
 
         @Specialization

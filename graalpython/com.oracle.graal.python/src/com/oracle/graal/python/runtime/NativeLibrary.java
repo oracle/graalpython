@@ -44,8 +44,10 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -93,19 +95,38 @@ public class NativeLibrary {
         int ordinal();
     }
 
+    enum NFIBackend {
+        NATIVE(""),
+        LLVM("with llvm ");
+
+        private final String withClause;
+
+        NFIBackend(String withClause) {
+            this.withClause = withClause;
+        }
+    }
+
     private final int functionsCount;
     private final String name;
-    private final String nfiBackendName;
+    private final NFIBackend nfiBackend;
+
+    /**
+     * If given functionality has a fully managed variant that can be configured, this help message
+     * should explain how to switch to it. It will be printed if loading of the native library
+     * fails.
+     */
+    private final String noNativeAccessHelp;
 
     private volatile Object[] cachedFunctions;
     private volatile Object cachedLibrary;
     private volatile InteropLibrary cachedLibraryInterop;
     private volatile Object dummy;
 
-    public NativeLibrary(String name, int functionsCount, String nfiBackendName) {
+    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp) {
         this.functionsCount = functionsCount;
         this.name = name;
-        this.nfiBackendName = nfiBackendName;
+        this.nfiBackend = nfiBackend;
+        this.noNativeAccessHelp = noNativeAccessHelp;
     }
 
     private Object getCachedLibrary(PythonContext context) {
@@ -114,8 +135,7 @@ public class NativeLibrary {
             CompilerDirectives.transferToInterpreter();
             synchronized (this) {
                 if (cachedLibrary == null) {
-                    Source loadSrc = getNFILoadSource(context);
-                    Object lib = context.getEnv().parseInternal(loadSrc).call();
+                    Object lib = loadLibrary(context);
                     cachedLibraryInterop = InteropLibrary.getUncached(lib);
                     cachedLibrary = lib;
                 }
@@ -166,15 +186,34 @@ public class NativeLibrary {
         }
     }
 
-    private Source getNFILoadSource(PythonContext context) {
+    private Object loadLibrary(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        String withClause = nfiBackendName == null ? "" : "with " + nfiBackendName;
-        String path = getLibPath(context);
-        String src = String.format("%s load (RTLD_LOCAL) \"%s\"", withClause, path);
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, withClause));
+        if (!context.getEnv().isNativeAccessAllowed()) {
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
+                            "Cannot load supporting native library '%s' because the native access is not allowed. " +
+                                            "The native access should be allowed when running GraalPython via the graalpython command. " +
+                                            "If you are embedding GraalPython using the Context API, make sure to allow native access using 'allowNativeAccess(true)'. %s",
+                            name,
+                            noNativeAccessHelp);
         }
-        return Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
+        String path = getLibPath(context);
+        String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
+        }
+        Source loadSrc = Source.newBuilder("nfi", src, "load:" + name).internal(true).build();
+        try {
+            return context.getEnv().parseInternal(loadSrc).call();
+        } catch (UnsatisfiedLinkError ex) {
+            LOGGER.log(Level.SEVERE, ex, () -> String.format("Error while opening shared library at '%s'.\nFull NFI source: %s.", path, src));
+            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError,
+                            "Cannot load supporting native library '%s'. " +
+                                            "Either the shared library file does not exist, or your system may be missing some dependencies. " +
+                                            "Turn on logging with --log.%s.level=INFO for more details. %s",
+                            name,
+                            NativeLibrary.class.getName(),
+                            noNativeAccessHelp);
+        }
     }
 
     private String getLibPath(PythonContext context) {
@@ -185,17 +224,17 @@ public class NativeLibrary {
         return file.getPath();
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions) {
-        return create(name, functions, null);
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp) {
+        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp);
     }
 
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String nfiBackendName) {
-        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName);
+    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp) {
+        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp);
     }
 
     public static final class TypedNativeLibrary<T extends Enum<T> & NativeFunction> extends NativeLibrary {
-        public TypedNativeLibrary(String name, int functionsCount, String nfiBackendName) {
-            super(name, functionsCount, nfiBackendName);
+        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp) {
+            super(name, functionsCount, nfiBackendName, noNativeAccessHelp);
         }
     }
 

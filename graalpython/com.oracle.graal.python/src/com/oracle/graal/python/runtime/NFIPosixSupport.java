@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
+import com.oracle.graal.python.runtime.NativeLibrary.NFIBackend;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
@@ -59,7 +60,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  * that the native access is allowed or to configure managed LLVM backend for NFI.
  */
 @ExportLibrary(PosixSupportLibrary.class)
-public final class NFIPosixSupport {
+public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
     private static final int F_GETFD = 1;
@@ -100,17 +101,20 @@ public final class NFIPosixSupport {
     private final PythonContext context;
     private final TypedNativeLibrary<NativeFunctions> lib;
 
-    private NFIPosixSupport(PythonContext context, String backend) {
+    private NFIPosixSupport(PythonContext context, NFIBackend backend) {
         this.context = context;
-        lib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, NativeFunctions.values(), backend);
+        lib = NativeLibrary.create(SUPPORTING_NATIVE_LIB_NAME, NativeFunctions.values(), backend,
+                        "You can switch to pure Java emulated POSIX support, " +
+                                        "which does not require native access privilege, by passing option " +
+                                        "'--python.PosixModuleBackend=java'.");
     }
 
     public static NFIPosixSupport createNative(PythonContext context) {
-        return new NFIPosixSupport(context, null);
+        return new NFIPosixSupport(context, NFIBackend.NATIVE);
     }
 
     public static NFIPosixSupport createLLVM(PythonContext context) {
-        return new NFIPosixSupport(context, "llvm");
+        return new NFIPosixSupport(context, NFIBackend.LLVM);
     }
 
     @ExportMessage

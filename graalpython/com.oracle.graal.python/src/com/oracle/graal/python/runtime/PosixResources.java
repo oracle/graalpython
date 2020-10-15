@@ -70,10 +70,10 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  *
  * It also manages the list of virtual child PIDs.
  */
-public class PosixResources {
-    private final int FD_STDIN = 0;
-    private final int FD_STDOUT = 1;
-    private final int FD_STDERR = 2;
+public class PosixResources extends PosixSupport {
+    private static final int FD_STDIN = 0;
+    private static final int FD_STDOUT = 1;
+    private static final int FD_STDERR = 2;
 
     /** Context-local file-descriptor mappings and PID mappings */
     private final SortedMap<Integer, ChannelWrapper> files;
@@ -203,6 +203,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary(allowInlining = true)
+    @Override
     public void setEnv(Env env) {
         synchronized (files) {
             files.get(FD_STDIN).setNewChannel(env.in());
@@ -224,7 +225,7 @@ public class PosixResources {
     }
 
     @TruffleBoundary
-    private void removeFD(int fd) throws IOException {
+    protected void removeFD(int fd) throws IOException {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
 
         if (channelWrapper != null) {

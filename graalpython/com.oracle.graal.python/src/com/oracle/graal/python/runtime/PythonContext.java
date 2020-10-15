@@ -196,7 +196,7 @@ public final class PythonContext {
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
 
-    @CompilationFinal private Object posixSupport;
+    @CompilationFinal private PosixSupport posixSupport;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -322,6 +322,7 @@ public final class PythonContext {
         out = env.out();
         err = env.err();
         resources.setEnv(env);
+        posixSupport.setEnv(env);
         optionValues = PythonOptions.createOptionValuesStorage(newEnv);
     }
 
@@ -502,11 +503,11 @@ public final class PythonContext {
         isInitialized = true;
     }
 
-    private Object initalizePosixSupport() {
+    private PosixSupport initalizePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
         switch (option) {
             case "java":
-                return new EmulatedPosixSupport();
+                return new EmulatedPosixSupport(this);
             case "native":
                 return NFIPosixSupport.createNative(this);
             case "llvm":
