@@ -1091,7 +1091,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         Object read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             if (length < 0) {
-                int error = PosixSupportLibrary.EINVAL;
+                int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
             try {
@@ -1169,7 +1169,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (fd < 0 || fd2 < 0) {
                 // CPython does not set errno here and raises a 'random' OSError
                 // (possibly with errno=0 Success)
-                int error = PosixSupportLibrary.EINVAL;
+                int error = OSErrorEnum.EINVAL.getNumber();
                 throw raiseOSError(frame, error, posixLib.strerror(getPosixSupport(), error));
             }
 

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
@@ -149,11 +150,10 @@ public final class NFIPosixSupport {
         while (true) {
             int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
-                // TODO set inheritable, O_CLOEXEC support etc.
                 return fd;
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno, pathname.originalObject);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -180,7 +180,7 @@ public final class NFIPosixSupport {
                 return buffer.withLength(n);
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -198,7 +198,7 @@ public final class NFIPosixSupport {
                 return n;
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -285,7 +285,7 @@ public final class NFIPosixSupport {
                 return;
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);

@@ -55,9 +55,6 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
                                                     // equal to AT_FDCWD
 
-    public static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
-    public static final int EINVAL = 22;
-
     public static final int O_CLOEXEC = 524288;
 
     public abstract String strerror(Object receiver, int errorCode);
