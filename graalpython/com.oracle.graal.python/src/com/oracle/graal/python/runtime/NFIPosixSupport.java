@@ -81,7 +81,8 @@ public final class NFIPosixSupport {
         call_dup2("(sint32, sint32):sint32"),
         call_dup3("(sint32, sint32, sint32):sint32"),
         call_pipe2("([sint32], sint32):sint32"),
-        call_lseek("(sint32, sint64, sint32):sint64");
+        call_lseek("(sint32, sint64, sint32):sint64"),
+        call_ftruncate("(sint32, sint64):sint32");
 
         private final String signature;
 
@@ -272,6 +273,23 @@ public final class NFIPosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return res;
+    }
+
+    @ExportMessage
+    public void ftruncate(int fd, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
+            if (res == 0) {
+                return;
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != PosixSupportLibrary.EINTR) {
+                throw newPosixException(invokeNode, errno);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
     }
 
     private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {

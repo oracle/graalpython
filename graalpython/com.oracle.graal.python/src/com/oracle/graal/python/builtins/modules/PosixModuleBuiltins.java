@@ -203,7 +203,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int RDONLY = 0;
 
     // Apart from being consistent with definitions in C headers, the first three must have these
-    // exact values on the Python side. SEEK_DATA and SEEK_HOLE should only be defined where supported
+    // exact values on the Python side. SEEK_DATA and SEEK_HOLE should only be defined where
+    // supported
     private static final int SEEK_SET = 0;
     private static final int SEEK_CUR = 1;
     private static final int SEEK_END = 2;
@@ -1262,6 +1263,31 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
+        }
+    }
+
+    @Builtin(name = "nfi_ftruncate", minNumOfPositionalArgs = 2, parameterNames = {"fd", "length"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "length", conversionClass = OffsetConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiFtruncateNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiFtruncateNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone ftruncate(VirtualFrame frame, int fd, long length,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.truncate", fd, length);
+            try {
+                posixLib.ftruncate(getPosixSupport(), fd, length);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
         }
     }
 

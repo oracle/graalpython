@@ -86,6 +86,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
 
+    public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;

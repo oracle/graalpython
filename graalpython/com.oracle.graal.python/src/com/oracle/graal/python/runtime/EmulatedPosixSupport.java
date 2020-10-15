@@ -174,4 +174,10 @@ public final class EmulatedPosixSupport {
     public long lseek(int fd, long offset, int how) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public void ftruncate(int fd, long length) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

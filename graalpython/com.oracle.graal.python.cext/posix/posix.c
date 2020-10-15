@@ -107,6 +107,10 @@ int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
     return lseek(fd, offset, whence);
 }
 
+int32_t call_ftruncate(int32_t fd, int64_t length) {
+    return ftruncate(fd, length);
+}
+
 int32_t get_errno() {
     return errno;
 }
