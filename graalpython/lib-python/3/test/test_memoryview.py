@@ -28,7 +28,8 @@ class AbstractMemoryTests:
 
     def check_getitem_with_type(self, tp):
         b = tp(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         self.assertEqual(m[0], ord(b"a"))
         self.assertIsInstance(m[0], int)
@@ -45,7 +46,7 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, lambda: m[0.0])
         self.assertRaises(TypeError, lambda: m["a"])
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_getitem(self):
         for tp in self._types:
@@ -61,7 +62,8 @@ class AbstractMemoryTests:
         if not self.ro_type:
             self.skipTest("no read-only type to test")
         b = self.ro_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         def setitem(value):
             m[0] = value
@@ -69,14 +71,15 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, setitem, 65)
         self.assertRaises(TypeError, setitem, memoryview(b"a"))
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_setitem_writable(self):
         if not self.rw_type:
             self.skipTest("no writable type to test")
         tp = self.rw_type
         b = self.rw_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         m[0] = ord(b'1')
         self._check_contents(tp, b, b"1bcdef")
@@ -121,7 +124,7 @@ class AbstractMemoryTests:
         self.assertRaises(ValueError, setitem, slice(0,2), b"a")
 
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_delitem(self):
         for tp in self._types:
@@ -205,14 +208,15 @@ class AbstractMemoryTests:
         # Test PyObject_GetBuffer() on a memoryview object.
         for tp in self._types:
             b = tp(self._source)
-            oldrefcount = sys.getrefcount(b)
+            # XXX GraalVM change - no refcount
+            # oldrefcount = sys.getrefcount(b)
             m = self._view(b)
-            oldviewrefcount = sys.getrefcount(m)
+            # oldviewrefcount = sys.getrefcount(m)
             s = str(m, "utf-8")
             self._check_contents(tp, b, s.encode("utf-8"))
-            self.assertEqual(sys.getrefcount(m), oldviewrefcount)
+            # self.assertEqual(sys.getrefcount(m), oldviewrefcount)
             m = None
-            self.assertEqual(sys.getrefcount(b), oldrefcount)
+            # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_gc(self):
         for tp in self._types:
@@ -443,6 +447,7 @@ class BaseMemorySliceTests:
     def _check_contents(self, tp, obj, contents):
         self.assertEqual(obj[1:7], tp(contents))
 
+    @test.support.impl_detail("refcounting", graalvm=False)
     def test_refs(self):
         for tp in self._types:
             m = memoryview(tp(self._source))
