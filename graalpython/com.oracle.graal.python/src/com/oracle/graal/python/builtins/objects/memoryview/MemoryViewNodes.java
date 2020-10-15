@@ -208,6 +208,34 @@ public class MemoryViewNodes {
         }
     }
 
+    @GenerateUncached
+    static abstract class WriteBytesAtNode extends Node {
+        public abstract void execute(byte[] src, int srcOffset, int len, IntrinsifiedPMemoryView self, Object ptr, int offset);
+
+        @Specialization(guards = "ptr != null")
+        static void doNative(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") IntrinsifiedPMemoryView self, Object ptr, int offset,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            try {
+                for (int i = 0; i < len; i++) {
+                    lib.writeArrayElement(ptr, offset + i, src[srcOffset + i]);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+
+        @Specialization(guards = "ptr == null")
+        static void doManaged(byte[] src, int srcOffset, int len, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
+            // TODO assumes byte storage
+            SequenceStorage storage = getStorageNode.execute(self.getOwner());
+            for (int i = 0; i < len; i++) {
+                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
+            }
+        }
+    }
+
     static abstract class ReadItemAtNode extends Node {
         public abstract Object execute(IntrinsifiedPMemoryView self, Object ptr, int offset);
 
@@ -270,74 +298,6 @@ public class MemoryViewNodes {
             packValueNode.execute(self.getFormat(), object, bytes);
             for (int i = 0; i < self.getItemSize(); i++) {
                 setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
-            }
-        }
-    }
-
-    static abstract class CopyBytesNode extends Node {
-        public abstract void execute(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes);
-
-        @Specialization(guards = {"destPtr == null", "srcPtr == null"})
-        @SuppressWarnings("unused")
-        static void managedToManaged(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.MemCopyNode memCopyNode) {
-            // TODO assumes bytes storage
-            SequenceStorage destStorage = getSequenceStorageNode.execute(dest.getOwner());
-            SequenceStorage srcStorage = getSequenceStorageNode.execute(src.getOwner());
-            memCopyNode.execute(destStorage, destOffset, srcStorage, srcOffset, nbytes);
-        }
-
-        @Specialization(guards = {"destPtr != null", "srcPtr == null"})
-        @SuppressWarnings("unused")
-        static void managedToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
-            // TODO assumes bytes storage
-            // TODO avoid byte->int conversion
-            // TODO explode?
-            SequenceStorage srcStorage = getSequenceStorageNode.execute(src.getOwner());
-            try {
-                for (int i = 0; i < nbytes; i++) {
-                    lib.writeArrayElement(destPtr, destOffset + i, (byte) getItemNode.executeInt(srcStorage, srcOffset + i));
-                }
-            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = {"destPtr == null", "srcPtr != null"})
-        @SuppressWarnings("unused")
-        static void nativeToManaged(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
-            // TODO assumes bytes storage
-            // TODO avoid byte->int conversion
-            // TODO explode?
-            SequenceStorage destStorage = getSequenceStorageNode.execute(dest.getOwner());
-            try {
-                for (int i = 0; i < nbytes; i++) {
-                    setItemNode.execute(destStorage, (byte) lib.readArrayElement(srcPtr, srcOffset + i) & 0xFF, destOffset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = {"destPtr != null", "srcPtr != null"})
-        @SuppressWarnings("unused")
-        static void nativeToNative(IntrinsifiedPMemoryView dest, Object destPtr, int destOffset, IntrinsifiedPMemoryView src, Object srcPtr, int srcOffset, int nbytes,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
-            // TODO call native memcpy?
-            // TODO explode?
-            try {
-                for (int i = 0; i < nbytes; i++) {
-                    lib.writeArrayElement(destPtr, destOffset + i, lib.readArrayElement(srcPtr, srcOffset + i));
-                }
-            } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
     }

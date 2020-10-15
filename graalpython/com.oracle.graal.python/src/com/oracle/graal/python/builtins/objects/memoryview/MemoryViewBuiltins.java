@@ -50,19 +50,19 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -211,7 +211,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached GetItemNode getItemNode,
                         @Cached BuiltinConstructors.MemoryViewNode createMemoryView,
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
-                        @Cached MemoryViewNodes.CopyBytesNode copyBytesNode) {
+                        @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
+                        @Cached MemoryViewNodes.WriteBytesAtNode writeBytesAtNode) {
             self.checkReleased(this);
             checkReadonly(self);
             if (self.getDimensions() != 1) {
@@ -223,11 +224,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormatString().equals(destView.getFormatString())) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
             }
+            // The intermediate array is necessary for overlapping views (where src and dest are the
+            // same buffer)
+            byte[] srcBytes = toJavaBytesNode.execute(srcView);
+            int itemsize = srcView.getItemSize();
             for (int i = 0; i < destView.getBufferShape()[0]; i++) {
-                // TODO doesn't look very efficient
                 MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
-                MemoryViewNodes.MemoryPointer srcPtr = pointerLookupNode.execute(frame, srcView, i);
-                copyBytesNode.execute(destView, destPtr.ptr, destPtr.offset, srcView, srcPtr.ptr, srcPtr.offset, destView.getItemSize());
+                writeBytesAtNode.execute(srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
             }
             return PNone.NONE;
         }
