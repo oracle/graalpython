@@ -1219,6 +1219,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_pipe", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class NfiPipeNode extends PythonBuiltinNode {
+
+        @Specialization
+        PTuple pipe(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            int[] pipe;
+            try {
+                pipe = posixLib.pipe(getPosixSupport());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

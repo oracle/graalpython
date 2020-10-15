@@ -98,6 +98,11 @@ int32_t call_dup3(int32_t oldfd, int32_t newfd, int32_t flags) {
     return dup3(oldfd, newfd, flags);
 }
 
+int32_t call_pipe2(int32_t *pipefd, int32_t flags) {
+    // TODO pipe2() is not POSIX, but requires _GNU_SOURCE, which we do not want because of strerror_r
+    return pipe2(pipefd, flags);
+}
+
 int32_t get_errno() {
     return errno;
 }

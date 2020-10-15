@@ -162,4 +162,10 @@ public final class EmulatedPosixSupport {
     public void setInheritable(int fd, boolean inheritable) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int[] pipe() {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

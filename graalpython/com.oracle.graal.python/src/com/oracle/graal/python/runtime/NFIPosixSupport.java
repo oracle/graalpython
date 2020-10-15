@@ -79,7 +79,8 @@ public final class NFIPosixSupport {
         call_write("(sint32, [sint8], uint64):sint64"),
         call_fcntl_int("(sint32, sint32, sint32):sint32"),
         call_dup2("(sint32, sint32):sint32"),
-        call_dup3("(sint32, sint32, sint32):sint32");
+        call_dup3("(sint32, sint32, sint32):sint32"),
+        call_pipe2("([sint32], sint32):sint32");
 
         private final String signature;
 
@@ -249,6 +250,17 @@ public final class NFIPosixSupport {
                 throw getErrnoAndThrowPosixException(invokeNode);
             }
         }
+    }
+
+    @ExportMessage
+    public int[] pipe(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] fds = new int[2];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_pipe2, context.getEnv().asGuestValue(fds), PosixSupportLibrary.O_CLOEXEC);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return fds;
     }
 
     private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {

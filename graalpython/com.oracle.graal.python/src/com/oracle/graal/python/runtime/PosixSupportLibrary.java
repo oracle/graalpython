@@ -82,6 +82,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void setInheritable(Object receiver, int fd, boolean inheritable) throws PosixException;
 
+    public abstract int[] pipe(Object receiver) throws PosixException;
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;
