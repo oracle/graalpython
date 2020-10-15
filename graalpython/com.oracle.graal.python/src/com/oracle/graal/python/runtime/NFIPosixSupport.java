@@ -80,7 +80,8 @@ public final class NFIPosixSupport {
         call_fcntl_int("(sint32, sint32, sint32):sint32"),
         call_dup2("(sint32, sint32):sint32"),
         call_dup3("(sint32, sint32, sint32):sint32"),
-        call_pipe2("([sint32], sint32):sint32");
+        call_pipe2("([sint32], sint32):sint32"),
+        call_lseek("(sint32, sint64, sint32):sint64");
 
         private final String signature;
 
@@ -261,6 +262,16 @@ public final class NFIPosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return fds;
+    }
+
+    @ExportMessage
+    public long lseek(int fd, long offset, int how,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(lib, NativeFunctions.call_lseek, fd, offset, how);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
     }
 
     private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {

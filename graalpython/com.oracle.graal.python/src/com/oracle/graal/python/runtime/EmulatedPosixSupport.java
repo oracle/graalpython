@@ -168,4 +168,10 @@ public final class EmulatedPosixSupport {
     public int[] pipe() {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public long lseek(int fd, long offset, int how) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

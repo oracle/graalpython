@@ -103,6 +103,10 @@ int32_t call_pipe2(int32_t *pipefd, int32_t flags) {
     return pipe2(pipefd, flags);
 }
 
+int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
+    return lseek(fd, offset, whence);
+}
+
 int32_t get_errno() {
     return errno;
 }

@@ -135,7 +135,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -202,9 +202,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int WRONLY = 1;
     private static final int RDONLY = 0;
 
+    // Apart from being consistent with definitions in C headers, the first three must have these
+    // exact values on the Python side. SEEK_DATA and SEEK_HOLE should only be defined where supported
     private static final int SEEK_SET = 0;
     private static final int SEEK_CUR = 1;
     private static final int SEEK_END = 2;
+    private static final int SEEK_DATA = 3;
+    private static final int SEEK_HOLE = 4;
 
     private static final int WNOHANG = 1;
     private static final int WUNTRACED = 3;
@@ -280,6 +284,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("SEEK_SET", SEEK_SET);
         builtinConstants.put("SEEK_CUR", SEEK_CUR);
         builtinConstants.put("SEEK_END", SEEK_END);
+        builtinConstants.put("SEEK_DATA", SEEK_DATA);
+        builtinConstants.put("SEEK_HOLE", SEEK_HOLE);
 
         builtinConstants.put("WNOHANG", WNOHANG);
         builtinConstants.put("WUNTRACED", WUNTRACED);
@@ -1026,7 +1032,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    public abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
+    abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1050,7 +1056,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "nfi_close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NfiCloseNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class NfiCloseNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1073,7 +1079,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "length", conversion = ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NfiReadNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiReadNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1105,7 +1111,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
     @GenerateNodeFactory
-    public abstract static class NfiWriteNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiWriteNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1126,7 +1132,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "nfi_dup", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NfiDupNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class NfiDupNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1149,7 +1155,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd2", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
-    public abstract static class NfiDup2Node extends PythonTernaryClinicBuiltinNode {
+    abstract static class NfiDup2Node extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1177,7 +1183,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "nfi_get_inheritable", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NfiGetInheritableNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class NfiGetInheritableNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1199,7 +1205,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class NfiSetInheritableNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiSetInheritableNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1233,6 +1239,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
             return factory().createTuple(new Object[]{pipe[0], pipe[1]});
+        }
+    }
+
+    @Builtin(name = "nfi_lseek", minNumOfPositionalArgs = 3, parameterNames = {"fd", "pos", "how"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "pos", conversionClass = OffsetConversionNode.class)
+    @ArgumentClinic(name = "how", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    abstract static class NfiLseekNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiLseekNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        long lseek(VirtualFrame frame, int fd, long pos, int how,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.lseek(getPosixSupport(), fd, pos, how);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
@@ -2361,7 +2390,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
      * parameter is omitted, returns {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
      */
-    public abstract static class DirFdConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
 
         @Specialization
         int doNone(@SuppressWarnings("unused") PNone value) {
@@ -2422,7 +2451,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of CPython's {@code path_converter()}. Always returns an instance of
      * {@link PosixFileHandle}.
      */
-    public abstract static class PathConversionNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
+    public abstract static class PathConversionNode extends ArgumentCastNodeWithRaise {
 
         private final String functionNameWithColon;
         private final String argumentName;
@@ -2553,6 +2582,33 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @ClinicConverterFactory
         public static PathConversionNode create(@BuiltinName String functionName, @ArgumentName String argumentName, boolean nullable, boolean allowFd) {
             return PosixModuleBuiltinsFactory.PathConversionNodeGen.create(functionName, argumentName, nullable, allowFd);
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code Py_off_t_converter()}. Always returns a {@code long}.
+     */
+    public abstract static class OffsetConversionNode extends ArgumentCastNodeWithRaise {
+
+        @Specialization
+        static long doInt(int i) {
+            return i;
+        }
+
+        @Specialization
+        static long doLong(long l) {
+            return l;
+        }
+
+        @Specialization(limit = "3")
+        static long doOthers(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
+        public static OffsetConversionNode create() {
+            return PosixModuleBuiltinsFactory.OffsetConversionNodeGen.create();
         }
     }
 }
