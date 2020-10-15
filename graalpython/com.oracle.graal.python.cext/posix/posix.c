@@ -94,6 +94,7 @@ int32_t call_dup2(int32_t oldfd, int32_t newfd) {
 }
 
 int32_t call_dup3(int32_t oldfd, int32_t newfd, int32_t flags) {
+    // TODO dup3() is not POSIX, but requires _GNU_SOURCE, which we do not want because of strerror_r
     return dup3(oldfd, newfd, flags);
 }
 

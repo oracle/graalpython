@@ -150,4 +150,16 @@ public final class EmulatedPosixSupport {
     public int dup2(int fd, int fd2, boolean inheritable) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public boolean getInheritable(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public void setInheritable(int fd, boolean inheritable) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }

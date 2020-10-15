@@ -61,7 +61,11 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int F_GETFD = 1;
+    private static final int F_SETFD = 2;
     private static final int F_DUPFD_CLOEXEC = 1030;
+
+    private static final int FD_CLOEXEC = 1;
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
@@ -221,6 +225,38 @@ public final class NFIPosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return newFd;
+    }
+
+    @ExportMessage
+    public boolean getInheritable(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        return (getFdFlags(fd, invokeNode) & FD_CLOEXEC) == 0;
+    }
+
+    @ExportMessage
+    public void setInheritable(int fd, boolean inheritable,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int oldFlags = getFdFlags(fd, invokeNode);
+        int newFlags;
+        if (inheritable) {
+            newFlags = oldFlags & ~FD_CLOEXEC;
+        } else {
+            newFlags = oldFlags | FD_CLOEXEC;
+        }
+        if (newFlags != oldFlags) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_SETFD, newFlags);
+            if (res < 0) {
+                throw getErrnoAndThrowPosixException(invokeNode);
+            }
+        }
+    }
+
+    private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {
+        int flags = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_GETFD, 0);
+        if (flags < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return flags;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

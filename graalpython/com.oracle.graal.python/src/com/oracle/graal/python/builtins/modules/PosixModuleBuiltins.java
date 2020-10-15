@@ -1174,6 +1174,51 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_get_inheritable", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class NfiGetInheritableNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiGetInheritableNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean getInheritable(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getInheritable(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_set_inheritable", minNumOfPositionalArgs = 2, parameterNames = {"fd", "inheritable"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "inheritable", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class NfiSetInheritableNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiSetInheritableNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone setInheritable(VirtualFrame frame, int fd, int inheritable,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                // not sure why inheritable is not a boolean, but that is how they do it in CPython
+                posixLib.setInheritable(getPosixSupport(), fd, inheritable != 0);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
