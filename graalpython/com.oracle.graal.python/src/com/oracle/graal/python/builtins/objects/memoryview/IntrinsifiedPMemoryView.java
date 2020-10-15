@@ -45,6 +45,9 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private BufferReference reference;
     private int flags;
 
+    // Cached hash value, required to compy with CPython's semantics
+    private int cachedHash = -1;
+
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
@@ -223,6 +226,14 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
 
     public BufferReference getReference() {
         return reference;
+    }
+
+    public int getCachedHash() {
+        return cachedHash;
+    }
+
+    public void setCachedHash(int cachedHash) {
+        this.cachedHash = cachedHash;
     }
 
     public void setReleased() {

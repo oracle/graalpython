@@ -551,15 +551,20 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public static abstract class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         int hash(IntrinsifiedPMemoryView self,
+                        @Cached ConditionProfile cachedProfile,
                         @Cached ConditionProfile writableProfile,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
+            if (cachedProfile.profile(self.getCachedHash() != -1)) {
+                return self.getCachedHash();
+            }
             self.checkReleased(this);
             if (writableProfile.profile(!self.isReadOnly())) {
                 throw raise(ValueError, ErrorMessages.CANNOT_HASH_WRITEABLE_MEMORYVIEW);
             } else {
                 // TODO avoid copying
-                // TODO save the value
-                return hashArray(toJavaBytesNode.execute(self));
+                int hash = hashArray(toJavaBytesNode.execute(self));
+                self.setCachedHash(hash);
+                return hash;
             }
         }
 
