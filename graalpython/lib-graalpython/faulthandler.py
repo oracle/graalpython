@@ -41,6 +41,12 @@ _enabled = True
 
 
 @__graalpython__.builtin
+def enable(file=None, all_threads=True):
+    global _enabled
+    _enabled = True
+
+
+@__graalpython__.builtin
 def disable():
     global _enabled
     _enabled = False
