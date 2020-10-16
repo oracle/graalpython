@@ -49,14 +49,14 @@ public class IntrinsifiedPMemoryView extends PythonBuiltinObject {
     private int cachedHash = -1;
 
     public IntrinsifiedPMemoryView(Object cls, Shape instanceShape, MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
-                    int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
         this.owner = owner;
         this.len = len;
         this.readonly = readonly;
         this.itemsize = itemsize;
-        this.format = BufferFormat.fromString(formatString);
+        this.format = format;
         this.formatString = formatString;
         this.ndim = ndim;
         this.bufPointer = bufPointer;

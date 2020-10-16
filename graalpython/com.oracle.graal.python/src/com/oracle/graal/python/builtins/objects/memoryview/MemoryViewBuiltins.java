@@ -172,10 +172,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             int[] suboffsets = self.getBufferSuboffsets();
             int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            // TODO factory
-            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            getQueue.execute(), self.getManagedBuffer(), self.getOwner(), lenght, self.isReadOnly(),
-                            self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
+            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), lenght, self.isReadOnly(),
+                            self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
 
@@ -220,8 +218,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             }
             IntrinsifiedPMemoryView srcView = createMemoryView.execute(object);
             IntrinsifiedPMemoryView destView = (IntrinsifiedPMemoryView) getItemNode.execute(frame, self, slice);
-            // TODO format skip @
-            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormatString().equals(destView.getFormatString())) {
+            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
             }
             // The intermediate array is necessary for overlapping views (where src and dest are the
@@ -516,10 +513,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         IntrinsifiedPMemoryView toreadonly(IntrinsifiedPMemoryView self,
                         @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             self.checkReleased(this);
-            // TODO factory
-            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            getQueue.execute(), self.getManagedBuffer(), self.getOwner(), self.getLength(), true,
-                            self.getItemSize(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
+            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), self.getLength(), true,
+                            self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets(), self.getFlags());
         }
     }
@@ -615,10 +610,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 }
                 newStrides = IntrinsifiedPMemoryView.initStridesFromShape(ndim, itemsize, shape);
             }
-            // TODO factory
-            return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                            refQueue, self.getManagedBuffer(), self.getOwner(), self.getLength(), self.isReadOnly(),
-                            itemsize, formatString, ndim, self.getBufferPointer(),
+            return factory().createMemoryView(refQueue, self.getManagedBuffer(), self.getOwner(), self.getLength(), self.isReadOnly(),
+                            itemsize, format, formatString, ndim, self.getBufferPointer(),
                             self.getOffset(), newShape, newStrides, null, flags);
         }
 

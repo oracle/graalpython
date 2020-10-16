@@ -1621,8 +1621,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (!lib.isNull(bufferStructPointer)) {
                     managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
                 }
-                IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
-                                getQueue.execute(), managedBuffer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+                IntrinsifiedPMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
+                                IntrinsifiedPMemoryView.BufferFormat.fromString(format),
+                                format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {
                 transformToNative(frame, e);
