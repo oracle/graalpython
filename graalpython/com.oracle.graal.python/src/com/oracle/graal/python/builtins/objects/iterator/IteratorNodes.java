@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -96,7 +97,7 @@ public abstract class IteratorNodes {
                         @CachedLibrary("iterable") PythonObjectLibrary plib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary toInt,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
-                        @Cached("create(__LENGTH_HINT__)") LookupAttributeInMRONode lenHintNode,
+                        @Cached("create(__LENGTH_HINT__)") LookupSpecialMethodNode lenHintNode,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile hasLenProfile,
@@ -123,7 +124,7 @@ public abstract class IteratorNodes {
                     }
                 }
             }
-            Object attrLenHintObj = lenHintNode.execute(clazz);
+            Object attrLenHintObj = lenHintNode.execute(frame, clazz, iterable);
             if (hasLenghtHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {

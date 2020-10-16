@@ -77,6 +77,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_multiple_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_special2
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_slots_trash
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_special_method_lookup
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_special_unbound_method_types
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_specials
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_staticmethods

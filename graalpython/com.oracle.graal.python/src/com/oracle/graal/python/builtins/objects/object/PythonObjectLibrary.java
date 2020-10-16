@@ -1023,7 +1023,7 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * @see #asIndexWithState
+     * @see #lengthWithState
      */
     public final int lengthWithFrame(Object receiver, VirtualFrame frame) {
         if (profileHasFrame(frame)) {

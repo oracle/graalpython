@@ -620,16 +620,11 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       Frame: [3,filename,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     StringLiteralNode SourceSection: [1427,1430]`"r"`
-                                                  LookupInheritedAttributeNode SourceSection: None
-                                                    LookupAttributeInMRONodeGen SourceSection: None
-                                                      IsSameTypeNodeGen SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                  LookupInheritedAttributeNode SourceSection: None
-                                                    LookupAttributeInMRONodeGen SourceSection: None
-                                                      IsSameTypeNodeGen SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                  CallNodeGen SourceSection: None
-                                                  CallNodeGen SourceSection: None
+                                                  LookupSpecialMethodNodeGen SourceSection: None
+                                                  LookupSpecialMethodNodeGen SourceSection: None
+                                                  CachedDispatchFirst SourceSection: None
+                                                  CallUnaryMethodNodeGen SourceSection: None
+                                                  CallQuaternaryMethodNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
