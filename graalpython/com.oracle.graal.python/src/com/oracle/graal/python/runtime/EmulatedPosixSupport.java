@@ -94,7 +94,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  *
  * Limitations of the POSIX emulation:
  * <ul>
- * <li>Any global state that is changes in Python extensions native code is not reflected in this
+ * <li>Any global state that is changed in Python extensions' native code is not reflected in this
  * emulation layer. Namely: umask, current working directory.</li>
  * <li>umask is set to hard-coded default of 0022 and not inherited from the OS. We may add an
  * option that would allow to change this.</li>
@@ -102,6 +102,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  * that are passed as paths are always converted to Strings using UTF-8.</li>>
  * <li>Fork does not actually for the process, any arguments related to resources inheritance for
  * the child process, are silently ignored.</li>
+ * <li>All file descriptors are not inheritable (newly spawned processes will not see them).</li>
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
@@ -204,7 +205,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long umask(long umask) {
         long prev = currentUmask;
         currentUmask = (int) (umask & 00777);
-        if (hasDefaultUmask && COMPATIBILITY.isLoggable(Level.INFO)) {
+        if (hasDefaultUmask) {
             compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
         }
         hasDefaultUmask = false;
@@ -224,10 +225,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage(name = "close")
-    public int closeMessage(int fd) {
+    public int closeMessage(int fd) throws PosixException {
         // TODO: to be replaced with super.close once the super class is merged with this class
         try {
-            removeFD(fd);
+            if (!removeFD(fd)) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
             return 0;
         } catch (IOException ignored) {
             return -1;
@@ -238,11 +241,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openAt(int dirFd, PosixPath path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Cached ConditionProfile defaultDirFdPofile,
                     @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        String pathname = pathToJavaStr.execute(path);
+        TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
         Set<StandardOpenOption> options = flagsToOptions(flags);
         FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
         try {
-            return openTruffleFile(pathToJavaStr.execute(path), options, attributes);
+            return openTruffleFile(file, options, attributes);
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
@@ -250,10 +256,22 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
+    private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
+        if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
+            return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        } else {
+            String dirPath = filePaths.getOrDefault(dirFd, null);
+            if (dirPath == null) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
+            TruffleFile dir = context.getPublicTruffleFileRelaxed(dirPath, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            return dir.resolve(pathname);
+        }
+    }
+
     @TruffleBoundary
-    private int openTruffleFile(String pathname, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
+    private int openTruffleFile(TruffleFile truffleFile, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
         SeekableByteChannel fc;
-        TruffleFile truffleFile = context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
         if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
             truffleFile = context.getEnv().createTempFile(truffleFile, null, null);
             options.remove(StandardOpenOption.CREATE_NEW);
@@ -465,12 +483,16 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final TruffleLogger COMPATIBILITY_LOGGER = PythonLanguage.getCompatibilityLogger(EmulatedPosixSupport.class);
 
     @TruffleBoundary
-    public static void compatibilityInfo(String fmt, Object... args) {
-        COMPATIBILITY_LOGGER.info(String.format(fmt, args));
+    public static void compatibilityInfo(String fmt, Object arg) {
+        if (COMPATIBILITY_LOGGER.isLoggable(Level.INFO)) {
+            COMPATIBILITY_LOGGER.info(String.format(fmt, arg));
+        }
     }
 
     @TruffleBoundary
     public static void compatibilityIgnored(String fmt, Object... args) {
-        COMPATIBILITY_LOGGER.info("Ignored: " + String.format(fmt, args));
+        if (COMPATIBILITY_LOGGER.isLoggable(Level.WARNING)) {
+            COMPATIBILITY_LOGGER.warning("Ignored: " + String.format(fmt, args));
+        }
     }
 }

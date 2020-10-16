@@ -77,7 +77,7 @@ public class PosixResources extends PosixSupport {
 
     /** Context-local file-descriptor mappings and PID mappings */
     private final SortedMap<Integer, ChannelWrapper> files;
-    private final Map<Integer, String> filePaths;
+    protected final Map<Integer, String> filePaths;
     private final List<Process> children;
     private final Map<String, Integer> inodes;
     private int inodeCnt = 0;
@@ -225,7 +225,7 @@ public class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    protected void removeFD(int fd) throws IOException {
+    protected boolean removeFD(int fd) throws IOException {
         ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
 
         if (channelWrapper != null) {
@@ -239,7 +239,9 @@ public class PosixResources extends PosixSupport {
                 files.remove(fd);
                 filePaths.remove(fd);
             }
+            return true;
         }
+        return false;
     }
 
     @TruffleBoundary
