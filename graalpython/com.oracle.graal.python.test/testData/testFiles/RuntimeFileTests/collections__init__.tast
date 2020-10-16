@@ -2470,6 +2470,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [8113,8114]`2`
                                             Value: 2
+                                        ObjectLiteralNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [8167,8202]`size += sizeof(self....`
                                       Identifier: size
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2500,6 +2501,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNode SourceSection: [8201,8202]`n`
                                             Frame: [2,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [8230,8261]`size += sizeof(self....`
                                       Identifier: size
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2530,6 +2532,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                           ReadLocalVariableNode SourceSection: [8260,8261]`n`
                                             Frame: [2,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [8294,8305]`return size`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -8350,6 +8353,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [30790,30795]`count`
                                                 Frame: [3,count,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              ObjectLiteralNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [30749,30762]`other.items()`
                                           PythonCallNodeGen SourceSection: [30749,30762]`other.items()`
                                             CallNodeGen SourceSection: None
@@ -8460,6 +8464,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [31142,31147]`count`
                                                 Frame: [3,count,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                              ObjectLiteralNode SourceSection: None
                                         GetIteratorExpressionNodeGen SourceSection: [31101,31114]`other.items()`
                                           PythonCallNodeGen SourceSection: [31101,31114]`other.items()`
                                             CallNodeGen SourceSection: None
@@ -12914,6 +12919,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalVariableNode SourceSection: [40113,40118]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                          ObjectLiteralNode SourceSection: None
                                       IfNode SourceSection: [40132,40263]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
@@ -12962,6 +12968,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                             ReadLocalVariableNode SourceSection: [40198,40203]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                            ObjectLiteralNode SourceSection: None
                                         SetAttributeNodeGen SourceSection: [40230,40254]`self.data += list(ot...`
                                           Attribute: data
                                           ReadLocalVariableNode SourceSection: [40230,40234]`self`
@@ -12987,6 +12994,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                               ReadLocalVariableNode SourceSection: [40248,40253]`other`
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                            ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [40263,40274]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -13149,6 +13157,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                         ReadLocalVariableNode SourceSection: [40415,40416]`n`
                                           Frame: [1,n,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [40425,40436]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>

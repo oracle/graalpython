@@ -340,6 +340,11 @@ public final class PInt extends PythonBuiltinObject {
         return BigInteger.valueOf(value);
     }
 
+    @TruffleBoundary
+    public static BigInteger longToUnsignedBigInteger(long n) {
+        return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
+    }
+
     public double doubleValue() {
         return doubleValue(value);
     }

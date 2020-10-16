@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -80,13 +81,15 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     @ExportMessage
-    boolean isPointer() {
-        return id != -1;
+    boolean isPointer(
+                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
+        return isAllocatedProfile.profile(id != -1);
     }
 
     @ExportMessage
-    long asPointer() throws UnsupportedMessageException {
-        if (!isPointer()) {
+    long asPointer(
+                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) throws UnsupportedMessageException {
+        if (!isPointer(isAllocatedProfile)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
@@ -95,9 +98,10 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     void toNative(
+                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached("createCountingProfile()") ConditionProfile notNativeProfile) {
-        if (notNativeProfile.profile(!isPointer())) {
+        if (notNativeProfile.profile(!isPointer(isAllocatedProfile))) {
             id = context.getHPyContext().getHPyHandleForObject(this);
         }
     }
@@ -137,13 +141,15 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     @ExportMessage
-    Object getNativePointer() {
-        return isPointer() ? id : null;
+    Object getNativePointer(
+                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
+        return isPointer(isAllocatedProfile) ? id : null;
     }
 
     @ExportMessage
-    boolean isNative() {
-        return isPointer();
+    boolean isNative(
+                    @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
+        return isPointer(isAllocatedProfile);
     }
 
     @ExportMessage
@@ -174,5 +180,18 @@ public final class GraalHPyHandle implements TruffleObject {
 
     public GraalHPyHandle copy() {
         return new GraalHPyHandle(delegate);
+    }
+
+    public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
+        if (isPointer(isAllocatedProfile)) {
+            try {
+                hpyContext.releaseHPyHandleForObject((int) asPointer(isAllocatedProfile));
+                id = -1;
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("trying to release non-native handle that claims to be native");
+            }
+        }
+        // nothing to do if the handle never got 'toNative'
     }
 }

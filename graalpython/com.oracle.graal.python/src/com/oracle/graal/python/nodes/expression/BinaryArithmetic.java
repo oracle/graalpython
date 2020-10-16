@@ -40,14 +40,21 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -93,6 +100,12 @@ public enum BinaryArithmetic {
         return operator;
     }
 
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the provided
+     * binary operator. This node is mostly useful to use such operators from a location without a
+     * frame (e.g. from interop). Note: this is just a root node and won't do any signature
+     * checking.
+     */
     public static final class BinaryArithmeticExpression extends ExpressionNode {
         @Child private LookupAndCallBinaryNode callNode;
         @Child private ExpressionNode left;
@@ -115,11 +128,54 @@ public enum BinaryArithmetic {
         }
     }
 
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallTernaryNode} to execute the
+     * provided ternary operator. Note: this is just a root node and won't do any signature
+     * checking.
+     */
+    static final class CallBinaryArithmeticRootNode extends CallArithmeticRootNode {
+        static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
+
+        @Child private LookupAndCallBinaryNode callBinaryNode;
+
+        private final BinaryArithmetic binaryOperator;
+
+        CallBinaryArithmeticRootNode(PythonLanguage language, BinaryArithmetic binaryOperator) {
+            super(language);
+            this.binaryOperator = binaryOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE_BINARY;
+        }
+
+        @Override
+        protected Object doCall(VirtualFrame frame) {
+            if (callBinaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBinaryNode = insert(binaryOperator.create());
+            }
+            return callBinaryNode.executeObject(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1));
+        }
+    }
+
     public ExpressionNode create(ExpressionNode left, ExpressionNode right) {
         return new BinaryArithmeticExpression(LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler), left, right);
     }
 
     public LookupAndCallBinaryNode create() {
         return LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler);
+    }
+
+    /**
+     * Creates a call target with a specific root node for this binary operator such that the
+     * operator can be executed via a full call. This is in particular useful, if you want to
+     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
+     * method directly. In order to enable AST sharing, you should use
+     * {@link PythonLanguage#getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic)}.
+     */
+    public RootCallTarget createCallTarget(PythonLanguage language) {
+        return PythonUtils.getOrCreateCallTarget(new CallBinaryArithmeticRootNode(language, this));
     }
 }

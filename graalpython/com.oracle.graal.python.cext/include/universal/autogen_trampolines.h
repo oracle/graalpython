@@ -34,6 +34,10 @@
 
 #define UNWRAP(_h) ((_h)._i)
 #define WRAP(_ptr) ((HPy){(_ptr)})
+#define UNWRAP_TUPLE_BUILDER(_h) ((_h)._tup)
+#define WRAP_TUPLE_BUILDER(_ptr) ((HPyTupleBuilder){(_ptr)})
+#define UNWRAP_LIST_BUILDER(_h) ((_h)._lst)
+#define WRAP_LIST_BUILDER(_ptr) ((HPyListBuilder){(_ptr)})
 
 static inline HPy HPyModule_Create(HPyContext ctx, HPyModuleDef *def) {
      return WRAP(ctx->ctx_Module_Create ( ctx, def ));
@@ -51,12 +55,24 @@ static inline HPy HPyLong_FromLong(HPyContext ctx, long value) {
      return WRAP(ctx->ctx_Long_FromLong ( ctx, value ));
 }
 
+static inline HPy HPyLong_FromUnsignedLong(HPyContext ctx, unsigned long value) {
+     return WRAP(ctx->ctx_Long_FromUnsignedLong ( ctx, value )); 
+}
+
 static inline HPy HPyLong_FromLongLong(HPyContext ctx, long long v) {
      return WRAP(ctx->ctx_Long_FromLongLong ( ctx, v ));
 }
 
 static inline HPy HPyLong_FromUnsignedLongLong(HPyContext ctx, unsigned long long v) {
      return WRAP(ctx->ctx_Long_FromUnsignedLongLong ( ctx, v ));
+}
+
+static inline HPy HPyLong_FromSize_t(HPyContext ctx, size_t value) {
+     return WRAP(ctx->ctx_Long_FromSize_t ( ctx, value )); 
+}
+
+static inline HPy HPyLong_FromSsize_t(HPyContext ctx, HPy_ssize_t value) {
+     return WRAP(ctx->ctx_Long_FromSsize_t ( ctx, value )); 
 }
 
 static inline long HPyLong_AsLong(HPyContext ctx, HPy h) {
@@ -67,8 +83,152 @@ static inline HPy HPyFloat_FromDouble(HPyContext ctx, double v) {
      return WRAP(ctx->ctx_Float_FromDouble ( ctx, v ));
 }
 
-static inline HPy HPyNumber_Add(HPyContext ctx, HPy h1, HPy h2) {
-     return WRAP(ctx->ctx_Number_Add ( ctx, UNWRAP(h1), UNWRAP(h2) ));
+static inline double HPyFloat_AsDouble(HPyContext ctx, HPy h) {
+     return ctx->ctx_Float_AsDouble ( ctx, UNWRAP(h) ); 
+}
+
+static inline HPy_ssize_t HPy_Length(HPyContext ctx, HPy h) {
+     return ctx->ctx_Length ( ctx, UNWRAP(h) ); 
+}
+
+static inline int HPyNumber_Check(HPyContext ctx, HPy h) {
+     return ctx->ctx_Number_Check ( ctx, UNWRAP(h) ); 
+}
+
+static inline HPy HPy_Add(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Add ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Subtract(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Subtract ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Multiply(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Multiply ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_MatrixMultiply(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_MatrixMultiply ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_FloorDivide(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_FloorDivide ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_TrueDivide(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_TrueDivide ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Remainder(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Remainder ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Divmod(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Divmod ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Power(HPyContext ctx, HPy h1, HPy h2, HPy h3) {
+     return WRAP(ctx->ctx_Power ( ctx, UNWRAP(h1), UNWRAP(h2), UNWRAP(h3) )); 
+}
+
+static inline HPy HPy_Negative(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Negative ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Positive(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Positive ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Absolute(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Absolute ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Invert(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Invert ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Lshift(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Lshift ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Rshift(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Rshift ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_And(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_And ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Xor(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Xor ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Or(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_Or ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_Index(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Index ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Long(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Long ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_Float(HPyContext ctx, HPy h1) {
+     return WRAP(ctx->ctx_Float ( ctx, UNWRAP(h1) )); 
+}
+
+static inline HPy HPy_InPlaceAdd(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceAdd ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceSubtract(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceSubtract ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceMultiply(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceMultiply ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceMatrixMultiply(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceMatrixMultiply ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceFloorDivide(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceFloorDivide ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceTrueDivide(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceTrueDivide ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceRemainder(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceRemainder ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlacePower(HPyContext ctx, HPy h1, HPy h2, HPy h3) {
+     return WRAP(ctx->ctx_InPlacePower ( ctx, UNWRAP(h1), UNWRAP(h2), UNWRAP(h3) )); 
+}
+
+static inline HPy HPy_InPlaceLshift(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceLshift ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceRshift(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceRshift ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceAnd(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceAnd ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceXor(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceXor ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
+}
+
+static inline HPy HPy_InPlaceOr(HPyContext ctx, HPy h1, HPy h2) {
+     return WRAP(ctx->ctx_InPlaceOr ( ctx, UNWRAP(h1), UNWRAP(h2) )); 
 }
 
 static inline void HPyErr_SetString(HPyContext ctx, HPy h_type, const char *message) {
@@ -79,8 +239,20 @@ static inline int HPyErr_Occurred(HPyContext ctx) {
      return ctx->ctx_Err_Occurred ( ctx );
 }
 
-static inline int HPyObject_IsTrue(HPyContext ctx, HPy h) {
-     return ctx->ctx_Object_IsTrue ( ctx, UNWRAP(h) );
+static inline HPy HPyErr_NoMemory(HPyContext ctx) {
+     return WRAP(ctx->ctx_Err_NoMemory ( ctx )); 
+}
+
+static inline int HPy_IsTrue(HPyContext ctx, HPy h) {
+     return ctx->ctx_IsTrue ( ctx, UNWRAP(h) ); 
+}
+
+static inline HPy HPyType_FromSpec(HPyContext ctx, HPyType_Spec *spec, HPyType_SpecParam *params) {
+     return WRAP(ctx->ctx_Type_FromSpec ( ctx, spec, params )); 
+}
+
+static inline HPy HPyType_GenericNew(HPyContext ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw) {
+     return WRAP(ctx->ctx_Type_GenericNew ( ctx, UNWRAP(type), args, nargs, UNWRAP(kw) ));
 }
 
 static inline HPy HPy_GetAttr(HPyContext ctx, HPy obj, HPy name) {
@@ -131,6 +303,38 @@ static inline int HPy_SetItem_s(HPyContext ctx, HPy obj, const char *key, HPy va
      return ctx->ctx_SetItem_s ( ctx, UNWRAP(obj), key, UNWRAP(value));
 }
 
+static inline void *_HPy_Cast(HPyContext ctx, HPy h) {
+     return ctx->ctx_Cast ( ctx, UNWRAP(h) ); 
+}
+
+static inline HPy HPy_Repr(HPyContext ctx, HPy obj) {
+     return WRAP(ctx->ctx_Repr ( ctx, UNWRAP(obj) )); 
+}
+
+static inline HPy HPy_Str(HPyContext ctx, HPy obj) {
+     return WRAP(ctx->ctx_Str ( ctx, UNWRAP(obj) )); 
+}
+
+static inline HPy HPy_ASCII(HPyContext ctx, HPy obj) {
+     return WRAP(ctx->ctx_ASCII ( ctx, UNWRAP(obj) )); 
+}
+
+static inline HPy HPy_Bytes(HPyContext ctx, HPy obj) {
+     return WRAP(ctx->ctx_Bytes ( ctx, UNWRAP(obj) )); 
+}
+
+static inline HPy HPy_RichCompare(HPyContext ctx, HPy v, HPy w, int op) {
+     return WRAP(ctx->ctx_RichCompare ( ctx, UNWRAP(v), UNWRAP(w), op )); 
+}
+
+static inline int HPy_RichCompareBool(HPyContext ctx, HPy v, HPy w, int op) {
+     return ctx->ctx_RichCompareBool ( ctx, UNWRAP(v), UNWRAP(w), op );
+}
+
+static inline HPy_hash_t HPy_Hash(HPyContext ctx, HPy obj) {
+     return ctx->ctx_Hash ( ctx, UNWRAP(obj) ); 
+}
+
 static inline int HPyBytes_Check(HPyContext ctx, HPy h) {
      return ctx->ctx_Bytes_Check ( ctx, UNWRAP(h) );
 }
@@ -167,12 +371,20 @@ static inline HPy HPyUnicode_FromWideChar(HPyContext ctx, const wchar_t *w, HPy_
      return WRAP(ctx->ctx_Unicode_FromWideChar ( ctx, w, size ));
 }
 
+static inline int HPyList_Check(HPyContext ctx, HPy h) {
+     return ctx->ctx_List_Check ( ctx, UNWRAP(h) ); 
+}
+
 static inline HPy HPyList_New(HPyContext ctx, HPy_ssize_t len) {
      return WRAP(ctx->ctx_List_New ( ctx, len ));
 }
 
 static inline int HPyList_Append(HPyContext ctx, HPy h_list, HPy h_item) {
      return ctx->ctx_List_Append ( ctx, UNWRAP(h_list), UNWRAP(h_item) );
+}
+
+static inline int HPyDict_Check(HPyContext ctx, HPy h) {
+     return ctx->ctx_Dict_Check ( ctx, UNWRAP(h) ); 
 }
 
 static inline HPy HPyDict_New(HPyContext ctx) {
@@ -187,15 +399,55 @@ static inline HPy HPyDict_GetItem(HPyContext ctx, HPy h_dict, HPy h_key) {
      return WRAP(ctx->ctx_Dict_GetItem ( ctx, UNWRAP(h_dict), UNWRAP(h_key) ));
 }
 
-static inline HPy HPy_FromPyObject(HPyContext ctx, struct _object *obj) {
-     return WRAP(ctx->ctx_FromPyObject ( ctx, obj ));
+static inline HPy HPy_FromPyObject(HPyContext ctx, cpy_PyObject *obj) {
+     return WRAP(ctx->ctx_FromPyObject ( ctx, obj )); 
 }
 
-static inline struct _object *HPy_AsPyObject(HPyContext ctx, HPy h) {
-     return ctx->ctx_AsPyObject ( ctx, UNWRAP(h) );
+static inline cpy_PyObject *HPy_AsPyObject(HPyContext ctx, HPy h) {
+     return ctx->ctx_AsPyObject ( ctx, UNWRAP(h) ); 
 }
 
-static inline struct _object *_HPy_CallRealFunctionFromTrampoline(HPyContext ctx, struct _object *self, struct _object *args, struct _object *kw, void *func, int ml_flags) {
-     return ctx->ctx_CallRealFunctionFromTrampoline ( ctx, self, args, kw, func, ml_flags );
+static inline HPy HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n) {
+     return WRAP(ctx->ctx_Tuple_FromArray ( ctx, items, n )); 
+}
+
+static inline void _HPy_CallRealFunctionFromTrampoline(HPyContext ctx, HPyFunc_Signature sig, void *func, void *args) {
+     ctx->ctx_CallRealFunctionFromTrampoline ( ctx, sig, func, args ); 
+}
+
+static inline void _HPy_CallDestroyAndThenDealloc(HPyContext ctx, void *func, cpy_PyObject *self) {
+     ctx->ctx_CallDestroyAndThenDealloc ( ctx, func, self ); 
+}
+
+static inline HPyListBuilder HPyListBuilder_New(HPyContext ctx, HPy_ssize_t initial_size) {
+     return WRAP_LIST_BUILDER(ctx->ctx_ListBuilder_New ( ctx, initial_size )); 
+}
+
+static inline void HPyListBuilder_Set(HPyContext ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item) {
+     ctx->ctx_ListBuilder_Set ( ctx, UNWRAP_LIST_BUILDER(builder), index, UNWRAP(h_item) ); 
+}
+
+static inline HPy HPyListBuilder_Build(HPyContext ctx, HPyListBuilder builder) {
+     return WRAP(ctx->ctx_ListBuilder_Build ( ctx, UNWRAP_LIST_BUILDER(builder) )); 
+}
+
+static inline void HPyListBuilder_Cancel(HPyContext ctx, HPyListBuilder builder) {
+     ctx->ctx_ListBuilder_Cancel ( ctx, UNWRAP_LIST_BUILDER(builder) ); 
+}
+
+static inline HPyTupleBuilder HPyTupleBuilder_New(HPyContext ctx, HPy_ssize_t initial_size) {
+     return WRAP_TUPLE_BUILDER(ctx->ctx_TupleBuilder_New ( ctx, initial_size )); 
+}
+
+static inline void HPyTupleBuilder_Set(HPyContext ctx, HPyTupleBuilder builder, HPy_ssize_t index, HPy h_item) {
+     ctx->ctx_TupleBuilder_Set ( ctx, UNWRAP_TUPLE_BUILDER(builder), index, UNWRAP(h_item) ); 
+}
+
+static inline HPy HPyTupleBuilder_Build(HPyContext ctx, HPyTupleBuilder builder) {
+     return WRAP(ctx->ctx_TupleBuilder_Build ( ctx, UNWRAP_TUPLE_BUILDER(builder) )); 
+}
+
+static inline void HPyTupleBuilder_Cancel(HPyContext ctx, HPyTupleBuilder builder) {
+     ctx->ctx_TupleBuilder_Cancel ( ctx, UNWRAP_TUPLE_BUILDER(builder) ); 
 }
 

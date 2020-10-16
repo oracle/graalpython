@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -105,7 +106,7 @@ public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
-    private final NativeReferenceStack nativeObjectWrapperList;
+    private final ReferenceStack<NativeObjectReference> nativeObjectWrapperList;
     private TraceMallocDomain[] traceMallocDomains;
 
     /** Container of pointers that have seen to be free'd. */
@@ -135,7 +136,7 @@ public final class CApiContext extends CExtContext {
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
-        nativeObjectWrapperList = new NativeReferenceStack();
+        nativeObjectWrapperList = new ReferenceStack<>();
 
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();

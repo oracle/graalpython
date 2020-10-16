@@ -38,22 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.objects.cext.common;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NativeReferenceStack implements Iterable<NativeObjectReference> {
+public final class ReferenceStack<T> implements Iterable<T> {
     private static final int INITIAL_CAPACITY = 64;
 
     private final IntegerStack freeList;
-    private NativeObjectReference[] nativeObjectWrapperList;
+    private Object[] nativeObjectWrapperList;
 
-    public NativeReferenceStack() {
-        nativeObjectWrapperList = new NativeObjectReference[INITIAL_CAPACITY];
+    @TruffleBoundary
+    public ReferenceStack() {
+        nativeObjectWrapperList = new Object[INITIAL_CAPACITY];
         freeList = new IntegerStack(INITIAL_CAPACITY);
         freeList.addToFreeList(0, INITIAL_CAPACITY);
     }
@@ -66,14 +66,16 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
         freeList.addToFreeList(oldSize, newSize);
     }
 
-    public NativeObjectReference get(int idx) {
+    @SuppressWarnings("unchecked")
+    public T get(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        return nativeObjectWrapperList[idx];
+        return (T) nativeObjectWrapperList[idx];
     }
 
-    public NativeObjectReference remove(int idx) {
+    @SuppressWarnings("unchecked")
+    public T remove(int idx) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        NativeObjectReference ref = nativeObjectWrapperList[idx];
+        T ref = (T) nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = null;
         freeList.push(idx);
         return ref;
@@ -89,22 +91,24 @@ public final class NativeReferenceStack implements Iterable<NativeObjectReferenc
         return nativeRefID;
     }
 
-    public void commit(int idx, NativeObjectReference nativeObjectReference) {
+    public void commit(int idx, T nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
         assert nativeObjectWrapperList[idx] == null : "cannot overwrite an allocated native object reference slot";
         nativeObjectWrapperList[idx] = nativeObjectReference;
     }
 
-    public NativeObjectReference resurrect(int idx, NativeObjectReference nativeObjectReference) {
+    @SuppressWarnings("unchecked")
+    public T resurrect(int idx, T nativeObjectReference) {
         assert 0 <= idx && idx < nativeObjectWrapperList.length;
-        NativeObjectReference old = nativeObjectWrapperList[idx];
+        T old = (T) nativeObjectWrapperList[idx];
         nativeObjectWrapperList[idx] = nativeObjectReference;
         return old;
     }
 
     @Override
-    public Iterator<NativeObjectReference> iterator() {
-        return Arrays.asList(nativeObjectWrapperList).iterator();
+    @SuppressWarnings("unchecked")
+    public Iterator<T> iterator() {
+        return (Iterator<T>) Arrays.asList(nativeObjectWrapperList).iterator();
     }
 
     static final class IntegerStack {

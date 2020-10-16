@@ -45,21 +45,31 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public class HPyArrayWrappers {
@@ -126,12 +136,28 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
-        long getArraySize(
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-            if (delegate != null) {
-                return delegate.length;
+        static final class GetArraySize {
+
+            @Specialization(guards = "receiver.getDelegate() != null")
+            static long doManaged(HPyObjectArrayWrapper receiver) {
+                return receiver.delegate.length;
             }
-            return lib.getArraySize(nativePointer);
+
+            @Specialization(guards = "receiver.getDelegate() == null", replaces = "doManaged", limit = "1")
+            static long doNative(HPyObjectArrayWrapper receiver,
+                            @CachedLibrary("receiver.getNativePointer()") InteropLibrary lib) throws UnsupportedMessageException {
+                return lib.getArraySize(receiver.nativePointer);
+            }
+
+            @Specialization(replaces = {"doManaged", "doNative"})
+            static long doGeneric(HPyObjectArrayWrapper receiver,
+                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+                Object[] delegate = receiver.delegate;
+                if (delegate != null) {
+                    return delegate.length;
+                }
+                return lib.getArraySize(receiver.nativePointer);
+            }
         }
 
         @ExportMessage
@@ -195,16 +221,69 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
-        Object readArrayElement(long index,
-                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached GraalHPyNodes.HPyAsHandleNode asHandleNode) throws InvalidArrayIndexException, UnsupportedMessageException {
+        static final class ReadArrayElement {
 
-            assert 0 <= index && index < getArraySize(lib);
-            if (!isPointer()) {
-                return asHandleNode.execute(getDelegate()[(int) index]);
+            @Specialization(guards = "receiver.getDelegate() != null", rewriteOn = OverflowException.class)
+            static Object doManaged(HPyArrayWrapper receiver, long index,
+                            @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
+                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws OverflowException {
+                Object[] delegate = receiver.getDelegate();
+                int i = PInt.intValueExact(index);
+                Object object = delegate[i];
+                if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
+                    object = asHandleNode.execute(object);
+                    delegate[i] = object;
+                }
+                return object;
             }
-            // This reads directly from the native array; so no conversion necessary
-            return lib.readArrayElement(getNativePointer(), index);
+
+            @Specialization(guards = "receiver.getDelegate() != null", replaces = "doManaged")
+            static Object doManagedOvf(HPyArrayWrapper receiver, long index,
+                            @Shared("isHandleProfile") @Cached("createCountingProfile()") ConditionProfile isHandleProfile,
+                            @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) throws InvalidArrayIndexException {
+                try {
+                    return doManaged(receiver, index, isHandleProfile, asHandleNode);
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw InvalidArrayIndexException.create(index);
+                }
+            }
+
+            @Specialization(guards = "receiver.getDelegate() == null", replaces = {"doManaged", "doManagedOvf"}, limit = "1")
+            static Object doNative(HPyArrayWrapper receiver, long index,
+                            @CachedLibrary("receiver.getNativePointer()") InteropLibrary lib,
+                            @CachedContext(PythonLanguage.class) PythonContext context,
+                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+                // read the array element; this will return a pointer to an HPy struct
+                try {
+                    Object element = lib.readArrayElement(receiver.getNativePointer(), index);
+                    return ensureHandleNode.execute(context.getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                } catch (UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+
+            @Specialization(replaces = {"doManaged", "doNative"})
+            static Object doGeneric(HPyArrayWrapper receiver, long index,
+                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
+                            @CachedContext(PythonLanguage.class) PythonContext context,
+                            @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode) throws UnsupportedMessageException, InvalidArrayIndexException {
+                Object[] delegate = receiver.getDelegate();
+                if (delegate != null) {
+                    try {
+                        return delegate[PInt.intValueExact(index)];
+                    } catch (OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw InvalidArrayIndexException.create(index);
+                    }
+                }
+                try {
+                    Object element = lib.readArrayElement(receiver.getNativePointer(), index);
+                    return ensureHandleNode.execute(context.getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                } catch (UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
         }
 
         @ExportMessage
@@ -230,6 +309,73 @@ public class HPyArrayWrappers {
         Object getNativeType(
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext().getHPyArrayNativeType();
+        }
+    }
+
+    abstract static class HPyCloseArrayWrapperNode extends Node {
+
+        public abstract void execute(GraalHPyContext hPyContext, HPyArrayWrapper wrapper);
+
+        @Specialization(guards = {"cachedLen == size(lib, wrapper)", "cachedLen <= 8"}, limit = "1")
+        @ExplodeLoop
+        static void doCachedLen(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+                        @CachedLibrary("wrapper") InteropLibrary lib,
+                        @Cached("size(lib, wrapper)") int cachedLen,
+                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles) {
+            try {
+                for (int i = 0; i < cachedLen; i++) {
+                    Object element = lib.readArrayElement(wrapper, i);
+                    if (profiles[i].profile(isAllocatedHandle(element))) {
+                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    }
+                }
+            } catch (InteropException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(replaces = "doCachedLen", limit = "1")
+        static void doLoop(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+                        @CachedLibrary("wrapper") InteropLibrary lib,
+                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached ConditionProfile profile) {
+            int n = size(lib, wrapper);
+            try {
+                for (int i = 0; i < n; i++) {
+                    Object element = lib.readArrayElement(wrapper, i);
+                    if (profile.profile(isAllocatedHandle(element))) {
+                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    }
+                }
+            } catch (InteropException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        static int size(InteropLibrary lib, HPyArrayWrapper wrapper) {
+            try {
+                return PInt.intValueExact(lib.getArraySize(wrapper));
+            } catch (OverflowException e) {
+                // we know that the length should always fit into an integer
+                throw CompilerDirectives.shouldNotReachHere("array length does not fit into int");
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        static boolean isAllocatedHandle(Object element) {
+            // n.b. we pass the uncached instance to 'isPointer' since we profile this whole
+            // condition
+            return element instanceof GraalHPyHandle && ((GraalHPyHandle) element).isPointer(ConditionProfile.getUncached());
+        }
+
+        static ConditionProfile[] createProfiles(int n) {
+            ConditionProfile[] profiles = new ConditionProfile[n];
+            for (int i = 0; i < profiles.length; i++) {
+                profiles[i] = ConditionProfile.create();
+            }
+            return profiles;
         }
     }
 

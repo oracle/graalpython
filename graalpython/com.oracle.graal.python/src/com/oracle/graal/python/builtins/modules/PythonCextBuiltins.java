@@ -103,7 +103,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;

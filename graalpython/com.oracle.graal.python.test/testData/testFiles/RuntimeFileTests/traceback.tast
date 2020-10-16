@@ -3732,6 +3732,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                     IntegerLiteralNode SourceSection: [14878,14879]`1`
                                                       Value: 1
+                                                    ObjectLiteralNode SourceSection: None
                                                 BlockNode SourceSection: None
                                                   IfNode SourceSection: [14914,15032]`if count > 3:↵      ...`
                                                     YesNodeGen SourceSection: None

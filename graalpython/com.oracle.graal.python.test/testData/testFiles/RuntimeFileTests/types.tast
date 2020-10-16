@@ -1078,6 +1078,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [2619,2620]`1`
                                           Value: 1
+                                      ObjectLiteralNode SourceSection: None
                         GetIteratorExpressionNodeGen SourceSection: [2191,2207]`enumerate(bases)`
                           PythonCallUnary SourceSection: [2191,2207]`enumerate(bases)`
                             CallUnaryMethodNodeGen SourceSection: None

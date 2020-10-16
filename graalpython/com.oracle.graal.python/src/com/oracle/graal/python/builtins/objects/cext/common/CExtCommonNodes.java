@@ -63,11 +63,14 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -487,19 +490,19 @@ public abstract class CExtCommonNodes {
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0"})
         @SuppressWarnings("unused")
-        static long doLongToInt64(int value, int signed, long targetTypeSize) {
+        static long doLongToInt64(long value, int signed, long targetTypeSize) {
             return value;
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "value >= 0"})
         @SuppressWarnings("unused")
-        static long doLongToUInt64Pos(int value, int signed, long targetTypeSize) {
+        static long doLongToUInt64Pos(long value, int signed, long targetTypeSize) {
             return value;
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0"}, replaces = "doLongToUInt64Pos")
         @SuppressWarnings("unused")
-        static int doLongToUInt64(Frame frame, int value, int signed, long targetTypeSize,
+        static long doLongToUInt64(Frame frame, long value, int signed, long targetTypeSize,
                         @Shared("raiseNativeNode") @Cached PRaiseNativeNode raiseNativeNode,
                         @Cached ConditionProfile negativeProfile) {
             if (negativeProfile.profile(value < 0)) {
@@ -604,6 +607,76 @@ public abstract class CExtCommonNodes {
 
         static boolean fitsInUInt64(PrimitiveNativeWrapper nativeWrapper) {
             return (nativeWrapper.isIntLike() || nativeWrapper.isBool()) && nativeWrapper.getLong() >= 0;
+        }
+    }
+
+    /**
+     * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
+     * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
+     * functions and does coercion and may raise a Python exception if coercion fails.<br/>
+     * Please note: In most cases, it is sufficient to use
+     * {@link PythonObjectLibrary#asJavaDouble(Object)}} but you might want to use this node if the
+     * argument can be an object of type {@link PrimitiveNativeWrapper}.
+     */
+    @GenerateUncached
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
+        public abstract double execute(boolean arg);
+
+        public abstract double execute(int arg);
+
+        public abstract double execute(long arg);
+
+        public abstract double execute(double arg);
+
+        public abstract double execute(Object arg);
+
+        @Specialization
+        static double doBooleam(boolean value) {
+            return value ? 1.0 : 0.0;
+        }
+
+        @Specialization
+        static double doInt(int value) {
+            return value;
+        }
+
+        @Specialization
+        static double doLong(long value) {
+            return value;
+        }
+
+        @Specialization
+        static double doDouble(double value) {
+            return value;
+        }
+
+        @Specialization
+        static double doPInt(PInt value) {
+            return value.doubleValue();
+        }
+
+        @Specialization
+        static double doPFloat(PFloat value) {
+            return value.getValue();
+        }
+
+        @Specialization(guards = "!object.isDouble()")
+        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getLong();
+        }
+
+        @Specialization(guards = "object.isDouble()")
+        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+            return object.getDouble();
+        }
+
+        @Specialization(limit = "3")
+        static double runGeneric(Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
+            // is a float object, use the value and do *NOT* call '__float__'.
+            return lib.asJavaDouble(value);
         }
     }
 }

@@ -26,10 +26,12 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import org.graalvm.options.OptionDescriptors;
@@ -52,7 +54,11 @@ import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -92,9 +98,9 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
@@ -145,6 +151,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final NodeFactory nodeFactory;
     private final ConcurrentHashMap<String, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
+    /**
+     * A thread-safe map that maps arithmetic operators (i.e.
+     * {@link com.oracle.graal.python.nodes.expression.UnaryArithmetic},
+     * {@link com.oracle.graal.python.nodes.expression.BinaryArithmetic},
+     * {@link com.oracle.graal.python.nodes.expression.TernaryArithmetic}, and
+     * {@link com.oracle.graal.python.nodes.expression.InplaceArithmetic}) to call targets. Use this
+     * map to retrieve a singleton instance (per engine) such that proper AST sharing is possible.
+     */
+    private final AtomicReference<ConcurrentHashMap<Object, WeakReference<RootCallTarget>>> arithmeticOpCallTargetCacheRef = new AtomicReference<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -675,5 +690,81 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             builtinTypeInstanceShapes[ordinal] = shape;
         }
         return shape;
+    }
+
+    /**
+     * Retrieve a call target for the given {@link UnaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    @TruffleBoundary
+    public RootCallTarget getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link BinaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    @TruffleBoundary
+    public RootCallTarget getOrCreateBinaryArithmeticCallTarget(BinaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link TernaryArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    @TruffleBoundary
+    public RootCallTarget getOrCreateTernaryArithmeticCallTarget(TernaryArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    /**
+     * Retrieve a call target for the given {@link InplaceArithmetic} operator. If the no such call
+     * target exists yet, it will be created lazily. This method is thread-safe and should be used
+     * for all contexts in this engine to enable AST sharing.
+     */
+    @TruffleBoundary
+    public RootCallTarget getOrCreateInplaceArithmeticCallTarget(InplaceArithmetic unaryOperator) {
+        return getOrCreateArithmeticCallTarget(unaryOperator, unaryOperator::createCallTarget);
+    }
+
+    private RootCallTarget getOrCreateArithmeticCallTarget(Object arithmeticOperator, Function<PythonLanguage, RootCallTarget> supplier) {
+        CompilerAsserts.neverPartOfCompilation();
+        ConcurrentHashMap<Object, WeakReference<RootCallTarget>> arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.get();
+        if (arithmeticOpCallTargetCache == null) {
+            arithmeticOpCallTargetCache = arithmeticOpCallTargetCacheRef.updateAndGet((v) -> {
+                // IMPORTANT: only create a new instance if we still see 'null'; otherwise we would
+                // overwrite the update of a different thread
+                if (v == null) {
+                    return new ConcurrentHashMap<>();
+                }
+                return v;
+            });
+        }
+
+        WeakReference<RootCallTarget> ctRef = arithmeticOpCallTargetCache.compute(arithmeticOperator, (k, v) -> {
+            RootCallTarget cachedCallTarget = v != null ? v.get() : null;
+            if (cachedCallTarget == null) {
+                return new WeakReference<>(supplier.apply(this));
+            }
+            return v;
+        });
+
+        RootCallTarget callTarget = ctRef.get();
+        if (callTarget == null) {
+            // Bad luck: we ensured that there is a mapping in the cache but the weak value got
+            // collected before we could strongly reference it. Now, we need to be conservative and
+            // create the call target eagerly, hold a strong reference to it until we've put it into
+            // the map.
+            final RootCallTarget callTargetToCache = supplier.apply(this);
+            callTarget = callTargetToCache;
+            arithmeticOpCallTargetCache.computeIfAbsent(arithmeticOperator, (k) -> new WeakReference<>(callTargetToCache));
+        }
+        assert callTarget != null;
+        return callTarget;
     }
 }
