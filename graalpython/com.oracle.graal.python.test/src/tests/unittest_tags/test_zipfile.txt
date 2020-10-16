@@ -4,6 +4,7 @@
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestZip64InSmallFiles.test_too_many_files_append
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_open
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_random_open
+*graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithRandomBinaryFiles.test_read
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithSourceFile.test_iterlines
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithSourceFile.test_low_compression
 *graalpython.lib-python.3.test.test_zipfile.Bzip2TestsWithSourceFile.test_open

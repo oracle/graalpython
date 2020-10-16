@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_cookies
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_errors
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_fixpath_in_weirdurls
+*graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_ftp
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_full_url_deleter
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_full_url_setter
 *graalpython.lib-python.3.test.test_urllib2.HandlerTests.test_http
@@ -53,6 +54,7 @@
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_deleting_data_should_remove_content_length
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_get_full_url
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_get_host
+*graalpython.lib-python.3.test.test_urllib2.RequestTests.test_get_host_unquote
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_get_type
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_method
 *graalpython.lib-python.3.test.test_urllib2.RequestTests.test_proxy

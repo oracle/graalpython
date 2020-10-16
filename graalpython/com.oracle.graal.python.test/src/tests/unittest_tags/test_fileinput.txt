@@ -50,3 +50,5 @@
 *graalpython.lib-python.3.test.test_fileinput.Test_hook_compressed.test_gz_ext_builtin
 *graalpython.lib-python.3.test.test_fileinput.Test_hook_compressed.test_gz_ext_fake
 *graalpython.lib-python.3.test.test_fileinput.Test_hook_compressed.test_no_ext
+*graalpython.lib-python.3.test.test_fileinput.Test_hook_encoded.test_errors
+*graalpython.lib-python.3.test.test_fileinput.Test_hook_encoded.test_modes

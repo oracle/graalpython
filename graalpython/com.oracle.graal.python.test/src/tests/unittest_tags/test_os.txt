@@ -8,6 +8,13 @@
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_walk_symlink
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_walk_topdown
 *graalpython.lib-python.3.test.test_os.BytesFwalkTests.test_yields_correct_dir_fd
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_file_like_path
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_bad_dir
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_bottom_up
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_many_open_files
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_prune
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_symlink
+*graalpython.lib-python.3.test.test_os.BytesWalkTests.test_walk_topdown
 *graalpython.lib-python.3.test.test_os.CPUCountTests.test_cpu_count
 *graalpython.lib-python.3.test.test_os.ChownFileTests.test_chown_gid
 *graalpython.lib-python.3.test.test_os.ChownFileTests.test_chown_uid_gid_arguments_must_be_index
@@ -157,6 +164,7 @@
 *graalpython.lib-python.3.test.test_os.TestPEP519PurePython.test_return_bytes
 *graalpython.lib-python.3.test.test_os.TestPEP519PurePython.test_return_string
 *graalpython.lib-python.3.test.test_os.TestScandir.test_bad_path_type
+*graalpython.lib-python.3.test.test_os.TestScandir.test_bytes
 *graalpython.lib-python.3.test.test_os.TestScandir.test_consume_iterator_twice
 *graalpython.lib-python.3.test.test_os.TestScandir.test_context_manager
 *graalpython.lib-python.3.test.test_os.TestScandir.test_context_manager_exception
@@ -184,6 +192,13 @@
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_dir_fd
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_fd
 *graalpython.lib-python.3.test.test_os.UtimeTests.test_utime_nofollow_symlinks
+*graalpython.lib-python.3.test.test_os.WalkTests.test_file_like_path
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_bad_dir
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_bottom_up
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_many_open_files
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_prune
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_symlink
+*graalpython.lib-python.3.test.test_os.WalkTests.test_walk_topdown
 *graalpython.lib-python.3.test.test_os.Win32ErrorTests.test_chdir
 *graalpython.lib-python.3.test.test_os.Win32ErrorTests.test_chmod
 *graalpython.lib-python.3.test.test_os.Win32ErrorTests.test_mkdir

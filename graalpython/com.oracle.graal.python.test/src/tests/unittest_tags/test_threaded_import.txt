@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_threaded_import.TestMain.test_main
 *graalpython.lib-python.3.test.test_threaded_import.ThreadedImportTests.test_circular_imports
 *graalpython.lib-python.3.test.test_threaded_import.ThreadedImportTests.test_import_hangers
 *graalpython.lib-python.3.test.test_threaded_import.ThreadedImportTests.test_parallel_meta_path

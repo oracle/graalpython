@@ -3,6 +3,8 @@
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_del___main__
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_directories
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_empty_PYTHONPATH_issue16309
+*graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_large_PYTHONPATH
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_non_ascii
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_output_newline
 *graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_run_module_bug1764407
+*graalpython.lib-python.3.test.test_cmd_line.CmdLineTest.test_unbuffered_input

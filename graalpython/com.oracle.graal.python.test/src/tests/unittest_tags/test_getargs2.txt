@@ -1,0 +1,11 @@
+*graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_c
+*graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_w_star
+*graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_y_star
+*graalpython.lib-python.3.test.test_getargs2.Float_TestCase.test_f_rounding
+*graalpython.lib-python.3.test.test_getargs2.KeywordOnly_TestCase.test_keyword_args
+*graalpython.lib-python.3.test.test_getargs2.KeywordOnly_TestCase.test_mixed_args
+*graalpython.lib-python.3.test.test_getargs2.KeywordOnly_TestCase.test_optional_args
+*graalpython.lib-python.3.test.test_getargs2.KeywordOnly_TestCase.test_positional_args
+*graalpython.lib-python.3.test.test_getargs2.Keywords_TestCase.test_kwargs
+*graalpython.lib-python.3.test.test_getargs2.Object_TestCase.test_S
+*graalpython.lib-python.3.test.test_getargs2.Object_TestCase.test_Y

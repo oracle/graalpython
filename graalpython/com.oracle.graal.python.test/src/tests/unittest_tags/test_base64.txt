@@ -11,4 +11,6 @@
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_decodestring_warns
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encode
 *graalpython.lib-python.3.test.test_base64.LegacyBase64TestCase.test_encodestring_warns
+*graalpython.lib-python.3.test.test_base64.TestMain.test_decode
 *graalpython.lib-python.3.test.test_base64.TestMain.test_encode_decode
+*graalpython.lib-python.3.test.test_base64.TestMain.test_encode_file
