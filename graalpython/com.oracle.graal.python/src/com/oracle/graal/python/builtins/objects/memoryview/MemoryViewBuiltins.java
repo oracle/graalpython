@@ -6,6 +6,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -25,6 +26,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
@@ -50,19 +52,21 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -218,7 +222,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (self.getDimensions() != 1) {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
-            IntrinsifiedPMemoryView srcView = createMemoryView.create(object);
+            IntrinsifiedPMemoryView srcView = createMemoryView.execute(object);
             IntrinsifiedPMemoryView destView = (IntrinsifiedPMemoryView) getItemNode.execute(frame, self, slice);
             // TODO format skip @
             if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || !srcView.getFormatString().equals(destView.getFormatString())) {
@@ -254,6 +258,110 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (self.isReadOnly()) {
                 throw raise(TypeError, ErrorMessages.CANNOT_MODIFY_READONLY_MEMORY);
             }
+        }
+    }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public static abstract class EqNode extends PythonBinaryBuiltinNode {
+        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
+
+        @Specialization
+        boolean eq(VirtualFrame frame, IntrinsifiedPMemoryView self, IntrinsifiedPMemoryView other,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached MemoryViewNodes.ReadItemAtNode readSelf,
+                        @Cached MemoryViewNodes.ReadItemAtNode readOther) {
+            if (self.isReleased() || other.isReleased()) {
+                return self == other;
+            }
+
+            int ndim = self.getDimensions();
+            if (ndim != other.getDimensions()) {
+                return false;
+            }
+
+            for (int i = 0; i < ndim; i++) {
+                if (self.getBufferShape()[i] != other.getBufferShape()[i]) {
+                    return false;
+                }
+                if (self.getBufferShape()[i] == 0) {
+                    break;
+                }
+            }
+
+            // TODO CPython supports only limited set of typed for reading and writing, but
+            // for equality comparisons, it supports all the struct module formats. Implement that
+
+            if (ndim == 0) {
+                Object selfItem = readSelf.execute(self, self.getBufferPointer(), 0);
+                Object otherItem = readOther.execute(other, other.getBufferPointer(), 0);
+                return lib.equalsWithFrame(selfItem, otherItem, lib, frame);
+            }
+
+            return recursive(lib, self, other, readSelf, readOther, 0, ndim,
+                            self.getBufferPointer(), self.getOffset(), other.getBufferPointer(), other.getOffset());
+        }
+
+        @Specialization(guards = "!isMemoryView(other)")
+        Object eq(VirtualFrame frame, IntrinsifiedPMemoryView self, Object other,
+                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached MemoryViewNodes.ReadItemAtNode readSelf,
+                        @Cached MemoryViewNodes.ReadItemAtNode readOther) {
+            IntrinsifiedPMemoryView memoryView;
+            try {
+                memoryView = memoryViewNode.execute(other);
+            } catch (PException e) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            return eq(frame, self, memoryView, lib, readSelf, readOther);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        static Object eq(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        private boolean recursive(PythonObjectLibrary lib, IntrinsifiedPMemoryView self, IntrinsifiedPMemoryView other,
+                        MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
+                        int dim, int ndim, Object selfPtr, int selfOffset, Object otherPtr, int otherOffset) {
+            for (int i = 0; i < self.getBufferShape()[dim]; i++) {
+                Object selfXPtr = selfPtr;
+                int selfXOffset = selfOffset;
+                Object otherXPtr = otherPtr;
+                int otherXOffset = otherOffset;
+                if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
+                    selfXPtr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim], self.getLength());
+                    selfXOffset = 0;
+                }
+                if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
+                    otherXPtr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim], other.getLength());
+                    otherXOffset = 0;
+                }
+                if (dim == ndim - 1) {
+                    Object selfItem = readSelf.execute(self, selfXPtr, selfXOffset);
+                    Object otherItem = readOther.execute(other, otherXPtr, otherXOffset);
+                    if (!lib.equals(selfItem, otherItem, lib)) {
+                        return false;
+                    }
+                } else {
+                    if (!recursive(lib, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
+                        return false;
+                    }
+                }
+                selfOffset += self.getBufferStrides()[dim];
+                otherOffset += other.getBufferStrides()[dim];
+            }
+            return true;
+        }
+
+        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
+            if (callCapiFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
+            }
+            return callCapiFunction;
         }
     }
 

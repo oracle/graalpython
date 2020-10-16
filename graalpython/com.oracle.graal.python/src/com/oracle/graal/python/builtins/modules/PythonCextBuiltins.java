@@ -1554,7 +1554,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                return memoryViewNode.create(object);
+                return memoryViewNode.execute(object);
             } catch (PException e) {
                 transformToNative(frame, e);
                 return getNativeNullNode.execute();

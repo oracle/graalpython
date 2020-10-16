@@ -3323,7 +3323,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
         public abstract IntrinsifiedPMemoryView execute(Object cls, Object object);
 
-        public final IntrinsifiedPMemoryView create(Object object) {
+        public final IntrinsifiedPMemoryView execute(Object object) {
             return execute(PythonBuiltinClassType.PMemoryView, object);
         }
 

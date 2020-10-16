@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -132,6 +133,10 @@ public abstract class PGuards {
 
     public static boolean isEllipsis(Object object) {
         return object == PEllipsis.INSTANCE;
+    }
+
+    public static boolean isMemoryView(Object object) {
+        return object instanceof IntrinsifiedPMemoryView;
     }
 
     public static boolean isDeleteMarker(Object object) {
