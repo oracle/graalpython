@@ -13,6 +13,7 @@ import array
 import io
 import copy
 import pickle
+import time
 
 
 class AbstractMemoryTests:
@@ -354,7 +355,10 @@ class AbstractMemoryTests:
             wr = weakref.ref(m, callback)
             self.assertIs(wr(), m)
             del m
-            test.support.gc_collect()
+            # XXX GraalVM change - add collect call
+            for i in range(5):
+                test.support.gc_collect()
+                time.sleep(0.1)
             self.assertIs(wr(), None)
             self.assertIs(L[0], b)
 
