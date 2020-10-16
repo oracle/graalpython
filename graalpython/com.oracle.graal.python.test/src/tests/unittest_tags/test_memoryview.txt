@@ -86,5 +86,6 @@
 *graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_weakref
 *graalpython.lib-python.3.test.test_memoryview.BytesMemoryviewTest.test_writable_readonly
 *graalpython.lib-python.3.test.test_memoryview.OtherTest.test_copy
+*graalpython.lib-python.3.test.test_memoryview.OtherTest.test_ctypes_cast
 *graalpython.lib-python.3.test.test_memoryview.OtherTest.test_memoryview_hex
 *graalpython.lib-python.3.test.test_memoryview.OtherTest.test_pickle

@@ -515,6 +515,7 @@ class ArrayMemorySliceSliceTest(unittest.TestCase,
 
 
 class OtherTest(unittest.TestCase):
+    @test.support.impl_detail("ctypes", graalvm=False)
     def test_ctypes_cast(self):
         # Issue 15944: Allow all source formats when casting to bytes.
         ctypes = test.support.import_module("ctypes")
