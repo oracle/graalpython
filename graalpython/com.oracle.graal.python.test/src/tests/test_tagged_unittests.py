@@ -206,8 +206,6 @@ if __name__ == "__main__":
 
             passing_tests = []
 
-            stderr = p.stderr.replace("Please note: This Python implementation is in the very early stages, and can run little more than basic benchmarks at this point.\n", '')
-
             # n.b.: we add a '*' in the front, so that unittests doesn't add
             # its own asterisks, because now this is already a pattern
             for funcname, classname, result in parse_unittest_output(stderr):
