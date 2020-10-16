@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -136,7 +136,7 @@ public abstract class PGuards {
     }
 
     public static boolean isMemoryView(Object object) {
-        return object instanceof IntrinsifiedPMemoryView;
+        return object instanceof PMemoryView;
     }
 
     public static boolean isDeleteMarker(Object object) {

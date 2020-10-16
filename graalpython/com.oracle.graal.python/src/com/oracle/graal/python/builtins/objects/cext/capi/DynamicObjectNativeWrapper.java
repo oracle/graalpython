@@ -109,8 +109,8 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -837,17 +837,17 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_FLAGS, key)")
-        static int doMemoryViewFlags(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static int doMemoryViewFlags(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getFlags();
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
-        static int doMemoryViewExports(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static int doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getExports().get();
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_VIEW, key)")
-        static Object doMemoryViewView(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static Object doMemoryViewView(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMemoryViewBufferWrapper(object);
         }
 
@@ -1232,8 +1232,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
-        static Object doMemoryViewExports(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                                          @Cached CastToJavaIntExactNode cast) {
+        static Object doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                        @Cached CastToJavaIntExactNode cast) {
             object.getExports().set(cast.execute(value));
             return value;
         }

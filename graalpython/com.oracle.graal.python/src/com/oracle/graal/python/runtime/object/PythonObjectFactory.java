@@ -89,10 +89,10 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -402,20 +402,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
-    public IntrinsifiedPMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
-                    int len, boolean readonly, int itemsize, IntrinsifiedPMemoryView.BufferFormat format, String formatString, int ndim, Object bufPointer,
+    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+                    int len, boolean readonly, int itemsize, PMemoryView.BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new IntrinsifiedPMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
+        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public IntrinsifiedPMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new IntrinsifiedPMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
-                        IntrinsifiedPMemoryView.BufferFormat.fromString(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
+                        PMemoryView.BufferFormat.fromString(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {

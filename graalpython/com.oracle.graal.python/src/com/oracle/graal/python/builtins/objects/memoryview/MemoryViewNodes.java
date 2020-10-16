@@ -43,7 +43,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public class MemoryViewNodes {
-    static int bytesize(IntrinsifiedPMemoryView.BufferFormat format) {
+    static int bytesize(PMemoryView.BufferFormat format) {
         // TODO fetch from sulong
         switch (format) {
             case UNSIGNED_BYTE:
@@ -71,8 +71,8 @@ public class MemoryViewNodes {
         return -1;
     }
 
-    static boolean isByteFormat(IntrinsifiedPMemoryView.BufferFormat format) {
-        return format == IntrinsifiedPMemoryView.BufferFormat.UNSIGNED_BYTE || format == IntrinsifiedPMemoryView.BufferFormat.SIGNED_BYTE || format == IntrinsifiedPMemoryView.BufferFormat.CHAR;
+    static boolean isByteFormat(PMemoryView.BufferFormat format) {
+        return format == PMemoryView.BufferFormat.UNSIGNED_BYTE || format == PMemoryView.BufferFormat.SIGNED_BYTE || format == PMemoryView.BufferFormat.CHAR;
     }
 
     public static abstract class InitFlagsNode extends Node {
@@ -81,16 +81,16 @@ public class MemoryViewNodes {
         @Specialization
         static int compute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
             if (ndim == 0) {
-                return IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN | IntrinsifiedPMemoryView.FLAG_SCALAR;
+                return PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN | PMemoryView.FLAG_SCALAR;
             } else if (suboffsets != null) {
-                return IntrinsifiedPMemoryView.FLAG_PIL;
+                return PMemoryView.FLAG_PIL;
             } else {
-                int flags = IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN;
+                int flags = PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN;
                 int expectedStride = itemsize;
                 for (int i = ndim - 1; i >= 0; i--) {
                     int dim = shape[i];
                     if (dim > 1 && strides[i] != expectedStride) {
-                        flags &= ~IntrinsifiedPMemoryView.FLAG_C;
+                        flags &= ~PMemoryView.FLAG_C;
                         break;
                     }
                     expectedStride *= dim;
@@ -99,7 +99,7 @@ public class MemoryViewNodes {
                 for (int i = 0; i < ndim; i++) {
                     int dim = shape[i];
                     if (dim > 1 && strides[i] != expectedStride) {
-                        flags &= ~IntrinsifiedPMemoryView.FLAG_FORTRAN;
+                        flags &= ~PMemoryView.FLAG_FORTRAN;
                         break;
                     }
                     expectedStride *= dim;
@@ -109,32 +109,32 @@ public class MemoryViewNodes {
         }
     }
 
-    @ImportStatic(IntrinsifiedPMemoryView.BufferFormat.class)
+    @ImportStatic(PMemoryView.BufferFormat.class)
     static abstract class UnpackValueNode extends Node {
-        public abstract Object execute(IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes);
+        public abstract Object execute(PMemoryView.BufferFormat format, byte[] bytes);
 
         @Specialization(guards = "format == UNSIGNED_BYTE")
-        static int unpackUnsignedByte(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
             return bytes[0] & 0xFF;
         }
 
         @Specialization(guards = "format == SIGNED_BYTE")
-        static int unpackSignedByte(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackSignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
             return bytes[0];
         }
 
         @Specialization(guards = "format == SIGNED_SHORT")
-        static int unpackShort(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8;
         }
 
         @Specialization(guards = "format == SIGNED_INT")
-        static int unpackInt(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
         }
 
         @Specialization(guards = "format == SIGNED_LONG")
-        static long unpackLong(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, byte[] bytes) {
+        static long unpackLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
             return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24 |
                             (bytes[4] & 0xFFL) << 32 | (bytes[5] & 0xFFL) << 40 | (bytes[6] & 0xFFL) << 48 | (bytes[7] & 0xFFL) << 56;
         }
@@ -142,15 +142,15 @@ public class MemoryViewNodes {
         // TODO rest of formats
     }
 
-    @ImportStatic(IntrinsifiedPMemoryView.BufferFormat.class)
+    @ImportStatic(PMemoryView.BufferFormat.class)
     static abstract class PackValueNode extends Node {
         @Child private PRaiseNode raiseNode;
 
         // Output goes to bytes, lenght not checked
-        public abstract void execute(IntrinsifiedPMemoryView.BufferFormat format, Object object, byte[] bytes);
+        public abstract void execute(PMemoryView.BufferFormat format, Object object, byte[] bytes);
 
         @Specialization(guards = "format == UNSIGNED_BYTE", limit = "2")
-        void packUnsignedByte(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, Object object, byte[] bytes,
+        void packUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 1;
             long value = lib.asJavaLong(object);
@@ -161,7 +161,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "format == SIGNED_LONG", limit = "2")
-        static void packLong(@SuppressWarnings("unused") IntrinsifiedPMemoryView.BufferFormat format, Object object, byte[] bytes,
+        static void packLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
             long value = lib.asJavaLong(object);
@@ -182,10 +182,10 @@ public class MemoryViewNodes {
 
     @GenerateUncached
     static abstract class ReadBytesAtNode extends Node {
-        public abstract void execute(byte[] dest, int destOffset, int len, IntrinsifiedPMemoryView self, Object ptr, int offset);
+        public abstract void execute(byte[] dest, int destOffset, int len, PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
-        static void doNative(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") IntrinsifiedPMemoryView self, Object ptr, int offset,
+        static void doNative(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 for (int i = 0; i < len; i++) {
@@ -197,7 +197,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "ptr == null")
-        static void doManaged(byte[] dest, int destOffset, int len, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        static void doManaged(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             // TODO assumes byte storage
@@ -210,10 +210,10 @@ public class MemoryViewNodes {
 
     @GenerateUncached
     static abstract class WriteBytesAtNode extends Node {
-        public abstract void execute(byte[] src, int srcOffset, int len, IntrinsifiedPMemoryView self, Object ptr, int offset);
+        public abstract void execute(byte[] src, int srcOffset, int len, PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
-        static void doNative(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") IntrinsifiedPMemoryView self, Object ptr, int offset,
+        static void doNative(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 for (int i = 0; i < len; i++) {
@@ -225,7 +225,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "ptr == null")
-        static void doManaged(byte[] src, int srcOffset, int len, IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        static void doManaged(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
             // TODO assumes byte storage
@@ -237,10 +237,10 @@ public class MemoryViewNodes {
     }
 
     static abstract class ReadItemAtNode extends Node {
-        public abstract Object execute(IntrinsifiedPMemoryView self, Object ptr, int offset);
+        public abstract Object execute(PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
-        static Object doNative(IntrinsifiedPMemoryView self, Object ptr, int offset,
+        static Object doNative(PMemoryView self, Object ptr, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached UnpackValueNode unpackValueNode) {
             int itemsize = self.getItemSize();
@@ -256,7 +256,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "ptr == null")
-        static Object doManaged(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached UnpackValueNode unpackValueNode) {
@@ -270,10 +270,10 @@ public class MemoryViewNodes {
     }
 
     static abstract class WriteItemAtNode extends Node {
-        public abstract void execute(VirtualFrame frame, IntrinsifiedPMemoryView self, Object ptr, int offset, Object object);
+        public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
         @Specialization(guards = "ptr != null")
-        static void doNative(IntrinsifiedPMemoryView self, Object ptr, int offset, Object object,
+        static void doNative(PMemoryView self, Object ptr, int offset, Object object,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PackValueNode packValueNode) {
             int itemsize = self.getItemSize();
@@ -289,7 +289,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "ptr == null")
-        static void doManaged(IntrinsifiedPMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+        static void doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached PackValueNode packValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
@@ -319,11 +319,11 @@ public class MemoryViewNodes {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
         // index can be a tuple, int or int-convertible
-        public abstract MemoryPointer execute(VirtualFrame frame, IntrinsifiedPMemoryView self, Object index);
+        public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, Object index);
 
-        public abstract MemoryPointer execute(VirtualFrame frame, IntrinsifiedPMemoryView self, int index);
+        public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(IntrinsifiedPMemoryView self, MemoryPointer ptr, int dim, int index) {
+        private void lookupDimension(PMemoryView self, MemoryPointer ptr, int dim, int index) {
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
             if (index < 0) {
@@ -345,7 +345,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization
-        MemoryPointer resolveInt(IntrinsifiedPMemoryView self, int index) {
+        MemoryPointer resolveInt(PMemoryView self, int index) {
             if (self.getDimensions() > 1) {
                 // CPython doesn't implement this either, as of 3.8
                 throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
@@ -359,7 +359,7 @@ public class MemoryViewNodes {
 
         // TODO explode loop
         @Specialization
-        MemoryPointer resolveTuple(IntrinsifiedPMemoryView self, PTuple indices,
+        MemoryPointer resolveTuple(PMemoryView self, PTuple indices,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
@@ -377,7 +377,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "!isPTuple(indexObj)")
-        MemoryPointer resolveInt(IntrinsifiedPMemoryView self, Object indexObj,
+        MemoryPointer resolveInt(PMemoryView self, Object indexObj,
                         @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return resolveInt(self, convertIndex(lib, indexObj));
         }
@@ -420,10 +420,10 @@ public class MemoryViewNodes {
 
     @GenerateUncached
     public static abstract class ToJavaBytesNode extends Node {
-        public abstract byte[] execute(IntrinsifiedPMemoryView self);
+        public abstract byte[] execute(PMemoryView self);
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
-        byte[] tobytesCached(IntrinsifiedPMemoryView self,
+        byte[] tobytesCached(PMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached ReadBytesAtNode readBytesAtNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
@@ -437,7 +437,7 @@ public class MemoryViewNodes {
         }
 
         @Specialization(replaces = "tobytesCached")
-        byte[] tobytesGeneric(IntrinsifiedPMemoryView self,
+        byte[] tobytesGeneric(PMemoryView self,
                         @Cached ReadBytesAtNode readBytesAtNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
             byte[] bytes = new byte[self.getLength()];
@@ -450,15 +450,15 @@ public class MemoryViewNodes {
         }
 
         @TruffleBoundary
-        private void convertBoundary(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+        private void convertBoundary(byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
             convert(dest, self, ndim, readBytesAtNode, callCapiFunction);
         }
 
-        protected void convert(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+        protected void convert(byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
             recursive(dest, 0, self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
         }
 
-        private static int recursive(byte[] dest, int destOffset, IntrinsifiedPMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+        private static int recursive(byte[] dest, int destOffset, PMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
                         CExtNodes.PCallCapiFunction callCapiFunction) {
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
@@ -486,11 +486,11 @@ public class MemoryViewNodes {
     @GenerateUncached
     public static abstract class ToJavaBytesFortranOrderNode extends ToJavaBytesNode {
         @Override
-        protected void convert(byte[] dest, IntrinsifiedPMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
+        protected void convert(byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
             recursive(dest, 0, self.getItemSize(), self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
         }
 
-        private static void recursive(byte[] dest, int destOffset, int destStride, IntrinsifiedPMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+        private static void recursive(byte[] dest, int destOffset, int destStride, PMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
                         CExtNodes.PCallCapiFunction callCapiFunction) {
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;

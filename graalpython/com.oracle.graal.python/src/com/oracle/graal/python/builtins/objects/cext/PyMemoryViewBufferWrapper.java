@@ -5,7 +5,7 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FU
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -88,7 +88,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     protected Object readMember(String member,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Exclusive @Cached ReadFieldNode readFieldNode) throws UnknownIdentifierException {
-        return readFieldNode.execute((IntrinsifiedPMemoryView) lib.getDelegate(this), member);
+        return readFieldNode.execute((PMemoryView) lib.getDelegate(this), member);
     }
 
     @GenerateUncached
@@ -112,14 +112,14 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     @GenerateUncached
     abstract static class ReadFieldNode extends Node {
 
-        public abstract Object execute(IntrinsifiedPMemoryView delegate, String key) throws UnknownIdentifierException;
+        public abstract Object execute(PMemoryView delegate, String key) throws UnknownIdentifierException;
 
         protected static boolean eq(String expected, String actual) {
             return expected.equals(actual);
         }
 
         @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() == null"})
-        static Object getBufManaged(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getBufManaged(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceNodes.SetSequenceStorageNode setStorage,
                         @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode,
@@ -139,7 +139,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(BUF, key)", "object.getBufferPointer() != null"})
-        static Object getBufNative(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getBufNative(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("pointerAdd") @Cached CExtNodes.PointerAddNode pointerAddNode) {
             if (object.getOffset() == 0) {
                 return object.getBufferPointer();
@@ -149,7 +149,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(OBJ, key)"})
-        static Object getObj(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getObj(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             if (object.getOwner() != null) {
@@ -160,27 +160,27 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(LEN, key)"})
-        static Object getLen(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key) {
+        static Object getLen(PMemoryView object, @SuppressWarnings("unused") String key) {
             return (long) object.getLength();
         }
 
         @Specialization(guards = {"eq(ITEMSIZE, key)"})
-        static Object getItemsize(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key) {
+        static Object getItemsize(PMemoryView object, @SuppressWarnings("unused") String key) {
             return (long) object.getItemSize();
         }
 
         @Specialization(guards = {"eq(NDIM, key)"})
-        static Object getINDim(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key) {
+        static Object getINDim(PMemoryView object, @SuppressWarnings("unused") String key) {
             return object.getDimensions();
         }
 
         @Specialization(guards = {"eq(READONLY, key)"})
-        static Object getReadonly(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key) {
+        static Object getReadonly(PMemoryView object, @SuppressWarnings("unused") String key) {
             return object.isReadOnly() ? 1 : 0;
         }
 
         @Specialization(guards = {"eq(FORMAT, key)"})
-        static Object getFormat(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getFormat(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Cached CExtNodes.AsCharPointerNode asCharPointerNode,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
@@ -192,19 +192,19 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(SHAPE, key)"})
-        static Object getShape(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getShape(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
             return intArrayToNativePySSizeArray.execute(object.getBufferShape());
         }
 
         @Specialization(guards = {"eq(STRIDES, key)"})
-        static Object getStrides(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getStrides(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
             return intArrayToNativePySSizeArray.execute(object.getBufferStrides());
         }
 
         @Specialization(guards = {"eq(SUBOFFSETS, key)"})
-        static Object getSuboffsets(IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getSuboffsets(PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode,
                         @Shared("toArray") @Cached IntArrayToNativePySSizeArray intArrayToNativePySSizeArray) {
@@ -216,28 +216,28 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(INTERNAL, key)"})
-        static Object getInternal(@SuppressWarnings("unused") IntrinsifiedPMemoryView object, @SuppressWarnings("unused") String key,
+        static Object getInternal(@SuppressWarnings("unused") PMemoryView object, @SuppressWarnings("unused") String key,
                         @Shared("toSulong") @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Shared("getNativeNull") @Cached CExtNodes.GetNativeNullNode getNativeNullNode) {
             return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Fallback
-        static Object error(@SuppressWarnings("unused") IntrinsifiedPMemoryView object, String key) throws UnknownIdentifierException {
+        static Object error(@SuppressWarnings("unused") PMemoryView object, String key) throws UnknownIdentifierException {
             throw UnknownIdentifierException.create(key);
         }
     }
 
     @ExportMessage
     protected boolean isPointer(
-            @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
+                    @Exclusive @Cached CExtNodes.IsPointerNode pIsPointerNode) {
         return pIsPointerNode.execute(this);
     }
 
     @ExportMessage
     public long asPointer(
-            @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-            @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         Object nativePointer = lib.getNativePointer(this);
         if (nativePointer instanceof Long) {
             return (long) nativePointer;
@@ -247,9 +247,9 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     protected void toNative(
-            @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-            @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
-            @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+                    @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                    @Exclusive @Cached DynamicObjectNativeWrapper.ToPyObjectNode toPyObjectNode,
+                    @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
         invalidateNode.execute();
         if (!lib.isNative(this)) {
             setNativePointer(toPyObjectNode.execute(this));

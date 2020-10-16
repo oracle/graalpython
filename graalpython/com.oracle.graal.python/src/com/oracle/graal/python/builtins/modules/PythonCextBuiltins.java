@@ -180,9 +180,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -1606,7 +1606,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                             strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
                         }
                     } else {
-                        strides = IntrinsifiedPMemoryView.initStridesFromShape(ndim, itemsize, shape);
+                        strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
                     }
                     if (!lib.isNull(suboffsetsPointer)) {
                         suboffsets = new int[ndim];
@@ -1621,8 +1621,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (!lib.isNull(bufferStructPointer)) {
                     managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
                 }
-                IntrinsifiedPMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
-                                IntrinsifiedPMemoryView.BufferFormat.fromString(format),
+                PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
+                                PMemoryView.BufferFormat.fromString(format),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {

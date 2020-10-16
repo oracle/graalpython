@@ -152,10 +152,10 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.IntrinsifiedPMemoryView;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -3321,16 +3321,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
-        public abstract IntrinsifiedPMemoryView execute(Object cls, Object object);
+        public abstract PMemoryView execute(Object cls, Object object);
 
-        public final IntrinsifiedPMemoryView execute(Object object) {
+        public final PMemoryView execute(Object object) {
             return execute(PythonBuiltinClassType.PMemoryView, object);
         }
 
         // TODO arrays should support buffer protocol too, but their implementation would be
         // complex, because they don't have an underlying byte array
         @Specialization
-        IntrinsifiedPMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
+        PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
@@ -3339,7 +3339,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        IntrinsifiedPMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
+        PMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
@@ -3348,7 +3348,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        IntrinsifiedPMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, IntrinsifiedPMemoryView object,
+        PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             object.checkReleased(this);
             return factory().createMemoryView(getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
@@ -3358,19 +3358,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        static IntrinsifiedPMemoryView fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+        static PMemoryView fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction) {
-            return (IntrinsifiedPMemoryView) asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
+            return (PMemoryView) asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
         }
 
         @Fallback
-        IntrinsifiedPMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
+        PMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
         }
 
-        private IntrinsifiedPMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
+        private PMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
                         MemoryViewNodes.BufferReferences refQueue) {
             ManagedBuffer managedBuffer = null;
             if (needsRelease) {
@@ -3379,7 +3379,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
             return factory().createMemoryView(refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
                             null, 0, new int[]{length}, new int[]{itemsize}, null,
-                            IntrinsifiedPMemoryView.FLAG_C | IntrinsifiedPMemoryView.FLAG_FORTRAN);
+                            PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
         }
 
         public static MemoryViewNode create() {
