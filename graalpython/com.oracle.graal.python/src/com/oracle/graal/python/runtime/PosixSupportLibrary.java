@@ -55,8 +55,7 @@ public abstract class PosixSupportLibrary extends Library {
     public static final int DEFAULT_DIR_FD = -100;  // TODO C code assumes that this constant is
                                                     // equal to AT_FDCWD
 
-    public static final int EINTR = 4;     // TODO this duplicates OSErrorEnum
-    public static final int EINVAL = 22;
+    public static final int O_CLOEXEC = 524288;
 
     public abstract String strerror(Object receiver, int errorCode);
 
@@ -71,6 +70,20 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 
     public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
+
+    public abstract int dup(Object receiver, int fd) throws PosixException;
+
+    public abstract int dup2(Object receiver, int fd, int fd2, boolean inheritable) throws PosixException;
+
+    public abstract boolean getInheritable(Object receiver, int fd) throws PosixException;
+
+    public abstract void setInheritable(Object receiver, int fd, boolean inheritable) throws PosixException;
+
+    public abstract int[] pipe(Object receiver) throws PosixException;
+
+    public abstract long lseek(Object receiver, int fd, long offset, int how) throws PosixException;
+
+    public abstract void ftruncate(Object receiver, int fd, long length) throws PosixException;
 
     public static class PosixException extends Exception {
 

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
@@ -61,16 +62,28 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int F_GETFD = 1;
+    private static final int F_SETFD = 2;
+    private static final int F_DUPFD_CLOEXEC = 1030;
+
+    private static final int FD_CLOEXEC = 1;
+
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
-        call_strerror("(sint32, [sint8], sint32):sint32"),
+        call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
         call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
-        call_write("(sint32, [sint8], uint64):sint64");
+        call_write("(sint32, [sint8], uint64):sint64"),
+        call_fcntl_int("(sint32, sint32, sint32):sint32"),
+        call_dup2("(sint32, sint32):sint32"),
+        call_dup3("(sint32, sint32, sint32):sint32"),
+        call_pipe2("([sint32], sint32):sint32"),
+        call_lseek("(sint32, sint64, sint32):sint64"),
+        call_ftruncate("(sint32, sint64):sint32");
 
         private final String signature;
 
@@ -107,10 +120,7 @@ public final class NFIPosixSupport {
         // This buffer size therefore should be sufficient to avoid an ERANGE error when calling
         // strerror_r().
         byte[] buf = new byte[1024];
-        int result = invokeNode.callInt(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
-        if (result != 0) {
-            return "Unknown error";
-        }
+        invokeNode.call(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
         return cStringToJavaString(buf);
     }
 
@@ -137,11 +147,10 @@ public final class NFIPosixSupport {
         while (true) {
             int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
-                // TODO set inheritable, O_CLOEXEC support etc.
                 return fd;
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno, pathname.originalObject);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -168,7 +177,7 @@ public final class NFIPosixSupport {
                 return buffer.withLength(n);
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
@@ -186,11 +195,106 @@ public final class NFIPosixSupport {
                 return n;
             }
             int errno = getErrno(invokeNode);
-            if (errno != PosixSupportLibrary.EINTR) {
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
+    }
+
+    @ExportMessage
+    public int dup(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int newFd = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_DUPFD_CLOEXEC, 0);
+        if (newFd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return newFd;
+    }
+
+    @ExportMessage
+    public int dup2(int fd, int fd2, boolean inheritable,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int newFd;
+        if (!inheritable) {
+            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup3, fd, fd2, PosixSupportLibrary.O_CLOEXEC);
+        } else {
+            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup2, fd, fd2);
+        }
+        if (newFd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return newFd;
+    }
+
+    @ExportMessage
+    public boolean getInheritable(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        return (getFdFlags(fd, invokeNode) & FD_CLOEXEC) == 0;
+    }
+
+    @ExportMessage
+    public void setInheritable(int fd, boolean inheritable,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int oldFlags = getFdFlags(fd, invokeNode);
+        int newFlags;
+        if (inheritable) {
+            newFlags = oldFlags & ~FD_CLOEXEC;
+        } else {
+            newFlags = oldFlags | FD_CLOEXEC;
+        }
+        if (newFlags != oldFlags) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_SETFD, newFlags);
+            if (res < 0) {
+                throw getErrnoAndThrowPosixException(invokeNode);
+            }
+        }
+    }
+
+    @ExportMessage
+    public int[] pipe(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] fds = new int[2];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_pipe2, context.getEnv().asGuestValue(fds), PosixSupportLibrary.O_CLOEXEC);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return fds;
+    }
+
+    @ExportMessage
+    public long lseek(int fd, long offset, int how,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long res = invokeNode.callLong(lib, NativeFunctions.call_lseek, fd, offset, how);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return res;
+    }
+
+    @ExportMessage
+    public void ftruncate(int fd, long length,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
+            if (res == 0) {
+                return;
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {
+        int flags = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_GETFD, 0);
+        if (flags < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return flags;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

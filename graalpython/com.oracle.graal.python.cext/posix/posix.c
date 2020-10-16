@@ -42,23 +42,22 @@
 // Helper functions that mostly delegate to POSIX functions
 // These functions are called from NFIPosixSupport Java class using NFI
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
 /*
-  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
-  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
-  Then we explicitly declare the function with POSIX signature which should force the compiler to
-  report an error in case we got the GNU version somehow.
+  There are two versions of strerror_r and we need the GNU one. The following line double-checks
+  that we got it by explicitly declaring the function with GNU signature which should force the
+  compiler to report an error in case we got the POSIX version somehow.
 */
-#ifdef _GNU_SOURCE
-#error "Someone defined _GNU_SOURCE"
-#endif
-int strerror_r(int errnum, char *buf, size_t buflen);
+char *strerror_r(int errnum, char *buf, size_t buflen);
 
 int64_t call_getpid() {
   return getpid();
@@ -85,6 +84,30 @@ int64_t call_write(int32_t fd, void *buf, uint64_t count) {
     return write(fd, buf, count);
 }
 
+int32_t call_fcntl_int(int32_t fd, int32_t cmd, int32_t arg) {
+    return fcntl(fd, cmd, arg);
+}
+
+int32_t call_dup2(int32_t oldfd, int32_t newfd) {
+    return dup2(oldfd, newfd);
+}
+
+int32_t call_dup3(int32_t oldfd, int32_t newfd, int32_t flags) {
+    return dup3(oldfd, newfd, flags);
+}
+
+int32_t call_pipe2(int32_t *pipefd, int32_t flags) {
+    return pipe2(pipefd, flags);
+}
+
+int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
+    return lseek(fd, offset, whence);
+}
+
+int32_t call_ftruncate(int32_t fd, int64_t length) {
+    return ftruncate(fd, length);
+}
+
 int32_t get_errno() {
     return errno;
 }
@@ -93,6 +116,9 @@ void set_errno(int e) {
     errno = e;
 }
 
-int32_t call_strerror(int32_t error, char *buf, int32_t buflen) {
-    return strerror_r(error, buf, buflen);
+void call_strerror(int32_t error, char *buf, int32_t buflen) {
+    char *b = strerror_r(error, buf, buflen);
+    if (b != buf) {
+        snprintf(buf, buflen, "%s", b);
+    }
 }

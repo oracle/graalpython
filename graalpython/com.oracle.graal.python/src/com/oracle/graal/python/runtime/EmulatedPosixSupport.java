@@ -138,4 +138,46 @@ public final class EmulatedPosixSupport {
     public long write(int fd, Buffer data) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int dup(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int dup2(int fd, int fd2, boolean inheritable) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public boolean getInheritable(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public void setInheritable(int fd, boolean inheritable) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public int[] pipe() {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public long lseek(int fd, long offset, int how) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public void ftruncate(int fd, long length) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
 }
