@@ -1563,12 +1563,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // Called without landing node
-    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 12)
+    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
     abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
 
         @Specialization
-        Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object releasefn, Object lenObj,
+        Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
                         Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
@@ -1618,8 +1618,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 // TODO factory
                 ManagedBuffer managedBuffer = null;
-                if (!lib.isNull(releasefn)) {
-                    managedBuffer = new ManagedBuffer(owner, bufferStructPointer, releasefn);
+                if (!lib.isNull(bufferStructPointer)) {
+                    managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
                 }
                 IntrinsifiedPMemoryView memoryview = new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
                                 getQueue.execute(), managedBuffer, owner, len, readonly, itemsize, format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);

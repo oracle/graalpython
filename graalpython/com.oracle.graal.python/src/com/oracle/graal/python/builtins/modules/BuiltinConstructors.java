@@ -3377,7 +3377,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             ManagedBuffer managedBuffer = null;
             if (needsRelease) {
                 // TODO We should lock the underlying storage for resizing
-                managedBuffer = new ManagedBuffer(object);
+                managedBuffer = ManagedBuffer.createForManaged(object);
             }
             return new IntrinsifiedPMemoryView(PythonBuiltinClassType.PMemoryView, PythonBuiltinClassType.PMemoryView.getInstanceShape(),
                             refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,

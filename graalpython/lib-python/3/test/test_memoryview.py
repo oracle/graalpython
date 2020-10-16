@@ -242,8 +242,11 @@ class AbstractMemoryTests:
             b.o = o
             wr = weakref.ref(o)
             b = m = o = None
+            # XXX GraalVM change - add more collect calls
+            for i in range(10):
+                test.support.gc_collect()
+                time.sleep(0.1)
             # The cycle must be broken
-            gc.collect()
             self.assertTrue(wr() is None, wr())
 
             # This exercises memory_clear().
@@ -253,8 +256,11 @@ class AbstractMemoryTests:
             m.o = o
             wr = weakref.ref(o)
             m = o = None
+            # XXX GraalVM change - add more collect calls
+            for i in range(10):
+                test.support.gc_collect()
+                time.sleep(0.1)
             # The cycle must be broken
-            gc.collect()
             self.assertTrue(wr() is None, wr())
 
     def _check_released(self, m, tp):
@@ -356,7 +362,7 @@ class AbstractMemoryTests:
             self.assertIs(wr(), m)
             del m
             # XXX GraalVM change - add collect call
-            for i in range(5):
+            for i in range(10):
                 test.support.gc_collect()
                 time.sleep(0.1)
             self.assertIs(wr(), None)

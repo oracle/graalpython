@@ -68,10 +68,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -99,13 +95,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             }
             ManagedBuffer buffer = reference.getManagedBuffer();
             // Managed buffers should be released directly in the reference queue thread
-            assert buffer.getBufferStructPointer() != null;
-            assert buffer.getReleaseFunction() != null;
-            try {
-                InteropLibrary.getUncached().execute(buffer.getReleaseFunction(), buffer.getOwner(), buffer.getBufferStructPointer());
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Failed to invoke bf_releasebuffer", e);
-            }
+            assert buffer.isForNative();
+            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
         }
     }
 
@@ -129,10 +120,15 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 }
                 ManagedBuffer buffer = bufferReference.getManagedBuffer();
                 if (buffer.decrementExports() == 0) {
-                    if (buffer.getBufferStructPointer() != null) {
+                    if (buffer.isForNative()) {
                         return new NativeBufferReleaseCallback(bufferReference);
                     } else {
-                        MemoryViewNodes.ReleaseBufferOfManagedObjectNode.getUncached().execute(buffer.getOwner());
+                        Object owner = buffer.getOwner();
+                        // It's a weakref, it may go away and in that case we don't have to do
+                        // anything
+                        if (owner != null) {
+                            MemoryViewNodes.ReleaseBufferOfManagedObjectNode.getUncached().execute(owner);
+                        }
                         return null;
                     }
                 }
@@ -719,28 +715,26 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().getBufferStructPointer() == null"})
+        @Specialization(guards = {"self.getReference() != null", "!self.getManagedBuffer().isForNative()"})
         Object releaseManaged(IntrinsifiedPMemoryView self,
                         @Cached MemoryViewNodes.ReleaseBufferOfManagedObjectNode release) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                release.execute(self.getManagedBuffer().getOwner());
+                release.execute(self.getOwner());
             }
             self.setReleased();
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().getBufferStructPointer() != null"})
+        @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().isForNative()"})
         Object releaseNative(VirtualFrame frame, IntrinsifiedPMemoryView self,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached CExtNodes.PCallCapiFunction callRelease) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
                 Object state = IndirectCallContext.enter(frame, getContext(), this);
                 ManagedBuffer buffer = self.getManagedBuffer();
                 try {
-                    lib.execute(buffer.getReleaseFunction(), buffer.getOwner(), buffer.getBufferStructPointer());
-                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere("Failed to invoke bf_releasebuffer", e);
+                    callRelease.call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {
                     IndirectCallContext.exit(frame, getContext(), state);
                 }
