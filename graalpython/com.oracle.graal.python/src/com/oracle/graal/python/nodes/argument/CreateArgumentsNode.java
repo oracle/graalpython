@@ -894,7 +894,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         if (callable instanceof PBuiltinMethod) {
             return ((PBuiltinMethod) callable).getFunction().getCallTarget();
         } else if (callable instanceof PMethod) {
-            return getCallTarget(((PMethod) callable).getFunction());
+            Object function = ((PMethod) callable).getFunction();
+            if (function instanceof PBuiltinFunction) {
+                return ((PBuiltinFunction) function).getCallTarget();
+            } else if (function instanceof PFunction) {
+                return ((PFunction) function).getCallTarget();
+            }
         } else if (callable instanceof PBuiltinFunction) {
             return ((PBuiltinFunction) callable).getCallTarget();
         } else if (callable instanceof PFunction) {
