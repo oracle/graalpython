@@ -72,6 +72,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -106,6 +107,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
+@SuppressWarnings("unused")
 public final class EmulatedPosixSupport extends PosixResources {
     private static final int TMPFILE = 4259840;
     private static final int TEMPORARY = 4259840;
@@ -241,7 +243,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openAt(int dirFd, PosixPath path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Cached ConditionProfile defaultDirFdPofile,
+                    @Exclusive @Cached ConditionProfile defaultDirFdPofile,
                     @Cached PathToJavaStr pathToJavaStr) throws PosixException {
         String pathname = pathToJavaStr.execute(path);
         TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
@@ -260,7 +262,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
             return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
         } else {
-            String dirPath = filePaths.getOrDefault(dirFd, null);
+            String dirPath = getFilePathOrDefault(dirFd, null);
             if (dirPath == null) {
                 throw posixException(OSErrorEnum.EBADF);
             }
@@ -272,15 +274,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     private int openTruffleFile(TruffleFile truffleFile, Set<StandardOpenOption> options, FileAttribute<Set<PosixFilePermission>> attributes) throws IOException {
         SeekableByteChannel fc;
+        TruffleFile file;
         if (options.contains(StandardOpenOption.DELETE_ON_CLOSE)) {
-            truffleFile = context.getEnv().createTempFile(truffleFile, null, null);
+            file = context.getEnv().createTempFile(truffleFile, null, null);
             options.remove(StandardOpenOption.CREATE_NEW);
             options.remove(StandardOpenOption.DELETE_ON_CLOSE);
             options.add(StandardOpenOption.CREATE);
-            context.registerShutdownHook(new FileDeleteShutdownHook(truffleFile));
+            context.registerShutdownHook(new FileDeleteShutdownHook(file));
+        } else {
+            file = truffleFile;
         }
-        fc = truffleFile.newByteChannel(options, attributes);
-        return open(truffleFile, fc);
+        fc = file.newByteChannel(options, attributes);
+        return open(file, fc);
     }
 
     @ExportMessage
@@ -359,7 +364,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long lseek(int fd, long offset, int how,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Cached ConditionProfile noFile) throws PosixException {
+                    @Exclusive @Cached ConditionProfile noFile) throws PosixException {
         Channel channel = getFileChannel(fd, channelClassProfile);
         if (noFile.profile(!(channel instanceof SeekableByteChannel))) {
             throw posixException(OSErrorEnum.ESPIPE);
@@ -430,6 +435,11 @@ public final class EmulatedPosixSupport extends PosixResources {
         String doBytes(PosixPath path) {
             return new String(path.path, StandardCharsets.UTF_8);
         }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private String getFilePathOrDefault(int fd, String defaultValue) {
+        return filePaths.getOrDefault(fd, defaultValue);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

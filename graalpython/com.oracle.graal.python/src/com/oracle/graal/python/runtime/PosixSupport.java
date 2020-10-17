@@ -43,7 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 
 public abstract class PosixSupport {
-    public void setEnv(Env env) {
+    public void setEnv(@SuppressWarnings("unused") Env env) {
         // nop
     }
 }
