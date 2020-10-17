@@ -3,7 +3,7 @@
 This is an early-stage experimental implementation of Python. A primary goal is
 to support SciPy and its constituent libraries. GraalPython can usually execute
 pure Python code faster than CPython (but not when C extensions are
-involved). The GraalVM Python implementation currently aims to be compatible
+involved). GraalPython currently aims to be compatible
 with Python 3.8, but it is a long way from there, and it is very likely that any
 Python program that uses more features of standard library modules or external
 packages will hit something unsupported. At this point, the Python
