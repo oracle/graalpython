@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -418,7 +419,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class FindLoaderNode extends PythonTernaryBuiltinNode {
