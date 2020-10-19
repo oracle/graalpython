@@ -559,7 +559,8 @@ class groupby(object):
     def __init__(self, iterable, key=None):
         self._iterator = iter(iterable)
         self._keyfunc = key
-        self._tgtkey = self._currkey = self._currvalue = None
+        self._marker = object()
+        self._tgtkey = self._currkey = self._currvalue = self._marker
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -569,15 +570,15 @@ class groupby(object):
     def __next__(self):
         self._skip_to_next_iteration_group()
         key = self._tgtkey = self._currkey
-        grouper = _groupby(self, key)
+        grouper = _grouper(self, key)
         return (key, grouper)
 
     @__graalpython__.builtin_method
     def _skip_to_next_iteration_group(self):
         while True:
-            if self._currkey is None:
+            if self._currkey is self._marker:
                 pass
-            elif self._tgtkey is None:
+            elif self._tgtkey is self._marker:
                 break
             else:
                 if not self._tgtkey == self._currkey:
@@ -593,11 +594,12 @@ class groupby(object):
             self._currvalue = newvalue
 
 
-class _groupby():
+class _grouper():
     @__graalpython__.builtin_method
     def __init__(self, groupby, tgtkey):
         self.groupby = groupby
         self.tgtkey = tgtkey
+        self._marker = groupby._marker
 
     @__graalpython__.builtin_method
     def __iter__(self):
@@ -606,22 +608,22 @@ class _groupby():
     @__graalpython__.builtin_method
     def __next__(self):
         groupby = self.groupby
-        if groupby._currvalue is None:
+        if groupby._currvalue is self._marker:
             newvalue = next(groupby._iterator)
             if groupby._keyfunc is None:
                 newkey = newvalue
             else:
                 newkey = groupby._keyfunc(newvalue)
-            assert groupby._currvalue is None
+            assert groupby._currvalue is self._marker
             groupby._currkey = newkey
             groupby._currvalue = newvalue
 
-        assert groupby._currkey is not None
+        assert groupby._currkey is not self._marker
         if not self.tgtkey == groupby._currkey:
             raise StopIteration(None)
         result = groupby._currvalue
-        groupby._currvalue = None
-        groupby._currkey = None
+        groupby._currvalue = self._marker
+        groupby._currkey = self._marker
         return result
 
 
