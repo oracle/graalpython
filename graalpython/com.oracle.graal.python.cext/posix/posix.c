@@ -152,6 +152,10 @@ int32_t call_ftruncate(int32_t fd, int64_t length) {
     return ftruncate(fd, length);
 }
 
+int32_t call_fsync(int32_t fd) {
+    return fsync(fd);
+}
+
 int32_t get_errno() {
     return errno;
 }

@@ -78,6 +78,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_pipe2("([sint32]):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
+        call_fsync("(sint32):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32");
 
@@ -265,6 +266,23 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         while (true) {
             int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
+            if (res == 0) {
+                return;
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public void fsync(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
             if (res == 0) {
                 return;
             }

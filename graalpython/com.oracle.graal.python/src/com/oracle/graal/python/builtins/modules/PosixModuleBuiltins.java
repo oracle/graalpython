@@ -1291,6 +1291,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_fsync", minNumOfPositionalArgs = 1, parameterNames = "fd")
+    @ArgumentClinic(name = "fd", conversionClass = FileDescriptorConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiFSyncNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiFSyncNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone fsync(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.fsync(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
@@ -2636,6 +2658,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
         public static OffsetConversionNode create() {
             return PosixModuleBuiltinsFactory.OffsetConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code fildes_converter()}. Always returns an {@code int}.
+     */
+    public abstract static class FileDescriptorConversionNode extends ArgumentCastNodeWithRaise {
+
+        @Specialization
+        int doFdInt(int value) {
+            return value;
+        }
+
+        @Specialization(guards = "!isInt(value)", limit = "3")
+        int doIndex(VirtualFrame frame, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib) {
+            return lib.asFileDescriptorWithState(value, PArguments.getThreadState(frame));
+        }
+
+        protected static boolean isInt(Object value) {
+            return value instanceof Integer;
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
+        public static FileDescriptorConversionNode create() {
+            return PosixModuleBuiltinsFactory.FileDescriptorConversionNodeGen.create();
         }
     }
 }
