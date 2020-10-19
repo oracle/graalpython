@@ -80,7 +80,9 @@ public final class NFIPosixSupport extends PosixSupport {
         call_ftruncate("(sint32, sint64):sint32"),
         call_fsync("(sint32):sint32"),
         get_inheritable("(sint32):sint32"),
-        set_inheritable("(sint32, sint32):sint32");
+        set_inheritable("(sint32, sint32):sint32"),
+        get_blocking("(sint32):sint32"),
+        set_blocking("(sint32, sint32):sint32");
 
         private final String signature;
 
@@ -291,6 +293,24 @@ public final class NFIPosixSupport extends PosixSupport {
                 throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public boolean getBlocking(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.get_blocking, fd);
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result != 0;
+    }
+
+    @ExportMessage
+    public void setBlocking(int fd, boolean blocking,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (invokeNode.callInt(lib, NativeFunctions.set_blocking, fd, blocking ? 1 : 0) < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 

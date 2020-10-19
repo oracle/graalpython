@@ -1313,6 +1313,50 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_get_blocking", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @GenerateNodeFactory
+    abstract static class NfiGetBlockingNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiGetBlockingNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean getBlocking(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getBlocking(getPosixSupport(), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "nfi_set_blocking", minNumOfPositionalArgs = 2, parameterNames = {"fd", "blocking"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "blocking", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class NfiSetBlockingNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiSetBlockingNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone setBlocking(VirtualFrame frame, int fd, boolean blocking,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.setBlocking(getPosixSupport(), fd, blocking);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

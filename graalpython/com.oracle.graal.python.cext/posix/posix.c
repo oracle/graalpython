@@ -156,6 +156,28 @@ int32_t call_fsync(int32_t fd) {
     return fsync(fd);
 }
 
+int32_t get_blocking(int32_t fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) {
+        return -1;
+    }
+    return !(flags & O_NONBLOCK);
+}
+
+int32_t set_blocking(int32_t fd, int32_t blocking) {
+    int res = fcntl(fd, F_GETFL);
+    if (res >= 0) {
+        int flags;
+        if (blocking) {
+            flags = res & ~O_NONBLOCK;
+        } else {
+            flags = res | O_NONBLOCK;
+        }
+        res = fcntl(fd, F_SETFL, flags);
+    }
+    return res;
+}
+
 int32_t get_errno() {
     return errno;
 }
