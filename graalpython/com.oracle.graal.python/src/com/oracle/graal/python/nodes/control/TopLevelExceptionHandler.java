@@ -78,10 +78,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -106,7 +108,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
         super(language);
-        this.sourceSection = exception.getSourceLocation();
+        this.sourceSection = exception.getLocation().getEncapsulatingSourceSection();
         this.innerCallTarget = null;
         this.exception = exception;
     }
@@ -151,7 +153,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 return null;
             } catch (StackOverflowError e) {
                 PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
-                PBaseException pythonException = pe.getExceptionObject();
+                PBaseException pythonException = pe.getUnreifiedException();
                 printExc(frame, pythonException);
                 return null;
             } catch (Exception e) {
@@ -163,12 +165,16 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void handleException(Exception e) {
-        boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-        if (!exitException) {
-            ExceptionUtils.printPythonLikeStackTrace(e);
-            if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
-                printStackTrace(e);
+        try {
+            boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
+            if (!exitException) {
+                ExceptionUtils.printPythonLikeStackTrace(e);
+                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                    printStackTrace(e);
+                }
             }
+        } catch (UnsupportedMessageException unsupportedMessageException) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
@@ -254,9 +260,7 @@ public class TopLevelExceptionHandler extends RootNode {
             PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(stderr, null, "write", message);
             throw new PythonExitException(this, 1);
         }
-        PException e = pythonException.getExceptionForReraise(pythonException.getTraceback());
-        e.setExit(true);
-        throw e;
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
     @TruffleBoundary
