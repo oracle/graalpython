@@ -9,7 +9,6 @@ from importlib.metadata import (
     Distribution, PackageNotFoundError, distribution,
     entry_points, files, metadata, requires, version,
     )
-from test.support import impl_detail
 
 
 class APITests(
@@ -97,7 +96,6 @@ class APITests(
         requirements = requires('egginfo-file')
         self.assertIsNone(requirements)
 
-    @impl_detail("GR-26584: fix metadata api", graalvm=False)
     def test_requires_egg_info(self):
         deps = requires('egginfo-pkg')
         assert len(deps) == 2
@@ -113,7 +111,6 @@ class APITests(
         assert 'wheel >= 1.0' in deps
         assert "pytest; extra == 'test'" in deps
 
-    @impl_detail("GR-26584: fix metadata api", graalvm=False)
     def test_more_complex_deps_requires_text(self):
         requires = textwrap.dedent("""
             dep1

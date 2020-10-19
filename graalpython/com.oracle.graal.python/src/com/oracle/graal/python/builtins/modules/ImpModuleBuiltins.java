@@ -187,21 +187,21 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization(assumptions = "singleContextAssumption()")
         public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached(value = "getMagicNumberPBytes(frame, toBytesNode, pol)", weak = true) PBytes magicBytes) {
+                        @Cached(value = "getMagicNumberPBytes(frame)", weak = true) PBytes magicBytes) {
             return magicBytes;
         }
 
         @Specialization(replaces = "runCachedSingleContext")
         public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
-                        @Cached(value = "getMagicNumberBytes(frame, toBytesNode, pol)", dimensions = 1) byte[] magicBytes) {
+                        @Cached(value = "getMagicNumberBytes(frame)", dimensions = 1) byte[] magicBytes) {
             return factory().createBytes(magicBytes);
         }
 
-        protected PBytes getMagicNumberPBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
-            return factory().createBytes(getMagicNumberBytes(frame, toBytesNode, pol));
+        protected PBytes getMagicNumberPBytes(VirtualFrame frame) {
+            return factory().createBytes(getMagicNumberBytes(frame));
         }
 
-        protected byte[] getMagicNumberBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
+        protected byte[] getMagicNumberBytes(VirtualFrame frame) {
             try {
                 PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
                 byte[] magicBytes = pol.getBufferBytes(magic);
