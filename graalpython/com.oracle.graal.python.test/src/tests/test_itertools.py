@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -98,3 +98,6 @@ class CombinationsTests(unittest.TestCase):
         self.assertRaises(ExpectedError, gulp, [None], keyfunc)
         keyfunc.skip = 1
         self.assertRaises(ExpectedError, gulp, [None, None], keyfunc)
+
+        data = [None, None, None, 20]
+        assert list(map(lambda x: x[0], list(groupby(data)))) == [None, 20]

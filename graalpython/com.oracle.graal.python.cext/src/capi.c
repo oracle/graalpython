@@ -171,6 +171,7 @@ declare_type(PyTuple_Type, tuple, PyTupleObject);
 declare_type(PyList_Type, list, PyListObject);
 declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
+declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
 declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
 declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
 declare_type(PySet_Type, set, PySetObject);

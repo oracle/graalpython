@@ -91,6 +91,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private Map<String, String> enginePolyglotOptions;
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
+    private String checkHashPycsMode = "default";
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
@@ -241,6 +242,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     wantsExperimental = true;
                     addRelaunchArg(arg);
                     unrecognized.add(arg);
+                    break;
+                case "--check-hash-based-pycs":
+                    i += 1;
+                    checkHashPycsMode = arguments.get(i);
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -457,6 +462,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(stdinIsInteractive));
         contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
         contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
+
+        contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
 
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());

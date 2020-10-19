@@ -162,6 +162,7 @@ graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c,python.copyri
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_mmap.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_testmultiphase.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_bz2module.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
@@ -583,6 +584,7 @@ graalpython/lib-graalpython/modules/hpy/test/test_support.py,hpy.copyright
 graalpython/lib-graalpython/object.py,pypy.copyright
 graalpython/lib-graalpython/str.py,pypy.copyright
 graalpython/lib-graalpython/timsort.py,pypy.copyright
+graalpython/lib-graalpython/zipimport.py,python.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright
 mx.graalpython/mx_graalpython_bench_param.py,zippy.copyright
 mx.graalpython/mx_graalpython_benchmark.py,zippy.copyright

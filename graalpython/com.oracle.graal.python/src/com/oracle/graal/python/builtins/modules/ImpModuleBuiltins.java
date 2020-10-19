@@ -42,12 +42,12 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -69,13 +69,17 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -83,12 +87,13 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -122,6 +127,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ImpModuleBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonContext context = core.getContext();
+        PythonModule mod = core.lookupBuiltinModule("_imp");
+        mod.setAttribute("check_hash_based_pycs", context.getOption(PythonOptions.CheckHashPycsMode));
     }
 
     @Builtin(name = "acquire_lock")
@@ -163,19 +176,40 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        // it's b'\x0c\xaf\xaf\xe1', original magic number of GraalPython
-        private static int BASE_MAGIC_NUMBER = 212840417;
+        static final int MAGIC_NUMBER = 3413;
 
-        @Specialization
-        public PBytes run() {
-            // The magic number in CPython is usually increased by 10.
-            int number = BASE_MAGIC_NUMBER + 10 * SerializationUtils.VERSION;
-            byte[] magicNumber = new byte[4];
-            magicNumber[0] = (byte) (number >>> 24);
-            magicNumber[1] = (byte) (number >>> 16);
-            magicNumber[2] = (byte) (number >>> 8);
-            magicNumber[3] = (byte) (number);
-            return factory().createBytes(magicNumber);
+        @Child IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
+        @Child PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
+
+        public static final Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(assumptions = "singleContextAssumption()")
+        public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
+                        @Cached(value = "getMagicNumberPBytes(frame)", weak = true) PBytes magicBytes) {
+            return magicBytes;
+        }
+
+        @Specialization(replaces = "runCachedSingleContext")
+        public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
+                        @Cached(value = "getMagicNumberBytes(frame)", dimensions = 1) byte[] magicBytes) {
+            return factory().createBytes(magicBytes);
+        }
+
+        protected PBytes getMagicNumberPBytes(VirtualFrame frame) {
+            return factory().createBytes(getMagicNumberBytes(frame));
+        }
+
+        protected byte[] getMagicNumberBytes(VirtualFrame frame) {
+            try {
+                PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
+                byte[] magicBytes = pol.getBufferBytes(magic);
+                return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("magicBytes does not support getBufferBytes()");
+            }
         }
     }
 
@@ -192,6 +226,24 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private SetItemNode setItemNode;
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
+        @Child private PConstructAndRaiseNode constructAndRaiseNode;
+
+        static class ImportException extends Exception {
+            private static final long serialVersionUID = 3517291912314595890L;
+            public final PBaseException cause;
+            public final Object name;
+            public final Object path;
+            public final String formatString;
+            public final Object[] formatArgs;
+
+            ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+                this.cause = cause;
+                this.name = name;
+                this.path = path;
+                this.formatString = formatString;
+                this.formatArgs = formatArgs;
+            }
+        }
 
         @Specialization
         public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
@@ -201,13 +253,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Object state = foreignCallContext.enter(frame, context, this);
             try {
                 return run(moduleSpec, interop);
+            } catch (ImportException ie) {
+                throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause, ie.name, ie.path, ie.formatString, ie.formatArgs);
             } finally {
                 foreignCallContext.exit(frame, context, state);
             }
         }
 
         @TruffleBoundary
-        private Object run(PythonObject moduleSpec, InteropLibrary interop) {
+        private Object run(PythonObject moduleSpec, InteropLibrary interop) throws ImportException {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -227,9 +281,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) {
+        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) throws ImportException {
             // we always need to load the CPython C API (even for HPy modules)
-            ensureCapiWasLoaded();
+            ensureCapiWasLoaded(name, path);
             PythonContext context = getContext();
             Env env = context.getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
@@ -240,9 +294,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 logJavaException(e);
-                throw raise(ImportError, wrapJavaException(e), ErrorMessages.CANNOT_LOAD_M, path, e);
+                throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
             } catch (RuntimeException e) {
-                throw reportImportError(e, path);
+                throw reportImportError(e, name, path);
             }
 
             // Now, try to detect the C extension's API by looking for the appropriate init
@@ -256,23 +310,23 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 return initCApiModule(sulongLibrary, initFuncName, name, path, interop);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 logJavaException(e);
-                throw raise(ImportError, wrapJavaException(e), ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+                throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
             } catch (RuntimeException e) {
-                throw reportImportError(e, path);
+                throw reportImportError(e, name, path);
             }
         }
 
         @TruffleBoundary
         private Object initHPyModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
-                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
             PythonContext context = getContext();
-            GraalHPyContext hpyContext = ensureHPyWasLoaded(context);
+            GraalHPyContext hpyContext = ensureHPyWasLoaded(context, name, path);
 
             TruffleObject pyinitFunc;
             try {
                 pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+                throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
             Object nativeResult = interop.execute(pyinitFunc, hpyContext);
             getCheckResultNode().execute(initFuncName, nativeResult);
@@ -293,15 +347,25 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object initCApiModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
-                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException {
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
             PythonContext context = getContext();
             TruffleObject pyinitFunc;
             try {
                 pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-                throw raise(ImportError, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+                throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
-            Object nativeResult = interop.execute(pyinitFunc);
+            Object nativeResult;
+            try {
+                nativeResult = interop.execute(pyinitFunc);
+            } catch (ArityException e) {
+                // In case of multi-phase init, the init function may take more than one arguments.
+                // However, CPython gracefully ignores that. So, we pass just NULL pointers.
+                Object[] arguments = new Object[e.getExpectedArity()];
+                Arrays.fill(arguments, PNone.NO_VALUE);
+                nativeResult = interop.execute(pyinitFunc, arguments);
+            }
+
             getCheckResultNode().execute(initFuncName, nativeResult);
 
             Object result = AsPythonObjectNodeGen.getUncached().execute(nativeResult);
@@ -319,11 +383,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void ensureCapiWasLoaded() {
+        private void ensureCapiWasLoaded(String name, String path) throws ImportException {
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
                 if (!context.getEnv().isNativeAccessAllowed()) {
-                    throw raise(ImportError, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                    throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
 
                 Env env = context.getEnv();
@@ -341,7 +405,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
                 } catch (IOException | RuntimeException e) {
                     logJavaException(e);
-                    throw raise(ImportError, wrapJavaException(e), ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
                 try {
                     // call into Python to initialize python_cext module globals
@@ -358,13 +422,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
                 } catch (RuntimeException e) {
                     logJavaException(e);
-                    throw raise(ImportError, wrapJavaException(e), ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
         }
 
         @TruffleBoundary
-        private GraalHPyContext ensureHPyWasLoaded(PythonContext context) {
+        private GraalHPyContext ensureHPyWasLoaded(PythonContext context, String name, String path) throws ImportException {
             if (!context.hasHPyContext()) {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -384,7 +448,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
                 } catch (IOException | RuntimeException | InteropException e) {
                     logJavaException(e);
-                    throw raise(ImportError, wrapJavaException(e), ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
             return context.getHPyContext();
@@ -424,8 +488,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             return checkResultNode;
         }
 
+        private PConstructAndRaiseNode getConstructAndRaiseNode() {
+            if (constructAndRaiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
+            }
+            return constructAndRaiseNode;
+        }
+
         @TruffleBoundary
-        private PException reportImportError(RuntimeException e, String path) {
+        private PException reportImportError(RuntimeException e, String name, String path) throws ImportException {
             StringBuilder sb = new StringBuilder();
             PBaseException pythonCause = null;
             if (e instanceof PException) {
@@ -454,9 +526,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             Object[] args = new Object[]{path, sb.toString()};
             if (pythonCause != null) {
-                throw raise(ImportError, pythonCause, ErrorMessages.CANNOT_LOAD, args);
+                throw new ImportException(pythonCause, name, path, ErrorMessages.CANNOT_LOAD, args);
             } else {
-                throw raise(ImportError, ErrorMessages.CANNOT_LOAD, args);
+                throw new ImportException(null, name, path, ErrorMessages.CANNOT_LOAD, args);
             }
         }
     }
@@ -494,20 +566,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "create_builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        @TruffleBoundary
-        public Object run(PythonObject moduleSpec) {
-            Object origin = moduleSpec.getAttribute("origin");
-            Object name = moduleSpec.getAttribute("name");
-            if ("built-in".equals(origin)) {
-                for (String bm : getCore().builtinModuleNames()) {
-                    if (bm.equals(name)) {
-                        return getCore().lookupBuiltinModule(bm);
-                    }
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object run(VirtualFrame frame, PythonObject moduleSpec,
+                        @Cached CastToJavaStringNode toJavaStringNode,
+                        @Cached("create(__LOADER__)") SetAttributeNode setAttributeNode,
+                        @CachedLibrary(value = "moduleSpec") PythonObjectLibrary pol) {
+            Object name = pol.lookupAttribute(moduleSpec, frame, "name");
+            PythonModule builtinModule = getBuiltinModule(toJavaStringNode.execute(name));
+            if (builtinModule != null) {
+                // TODO: GR-26411 builtin modules cannot be re-initialized (see is_builtin)
+                // We are setting the loader to the spec loader (since this is the loader that is
+                // set during bootstrap); this, however, should be handled be the builtin module
+                // reinitialization (if reinit is possible)
+                Object loader = pol.lookupAttribute(moduleSpec, frame, "loader");
+                if (loader != PNone.NO_VALUE) {
+                    setAttributeNode.executeVoid(frame, builtinModule, loader);
                 }
+                return builtinModule;
             }
             throw raise(NotImplementedError, "_imp.create_builtin");
+        }
+
+        @TruffleBoundary
+        private PythonModule getBuiltinModule(String name) {
+            return getCore().lookupBuiltinModule(name);
         }
     }
 

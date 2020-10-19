@@ -3646,4 +3646,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return new PyDateTimeCAPIWrapper(object);
         }
     }
+
+    @Builtin(name = "_PyModule_GetAndIncMaxModuleNumber")
+    @GenerateNodeFactory
+    abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
+
+        @Specialization
+        static long doIt(
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            CApiContext nativeContext = context.getCApiContext();
+            return nativeContext.getAndIncMaxModuleNumber();
+
+        }
+    }
 }

@@ -109,6 +109,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTuple("tuple", BuiltinNames.BUILTINS),
     PythonClass("type", BuiltinNames.BUILTINS),
     PythonModule("module"),
+    PythonModuleDef("moduledef", false),
     PythonObject("object", BuiltinNames.BUILTINS),
     Super("super", BuiltinNames.BUILTINS),
     PCode("code", false),

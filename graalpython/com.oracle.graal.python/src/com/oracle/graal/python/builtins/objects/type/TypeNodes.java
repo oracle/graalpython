@@ -219,6 +219,9 @@ public abstract class TypeNodes {
                 case PTuple:
                     result = DEFAULT | HAVE_GC | BASETYPE | TUPLE_SUBCLASS;
                     break;
+                case PythonModuleDef:
+                    result = 0;
+                    break;
                 default:
                     // default case; this includes:
                     // PythonObject, PByteArray, PCode, PInstancemethod, PFloat, PNone,
