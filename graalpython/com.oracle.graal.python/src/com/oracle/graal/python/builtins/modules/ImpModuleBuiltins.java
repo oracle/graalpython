@@ -92,6 +92,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -174,19 +175,36 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        @Specialization
-        public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
-                        @SuppressWarnings("unused") @Cached IntBuiltins.ToBytesNode toBytesNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary pol,
-                        @Cached("getMagicNumberBytes(frame, toBytesNode, pol)") PBytes magicBytes) {
+        static final int MAGIC_NUMBER = 3413;
+
+        @Child IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
+        @Child PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
+
+        public static final Assumption singleContextAssumption() {
+            return PythonLanguage.getCurrent().singleContextAssumption;
+        }
+
+        @Specialization(assumptions = "singleContextAssumption()")
+        public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
+                        @Cached(value = "getMagicNumberPBytes(frame, toBytesNode, pol)", weak = true) PBytes magicBytes) {
             return magicBytes;
         }
 
-        protected PBytes getMagicNumberBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
+        @Specialization(replaces = "runCachedSingleContext")
+        public PBytes run(@SuppressWarnings("unused") VirtualFrame frame,
+                        @Cached(value = "getMagicNumberBytes(frame, toBytesNode, pol)", dimensions = 1) byte[] magicBytes) {
+            return factory().createBytes(magicBytes);
+        }
+
+        protected PBytes getMagicNumberPBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
+            return factory().createBytes(getMagicNumberBytes(frame, toBytesNode, pol));
+        }
+
+        protected byte[] getMagicNumberBytes(VirtualFrame frame, IntBuiltins.ToBytesNode toBytesNode, PythonObjectLibrary pol) {
             try {
-                PBytes magic = toBytesNode.execute(frame, 3413, 2, "little", false);
+                PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
                 byte[] magicBytes = pol.getBufferBytes(magic);
-                return factory().createBytes(new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'});
+                return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("magicBytes does not support getBufferBytes()");
