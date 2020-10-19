@@ -64,7 +64,7 @@ PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
 
 UPCALL_ID(PyDict_GetItemWithError);
 PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
-    return UPCALL_CEXT_O(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
 }
 
 PyObject* _PyDict_GetItemId(PyObject* d, _Py_Identifier* id) {
@@ -125,6 +125,10 @@ int PyDict_Contains(PyObject *d, PyObject *k) {
 
 PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
     return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
+}
+
+PyObject*_PyDict_GetItemStringWithError(PyObject *d, const char *k){
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), polyglot_from_string(k, SRC_CS));
 }
 
 int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
