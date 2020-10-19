@@ -422,6 +422,11 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    public int[] getTerminalSize(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
     // ------------------
     // Helpers
 

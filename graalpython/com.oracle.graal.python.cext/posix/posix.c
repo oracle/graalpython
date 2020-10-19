@@ -51,6 +51,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -174,6 +175,16 @@ int32_t set_blocking(int32_t fd, int32_t blocking) {
             flags = res | O_NONBLOCK;
         }
         res = fcntl(fd, F_SETFL, flags);
+    }
+    return res;
+}
+
+int32_t get_terminal_size(int32_t fd, int32_t *size) {
+    struct winsize w;
+    int res = ioctl(fd, TIOCGWINSZ, &w);
+    if (res == 0) {
+        size[0] = w.ws_col;
+        size[1] = w.ws_row;
     }
     return res;
 }

@@ -82,7 +82,8 @@ public final class NFIPosixSupport extends PosixSupport {
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
-        set_blocking("(sint32, sint32):sint32");
+        set_blocking("(sint32, sint32):sint32"),
+        get_terminal_size("(sint32, [sint32]):sint32");
 
         private final String signature;
 
@@ -312,6 +313,16 @@ public final class NFIPosixSupport extends PosixSupport {
         if (invokeNode.callInt(lib, NativeFunctions.set_blocking, fd, blocking ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
+    }
+
+    @ExportMessage
+    public int[] getTerminalSize(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] size = new int[2];
+        if (invokeNode.callInt(lib, NativeFunctions.get_terminal_size, fd, context.getEnv().asGuestValue(size)) != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return size;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

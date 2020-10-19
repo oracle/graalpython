@@ -94,6 +94,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void setBlocking(Object receiver, int fd, boolean blocking) throws PosixException;
 
+    public abstract int[] getTerminalSize(Object receiver, int fd) throws PosixException;
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;

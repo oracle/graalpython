@@ -1357,6 +1357,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_get_terminal_size", minNumOfPositionalArgs = 0, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "1")
+    @GenerateNodeFactory
+    public abstract static class NfiGetTerminalSizeNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiGetTerminalSizeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PTuple getTerminalSize(VirtualFrame frame, int fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            // TODO default value should be fileno(stdout)
+            try {
+                int[] result = posixLib.getTerminalSize(getPosixSupport(), fd);
+                return factory().createTuple(new Object[]{result[0], result[1]});
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
