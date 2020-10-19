@@ -63,12 +63,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
-    private static final int F_GETFD = 1;
-    private static final int F_SETFD = 2;
-    private static final int F_DUPFD_CLOEXEC = 1030;
-
-    private static final int FD_CLOEXEC = 1;
-
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
@@ -79,12 +73,13 @@ public final class NFIPosixSupport extends PosixSupport {
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
         call_write("(sint32, [sint8], uint64):sint64"),
-        call_fcntl_int("(sint32, sint32, sint32):sint32"),
-        call_dup2("(sint32, sint32):sint32"),
-        call_dup3("(sint32, sint32, sint32):sint32"),
-        call_pipe2("([sint32], sint32):sint32"),
+        call_dup("(sint32):sint32"),
+        call_dup2("(sint32, sint32, sint32):sint32"),
+        call_pipe2("([sint32]):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
-        call_ftruncate("(sint32, sint64):sint32");
+        call_ftruncate("(sint32, sint64):sint32"),
+        get_inheritable("(sint32):sint32"),
+        set_inheritable("(sint32, sint32):sint32");
 
         private final String signature;
 
@@ -209,7 +204,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int dup(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int newFd = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_DUPFD_CLOEXEC, 0);
+        int newFd = invokeNode.callInt(lib, NativeFunctions.call_dup, fd);
         if (newFd < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -219,12 +214,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int dup2(int fd, int fd2, boolean inheritable,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int newFd;
-        if (!inheritable) {
-            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup3, fd, fd2, PosixSupportLibrary.O_CLOEXEC);
-        } else {
-            newFd = invokeNode.callInt(lib, NativeFunctions.call_dup2, fd, fd2);
-        }
+        int newFd = invokeNode.callInt(lib, NativeFunctions.call_dup2, fd, fd2, inheritable ? 1 : 0);
         if (newFd < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -234,24 +224,18 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public boolean getInheritable(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        return (getFdFlags(fd, invokeNode) & FD_CLOEXEC) == 0;
+        int result = invokeNode.callInt(lib, NativeFunctions.get_inheritable, fd);
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result != 0;
     }
 
     @ExportMessage
     public void setInheritable(int fd, boolean inheritable,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int oldFlags = getFdFlags(fd, invokeNode);
-        int newFlags;
-        if (inheritable) {
-            newFlags = oldFlags & ~FD_CLOEXEC;
-        } else {
-            newFlags = oldFlags | FD_CLOEXEC;
-        }
-        if (newFlags != oldFlags) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_SETFD, newFlags);
-            if (res < 0) {
-                throw getErrnoAndThrowPosixException(invokeNode);
-            }
+        if (invokeNode.callInt(lib, NativeFunctions.set_inheritable, fd, inheritable ? 1 : 0) < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
@@ -259,8 +243,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int[] pipe(
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int[] fds = new int[2];
-        int res = invokeNode.callInt(lib, NativeFunctions.call_pipe2, context.getEnv().asGuestValue(fds), PosixSupportLibrary.O_CLOEXEC);
-        if (res != 0) {
+        if (invokeNode.callInt(lib, NativeFunctions.call_pipe2, context.getEnv().asGuestValue(fds)) != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return fds;
@@ -291,14 +274,6 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
-    }
-
-    private int getFdFlags(int fd, InvokeNativeFunction invokeNode) throws PosixException {
-        int flags = invokeNode.callInt(lib, NativeFunctions.call_fcntl_int, fd, F_GETFD, 0);
-        if (flags < 0) {
-            throw getErrnoAndThrowPosixException(invokeNode);
-        }
-        return flags;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

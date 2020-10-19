@@ -42,22 +42,19 @@
 // Helper functions that mostly delegate to POSIX functions
 // These functions are called from NFIPosixSupport Java class using NFI
 
+// This file uses GNU extensions. Functions that require non-GNU versions (e.g. strerror_r)
+// need to go to posix_no_gnu.c
+#ifdef __gnu_linux__
 #define _GNU_SOURCE
+#endif
 
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
-/*
-  There are two versions of strerror_r and we need the GNU one. The following line double-checks
-  that we got it by explicitly declaring the function with GNU signature which should force the
-  compiler to report an error in case we got the POSIX version somehow.
-*/
-char *strerror_r(int errnum, char *buf, size_t buflen);
 
 int64_t call_getpid() {
   return getpid();
@@ -66,6 +63,30 @@ int64_t call_getpid() {
 int64_t call_umask(int64_t mask) {
   // TODO umask uses mode_t as argument/retval -> what Java type should we map it into? Using long for now.
   return umask(mask);
+}
+
+int32_t get_inheritable(int32_t fd) {
+    int flags = fcntl(fd, F_GETFD, 0);
+    if (flags < 0) {
+        return -1;
+    }
+    return !(flags & FD_CLOEXEC);
+}
+
+int32_t set_inheritable(int32_t fd, int32_t inheritable) {
+    int res = fcntl(fd, F_GETFD);
+    if (res >= 0) {
+        int new_flags;
+        if (inheritable) {
+            new_flags = res & ~FD_CLOEXEC;
+        } else {
+            new_flags = res | FD_CLOEXEC;
+        }
+        if (new_flags != res) {
+            res = fcntl(fd, F_SETFD, new_flags);
+        }
+    }
+    return res;
 }
 
 int32_t call_open_at(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
@@ -84,20 +105,43 @@ int64_t call_write(int32_t fd, void *buf, uint64_t count) {
     return write(fd, buf, count);
 }
 
-int32_t call_fcntl_int(int32_t fd, int32_t cmd, int32_t arg) {
-    return fcntl(fd, cmd, arg);
+int32_t call_dup(int32_t fd) {
+    return fcntl(fd, F_DUPFD_CLOEXEC, 0);
 }
 
-int32_t call_dup2(int32_t oldfd, int32_t newfd) {
-    return dup2(oldfd, newfd);
+int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
+#ifdef __gnu_linux__
+    return dup3(oldfd, newfd, inheritable ? 0 : O_CLOEXEC);
+#else
+    int res = dup2(oldfd, newfd);
+    if (res < 0) {
+        return res;
+    }
+    if (!inheritable) {
+        if (set_inheritable(res, 0) < 0) {
+            close(res);
+            return -1;
+        }
+    }
+    return res;
+#endif
 }
 
-int32_t call_dup3(int32_t oldfd, int32_t newfd, int32_t flags) {
-    return dup3(oldfd, newfd, flags);
-}
-
-int32_t call_pipe2(int32_t *pipefd, int32_t flags) {
-    return pipe2(pipefd, flags);
+int32_t call_pipe2(int32_t *pipefd) {
+#ifdef __gnu_linux__
+    return pipe2(pipefd, O_CLOEXEC);
+#else
+    int res = pipe(pipefd);
+    if (res != 0) {
+        return res;
+    }
+    if (set_inheritable(pipefd[0], 0) < 0 || set_inheritable(pipefd[1], 0) < 0) {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return -1;
+    }
+    return 0;
+#endif
 }
 
 int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
@@ -114,11 +158,4 @@ int32_t get_errno() {
 
 void set_errno(int e) {
     errno = e;
-}
-
-void call_strerror(int32_t error, char *buf, int32_t buflen) {
-    char *b = strerror_r(error, buf, buflen);
-    if (b != buf) {
-        snprintf(buf, buflen, "%s", b);
-    }
 }
