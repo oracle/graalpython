@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.TOBYTES;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
-import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -76,15 +79,13 @@ public class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     byte[] getBufferBytes(
                     @Shared("readNativeMemoryViewNode") @Cached ReadAttributeFromDynamicObjectNode readNativeMemoryViewNode,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached PInteropSubscriptNode subscriptNode,
-                    @Cached CastToByteNode castToByteNode) {
+                    @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         Object nativeMemoryViewObject = readNativeMemoryViewNode.execute(getStorage(), C_MEMORYVIEW);
-        int len = lib.length(nativeMemoryViewObject);
-        byte[] data = new byte[len];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = castToByteNode.execute(null, subscriptNode.execute(nativeMemoryViewObject, i));
+        Object bytes = lib.lookupAndCallRegularMethod(nativeMemoryViewObject, null, TOBYTES);
+        try {
+            return lib.getBufferBytes(bytes);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("memoryview.tobytes didn't return bytes");
         }
-        return data;
     }
 }

@@ -90,11 +90,11 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     abstract static class DecompressNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "isNoValue(maxLength)")
-        PBytes doBytesLike(VirtualFrame frame, PLZMADecompressor self, PBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
+        PBytes doBytesLike(PLZMADecompressor self, PBytesLike bytesLike, @SuppressWarnings("unused") PNone maxLength,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
             byte[] decompress;
             try {
-                decompress = self.decompress(toBytesNode.execute(frame, bytesLike));
+                decompress = self.decompress(toBytesNode.execute(bytesLike));
                 return factory().createBytes(decompress);
             } catch (IOException e) {
                 throw raise(OSError, e);

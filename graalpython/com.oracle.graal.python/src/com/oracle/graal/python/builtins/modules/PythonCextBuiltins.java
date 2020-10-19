@@ -1361,10 +1361,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        byte[] doSequenceArrayWrapper(VirtualFrame frame, PySequenceArrayWrapper obj, long n,
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
                         @CachedLibrary(value = "obj") PythonNativeWrapperLibrary lib,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
-            return subRangeIfNeeded(toBytesNode.execute(frame, lib.getDelegate(obj)), n);
+            return subRangeIfNeeded(toBytesNode.execute(lib.getDelegate(obj)), n);
         }
 
         @Specialization(limit = "5")
@@ -2638,11 +2638,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
+            byte[] ary = getByteArrayNode.execute(asPythonObjectNode.execute(object));
             PBytes result;
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'

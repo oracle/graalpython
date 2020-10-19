@@ -304,7 +304,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (isBytes.profile(bytes instanceof PBytes && isClassProfile.profileIsAnyBuiltinClass(cls))) {
                 return (PBytes) bytes;
             }
-            return factory().createBytes(cls, toBytesNode.execute(frame, bytes));
+            return factory().createBytes(cls, toBytesNode.execute(bytes));
         }
 
         @Specialization(guards = {"!isNone(source)", "!canUseByteAttr(source, lookupBytes, lib, encoding, errors)"}, limit = "3")
@@ -900,7 +900,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private double convertBytesToDouble(VirtualFrame frame, PBytesLike arg) {
-            return convertStringToDouble(frame, PythonUtils.newString(getByteArray(frame, arg)), arg);
+            return convertStringToDouble(frame, PythonUtils.newString(getByteArray(arg)), arg);
         }
 
         private double convertStringToDouble(VirtualFrame frame, String src, Object origObj) {
@@ -1027,12 +1027,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isSubtypeNode.execute(frame, cls, PythonBuiltinClassType.PFloat);
         }
 
-        private byte[] getByteArray(VirtualFrame frame, PBytesLike pByteArray) {
+        private byte[] getByteArray(PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toByteArrayNode.execute(frame, pByteArray);
+            return toByteArrayNode.execute(pByteArray);
         }
     }
 
@@ -1366,7 +1366,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object parseBytesError(VirtualFrame frame, Object cls, PBytesLike arg, int base) {
             checkBase(base);
-            return stringToInt(frame, cls, toString(frame, arg), base, arg);
+            return stringToInt(frame, cls, toString(arg), base, arg);
         }
 
         @Specialization(guards = "isNoValue(base)")
@@ -1518,12 +1518,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return callTruncNode.executeObject(frame, obj);
         }
 
-        private String toString(VirtualFrame frame, PBytesLike pByteArray) {
+        private String toString(PBytesLike pByteArray) {
             if (toByteArrayNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 toByteArrayNode = insert(BytesNodes.ToBytesNode.create());
             }
-            return toString(toByteArrayNode.execute(frame, pByteArray));
+            return toString(toByteArrayNode.execute(pByteArray));
         }
 
         @TruffleBoundary

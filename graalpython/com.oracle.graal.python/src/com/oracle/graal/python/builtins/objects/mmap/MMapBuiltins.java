@@ -68,14 +68,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -113,6 +111,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -553,11 +552,16 @@ public class MMapBuiltins extends PythonBuiltins {
             return writeNode.execute(channel, bytesLike.getSequenceStorage(), Integer.MAX_VALUE);
         }
 
-        @Specialization
-        static int writeMemoryview(VirtualFrame frame, PMMap self, PMemoryView memoryView,
-                        @Cached("create()") WriteToChannelNode writeNode,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] data = toBytesNode.execute(frame, memoryView);
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        static int writeBuffer(PMMap self, Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib,
+                        @Cached("create()") WriteToChannelNode writeNode) {
+            byte[] data;
+            try {
+                data = bufferLib.getBufferBytes(buffer);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             return writeNode.execute(self.getChannel(), new ByteSequenceStorage(data), Integer.MAX_VALUE);
         }
     }

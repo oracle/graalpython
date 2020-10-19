@@ -222,9 +222,9 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+        static long doitNone(Object data, @SuppressWarnings("unused") PNone value,
                         @Cached ToBytesNode toBytesNode) {
-            return doCRC32(toBytesNode.execute(frame, data));
+            return doCRC32(toBytesNode.execute(data));
         }
 
         @TruffleBoundary
@@ -235,20 +235,20 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doitLong(VirtualFrame frame, Object data, long value,
+        static long doitLong(Object data, long value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
-            byte[] array = toBytesNode.execute(frame, data);
+            byte[] array = toBytesNode.execute(data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doPInt(VirtualFrame frame, Object data, PInt value,
+        static long doPInt(Object data, PInt value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = value.intValue();
-            byte[] array = toBytesNode.execute(frame, data);
+            byte[] array = toBytesNode.execute(data);
             return computeCRC32(array, initValue) & 0xFFFFFFFFL;
         }
 
@@ -303,26 +303,26 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public long doitNone(VirtualFrame frame, Object data, @SuppressWarnings("unused") PNone value,
+        static long doitNone(Object data, @SuppressWarnings("unused") PNone value,
                         @Cached ToBytesNode toBytesNode) {
-            return doAdler32(toBytesNode.execute(frame, data));
+            return doAdler32(toBytesNode.execute(data));
         }
 
         @Specialization
-        public long doitLong(VirtualFrame frame, Object data, long value,
+        static long doitLong(Object data, long value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = (int) value;
-            byte[] array = toBytesNode.execute(frame, data);
+            byte[] array = toBytesNode.execute(data);
             return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
         @Specialization
-        public long doPInt(VirtualFrame frame, Object data, PInt value,
+        static long doPInt(Object data, PInt value,
                         @Cached ToBytesNode toBytesNode) {
             // lost magnitude is ok here.
             int initValue = value.intValue();
-            byte[] array = toBytesNode.execute(frame, data);
+            byte[] array = toBytesNode.execute(data);
             return computeAdler32(array, initValue) & 0xFFFFFFFFL;
         }
 
@@ -390,8 +390,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object deflateCompress(VirtualFrame frame, DeflaterWrapper stream, Object pb, int mode) {
-            byte[] data = toBytes.execute(frame, pb);
+        Object deflateCompress(DeflaterWrapper stream, Object pb, int mode) {
+            byte[] data = toBytes.execute(pb);
             byte[] result = new byte[DEF_BUF_SIZE];
             return factory().createBytes(deflate(stream, mode, data, result));
         }
@@ -425,8 +425,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object init(VirtualFrame frame, int wbits, PBytes zdict) {
-            byte[] bytes = toBytes.execute(frame, zdict);
+        Object init(int wbits, PBytes zdict) {
+            byte[] bytes = toBytes.execute(zdict);
             return new InflaterWrapper(inflate(wbits, bytes));
         }
 
@@ -473,11 +473,11 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         @Child private ToBytesNode toBytes = ToBytesNode.create();
 
         @Specialization
-        Object decompress(VirtualFrame frame, InflaterWrapper stream, PBytesLike pb, int maxLen) {
+        Object decompress(InflaterWrapper stream, PBytesLike pb, int maxLen) {
             int maxLength = maxLen == 0 ? Integer.MAX_VALUE : maxLen;
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] data = toBytes.execute(frame, pb);
+            byte[] data = toBytes.execute(pb);
             byte[] result = new byte[Math.min(maxLen, DEF_BUF_SIZE)];
             byte[] decompressed = decompress(stream, maxLength, baos, data, result);
 
@@ -489,9 +489,9 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object decompress(VirtualFrame frame, InflaterWrapper stream, PBytesLike pb, long maxLen,
+        Object decompress(InflaterWrapper stream, PBytesLike pb, long maxLen,
                         @Cached CastToJavaIntExactNode castInt) {
-            return decompress(frame, stream, pb, castInt.execute(maxLen));
+            return decompress(stream, pb, castInt.execute(maxLen));
         }
 
         @TruffleBoundary
