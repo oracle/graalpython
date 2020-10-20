@@ -231,11 +231,27 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             public final Object[] formatArgs;
 
             ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+                /*
+                 * We use the super constructor that initializes the cause to null. Without that, the cause
+                 * would be this exception itself. This helps escape analysis: it avoids the circle of an
+                 * object pointing to itself. We also do not need a message, so we use the constructor that
+                 * also allows us to set the message to null.
+                 */
+                super(null, null);
                 this.cause = cause;
                 this.name = name;
                 this.path = path;
                 this.formatString = formatString;
                 this.formatArgs = formatArgs;
+            }
+
+            /**
+             * For performance reasons, this exception does not record any stack trace information.
+             */
+            @SuppressWarnings("sync-override")
+            @Override
+            public synchronized Throwable fillInStackTrace() {
+                return this;
             }
         }
 
