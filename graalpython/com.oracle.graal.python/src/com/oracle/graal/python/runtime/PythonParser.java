@@ -30,6 +30,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -198,6 +199,7 @@ public interface PythonParser {
         }
 
         @ExportMessage(name = "getSourceLocation")
+        @TruffleBoundary
         SourceSection getExceptionSourceLocation() {
             if (line > 0 && line < source.getLineCount()) {
                 return source.createSection(line);
