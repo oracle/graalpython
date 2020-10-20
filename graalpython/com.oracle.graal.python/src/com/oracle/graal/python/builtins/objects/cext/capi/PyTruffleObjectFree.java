@@ -43,12 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ClearNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ClearNativeWrapperNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;

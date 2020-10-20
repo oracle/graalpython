@@ -42,11 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.NativeObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRefCntNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -122,10 +121,10 @@ public final class NativeReferenceCache implements TruffleObject {
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                        @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
-                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
+                                                          @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
+                                                          @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                                                          @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
+                                                          @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 // If this is stealing the reference, we need to fixup the managed reference count.

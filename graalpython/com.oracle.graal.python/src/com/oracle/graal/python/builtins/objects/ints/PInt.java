@@ -32,7 +32,7 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;

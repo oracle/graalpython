@@ -63,7 +63,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;

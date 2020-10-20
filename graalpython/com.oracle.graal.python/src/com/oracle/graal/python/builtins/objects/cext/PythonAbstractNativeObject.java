@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_OB_TYPE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_GENERIC_GET_DICT;
 
 import java.util.Objects;
 
@@ -49,13 +49,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetTypeMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ImportCAPISymbolNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -75,12 +75,10 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -186,29 +184,18 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
-    @GenerateUncached
-    public abstract static class GetDict {
-        @Specialization
-        public static PDict getNativeDictionary(PythonAbstractNativeObject self,
-                        @Exclusive @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached ToSulongNode toSulong,
-                        @Exclusive @Cached ToJavaNode toJava,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Exclusive @Cached ImportCAPISymbolNode importCAPISymbolNode) {
-            try {
-                Object func = importCAPISymbolNode.execute(FUN_PY_OBJECT_GENERIC_GET_DICT);
-                Object javaDict = toJava.execute(interopLibrary.execute(func, toSulong.execute(self)));
-                if (javaDict instanceof PDict) {
-                    return (PDict) javaDict;
-                } else if (javaDict == PNone.NO_VALUE) {
-                    return null;
-                } else {
-                    throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
-                }
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("could not run our core function to get the dict of a native object", e);
-            }
+    public PDict getDict(
+                    @Exclusive @Cached PRaiseNode raiseNode,
+                    @Exclusive @Cached ToSulongNode toSulong,
+                    @Exclusive @Cached ToJavaNode toJava,
+                    @Exclusive @Cached PCallCapiFunction callGetDictNode) {
+        Object javaDict = toJava.execute(callGetDictNode.call(FUN_PY_OBJECT_GENERIC_GET_DICT, toSulong.execute(this)));
+        if (javaDict instanceof PDict) {
+            return (PDict) javaDict;
+        } else if (javaDict == PNone.NO_VALUE) {
+            return null;
+        } else {
+            throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.DICT_MUST_BE_SET_TO_DICT, javaDict);
         }
     }
 
@@ -268,6 +255,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             // do not wrap 'object.object' since that is really the native pointer object
             return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNodeGen.getUncached());
         }
+
     }
 
     @ExportMessage

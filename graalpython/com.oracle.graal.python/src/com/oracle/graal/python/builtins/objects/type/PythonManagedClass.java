@@ -35,7 +35,7 @@ import java.util.WeakHashMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;

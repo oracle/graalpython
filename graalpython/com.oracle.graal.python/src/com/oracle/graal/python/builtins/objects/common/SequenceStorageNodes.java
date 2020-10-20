@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -57,10 +57,10 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;

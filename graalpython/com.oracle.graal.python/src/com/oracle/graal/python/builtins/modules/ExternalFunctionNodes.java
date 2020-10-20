@@ -49,16 +49,16 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunction
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.SubRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToBorrowedRefNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaStealingNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToBorrowedRefNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaStealingNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBorrowedRefNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
@@ -298,11 +298,11 @@ public abstract class ExternalFunctionNodes {
 
     /**
      * Decrements the ref count by one of any
-     * {@link com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper} object.
+     * {@link PythonNativeWrapper} object.
      * <p>
      * This node avoids memory leaks for arguments given to native.<br>
      * Problem description:<br>
-     * {@link com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper} objects given to C
+     * {@link PythonNativeWrapper} objects given to C
      * code may go to native, i.e., a handle will be allocated. In this case, no ref count
      * manipulation is done since the C code considers the reference to be borrowed and the Python
      * code just doesn't do it because we have a GC. This means that the handle will stay allocated

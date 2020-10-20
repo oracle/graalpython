@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.str;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;

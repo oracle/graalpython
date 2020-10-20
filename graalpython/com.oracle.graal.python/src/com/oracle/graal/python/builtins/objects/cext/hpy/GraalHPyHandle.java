@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
