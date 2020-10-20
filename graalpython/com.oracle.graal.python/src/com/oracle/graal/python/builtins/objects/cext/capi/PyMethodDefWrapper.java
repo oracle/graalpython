@@ -43,10 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -83,9 +81,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 /**
- * Wraps a PythonObject to provide a native view with a shape like {@code PyMethodDescr}.
- */
-/**
  * Wrapper object that emulate the ABI for {@code PyMethodDef}.
  *
  * <pre>
@@ -99,13 +94,13 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
-public class PyMethodDescrWrapper extends PythonNativeWrapper {
+public class PyMethodDefWrapper extends PythonNativeWrapper {
     public static final String ML_NAME = "ml_name";
     public static final String ML_METH = "ml_meth";
     public static final String ML_FLAGS = "ml_flags";
     public static final String ML_DOC = "ml_doc";
 
-    public PyMethodDescrWrapper(PythonObject delegate) {
+    public PyMethodDefWrapper(PythonObject delegate) {
         super(delegate);
     }
 
@@ -140,7 +135,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    @ImportStatic(PyMethodDescrWrapper.class)
+    @ImportStatic(PyMethodDefWrapper.class)
     abstract static class ReadFieldNode extends Node {
 
         public abstract Object execute(Object delegate, String key);
@@ -153,14 +148,17 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         static Object getName(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached PythonAbstractObject.PInteropGetAttributeNode getAttrNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Shared("asCharPointerNode") @Cached AsCharPointerNode asCharPointerNode,
+                        @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             Object name = getAttrNode.execute(object, SpecialAttributeNames.__NAME__);
-            if (PGuards.isPNone(name)) {
-                return toSulongNode.execute(getNativeNullNode.execute());
-            } else {
-                return asCharPointerNode.execute(name);
+            if (!PGuards.isPNone(name)) {
+                try {
+                    return new CStringWrapper(castToJavaStringNode.execute(name));
+                } catch (CannotCastException e) {
+                    // fall through
+                }
             }
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
         @Specialization(guards = {"eq(ML_DOC, key)"})
@@ -170,7 +168,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
                         @Shared("castToJavaStringNode") @Cached CastToJavaStringNode castToJavaStringNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) {
             Object doc = getAttrNode.execute(object, __DOC__);
-            if (doc != PNone.NO_VALUE) {
+            if (!PGuards.isPNone(doc)) {
                 try {
                     return new CStringWrapper(castToJavaStringNode.execute(doc));
                 } catch (CannotCastException e) {
@@ -187,7 +185,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"eq(ML_FLAGS, key)"})
-        static Object getMeth(PythonObject object, @SuppressWarnings("unused") String key) {
+        static Object getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
             PBuiltinFunction fun = null;
             if (object instanceof PBuiltinFunction) {
                 fun = (PBuiltinFunction) object;
@@ -264,7 +262,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    @ImportStatic({SpecialMethodNames.class, PGuards.class, PyMethodDescrWrapper.class})
+    @ImportStatic({SpecialMethodNames.class, PGuards.class, PyMethodDefWrapper.class})
     abstract static class WriteFieldNode extends Node {
 
         public abstract void execute(Object delegate, String key, Object value) throws UnsupportedMessageException, UnknownIdentifierException;
@@ -273,7 +271,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
             return expected.equals(actual);
         }
 
-        @Specialization(guards = {"!isBuiltinMethod(object)", "!isBuiltinFunction(object)", "eq(DOC, key)"})
+        @Specialization(guards = {"!isBuiltinMethod(object)", "!isBuiltinFunction(object)", "eq(ML_DOC, key)"})
         static void doPythonObject(PythonObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode,
@@ -281,7 +279,7 @@ public class PyMethodDescrWrapper extends PythonNativeWrapper {
             setAttrNode.execute(object, __DOC__, fromCharPointerNode.execute(value));
         }
 
-        @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(DOC, key)"})
+        @Specialization(guards = {"isBuiltinMethod(object) || isBuiltinFunction(object)", "eq(ML_DOC, key)"})
         static void doBuiltinFunctionOrMethod(PythonBuiltinObject object, @SuppressWarnings("unused") String key, Object value,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Exclusive @Cached WriteAttributeToDynamicObjectNode writeAttrToDynamicObjectNode,

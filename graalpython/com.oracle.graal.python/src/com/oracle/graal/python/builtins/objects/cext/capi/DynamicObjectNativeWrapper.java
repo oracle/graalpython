@@ -889,27 +889,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(D_METHOD, key)")
         static Object doDBase(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
+            return new PyMethodDefWrapper(object);
         }
 
         @Specialization(guards = "eq(M_ML, key)")
         static Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
+            return new PyMethodDefWrapper(object);
         }
 
         @Specialization(guards = "eq(M_ML, key)")
         static Object doDBase(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
+            return new PyMethodDefWrapper(object);
         }
 
         @Specialization(guards = "eq(M_ML, key)")
         static Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
+            return new PyMethodDefWrapper(object);
         }
 
         @Specialization(guards = "eq(M_ML, key)")
         static Object doDBase(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDescrWrapper(object);
+            return new PyMethodDefWrapper(object);
         }
 
         @Specialization(guards = "eq(D_QUALNAME, key)")
