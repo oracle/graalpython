@@ -42,11 +42,9 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -76,7 +74,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
     @Child private GetAttributeNode getSendNode;
     @Child private CallNode callSendNode;
 
-    @Child private GetTracebackNode getTracebackNode;
     @Child private WriteUnraisableNode writeUnraisableNode;
 
     @Child private IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
@@ -176,12 +173,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         throw PException.fromObject(_e.pythonException, this, _e.withJavaStacktrace);
                     }
                     try {
-                        PBaseException pythonException = _e.pythonException;
-                        Object excTraceback = ensureGetTracebackNode().execute(pythonException.getTraceback());
-                        if (excTraceback == null) {
-                            excTraceback = PNone.NONE;
-                        }
-                        _y = getCallThrowNode().execute(frame, _m, pythonException, PNone.NONE, excTraceback);
+                        _y = getCallThrowNode().execute(frame, _m, _e.pythonException);
                     } catch (PException _e2) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e2.expectStopIteration(stopIterProfile2);
@@ -274,14 +266,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             callSendNode = insert(CallNode.create());
         }
         return callSendNode;
-    }
-
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNode.create());
-        }
-        return getTracebackNode;
     }
 
     private WriteUnraisableNode ensureWriteUnraisable() {
