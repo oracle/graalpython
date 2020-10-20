@@ -124,7 +124,6 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
-import com.oracle.graal.python.nodes.util.ExactMath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2408,7 +2407,7 @@ public abstract class SequenceStorageNodes {
 
         private static int lengthResult(int current, int ext) {
             try {
-                return ExactMath.addExact(current, ext);
+                return PythonUtils.addExact(current, ext);
             } catch (OverflowException e) {
                 // (mq) There is no need to ensure capacity as we either
                 // run out of memory or dealing with a fake length.
