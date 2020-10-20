@@ -61,3 +61,7 @@ PyObject* PyDictProxy_New(PyObject *mapping) {
     return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
 }
 
+UPCALL_ID(PyMethodDescr_Check);
+int PyMethodDescr_Check(PyObject* method) {
+    return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
+}

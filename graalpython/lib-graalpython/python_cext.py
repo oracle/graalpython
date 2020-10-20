@@ -966,6 +966,10 @@ def PyMethod_New(func, self):
     return bound_function
 
 
+def PyMethodDescr_Check(func):
+    return 1 if isinstance(func, type(list.append)) else 0
+
+
 # corresponds to PyInstanceMethod_Type
 class instancemethod:
     def __init__(self, func):
