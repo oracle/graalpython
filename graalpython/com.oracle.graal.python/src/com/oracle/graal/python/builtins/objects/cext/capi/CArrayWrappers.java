@@ -102,10 +102,8 @@ public abstract class CArrayWrappers {
     }
 
     /**
-     * Unlike a
-     * {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper}
-     * object that wraps a Python unicode object, this wrapper let's a Java String look like a
-     * {@code char*}.
+     * Unlike a {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper} object that wraps a
+     * Python unicode object, this wrapper let's a Java String look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(NativeTypeLibrary.class)
@@ -113,6 +111,10 @@ public abstract class CArrayWrappers {
 
         public CStringWrapper(String delegate) {
             super(delegate);
+        }
+
+        public final String getString(PythonNativeWrapperLibrary lib) {
+            return ((String) lib.getDelegate(this));
         }
 
         @ExportMessage

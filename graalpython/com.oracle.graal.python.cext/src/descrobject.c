@@ -65,3 +65,10 @@ UPCALL_ID(PyMethodDescr_Check);
 int PyMethodDescr_Check(PyObject* method) {
     return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
 }
+
+typedef PyObject* (*new_classmethod_fun_t)(PyTypeObject*, void*, void*);
+
+UPCALL_TYPED_ID(PyDescr_NewClassMethod, new_classmethod_fun_t);
+PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
+    return _jls_PyDescr_NewClassMethod(native_type_to_java(type), native_pointer_to_java(method->ml_name), native_pointer_to_java(method->ml_meth));
+}

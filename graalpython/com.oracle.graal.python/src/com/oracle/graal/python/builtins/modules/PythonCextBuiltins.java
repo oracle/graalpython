@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFun
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeFactory;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -118,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsT
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
@@ -250,6 +252,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -475,6 +478,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
 
+        abstract Object execute(String name, Object callable, Object wrapper, Object type);
+
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)"}, limit = "3")
         static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object type,
@@ -572,6 +577,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
         }
+
+        public static CreateFunctionNode create() {
+            return CreateFunctionNodeFactory.create(null);
+        }
+
     }
 
     @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
@@ -3657,7 +3667,42 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             CApiContext nativeContext = context.getCApiContext();
             return nativeContext.getAndIncMaxModuleNumber();
+        }
+    }
 
+    // directly called without landing function
+    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyDescrNewClassMethod extends PythonBuiltinNode {
+
+        @Specialization(guards = "meth != null")
+        @SuppressWarnings("unused")
+        Object doPBuiltinFunction(Object typeObj, Object nameObj, Object methObj,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") PBuiltinFunction meth,
+                        @Cached ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(meth));
+        }
+
+        @Specialization(guards = "meth != null")
+        Object doNativeCallable(Object type, Object nameObj, Object methObj,
+                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") @SuppressWarnings("unused") PBuiltinFunction meth,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CreateFunctionNode createFunctionNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            String name = castToJavaStringNode.execute(fromCharPointerNode.execute(nameObj));
+            Object callable = createFunctionNode.execute(name, methObj, PNone.NONE, type);
+            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(callable));
+        }
+
+        static PBuiltinFunction asBuiltinFunction(Object methObj, AsPythonObjectNode asPythonObjectNode) {
+            Object object = asPythonObjectNode.execute(methObj);
+            if (object instanceof PBuiltinFunction) {
+                return (PBuiltinFunction) object;
+            }
+            return null;
         }
     }
 }
