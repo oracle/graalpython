@@ -60,6 +60,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -77,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.WrapVoidPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
@@ -132,11 +135,11 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -1445,12 +1448,28 @@ public abstract class CExtNodes {
     public abstract static class FromCharPointerNode extends Node {
         public abstract Object execute(Object charPtr);
 
-        // TODO(fa): add a specialization that handles 'PySequenceArrayWrapper' instances
+        @Specialization(limit = "1")
+        static String doCStringWrapper(CStringWrapper cStringWrapper,
+                        @CachedLibrary("cStringWrapper") PythonNativeWrapperLibrary lib) {
+            return cStringWrapper.getString(lib);
+        }
 
-        @Specialization
-        PString execute(Object charPtr,
+        @Specialization(limit = "1")
+        static String doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper,
+                        @CachedLibrary("cByteArrayWrapper") PythonNativeWrapperLibrary lib) {
+            byte[] byteArray = cByteArrayWrapper.getByteArray(lib);
+            // TODO(fa): what is the encoding ? ASCII only ?
+            return PythonUtils.newString(byteArray);
+        }
+
+        @Specialization(guards = "!isCArrayWrapper(charPtr)")
+        PString doPointer(Object charPtr,
                         @Cached PythonObjectFactory factory) {
             return factory.createString(new NativeCharSequence(charPtr, 1, false));
+        }
+
+        static boolean isCArrayWrapper(Object object) {
+            return object instanceof CArrayWrapper;
         }
     }
 
