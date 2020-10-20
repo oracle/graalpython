@@ -66,6 +66,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * Serves both as a throwable carrier of the python exception object and as a represenation of the
@@ -349,6 +350,20 @@ public final class PException extends AbstractTruffleException {
     @ExportMessage
     RuntimeException throwException() {
         throw getExceptionForReraise();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasSourceLocation() {
+        return getLocation() != null;
+    }
+
+    @ExportMessage(name = "getSourceLocation")
+    SourceSection getExceptionSourceLocation() throws UnsupportedMessageException {
+        if (hasSourceLocation()) {
+            return getLocation().getEncapsulatingSourceSection();
+        }
+        throw UnsupportedMessageException.create();
     }
 
     // Note: remaining interop messages are forwarded to the contained PBaseException
