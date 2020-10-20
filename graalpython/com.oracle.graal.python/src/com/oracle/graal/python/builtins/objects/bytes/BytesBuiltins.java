@@ -387,7 +387,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         public PBytesLike add(PBytesLike self, PBytesLike other,
-                        @Cached SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
             return create.execute(factory(), self, res);
@@ -396,7 +396,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
         public PBytesLike add(PBytesLike self, Object buffer,
                         @CachedLibrary("buffer") PythonObjectLibrary bufferLib,
-                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode,
+                        @Cached("createWithOverflowError()") SequenceStorageNodes.ConcatNode concatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             try {
                 byte[] bytes = bufferLib.getBufferBytes(buffer);
@@ -419,7 +419,7 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, int times,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), times);
             return create.execute(factory(), self, res);
@@ -428,7 +428,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, Object times,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode,
+                        @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached BytesNodes.CreateBytesNode create,
                         @CachedLibrary("times") PythonObjectLibrary lib) {
             SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
