@@ -887,6 +887,20 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return new PyGetSetDefWrapper(object);
         }
 
+        @Specialization(guards = "eq(D_NAME, key)")
+        static Object doDName(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getName());
+        }
+
+        @Specialization(guards = "eq(D_TYPE, key)")
+        static Object doDType(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            Object enclosingType = object.getEnclosingType();
+            return toSulongNode.execute(enclosingType != null ? enclosingType : getNativeNullNode.execute());
+        }
+
         @Specialization(guards = "eq(D_METHOD, key)")
         static Object doDBase(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMethodDefWrapper(object);
