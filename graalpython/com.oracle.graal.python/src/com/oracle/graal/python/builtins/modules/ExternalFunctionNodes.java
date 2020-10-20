@@ -297,16 +297,14 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
-     * Decrements the ref count by one of any
-     * {@link PythonNativeWrapper} object.
+     * Decrements the ref count by one of any {@link PythonNativeWrapper} object.
      * <p>
      * This node avoids memory leaks for arguments given to native.<br>
      * Problem description:<br>
-     * {@link PythonNativeWrapper} objects given to C
-     * code may go to native, i.e., a handle will be allocated. In this case, no ref count
-     * manipulation is done since the C code considers the reference to be borrowed and the Python
-     * code just doesn't do it because we have a GC. This means that the handle will stay allocated
-     * and we are leaking the wrapper object.
+     * {@link PythonNativeWrapper} objects given to C code may go to native, i.e., a handle will be
+     * allocated. In this case, no ref count manipulation is done since the C code considers the
+     * reference to be borrowed and the Python code just doesn't do it because we have a GC. This
+     * means that the handle will stay allocated and we are leaking the wrapper object.
      * </p>
      */
     abstract static class ReleaseNativeWrapperNode extends Node {

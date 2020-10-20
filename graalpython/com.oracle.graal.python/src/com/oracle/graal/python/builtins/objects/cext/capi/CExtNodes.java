@@ -1197,8 +1197,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isMaterialized(object, lib)", "object.isByte()"}, limit = "1")
         static PInt doByteNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
-                                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
-                                        @Shared("factory") @Cached PythonObjectFactory factory) {
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
             PInt materializedInt = factory.createInt(object.getByte());
             object.setMaterializedObject(materializedInt);
             materializedInt.setNativeWrapper(object);
@@ -1544,10 +1544,10 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "cachedOpName.equals(opName)", limit = "1")
         static boolean execute(@SuppressWarnings("unused") String opName, PythonNativeVoidPtr a, long b,
-                               @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
-                               @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
-                               @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                               @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
+                        @Shared("cachedOpName") @Cached("opName") @SuppressWarnings("unused") String cachedOpName,
+                        @Shared("op") @Cached(value = "findOp(opName)", allowUncached = true) int op,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared("importCAPISymbolNode") @Cached ImportCAPISymbolNode importCAPISymbolNode) {
             return executeCFunction(op, a.getPointerObject(), b, interopLibrary, importCAPISymbolNode);
         }
 

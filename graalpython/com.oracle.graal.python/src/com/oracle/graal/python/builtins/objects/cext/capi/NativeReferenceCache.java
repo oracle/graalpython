@@ -121,10 +121,10 @@ public final class NativeReferenceCache implements TruffleObject {
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
-                                                          @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                                                          @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
-                                                          @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
-                                                          @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
+                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
+                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                        @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
+                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 // If this is stealing the reference, we need to fixup the managed reference count.

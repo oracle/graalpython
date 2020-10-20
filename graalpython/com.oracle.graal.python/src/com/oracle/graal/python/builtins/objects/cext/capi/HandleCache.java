@@ -107,9 +107,9 @@ public final class HandleCache implements TruffleObject {
                         assumptions = "singleContextAssumption()", //
                         rewriteOn = InvalidAssumptionException.class)
         static PythonNativeWrapper doCachedSingleContext(@SuppressWarnings("unused") HandleCache cache, @SuppressWarnings("unused") long handle,
-                                                         @Cached("handle") @SuppressWarnings("unused") long cachedHandle,
-                                                         @Cached("resolveHandleUncached(cache, handle)") PythonNativeWrapper cachedValue,
-                                                         @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
+                        @Cached("handle") @SuppressWarnings("unused") long cachedHandle,
+                        @Cached("resolveHandleUncached(cache, handle)") PythonNativeWrapper cachedValue,
+                        @Cached("getHandleValidAssumption(cachedValue)") Assumption associationValidAssumption) throws InvalidAssumptionException {
             associationValidAssumption.check();
             return cachedValue;
         }
