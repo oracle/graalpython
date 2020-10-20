@@ -355,7 +355,7 @@ public final class PException extends AbstractTruffleException {
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean hasSourceLocation() {
-        return getLocation() != null;
+        return getLocation() != null && getLocation().getEncapsulatingSourceSection() != null;
     }
 
     @ExportMessage(name = "getSourceLocation")
