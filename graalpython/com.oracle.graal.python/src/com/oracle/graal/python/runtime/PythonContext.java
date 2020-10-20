@@ -239,6 +239,9 @@ public final class PythonContext {
     private final PosixResources resources;
     private final AsyncHandler handler;
 
+    // decides if we run the async weakref callbacks and destructors
+    private boolean gcEnabled = true;
+
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
@@ -1047,5 +1050,13 @@ public final class PythonContext {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
+    }
+
+    public boolean isGcEnabled() {
+        return gcEnabled;
+    }
+
+    public void setGcEnabled(boolean flag) {
+        gcEnabled = flag;
     }
 }

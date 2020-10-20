@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -111,8 +112,11 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
         core.lookupType(PythonBuiltinClassType.PReferenceType).setAttribute(weakRefQueueKey, weakRefQueue);
-
+        final PythonContext ctx = core.getContext();
         core.getContext().registerAsyncAction(() -> {
+            if (!ctx.isGcEnabled()) {
+                return null;
+            }
             Reference<? extends Object> reference = null;
             try {
                 reference = weakRefQueue.remove();
