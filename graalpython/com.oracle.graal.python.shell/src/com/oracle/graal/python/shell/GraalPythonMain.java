@@ -479,10 +479,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
             }
-            if (!quietFlag && stdinIsInteractive) {
-                System.err.println("Please note: This Python implementation is in the very early stages, " +
-                                "and can run little more than basic benchmarks at this point.");
-            }
             consoleHandler.setContext(context);
 
             if (commandString != null || inputFile != null) {
