@@ -3,9 +3,23 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 20.3.0
+
+* Fix multiple memory leaks when running Python code in a shared engine.
+* Update language support target and standard library to 3.8.5
+* Hide internal catching frames from tracebacks
+* Update HPy support to the latest version with support for piconumpy
+* Many fixes to pass the unittests of standard library types and modules:
+  complex, bytes, bytearray, subclassing of special descriptors, type layouts,
+  float, generators, modules, argument passing corner cases, string literals and
+  encodings, import and importlib, decimal, glob, the builtin module, json,
+  math, operator, numeric tower, sys, warnings, random, f-strings, struct,
+  itertools
+
 ## Version 20.2.0
 
-* Escaping Unicode characters using the character names in strings like "\N{GREEK CAPITAL LETTER DELTA}".
+* Escaping Unicode characters using the character names in strings like
+  "\N{GREEK CAPITAL LETTER DELTA}".
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
 * Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
