@@ -86,3 +86,24 @@ def test_slice():
                                     else:
                                         e2 = s2[l]
                                         assert e1 == e2
+
+def test_unpack():
+    assert memoryview(b'\xaa')[0] == 170
+    assert memoryview(b'\xaa').cast('B')[0] == 170
+    assert memoryview(b'\xaa').cast('b')[0] == -86
+    assert memoryview(b'\xaa\xaa').cast('H')[0] == 43690
+    assert memoryview(b'\xaa\xaa').cast('h')[0] == -21846
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('I')[0] == 2863311530
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('i')[0] == -1431655766
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('L')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('l')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('Q')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('q')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('N')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('n')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('P')[0] == 12297829382473034410
+    assert memoryview(b'\x00').cast('?')[0] is False
+    assert memoryview(b'\xaa').cast('?')[0] is True
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('f')[0] == -3.0316488252093987e-13
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('d')[0] == -3.7206620809969885e-103
+    assert memoryview(b'\xaa').cast('c')[0] == b'\xaa'

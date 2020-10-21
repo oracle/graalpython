@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -81,6 +83,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class MemoryViewNodes {
     static int bytesize(PMemoryView.BufferFormat format) {
@@ -100,12 +103,7 @@ public class MemoryViewNodes {
                 return 4;
             case UNSIGNED_LONG:
             case SIGNED_LONG:
-            case UNSIGNED_SIZE:
-            case SIGNED_SIZE:
-            case SIGNED_LONG_LONG:
-            case UNSIGNED_LONG_LONG:
             case DOUBLE:
-            case POINTER:
                 return 8;
         }
         return -1;
@@ -151,35 +149,96 @@ public class MemoryViewNodes {
 
     @ImportStatic(PMemoryView.BufferFormat.class)
     abstract static class UnpackValueNode extends Node {
-        public abstract Object execute(PMemoryView.BufferFormat format, byte[] bytes);
+        // bytes are expected to already have the appropriate length
+        public abstract Object execute(PMemoryView.BufferFormat format, String formatStr, byte[] bytes);
 
         @Specialization(guards = "format == UNSIGNED_BYTE")
-        static int unpackUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
             return bytes[0] & 0xFF;
         }
 
         @Specialization(guards = "format == SIGNED_BYTE")
-        static int unpackSignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
+        static int unpackSignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
             return bytes[0];
         }
 
         @Specialization(guards = "format == SIGNED_SHORT")
-        static int unpackShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
-            return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8;
+        static int unpackSignedShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return unpackInt16(bytes);
+        }
+
+        @Specialization(guards = "format == UNSIGNED_SHORT")
+        static int unpackUnsignedShort(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return unpackInt16(bytes) & 0xFFFF;
         }
 
         @Specialization(guards = "format == SIGNED_INT")
-        static int unpackInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
-            return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
+        static int unpackSignedInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return unpackInt32(bytes);
+        }
+
+        @Specialization(guards = "format == UNSIGNED_INT")
+        static long unpackUnsignedInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return unpackInt32(bytes) & 0xFFFFFFFFL;
         }
 
         @Specialization(guards = "format == SIGNED_LONG")
-        static long unpackLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, byte[] bytes) {
-            return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24 |
-                            (bytes[4] & 0xFFL) << 32 | (bytes[5] & 0xFFL) << 40 | (bytes[6] & 0xFFL) << 48 | (bytes[7] & 0xFFL) << 56;
+        static long unpackSignedLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return unpackInt64(bytes);
         }
 
-        // TODO rest of formats
+        @Specialization(guards = "format == UNSIGNED_LONG")
+        static Object unpackUnsignedLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes,
+                        @Cached ConditionProfile needsPIntProfile,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            long signedLong = unpackInt64(bytes);
+            if (needsPIntProfile.profile(signedLong < 0)) {
+                return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
+            } else {
+                return signedLong;
+            }
+        }
+
+        @Specialization(guards = "format == FLOAT")
+        static double unpackFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return Float.intBitsToFloat(unpackInt32(bytes));
+        }
+
+        @Specialization(guards = "format == DOUBLE")
+        static double unpackDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return Double.longBitsToDouble(unpackInt64(bytes));
+        }
+
+        @Specialization(guards = "format == BOOLEAN")
+        static boolean unpackBoolean(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes) {
+            return bytes[0] != 0;
+        }
+
+        @Specialization(guards = "format == CHAR")
+        static Object unpackChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            assert bytes.length == 1;
+            return factory.createBytes(bytes);
+        }
+
+        @Specialization(guards = "format == OTHER")
+        static Object notImplemented(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") byte[] bytes,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        }
+
+        private static short unpackInt16(byte[] bytes) {
+            return (short) ((bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8);
+        }
+
+        private static int unpackInt32(byte[] bytes) {
+            return (bytes[0] & 0xFF) | (bytes[1] & 0xFF) << 8 | (bytes[2] & 0xFF) << 16 | (bytes[3] & 0xFF) << 24;
+        }
+
+        private static long unpackInt64(byte[] bytes) {
+            return (bytes[0] & 0xFFL) | (bytes[1] & 0xFFL) << 8 | (bytes[2] & 0xFFL) << 16 | (bytes[3] & 0xFFL) << 24 |
+                            (bytes[4] & 0xFFL) << 32 | (bytes[5] & 0xFFL) << 40 | (bytes[6] & 0xFFL) << 48 | (bytes[7] & 0xFFL) << 56;
+        }
     }
 
     @ImportStatic(PMemoryView.BufferFormat.class)
@@ -292,7 +351,7 @@ public class MemoryViewNodes {
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
             }
-            return unpackValueNode.execute(self.getFormat(), bytes);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
         }
 
         @Specialization(guards = "ptr == null")
@@ -305,7 +364,7 @@ public class MemoryViewNodes {
             for (int i = 0; i < self.getItemSize(); i++) {
                 bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
             }
-            return unpackValueNode.execute(self.getFormat(), bytes);
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
         }
     }
 

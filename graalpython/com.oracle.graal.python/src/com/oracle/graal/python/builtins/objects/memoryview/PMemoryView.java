@@ -120,13 +120,8 @@ public class PMemoryView extends PythonBuiltinObject {
         SIGNED_INT,
         UNSIGNED_LONG,
         SIGNED_LONG,
-        UNSIGNED_LONG_LONG,
-        SIGNED_LONG_LONG,
-        UNSIGNED_SIZE,
-        SIGNED_SIZE,
         BOOLEAN,
         CHAR,
-        POINTER,
         FLOAT,
         DOUBLE,
         OTHER;
@@ -154,23 +149,18 @@ public class PMemoryView extends PythonBuiltinObject {
                     case 'i':
                         return SIGNED_INT;
                     case 'L':
+                    case 'Q':
+                    case 'N':
+                    case 'P':
                         return UNSIGNED_LONG;
                     case 'l':
-                        return SIGNED_LONG;
-                    case 'Q':
-                        return UNSIGNED_LONG_LONG;
                     case 'q':
-                        return SIGNED_LONG_LONG;
-                    case 'N':
-                        return SIGNED_SIZE;
                     case 'n':
-                        return UNSIGNED_SIZE;
+                        return SIGNED_LONG;
                     case 'f':
                         return FLOAT;
                     case 'd':
                         return DOUBLE;
-                    case 'P':
-                        return POINTER;
                     case '?':
                         return BOOLEAN;
                     case 'c':

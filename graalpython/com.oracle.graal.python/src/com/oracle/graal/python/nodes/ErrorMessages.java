@@ -369,6 +369,7 @@ public abstract class ErrorMessages {
     public static final String MEMORYVIEW_CAST_WRONG_LENGTH = "memoryview: product(shape) * itemsize != buffer size";
     public static final String MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS = "memoryview.cast(): elements of shape must be integers > 0";
     public static final String MEMORYVIEW_HAS_D_EXPORTED_BUFFERS = "memoryview has %d exported buffers";
+    public static final String MEMORYVIEW_FORMAT_S_NOT_SUPPORTED = "memoryview: format %s not supported";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
