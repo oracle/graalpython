@@ -60,6 +60,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
@@ -314,7 +316,8 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     int getExceptionExitStatus(
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Cached ReadAttributeFromDynamicObjectNode readNode) throws UnsupportedMessageException {
+                    @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (getExceptionType(lib) == ExceptionType.EXIT) {
             try {
                 // Avoiding getattr because this message shouldn't have side-effects
@@ -327,6 +330,7 @@ public final class PBaseException extends PythonObject {
                 return 1;
             }
         }
+        unsupportedProfile.enter();
         throw UnsupportedMessageException.create();
     }
 
@@ -336,13 +340,15 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    Object getExceptionCause() throws UnsupportedMessageException {
+    Object getExceptionCause(
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (cause != null) {
             return cause;
         }
         if (!suppressContext && context != null) {
             return context;
         }
+        unsupportedProfile.enter();
         throw UnsupportedMessageException.create();
     }
 }

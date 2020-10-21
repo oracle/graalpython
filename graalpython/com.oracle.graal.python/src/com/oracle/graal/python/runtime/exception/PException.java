@@ -57,6 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -364,10 +366,12 @@ public final class PException extends AbstractTruffleException {
     }
 
     @ExportMessage(name = "getSourceLocation")
-    SourceSection getExceptionSourceLocation() throws UnsupportedMessageException {
+    SourceSection getExceptionSourceLocation(
+                    @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
         if (hasSourceLocation()) {
             return getLocation().getEncapsulatingSourceSection();
         }
+        unsupportedProfile.enter();
         throw UnsupportedMessageException.create();
     }
 
