@@ -116,7 +116,11 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, setitem, "a", b"a")
         # Not implemented: multidimensional slices
         slices = (slice(0,1,1), slice(0,1,2))
-        self.assertRaises(NotImplementedError, setitem, slices, b"a")
+        # XXX GraalVM change - we raise TypeError instead of NotImplementedError because the dimensions are invalid.
+        # Adding an expensive separate pre-check for multislices is not worth it and if CPython ever implements
+        # multislices, this is going to raise the same TypeError as we do.
+        # self.assertRaises(NotImplementedError, setitem, slices, b"a")
+        self.assertRaises(TypeError, setitem, slices, b"a")
         # Trying to resize the memory object
         exc = ValueError if m.format == 'c' else TypeError
         self.assertRaises(exc, setitem, 0, b"")
