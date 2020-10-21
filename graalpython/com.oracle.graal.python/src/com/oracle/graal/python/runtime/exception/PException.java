@@ -95,8 +95,8 @@ public final class PException extends AbstractTruffleException {
         this.pythonException = actual;
     }
 
-    public PException(PBaseException actual, Node node, Throwable cause) {
-        super(null, cause, UNLIMITED_STACK_TRACE, node);
+    public PException(PBaseException actual, Node node, Throwable wrapped) {
+        super(null, wrapped, UNLIMITED_STACK_TRACE, node);
         this.pythonException = actual;
     }
 
@@ -231,7 +231,12 @@ public final class PException extends AbstractTruffleException {
         if (tracebackCutoffTarget == null) {
             tracebackCutoffTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
         }
-        return TruffleStackTrace.getStackTrace(this);
+        // Cause may contain wrapped Java exception
+        if (getCause() != null) {
+            return TruffleStackTrace.getStackTrace(getCause());
+        } else {
+            return TruffleStackTrace.getStackTrace(this);
+        }
     }
 
     public boolean shouldCutOffTraceback(TruffleStackTraceElement element) {
