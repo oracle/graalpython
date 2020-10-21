@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
             # n.b.: we add a '*' in the front, so that unittests doesn't add
             # its own asterisks, because now this is already a pattern
-            for funcname, classname, result in parse_unittest_output(stderr):
+            for funcname, classname, result in parse_unittest_output(p.stderr):
                 # We consider skipped tests as passing in order to avoid a situation where a Linux run
                 # untags a Darwin-only test and vice versa
                 if result == 'ok' or result.startswith('skipped'):
