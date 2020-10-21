@@ -1250,7 +1250,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "isGenericCase(object, key)", limit = "1")
+        @Specialization(guards = "isGenericCase(key)", limit = "1")
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key, Object value,
                         @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) throws UnknownIdentifierException {
@@ -1274,7 +1274,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return expected.getMemberName().equals(actual);
         }
 
-        protected static boolean isGenericCase(Object object, String key) {
+        protected static boolean isGenericCase(String key) {
             return !(OB_TYPE.getMemberName().equals(key) ||
                             OB_REFCNT.getMemberName().equals(key) ||
                             TP_FLAGS.getMemberName().equals(key) ||

@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -88,7 +87,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
@@ -179,7 +177,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    static abstract class GetItemNode extends PythonBinaryBuiltinNode {
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
         Object getitem(VirtualFrame frame, PMemoryView self, Object index,
@@ -230,7 +228,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public static abstract class SetItemNode extends PythonTernaryBuiltinNode {
+    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"!isPSlice(index)", "!isEllipsis(index)"})
         Object setitem(VirtualFrame frame, PMemoryView self, Object index, Object object,
                         @Cached MemoryViewNodes.PointerLookupNode pointerFromIndexNode,
@@ -296,7 +294,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public static abstract class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
         @Specialization
@@ -358,7 +356,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         private boolean recursive(PythonObjectLibrary lib, PMemoryView self, PMemoryView other,
                         MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
-                        int dim, int ndim, Object selfPtr, int selfOffset, Object otherPtr, int otherOffset) {
+                        int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
+            int selfOffset = initialSelfOffset;
+            int otherOffset = initialOtherOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object selfXPtr = selfPtr;
                 int selfXOffset = selfOffset;
@@ -400,7 +400,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class DelItemNode extends PythonUnaryBuiltinNode {
+    public abstract static class DelItemNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object error(@SuppressWarnings("unused") PMemoryView self) {
             throw raise(TypeError, ErrorMessages.CANNOT_DELETE_MEMORY);
@@ -409,7 +409,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "tolist", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class ToListNode extends PythonUnaryBuiltinNode {
+    public abstract static class ToListNode extends PythonUnaryBuiltinNode {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
@@ -441,7 +441,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return recursive(self, readItemAtNode, dim, ndim, ptr, offset);
         }
 
-        private PList recursive(PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset) {
+        private PList recursive(PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int initialOffset) {
+            int offset = initialOffset;
             Object[] objects = new Object[self.getBufferShape()[dim]];
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
@@ -472,7 +473,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})
     @ArgumentClinic(name = "order", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"C\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    public static abstract class ToBytesNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class ToBytesNode extends PythonBinaryClinicBuiltinNode {
         @Child private MemoryViewNodes.ToJavaBytesNode toJavaBytesNode;
         @Child private MemoryViewNodes.ToJavaBytesFortranOrderNode toJavaBytesFortranOrderNode;
 
@@ -548,7 +549,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "toreadonly", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class ToReadonlyNode extends PythonUnaryBuiltinNode {
+    public abstract static class ToReadonlyNode extends PythonUnaryBuiltinNode {
         @Specialization
         PMemoryView toreadonly(PMemoryView self,
                         @Cached MemoryViewNodes.GetBufferReferences getQueue) {
@@ -562,7 +563,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "cast", minNumOfPositionalArgs = 2, parameterNames = {"$self", "format", "shape"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public static abstract class CastNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class CastNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
         PMemoryView cast(PMemoryView self, String formatString, @SuppressWarnings("unused") PNone none,
@@ -663,7 +664,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class LenNode extends PythonUnaryBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         int len(PMemoryView self,
                         @Cached ConditionProfile zeroDimProfile) {
@@ -674,7 +675,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class ReprNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         static String repr(PMemoryView self) {
@@ -688,7 +689,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         int hash(PMemoryView self,
                         @Cached ConditionProfile cachedProfile,
@@ -716,7 +717,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class EnterNode extends PythonUnaryBuiltinNode {
+    public abstract static class EnterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object enter(PMemoryView self) {
             self.checkReleased(this);
@@ -726,7 +727,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EXIT__, minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    public static abstract class ExitNode extends PythonQuaternaryBuiltinNode {
+    public abstract static class ExitNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         static Object exit(VirtualFrame frame, PMemoryView self, Object type, Object val, Object tb,
@@ -738,7 +739,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public static abstract class ReleaseNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReleaseNode extends PythonUnaryBuiltinNode {
         public abstract Object execute(VirtualFrame frame, PMemoryView self);
 
         @Specialization(guards = "self.getReference() == null")
@@ -793,7 +794,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "itemsize", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class ItemSizeNode extends PythonUnaryBuiltinNode {
+    public abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -803,7 +804,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "nbytes", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class NBytesNode extends PythonUnaryBuiltinNode {
+    public abstract static class NBytesNode extends PythonUnaryBuiltinNode {
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -813,7 +814,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "obj", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class ObjNode extends PythonUnaryBuiltinNode {
+    public abstract static class ObjNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PMemoryView self) {
             self.checkReleased(this);
@@ -823,7 +824,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "format", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class FormatNode extends PythonUnaryBuiltinNode {
+    public abstract static class FormatNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PMemoryView self) {
             self.checkReleased(this);
@@ -833,7 +834,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "shape", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class ShapeNode extends PythonUnaryBuiltinNode {
+    public abstract static class ShapeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -847,7 +848,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "strides", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class StridesNode extends PythonUnaryBuiltinNode {
+    public abstract static class StridesNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -861,7 +862,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "suboffsets", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class SuboffsetsNode extends PythonUnaryBuiltinNode {
+    public abstract static class SuboffsetsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -875,7 +876,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "readonly", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class ReadonlyNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReadonlyNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -885,7 +886,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "ndim", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class NDimNode extends PythonUnaryBuiltinNode {
+    public abstract static class NDimNode extends PythonUnaryBuiltinNode {
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -895,7 +896,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "c_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class CContiguousNode extends PythonUnaryBuiltinNode {
+    public abstract static class CContiguousNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -905,7 +906,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "f_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class FContiguousNode extends PythonUnaryBuiltinNode {
+    public abstract static class FContiguousNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -915,7 +916,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = "contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public static abstract class ContiguousNode extends PythonUnaryBuiltinNode {
+    public abstract static class ContiguousNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);

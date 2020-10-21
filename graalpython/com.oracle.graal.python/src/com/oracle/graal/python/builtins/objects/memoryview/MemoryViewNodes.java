@@ -115,7 +115,7 @@ public class MemoryViewNodes {
         return format == PMemoryView.BufferFormat.UNSIGNED_BYTE || format == PMemoryView.BufferFormat.SIGNED_BYTE || format == PMemoryView.BufferFormat.CHAR;
     }
 
-    public static abstract class InitFlagsNode extends Node {
+    public abstract static class InitFlagsNode extends Node {
         public abstract int execute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets);
 
         @Specialization
@@ -150,7 +150,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PMemoryView.BufferFormat.class)
-    static abstract class UnpackValueNode extends Node {
+    abstract static class UnpackValueNode extends Node {
         public abstract Object execute(PMemoryView.BufferFormat format, byte[] bytes);
 
         @Specialization(guards = "format == UNSIGNED_BYTE")
@@ -183,7 +183,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PMemoryView.BufferFormat.class)
-    static abstract class PackValueNode extends Node {
+    abstract static class PackValueNode extends Node {
         @Child private PRaiseNode raiseNode;
 
         // Output goes to bytes, lenght not checked
@@ -221,7 +221,7 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    static abstract class ReadBytesAtNode extends Node {
+    abstract static class ReadBytesAtNode extends Node {
         public abstract void execute(byte[] dest, int destOffset, int len, PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
@@ -249,7 +249,7 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    static abstract class WriteBytesAtNode extends Node {
+    abstract static class WriteBytesAtNode extends Node {
         public abstract void execute(byte[] src, int srcOffset, int len, PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
@@ -276,7 +276,7 @@ public class MemoryViewNodes {
         }
     }
 
-    static abstract class ReadItemAtNode extends Node {
+    abstract static class ReadItemAtNode extends Node {
         public abstract Object execute(PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = "ptr != null")
@@ -309,7 +309,7 @@ public class MemoryViewNodes {
         }
     }
 
-    static abstract class WriteItemAtNode extends Node {
+    abstract static class WriteItemAtNode extends Node {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
         @Specialization(guards = "ptr != null")
@@ -354,7 +354,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PGuards.class)
-    static abstract class PointerLookupNode extends Node {
+    abstract static class PointerLookupNode extends Node {
         @Child private PRaiseNode raiseNode;
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
@@ -363,7 +363,8 @@ public class MemoryViewNodes {
 
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, int index);
 
-        private void lookupDimension(PMemoryView self, MemoryPointer ptr, int dim, int index) {
+        private void lookupDimension(PMemoryView self, MemoryPointer ptr, int dim, int initialIndex) {
+            int index = initialIndex;
             int[] shape = self.getBufferShape();
             int nitems = shape[dim];
             if (index < 0) {
@@ -459,7 +460,7 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    public static abstract class ToJavaBytesNode extends Node {
+    public abstract static class ToJavaBytesNode extends Node {
         public abstract byte[] execute(PMemoryView self);
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
@@ -498,8 +499,10 @@ public class MemoryViewNodes {
             recursive(dest, 0, self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
         }
 
-        private static int recursive(byte[] dest, int destOffset, PMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+        private static int recursive(byte[] dest, int initialDestOffset, PMemoryView self, int dim, int ndim, Object ptr, int initialOffset, ReadBytesAtNode readBytesAtNode,
                         CExtNodes.PCallCapiFunction callCapiFunction) {
+            int offset = initialOffset;
+            int destOffset = initialDestOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
                 int xoffset = offset;
@@ -524,14 +527,16 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    public static abstract class ToJavaBytesFortranOrderNode extends ToJavaBytesNode {
+    public abstract static class ToJavaBytesFortranOrderNode extends ToJavaBytesNode {
         @Override
         protected void convert(byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
             recursive(dest, 0, self.getItemSize(), self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
         }
 
-        private static void recursive(byte[] dest, int destOffset, int destStride, PMemoryView self, int dim, int ndim, Object ptr, int offset, ReadBytesAtNode readBytesAtNode,
+        private static void recursive(byte[] dest, int initialDestOffset, int destStride, PMemoryView self, int dim, int ndim, Object ptr, int initialOffset, ReadBytesAtNode readBytesAtNode,
                         CExtNodes.PCallCapiFunction callCapiFunction) {
+            int offset = initialOffset;
+            int destOffset = initialDestOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
                 Object xptr = ptr;
                 int xoffset = offset;
@@ -555,7 +560,7 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    public static abstract class ReleaseBufferOfManagedObjectNode extends Node {
+    public abstract static class ReleaseBufferOfManagedObjectNode extends Node {
         public abstract void execute(Object object);
 
         @Specialization
@@ -572,7 +577,7 @@ public class MemoryViewNodes {
         }
     }
 
-    public static abstract class GetBufferReferences extends Node {
+    public abstract static class GetBufferReferences extends Node {
         public abstract BufferReferences execute();
 
         @Specialization
