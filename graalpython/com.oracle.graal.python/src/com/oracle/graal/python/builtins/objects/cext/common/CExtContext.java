@@ -47,13 +47,13 @@ public abstract class CExtContext {
     public static CExtContext LAZY_CONTEXT = new CExtContext(null, null, null) {
     };
 
-    private static final int METH_VARARGS = 0x0001;
-    private static final int METH_KEYWORDS = 0x0002;
-    private static final int METH_NOARGS = 0x0004;
-    private static final int METH_O = 0x0008;
-    @SuppressWarnings("unused") private static final int METH_CLASS = 0x0010;
-    @SuppressWarnings("unused") private static final int METH_STATIC = 0x0020;
-    private static final int METH_FASTCALL = 0x0080;
+    public static final int METH_VARARGS = 0x0001;
+    public static final int METH_KEYWORDS = 0x0002;
+    public static final int METH_NOARGS = 0x0004;
+    public static final int METH_O = 0x0008;
+    public static final int METH_CLASS = 0x0010;
+    public static final int METH_STATIC = 0x0020;
+    public static final int METH_FASTCALL = 0x0080;
 
     private final PythonContext context;
 

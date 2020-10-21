@@ -67,8 +67,8 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNod
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;

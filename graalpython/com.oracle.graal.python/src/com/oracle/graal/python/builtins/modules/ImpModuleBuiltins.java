@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyInitObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
@@ -93,7 +93,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -178,12 +177,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class GetMagic extends PythonBuiltinNode {
         static final int MAGIC_NUMBER = 3413;
 
-        @Child IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
-        @Child PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
-
-        public static final Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
-        }
+        @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
+        @Child private PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
 
         @Specialization(assumptions = "singleContextAssumption()")
         public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
