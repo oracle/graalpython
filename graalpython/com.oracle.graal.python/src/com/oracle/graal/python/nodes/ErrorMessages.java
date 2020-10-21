@@ -356,6 +356,7 @@ public abstract class ErrorMessages {
     public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
     public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
     public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
+    public static final String MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S = "memoryview: invalid type for format '%s'";
     public static final String MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1 = "memoryview slice assignments are currently restricted to ndim = 1";
     public static final String MEMORYVIEW_DIFFERENT_STRUCTURES = "memoryview assignment: lvalue and rvalue have different structures";
     public static final String MEMORYVIEW_FORBIDDEN_RELEASED = "operation forbidden on released memoryview object";

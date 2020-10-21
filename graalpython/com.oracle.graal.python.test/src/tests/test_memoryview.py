@@ -107,3 +107,58 @@ def test_unpack():
     assert memoryview(b'\xaa\xaa\xaa\xaa').cast('f')[0] == -3.0316488252093987e-13
     assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('d')[0] == -3.7206620809969885e-103
     assert memoryview(b'\xaa').cast('c')[0] == b'\xaa'
+
+def test_pack():
+    b = bytearray(1)
+    memoryview(b).cast('B')[0] = 170
+    assert b == b'\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('b')[0] = -86
+    assert b == b'\xaa'
+    b = bytearray(2)
+    memoryview(b).cast('H')[0] = 43690
+    assert b == b'\xaa\xaa'
+    b = bytearray(2)
+    memoryview(b).cast('h')[0] = -21846
+    assert b == b'\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('I')[0] = 2863311530
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('i')[0] = -1431655766
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('L')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('l')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('Q')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('q')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('N')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('n')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('P')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('f')[0] = -3.0316488252093987e-13
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('d')[0] = -3.7206620809969885e-103
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('c')[0] = b'\xaa'
+    assert b == b'\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('?')[0] = True
+    assert b == b'\x01'
+    memoryview(b).cast('?')[0] = False
+    assert b == b'\x00'

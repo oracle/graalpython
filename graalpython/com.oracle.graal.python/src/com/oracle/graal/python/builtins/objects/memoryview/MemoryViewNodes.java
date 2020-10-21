@@ -52,6 +52,7 @@ import java.util.Set;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -241,33 +243,173 @@ public class MemoryViewNodes {
         }
     }
 
-    @ImportStatic(PMemoryView.BufferFormat.class)
+    @ImportStatic({PMemoryView.BufferFormat.class, PGuards.class})
     abstract static class PackValueNode extends Node {
         @Child private PRaiseNode raiseNode;
 
         // Output goes to bytes, lenght not checked
-        public abstract void execute(PMemoryView.BufferFormat format, Object object, byte[] bytes);
+        public abstract void execute(VirtualFrame frame, PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes);
 
-        @Specialization(guards = "format == UNSIGNED_BYTE", limit = "2")
-        void packUnsignedByte(@SuppressWarnings("unused") PMemoryView.BufferFormat format, Object object, byte[] bytes,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+        @Specialization(guards = "format == UNSIGNED_BYTE")
+        void packUnsignedByteInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, int value, byte[] bytes) {
             assert bytes.length == 1;
-            long value = lib.asJavaLong(object);
             if (value < 0 || value > 0xFF) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, format);
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
             }
             bytes[0] = (byte) value;
         }
 
+        @Specialization(guards = "format == UNSIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
+        void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            assert bytes.length == 1;
+            if (value < 0 || value > 0xFF) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            bytes[0] = (byte) value;
+        }
+
+        @Specialization(guards = "format == SIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
+        void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            assert bytes.length == 1;
+            if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            bytes[0] = (byte) value;
+        }
+
+        @Specialization(guards = "format == SIGNED_SHORT", limit = "2")
+        void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            packInt16((int) value, bytes);
+        }
+
+        @Specialization(guards = "format == UNSIGNED_SHORT", limit = "2")
+        void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            packInt16((int) value, bytes);
+        }
+
+        @Specialization(guards = "format == SIGNED_INT")
+        static void packSignedIntInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, int value, byte[] bytes) {
+            packInt32(value, bytes);
+        }
+
+        @Specialization(guards = "format == SIGNED_INT", replaces = "packSignedIntInt", limit = "2")
+        void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            packInt32((int) value, bytes);
+        }
+
+        @Specialization(guards = "format == UNSIGNED_INT", replaces = "packSignedIntInt", limit = "2")
+        void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            long value = lib.asJavaLong(object, frame);
+            if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
+                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+            }
+            packInt32((int) value, bytes);
+        }
+
         @Specialization(guards = "format == SIGNED_LONG", limit = "2")
-        static void packLong(@SuppressWarnings("unused") PMemoryView.BufferFormat format, Object object, byte[] bytes,
+        static void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
-            long value = lib.asJavaLong(object);
-            for (int i = 7; i >= 0; i--) {
-                bytes[i] = (byte) (value & 0xFFL);
-                value >>= 8;
+            packInt64(lib.asJavaLong(object, frame), bytes);
+        }
+
+        @Specialization(guards = "format == UNSIGNED_LONG", limit = "2")
+        static void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+                        @Cached CastToJavaUnsignedLongNode cast,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            assert bytes.length == 8;
+            packInt64(cast.execute(lib.asIndexWithFrame(object, frame)), bytes);
+        }
+
+        @Specialization(guards = "format == FLOAT", limit = "2")
+        static void packFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            assert bytes.length == 4;
+            packInt32(Float.floatToRawIntBits((float) lib.asJavaDouble(object)), bytes);
+        }
+
+        @Specialization(guards = "format == DOUBLE", limit = "2")
+        static void packDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            assert bytes.length == 8;
+            packInt64(Double.doubleToRawLongBits(lib.asJavaDouble(object)), bytes);
+        }
+
+        @Specialization(guards = "format == BOOLEAN", limit = "2")
+        static void packBoolean(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            assert bytes.length == 1;
+            bytes[0] = lib.isTrue(object, frame) ? (byte) 1 : (byte) 0;
+        }
+
+        @Specialization(guards = "format == CHAR", limit = "2")
+        void packChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, PBytes object, byte[] bytes,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                byte[] value = lib.getBufferBytes(object);
+                if (value.length != 1) {
+                    throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                }
+                bytes[0] = value[0];
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
+        }
+
+        @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
+        void packChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
+            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S, formatStr);
+        }
+
+        @Specialization(guards = "format == OTHER")
+        void notImplemented(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
+            throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        }
+
+        private static void packInt16(int value, byte[] bytes) {
+            assert bytes.length == 2;
+            bytes[0] = (byte) value;
+            bytes[1] = (byte) (value >> 8);
+        }
+
+        private static void packInt32(int value, byte[] bytes) {
+            assert bytes.length == 4;
+            bytes[0] = (byte) value;
+            bytes[1] = (byte) (value >> 8);
+            bytes[2] = (byte) (value >> 16);
+            bytes[3] = (byte) (value >> 24);
+        }
+
+        private static void packInt64(long value, byte[] bytes) {
+            assert bytes.length == 8;
+            bytes[0] = (byte) value;
+            bytes[1] = (byte) (value >> 8);
+            bytes[2] = (byte) (value >> 16);
+            bytes[3] = (byte) (value >> 24);
+            bytes[4] = (byte) (value >> 32);
+            bytes[5] = (byte) (value >> 40);
+            bytes[6] = (byte) (value >> 48);
+            bytes[7] = (byte) (value >> 56);
         }
 
         private PException raise(PythonBuiltinClassType type, String message, Object... args) {
@@ -372,12 +514,12 @@ public class MemoryViewNodes {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
         @Specialization(guards = "ptr != null")
-        static void doNative(PMemoryView self, Object ptr, int offset, Object object,
+        static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PackValueNode packValueNode) {
             int itemsize = self.getItemSize();
             byte[] bytes = new byte[itemsize];
-            packValueNode.execute(self.getFormat(), object, bytes);
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
             try {
                 for (int i = 0; i < itemsize; i++) {
                     lib.writeArrayElement(ptr, offset + i, bytes[i]);
@@ -388,13 +530,13 @@ public class MemoryViewNodes {
         }
 
         @Specialization(guards = "ptr == null")
-        static void doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+        static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached PackValueNode packValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
             // TODO assumes bytes storage
             byte[] bytes = new byte[self.getItemSize()];
-            packValueNode.execute(self.getFormat(), object, bytes);
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
             for (int i = 0; i < self.getItemSize(); i++) {
                 setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
             }
