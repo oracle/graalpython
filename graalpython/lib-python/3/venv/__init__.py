@@ -66,6 +66,8 @@ class EnvBuilder:
         self.setup_python(context)
         if self.with_pip:
             self._setup_pip(context)
+        # Truffle change: patch shebang
+        self._patch_shebang(context)
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
@@ -178,6 +180,28 @@ class EnvBuilder:
         context.env_exe = os.path.join(binpath, exename)
         create_if_needed(binpath)
         return context
+
+    def _patch_shebang(self, context):
+        # Truffle change: we need to patch the pip/pip3 (and maybe other) 
+        # launchers on Darwin because the shebang tries to invoke our 
+        # graalpython shell script but Darwin strictly requires a binary 
+        # in the shebang.
+        if sys.platform == "darwin":
+            bin_dir = os.path.join(context.env_dir, context.bin_name)
+            python_exe = os.path.join(bin_dir, context.python_exe)
+            for entry in os.listdir(bin_dir):
+                abs_entry = os.path.join(bin_dir, entry)
+                if os.path.isfile(abs_entry):
+                    with open(abs_entry, "r+") as f:
+                        content = f.read()
+                        expected_shebang = "#!" + python_exe
+                        if content.startswith(expected_shebang):
+                            f.seek(0)
+                            f.truncate()
+                            logging.info("replacing shebang of {} (originally '{}') with '{}'".format(entry, expected_shebang, "#!/bin/sh " + python_exe))
+                            content = content.replace(expected_shebang, "#!/bin/sh " + python_exe)
+                            f.write(content)
+
 
     def create_configuration(self, context):
         """
