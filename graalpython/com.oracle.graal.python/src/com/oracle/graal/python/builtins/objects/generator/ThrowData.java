@@ -41,7 +41,15 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
+/**
+ * Simple wrapper to pass a {@link PBaseException} between {@code throw} method and the
+ * {@code yield} expression that will continue the control flow. The wrapper is needed because the
+ * same frame slot is used to pass value from {@code send}, so the exception for {@code throw} needs
+ * to be wrapped in something that is not a Python object to be able to distinguish the two cases.
+ */
+@ValueType
 public final class ThrowData {
     public final PBaseException pythonException;
     public final boolean withJavaStacktrace;
