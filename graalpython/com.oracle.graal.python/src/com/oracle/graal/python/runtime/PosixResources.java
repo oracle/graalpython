@@ -458,13 +458,23 @@ public class PosixResources {
     }
 
     @TruffleBoundary(allowInlining = true)
-    public int exitStatus(int pid) throws IndexOutOfBoundsException {
-        Process process = getChild(pid);
-        if (process.isAlive()) {
-            return Integer.MIN_VALUE;
+    public int[] exitStatus(int pid) throws IndexOutOfBoundsException {
+        if (pid == -1) {
+            for (int childPid = 1; childPid < children.size(); ++childPid) {
+                Process child = children.get(childPid);
+                if (child != null && !child.isAlive()) {
+                    children.set(childPid, null);
+                    return new int[]{childPid, child.exitValue()};
+                }
+            }
         } else {
-            return process.exitValue();
+            Process process = getChild(pid);
+            if (!process.isAlive()) {
+                children.set(pid, null);
+                return new int[]{pid, process.exitValue()};
+            }
         }
+        return new int[]{0, 0};
     }
 
     @TruffleBoundary(allowInlining = true)
