@@ -79,6 +79,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
         call_fsync("(sint32):sint32"),
+        call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
+        call_fstat("(sint32, [sint64]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -323,6 +325,35 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return size;
+    }
+
+    @ExportMessage
+    public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] out = new long[13];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
+        return out;
+    }
+
+    @ExportMessage
+    public long[] fstat(int fd, Object filename, boolean handleEintr,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        long[] out = new long[13];
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, context.getEnv().asGuestValue(out));
+            if (res == 0) {
+                return out;
+            }
+            int errno = getErrno(invokeNode);
+            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno, filename);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

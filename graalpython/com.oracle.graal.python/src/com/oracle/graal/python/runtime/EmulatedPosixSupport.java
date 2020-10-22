@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMe
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
@@ -408,22 +409,38 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage(name = "fsync")
+    @SuppressWarnings({"static-method", "unused"})
     public void fsyncMessage(int fd) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
     public boolean getBlocking(int fd) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
     public int[] getTerminalSize(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public long[] fstat(int fd, Object filename, boolean handleEintr) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

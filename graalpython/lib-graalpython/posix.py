@@ -40,13 +40,19 @@
 from _descriptor import make_named_tuple_class
 
 
-stat_result = make_named_tuple_class("stat_result", [
+stat_result_c = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
-    "st_uid", "st_gid", "st_size", "st_atime",
-    "st_mtime", "st_ctime"
-])
-stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
-stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
+    "st_uid", "st_gid", "st_size",
+    None, None, None,
+    "st_atime", "st_mtime", "st_ctime",
+    "st_atime_ns", "st_mtime_ns", "st_ctime_ns"
+], 10)
+
+def stat_result(data):
+    if len(data) == 10:
+        return stat_result_c(data + tuple(float(x) for x in data[7:10]) + tuple(x * 1000000000 for x in data[7:10]))
+    else:
+        return stat_result_c(data)
 
 old_stat = stat
 
@@ -54,6 +60,13 @@ old_stat = stat
 @__graalpython__.builtin
 def stat(filename, follow_symlinks=True):
     return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
+
+old_nfi_stat = nfi_stat
+
+
+@__graalpython__.builtin
+def nfi_stat(filename, follow_symlinks=True, dir_fd=None):
+    return stat_result(old_nfi_stat(filename, follow_symlinks=follow_symlinks, dir_fd=dir_fd))
 
 
 __dir_entry_old_stat = DirEntry.stat
@@ -149,6 +162,12 @@ old_get_terminal_size = get_terminal_size
 @__graalpython__.builtin
 def get_terminal_size(fd = None):
     return terminal_size(old_get_terminal_size(fd))
+
+old_nfi_get_terminal_size = nfi_get_terminal_size
+
+@__graalpython__.builtin
+def nfi_get_terminal_size(fd=None):
+    return terminal_size(old_nfi_get_terminal_size() if fd is None else old_nfi_get_terminal_size(fd))
 
 def execl(file, *args):
     """execl(file, *args)

@@ -189,6 +189,50 @@ int32_t get_terminal_size(int32_t fd, int32_t *size) {
     return res;
 }
 
+static void stat_struct_to_longs(struct stat *st, int64_t *out) {
+    // TODO some of these use implementation-defined behaviour of unsigned -> signed conversion
+    out[0] = st->st_mode;
+    out[1] = st->st_ino;
+    out[2] = st->st_dev;
+    out[3] = st->st_nlink;
+    out[4] = st->st_uid;
+    out[5] = st->st_gid;
+    out[6] = st->st_size;
+#ifdef __APPLE__
+    out[7] = st->st_atimespec.tv_sec;
+    out[8] = st->st_mtimespec.tv_sec;
+    out[9] = st->st_ctimespec.tv_sec;
+    out[10] = st->st_atimespec.tv_nsec;
+    out[11] = st->st_mtimespec.tv_nsec;
+    out[12] = st->st_ctimespec.tv_nsec;
+#else
+    out[7] = st->st_atim.tv_sec;
+    out[8] = st->st_mtim.tv_sec;
+    out[9] = st->st_ctim.tv_sec;
+    out[10] = st->st_atim.tv_nsec;
+    out[11] = st->st_mtim.tv_nsec;
+    out[12] = st->st_ctim.tv_nsec;
+#endif
+}
+
+int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
+    struct stat st;
+    int result = fstatat(dirFd, path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+int32_t call_fstat(int32_t fd, int64_t *out) {
+    struct stat st;
+    int result = fstat(fd, &st);
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
 int32_t get_errno() {
     return errno;
 }
