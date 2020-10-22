@@ -201,6 +201,17 @@ public class PFunction extends PythonObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExecutableName() {
+        return true;
+    }
+
+    @ExportMessage
+    String getExecutableName() {
+        return getName();
+    }
+
+    @ExportMessage
     public SourceSection getSourceLocation() throws UnsupportedMessageException {
         SourceSection result = getSourceLocationDirect();
         if (result == null) {

@@ -154,7 +154,7 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = context.getCurrentException();
             Object result = null;
             if (currentException != null) {
-                result = getClassNode.execute(currentException.getExceptionObject());
+                result = getClassNode.execute(currentException.getUnreifiedException());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -192,7 +192,7 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = context.getCaughtException();
             Object result = null;
             if (currentException != null) {
-                result = getClassNode.execute(currentException.getExceptionObject());
+                result = getClassNode.execute(currentException.getUnreifiedException());
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -349,7 +349,7 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCurrentException();
-            context.setCurrentException(PException.fromExceptionInfo(e.getExceptionObject(), value, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+            context.setCurrentException(PException.fromExceptionInfo(e.getUnreifiedException(), value, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return value;
         }
 
@@ -376,7 +376,7 @@ public class PThreadState extends PythonNativeWrapper {
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             PException e = context.getCaughtException();
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            context.setCaughtException(PException.fromExceptionInfo(e.getExceptionObject(), value, withJavaStacktrace));
+            context.setCaughtException(PException.fromExceptionInfo(e.getUnreifiedException(), value, withJavaStacktrace));
             return value;
         }
 

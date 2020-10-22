@@ -92,12 +92,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
@@ -714,12 +715,16 @@ public final class PythonContext {
             try {
                 CallNode.getUncached().execute(null, attrShutdown);
             } catch (Exception | StackOverflowError e) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
-                        e.printStackTrace(new PrintWriter(getStandardErr()));
+                try {
+                    boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
+                    if (!exitException) {
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                        if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
+                            e.printStackTrace(new PrintWriter(getStandardErr()));
+                        }
                     }
+                } catch (UnsupportedMessageException unsupportedMessageException) {
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
                 throw e;
             }

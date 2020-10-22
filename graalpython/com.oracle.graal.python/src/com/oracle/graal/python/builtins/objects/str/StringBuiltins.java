@@ -964,7 +964,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.execute(frame, table, original);
                 } catch (PException e) {
-                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
+                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }

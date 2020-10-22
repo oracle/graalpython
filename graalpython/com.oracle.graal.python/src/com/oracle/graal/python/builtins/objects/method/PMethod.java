@@ -72,6 +72,18 @@ public final class PMethod extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    boolean hasExecutableName(
+                    @CachedLibrary("this.function") InteropLibrary lib) {
+        return lib.hasExecutableName(function);
+    }
+
+    @ExportMessage
+    Object getExecutableName(
+                    @CachedLibrary("this.function") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.getExecutableName(function);
+    }
+
+    @ExportMessage
     protected SourceSection getSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) throws UnsupportedMessageException {
         return lib.getSourceLocation(function);
     }
