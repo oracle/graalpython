@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -106,9 +107,14 @@ public class PMemoryView extends PythonBuiltinObject {
         this.suboffsets = suboffsets;
         this.flags = flags;
         if (managedBuffer != null) {
-            this.reference = new BufferReference(this, managedBuffer, references.queue);
-            references.set.add(this.reference);
+            createReference(references, managedBuffer);
         }
+    }
+
+    @TruffleBoundary
+    private void createReference(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer) {
+        this.reference = new BufferReference(this, managedBuffer, references.queue);
+        references.set.add(this.reference);
     }
 
     public enum BufferFormat {
