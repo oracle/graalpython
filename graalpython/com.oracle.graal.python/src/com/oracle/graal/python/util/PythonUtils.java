@@ -95,8 +95,8 @@ public final class PythonUtils {
     }
 
     /*
-     * Replacements for JDK's exact math methods that throw the checked singleton
-     * {@link OverflowException}. The implementation is taken from JDK.
+     * Replacements for JDK's exact math methods that throw the checked singleton {@link
+     * OverflowException}. The implementation is taken from JDK.
      */
     public static int addExact(int x, int y) throws OverflowException {
         int r = x + y;

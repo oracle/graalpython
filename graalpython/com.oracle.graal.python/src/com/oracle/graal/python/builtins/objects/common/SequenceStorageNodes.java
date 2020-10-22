@@ -2335,8 +2335,8 @@ public abstract class SequenceStorageNodes {
         private final Supplier<GeneralizationNode> genNodeProvider;
 
         /*
-         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but
-         * e.g. bytes raises OverflowError when the memory might be available but the size overflows
+         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
+         * bytes raises OverflowError when the memory might be available but the size overflows
          * sys.maxint
          */
         private final PythonBuiltinClassType errorForOverflow;
@@ -2519,8 +2519,8 @@ public abstract class SequenceStorageNodes {
         @Child private RepeatNode recursive;
 
         /*
-         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but
-         * e.g. bytes raises OverflowError when the memory might be available but the size overflows
+         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
+         * bytes raises OverflowError when the memory might be available but the size overflows
          * sys.maxint
          */
         private final PythonBuiltinClassType errorForOverflow;
