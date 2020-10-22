@@ -199,15 +199,6 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
-        }
-    }
-
     @Builtin(name = TRUFFLE_SOURCE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFunctionSourceNode extends PythonUnaryBuiltinNode {
