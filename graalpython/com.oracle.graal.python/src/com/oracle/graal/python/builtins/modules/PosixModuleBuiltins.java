@@ -1449,13 +1449,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     int exitStatus = getResources().waitpid(pid);
                     return factory().createTuple(new Object[]{pid, exitStatus});
                 } else if (options == WNOHANG) {
-                    int exitStatus = getResources().exitStatus(pid);
-                    if (exitStatus == Integer.MIN_VALUE) {
-                        // not terminated, yet, we should return 0
-                        return factory().createTuple(new Object[]{0, 0});
-                    } else {
-                        return factory().createTuple(new Object[]{pid, exitStatus});
-                    }
+                    int[] res = getResources().exitStatus(pid);
+                    return factory().createTuple(new Object[]{res[0], res[1]});
                 } else {
                     throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
                 }
