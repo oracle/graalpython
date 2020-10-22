@@ -72,7 +72,7 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_GET_TP_DICTOFFSET = "get_tp_dictoffset";
     public static final String FUN_GET_TP_BASICSIZE = "get_tp_basicsize";
     public static final String FUN_GET_TP_ITEMSIZE = "get_tp_itemsize";
-    public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
+    public static final String FUN_DEREF_HANDLE = "_graalvm_llvm_create_deref_handle";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
     public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
@@ -100,8 +100,8 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_DECREF = "Py_DecRef";
     public static final String FUN_ADDREF = "PyTruffle_ADDREF";
     public static final String FUN_SUBREF = "PyTruffle_SUBREF";
-    public static final String FUN_TRUFFLE_MANAGED_FROM_HANDLE = "truffle_managed_from_handle";
-    public static final String FUN_TRUFFLE_CANNOT_BE_HANDLE = "truffle_cannot_be_handle";
+    public static final String FUN_RESOLVE_HANDLE = "_graalvm_llvm_resolve_handle";
+    public static final String FUN_POINTS_TO_HANDLE_SPACE = "_graalvm_llvm_points_to_handle_space";
     public static final String FUN_GET_LONG_BITS_PER_DIGIT = "get_long_bits_in_digit";
     public static final String FUN_BULK_SUBREF = "PyTruffle_bulk_SUBREF";
     private static final String FUN_GET_INT8_T_TYPEID = "get_int8_t_typeid";

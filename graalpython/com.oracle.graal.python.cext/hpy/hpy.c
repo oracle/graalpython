@@ -348,7 +348,7 @@ void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 }
 
 void* graal_hpy_context_to_native(void* cobj) {
-    return truffle_deref_handle_for_managed(cobj);
+    return create_deref_handle(cobj);
 }
 
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \

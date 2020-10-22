@@ -3013,8 +3013,8 @@ public abstract class CExtNodes {
         static Object resolveGeneric(Object pointerObject,
                         @Cached PCallCapiFunction callTruffleCannotBeHandleNode,
                         @Cached PCallCapiFunction callTruffleManagedFromHandleNode) {
-            if (!((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {
-                return callTruffleManagedFromHandleNode.call(NativeCAPISymbols.FUN_TRUFFLE_MANAGED_FROM_HANDLE, pointerObject);
+            if (((boolean) callTruffleCannotBeHandleNode.call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                return callTruffleManagedFromHandleNode.call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
             }
             // In this case, it cannot be a handle so we can just return the pointer object. It
             // could, of course, still be a native pointer.
@@ -3023,8 +3023,8 @@ public abstract class CExtNodes {
 
         static PythonNativeWrapper resolveHandleUncached(Object pointerObject) {
             CompilerAsserts.neverPartOfCompilation();
-            if (!((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_TRUFFLE_CANNOT_BE_HANDLE, pointerObject))) {
-                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_TRUFFLE_MANAGED_FROM_HANDLE, pointerObject);
+            if (((boolean) PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_POINTS_TO_HANDLE_SPACE, pointerObject))) {
+                Object resolved = PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_RESOLVE_HANDLE, pointerObject);
                 if (resolved instanceof PythonNativeWrapper) {
                     return (PythonNativeWrapper) resolved;
                 }
