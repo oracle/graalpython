@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,6 +85,7 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -480,14 +482,15 @@ public class MemoryViewNodes {
     abstract static class ReadItemAtNode extends Node {
         public abstract Object execute(PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static Object doNative(PMemoryView self, Object ptr, int offset,
+        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @ExplodeLoop
+        static Object doNativeCached(PMemoryView self, Object ptr, int offset,
+                        @Cached("self.getItemSize()") int cachedItemSize,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached UnpackValueNode unpackValueNode) {
-            int itemsize = self.getItemSize();
-            byte[] bytes = new byte[itemsize];
+            byte[] bytes = new byte[cachedItemSize];
             try {
-                for (int i = 0; i < itemsize; i++) {
+                for (int i = 0; i < cachedItemSize; i++) {
                     bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
                 }
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
@@ -496,14 +499,46 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
         }
 
-        @Specialization(guards = "ptr == null")
-        static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
+        static Object doNativeGeneric(PMemoryView self, Object ptr, int offset,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached UnpackValueNode unpackValueNode) {
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            try {
+                for (int i = 0; i < itemSize; i++) {
+                    bytes[i] = (byte) lib.readArrayElement(ptr, offset + i);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+        }
+
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @ExplodeLoop
+        static Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached("self.getItemSize()") int cachedItemSize,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached UnpackValueNode unpackValueNode) {
             // TODO assumes byte storage
-            byte[] bytes = new byte[self.getItemSize()];
-            for (int i = 0; i < self.getItemSize(); i++) {
+            byte[] bytes = new byte[cachedItemSize];
+            for (int i = 0; i < cachedItemSize; i++) {
+                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
+            }
+            return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
+        }
+
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
+        static Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached UnpackValueNode unpackValueNode) {
+            // TODO assumes byte storage
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            for (int i = 0; i < itemSize; i++) {
                 bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
             }
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
@@ -513,15 +548,16 @@ public class MemoryViewNodes {
     abstract static class WriteItemAtNode extends Node {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
-        @Specialization(guards = "ptr != null")
-        static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
+        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @ExplodeLoop
+        static void doNativeCached(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
+                        @Cached("self.getItemSize()") int cachedItemSize,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached PackValueNode packValueNode) {
-            int itemsize = self.getItemSize();
-            byte[] bytes = new byte[itemsize];
+            byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
             try {
-                for (int i = 0; i < itemsize; i++) {
+                for (int i = 0; i < cachedItemSize; i++) {
                     lib.writeArrayElement(ptr, offset + i, bytes[i]);
                 }
             } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
@@ -529,15 +565,47 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = "ptr == null")
-        static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
+        static void doNativeGeneric(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached PackValueNode packValueNode) {
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
+            try {
+                for (int i = 0; i < itemSize; i++) {
+                    lib.writeArrayElement(ptr, offset + i, bytes[i]);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @ExplodeLoop
+        static void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @Cached("self.getItemSize()") int cachedItemSize,
                         @Cached PackValueNode packValueNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
             // TODO assumes bytes storage
-            byte[] bytes = new byte[self.getItemSize()];
+            byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
-            for (int i = 0; i < self.getItemSize(); i++) {
+            for (int i = 0; i < cachedItemSize; i++) {
+                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
+            }
+        }
+
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
+        static void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @Cached PackValueNode packValueNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
+            // TODO assumes bytes storage
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes);
+            for (int i = 0; i < itemSize; i++) {
                 setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
             }
         }
@@ -558,6 +626,8 @@ public class MemoryViewNodes {
     abstract static class PointerLookupNode extends Node {
         @Child private PRaiseNode raiseNode;
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
+        @Child private PythonObjectLibrary indexLib;
+        @CompilationFinal private ConditionProfile hasSuboffsetsProfile;
 
         // index can be a tuple, int or int-convertible
         public abstract MemoryPointer execute(VirtualFrame frame, PMemoryView self, Object index);
@@ -572,13 +642,13 @@ public class MemoryViewNodes {
                 index += nitems;
             }
             if (index < 0 || index >= nitems) {
-                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
+                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim);
             }
 
             ptr.offset += self.getBufferStrides()[dim] * index;
 
             int[] suboffsets = self.getBufferSuboffsets();
-            if (suboffsets != null && suboffsets[dim] >= 0) {
+            if (getHasSuboffsetsProfile().profile(suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
                 ptr.ptr = getCallCapiFunction().call(NativeCAPISymbols.FUN_TRUFFLE_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim], self.getLength());
@@ -586,61 +656,99 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization
+        @Specialization(guards = "self.getDimensions() == 1")
         MemoryPointer resolveInt(PMemoryView self, int index) {
-            if (self.getDimensions() > 1) {
-                // CPython doesn't implement this either, as of 3.8
-                throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
-            } else if (self.getDimensions() == 0) {
-                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
-            }
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             lookupDimension(self, ptr, 0, index);
             return ptr;
         }
 
-        // TODO explode loop
-        @Specialization
-        MemoryPointer resolveTuple(PMemoryView self, PTuple indices,
+        @Specialization(guards = "self.getDimensions() != 1")
+        MemoryPointer resolveIntError(PMemoryView self, @SuppressWarnings("unused") int index) {
+            if (self.getDimensions() == 0) {
+                throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
+            }
+            // CPython doesn't implement this either, as of 3.8
+            throw raise(NotImplementedError, ErrorMessages.MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED);
+        }
+
+        @Specialization(guards = {"cachedDimensions == self.getDimensions()", "cachedDimensions <= 8"})
+        @ExplodeLoop
+        MemoryPointer resolveTupleCached(PMemoryView self, PTuple indices,
+                        @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
+            checkTupleLength(lenNode, indicesStorage, cachedDimensions);
+            MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
+            for (int dim = 0; dim < cachedDimensions; dim++) {
+                Object indexObj = getItemNode.execute(indicesStorage, dim);
+                int index = convertIndex(indexObj);
+                lookupDimension(self, ptr, dim, index);
+            }
+            return ptr;
+        }
+
+        @Specialization(replaces = "resolveTupleCached")
+        MemoryPointer resolveTupleGeneric(PMemoryView self, PTuple indices,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage indicesStorage = getSequenceStorageNode.execute(indices);
             int ndim = self.getDimensions();
             checkTupleLength(lenNode, indicesStorage, ndim);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
             for (int dim = 0; dim < ndim; dim++) {
                 Object indexObj = getItemNode.execute(indicesStorage, dim);
-                int index = convertIndex(lib, indexObj);
+                int index = convertIndex(indexObj);
                 lookupDimension(self, ptr, dim, index);
             }
             return ptr;
         }
 
         @Specialization(guards = "!isPTuple(indexObj)")
-        MemoryPointer resolveInt(PMemoryView self, Object indexObj,
-                        @Shared("indexLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            return resolveInt(self, convertIndex(lib, indexObj));
+        MemoryPointer resolveInt(PMemoryView self, Object indexObj) {
+            return resolveInt(self, convertIndex(indexObj));
         }
 
         private void checkTupleLength(SequenceStorageNodes.LenNode lenNode, SequenceStorage indicesStorage, int ndim) {
             int length = lenNode.execute(indicesStorage);
-            if (ndim == 0 && length != 0) {
+            if (length == ndim) {
+                return;
+            }
+            // Error cases
+            if (ndim == 0) {
                 throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             } else if (length > ndim) {
                 throw raise(TypeError, ErrorMessages.CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D, ndim, length);
-            } else if (length < ndim) {
+            } else {
                 // CPython doesn't implement this either, as of 3.8
                 throw raise(NotImplementedError, ErrorMessages.SUB_VIEWS_NOT_IMPLEMENTED);
             }
         }
 
-        private int convertIndex(PythonObjectLibrary lib, Object indexObj) {
-            if (!lib.canBeIndex(indexObj)) {
+        private int convertIndex(Object indexObj) {
+            if (!getIndexLib().canBeIndex(indexObj)) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_SLICE_KEY);
             }
-            return lib.asSize(indexObj, IndexError);
+            return getIndexLib().asSize(indexObj, IndexError);
+        }
+
+        private PythonObjectLibrary getIndexLib() {
+            if (indexLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                indexLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return indexLib;
+        }
+
+        private ConditionProfile getHasSuboffsetsProfile() {
+            if (hasSuboffsetsProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasSuboffsetsProfile = ConditionProfile.create();
+            }
+            return hasSuboffsetsProfile;
         }
 
         private PException raise(PythonBuiltinClassType type, String message, Object... args) {
