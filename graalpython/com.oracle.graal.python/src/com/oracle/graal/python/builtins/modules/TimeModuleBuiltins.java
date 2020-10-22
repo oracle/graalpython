@@ -230,13 +230,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.monotonic_ns()
-    @Builtin(name = "monotonic_ns", minNumOfPositionalArgs = 0, doc = "Similar to monotonic(), but return time as nanoseconds.")
+    @Builtin(name = "monotonic_ns", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, doc = "Similar to monotonic(), but return time as nanoseconds.")
     @GenerateNodeFactory
-    public abstract static class PythonMonotonicNsNode extends PythonBuiltinNode {
+    public abstract static class PythonMonotonicNsNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        public long time() {
+        static long time(@SuppressWarnings("unused") Object dummy) {
             return System.nanoTime();
         }
     }
