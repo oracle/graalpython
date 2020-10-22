@@ -1761,6 +1761,9 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
+        # if we're just running style tests, this is allowed to fail
+        if os.environ.get("BUILD_NAME") == "python-style":
+            return 0
         return min(rc, 1)
 
     def src_dir(self):
