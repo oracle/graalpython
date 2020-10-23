@@ -801,6 +801,7 @@ def PyUnicode_Replace(s, substr, replstr, count):
 
 
 ##################### MEMORY_VIEW
+@may_raise
 def PyMemoryView_GetContiguous(obj, buffertype, order_int):
     PyBUF_READ = 0x100
     PyBUF_WRITE = 0x200
