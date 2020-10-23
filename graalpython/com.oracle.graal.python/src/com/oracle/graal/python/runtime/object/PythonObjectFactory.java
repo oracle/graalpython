@@ -135,6 +135,7 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -204,7 +205,7 @@ public abstract class PythonObjectFactory extends Node {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
 
-    private final PythonLanguage getLanguage() {
+    private PythonLanguage getLanguage() {
         return executeGetLanguage(true, 0.0);
     }
 
@@ -554,6 +555,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PDict createDict(DynamicObject dynamicObject) {
         return createDict(new DynamicObjectStorage(dynamicObject));
+    }
+
+    public PDict createDictFixedStorage(PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
+        return createDict(new DynamicObjectStorage(pythonObject.getStorage(), mroSequenceStorage));
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {

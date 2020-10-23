@@ -695,7 +695,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                dict = factory().createDictFixedStorage(self);
+                dict = factory().createDictFixedStorage(self, self.getMethodResolutionOrder());
                 // The mapping is unmodifiable, so we don't have to assign it back
             }
             return factory().createMappingproxy(dict);
