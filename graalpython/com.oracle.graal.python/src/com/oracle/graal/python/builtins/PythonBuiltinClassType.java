@@ -33,6 +33,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -525,52 +527,24 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
-    static Object asIndexWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asIndexWithState(context.getCore().lookupType(type), state);
-    }
-
-    @ExportMessage
-    static String asPathWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asPathWithState(context.getCore().lookupType(type), state);
-    }
-
-    @ExportMessage
-    static int asFileDescriptorWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asFileDescriptorWithState(context.getCore().lookupType(type), state);
-    }
-
-    @ExportMessage
+    @SuppressWarnings("unused")
     static double asJavaDoubleWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asJavaDoubleWithState(context.getCore().lookupType(type), state);
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, type);
     }
 
     @ExportMessage
+    @SuppressWarnings("unused")
     static Object asPIntWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asPIntWithState(context.getCore().lookupType(type), state);
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, type);
     }
 
     @ExportMessage
+    @SuppressWarnings("unused")
     static long asJavaLongWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asJavaLongWithState(context.getCore().lookupType(type), state);
-    }
-
-    @ExportMessage
-    static int asSizeWithState(PythonBuiltinClassType type, Object errorType, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.asSizeWithState(context.getCore().lookupType(type), errorType, state);
+                    @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, type);
     }
 
     @ExportMessage
