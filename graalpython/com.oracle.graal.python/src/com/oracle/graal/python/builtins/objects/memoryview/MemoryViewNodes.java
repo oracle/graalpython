@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -248,6 +250,7 @@ public class MemoryViewNodes {
     @ImportStatic({PMemoryView.BufferFormat.class, PGuards.class})
     abstract static class PackValueNode extends Node {
         @Child private PRaiseNode raiseNode;
+        @Child private IsBuiltinClassProfile isOverflowErrorProfile;
 
         // Output goes to bytes, lenght not checked
         public abstract void execute(VirtualFrame frame, PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes);
@@ -256,7 +259,7 @@ public class MemoryViewNodes {
         void packUnsignedByteInt(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, int value, byte[] bytes) {
             assert bytes.length == 1;
             if (value < 0 || value > 0xFF) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             bytes[0] = (byte) value;
         }
@@ -264,10 +267,10 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == UNSIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
         void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             assert bytes.length == 1;
             if (value < 0 || value > 0xFF) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             bytes[0] = (byte) value;
         }
@@ -275,10 +278,10 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == SIGNED_BYTE", replaces = "packUnsignedByteInt", limit = "2")
         void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             assert bytes.length == 1;
             if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             bytes[0] = (byte) value;
         }
@@ -286,9 +289,9 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == SIGNED_SHORT", limit = "2")
         void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             packInt16((int) value, bytes);
         }
@@ -296,9 +299,9 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == UNSIGNED_SHORT", limit = "2")
         void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             packInt16((int) value, bytes);
         }
@@ -311,9 +314,9 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == SIGNED_INT", replaces = "packSignedIntInt", limit = "2")
         void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             packInt32((int) value, bytes);
         }
@@ -321,40 +324,52 @@ public class MemoryViewNodes {
         @Specialization(guards = "format == UNSIGNED_INT", replaces = "packSignedIntInt", limit = "2")
         void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+            long value = asJavaLong(frame, formatStr, object, lib);
             if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                throw valueError(formatStr);
             }
             packInt32((int) value, bytes);
         }
 
         @Specialization(guards = "format == SIGNED_LONG", limit = "2")
-        static void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+        void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
-            packInt64(lib.asJavaLong(object, frame), bytes);
+            packInt64(asJavaLong(frame, formatStr, object, lib), bytes);
         }
 
         @Specialization(guards = "format == UNSIGNED_LONG", limit = "2")
-        static void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+        void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @Cached CastToJavaUnsignedLongNode cast,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
-            packInt64(cast.execute(lib.asIndexWithFrame(object, frame)), bytes);
+            try {
+                packInt64(cast.execute(lib.asIndexWithFrame(object, frame)), bytes);
+            } catch (PException e) {
+                throw processException(e, formatStr);
+            }
         }
 
         @Specialization(guards = "format == FLOAT", limit = "2")
-        static void packFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+        void packFloat(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 4;
-            packInt32(Float.floatToRawIntBits((float) lib.asJavaDouble(object)), bytes);
+            try {
+                packInt32(Float.floatToRawIntBits((float) lib.asJavaDouble(object)), bytes);
+            } catch (PException e) {
+                throw processException(e, formatStr);
+            }
         }
 
         @Specialization(guards = "format == DOUBLE", limit = "2")
-        static void packDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes,
+        void packDouble(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, Object object, byte[] bytes,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             assert bytes.length == 8;
-            packInt64(Double.doubleToRawLongBits(lib.asJavaDouble(object)), bytes);
+            try {
+                packInt64(Double.doubleToRawLongBits(lib.asJavaDouble(object)), bytes);
+            } catch (PException e) {
+                throw processException(e, formatStr);
+            }
         }
 
         @Specialization(guards = "format == BOOLEAN", limit = "2")
@@ -370,7 +385,7 @@ public class MemoryViewNodes {
             try {
                 byte[] value = lib.getBufferBytes(object);
                 if (value.length != 1) {
-                    throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+                    throw valueError(formatStr);
                 }
                 bytes[0] = value[0];
             } catch (UnsupportedMessageException e) {
@@ -380,12 +395,33 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
         void packChar(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S, formatStr);
+            throw typeError(formatStr);
         }
 
         @Specialization(guards = "format == OTHER")
         void notImplemented(@SuppressWarnings("unused") PMemoryView.BufferFormat format, String formatStr, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") byte[] bytes) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        }
+
+        private PException valueError(String formatStr) {
+            throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
+        }
+
+        private PException typeError(String formatStr) {
+            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S, formatStr);
+        }
+
+        private PException processException(PException e, String formatStr) {
+            e.expect(OverflowError, getIsOverflowErrorProfile());
+            throw valueError(formatStr);
+        }
+
+        private long asJavaLong(VirtualFrame frame, String formatStr, Object object, PythonObjectLibrary lib) {
+            try {
+                return lib.asJavaLong(object, frame);
+            } catch (PException e) {
+                throw processException(e, formatStr);
+            }
         }
 
         private static void packInt16(int value, byte[] bytes) {
@@ -420,6 +456,14 @@ public class MemoryViewNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             throw raiseNode.raise(type, message, args);
+        }
+
+        private IsBuiltinClassProfile getIsOverflowErrorProfile() {
+            if (isOverflowErrorProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isOverflowErrorProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return isOverflowErrorProfile;
         }
     }
 
