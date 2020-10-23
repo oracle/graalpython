@@ -41,8 +41,9 @@ import _io
 import os
 import sys
 import types
-from time import time
+from time import time, monotonic_ns
 
+GRAALPYTHON = sys.implementation.name == "graalpython"
 
 _HRULE = '-'.join(['' for i in range(80)])
 
@@ -195,7 +196,7 @@ def _as_int(value):
 
 
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=False):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -213,6 +214,7 @@ class BenchRunner(object):
         self.iterations = 1 if self._run_once else _iterations
         self.warmup_runs = warmup_runs if warmup_runs > 0 else 0
         self.warmup = warmup if warmup > 0 else -1
+        self.startup = startup
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -271,19 +273,28 @@ class BenchRunner(object):
         self._call_attr(ATTR_SETUP, *args)
         print("### start benchmark ... ")
 
+        report_startup = GRAALPYTHON and self.startup and __graalpython__.startup_nano != -1
+
         bench_func = self._get_attr(ATTR_BENCHMARK)
+        startup = -1
         durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup_runs:
                 print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
                 for _ in range(self.warmup_runs):
                     bench_func(*args)
+                    cur_time_nano = monotonic_ns()
+                    if report_startup and startup == -1:
+                        startup = cur_time_nano - __graalpython__.startup_nano
                     self._call_attr(ATTR_CLEANUP, *args)
 
             for iteration in range(self.iterations):
                 start = time()
                 bench_func(*args)
+                cur_time_nano = monotonic_ns()
                 duration = time() - start
+                if report_startup and startup == -1:
+                    startup = cur_time_nano - __graalpython__.startup_nano
                 durations.append(duration)
                 duration_str = "%.3f" % duration
                 self._call_attr(ATTR_CLEANUP, *args)
@@ -311,6 +322,9 @@ class BenchRunner(object):
         print(_HRULE)
 
         # summary
+        # We can do that only on Graalpython
+        if report_startup:
+            print("### STARTUP           duration: %.3f s" % (startup / 10e9))
         if self._run_once:
             print("### SINGLE RUN        duration: %.3f s" % durations[0])
         else:
@@ -333,6 +347,9 @@ class BenchRunner(object):
             else:
                 print("### WARMUP iteration not specified or could not be detected")
 
+            if GRAALPYTHON and self.startup and __graalpython__.startup_nano == -1:
+                print("### Startup could not be measured. You need to enable startup time snapshotting.")
+
         print(_HRULE)
         print("### RAW DURATIONS: %s" % str(durations))
         print(_HRULE)
@@ -342,6 +359,7 @@ def run_benchmark(args):
     warmup = -1
     warmup_runs = 0
     iterations = 1
+    startup = False
     bench_file = None
     bench_args = []
     paths = []
@@ -367,6 +385,9 @@ def run_benchmark(args):
         elif arg.startswith("--warmup-runs"):
             warmup_runs = _as_int(arg.split("=")[1])
 
+        elif arg == '-s' or arg == '--startup':
+            startup = True
+
         elif arg == '-p':
             i += 1
             paths = args[i].split(",")
@@ -389,7 +410,7 @@ def run_benchmark(args):
     else:
         print("### no extra module search paths specified")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup).run()
 
 
 if __name__ == '__main__':
