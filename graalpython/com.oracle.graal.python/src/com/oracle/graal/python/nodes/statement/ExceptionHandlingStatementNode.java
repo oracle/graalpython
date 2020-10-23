@@ -53,8 +53,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -73,20 +71,20 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
-    protected void tryChainExceptionFromHandler(PException handlerException, TruffleException handledException) {
+    protected void tryChainExceptionFromHandler(PException handlerException, Throwable handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
         if (handledException != handlerException && handledException instanceof PException) {
-            chainExceptions(handlerException.getExceptionObject(), (PException) handledException);
+            chainExceptions(handlerException.getUnreifiedException(), (PException) handledException);
         }
     }
 
-    protected void tryChainPreexistingException(VirtualFrame frame, TruffleException handledException) {
+    protected void tryChainPreexistingException(VirtualFrame frame, Throwable handledException) {
         // Chain a preexisting (before the try started) exception to the handled exception
         if (handledException instanceof PException) {
             PException pException = (PException) handledException;
             PException preexisting = getExceptionForChaining(frame);
             if (preexisting != null) {
-                chainExceptions(pException.getExceptionObject(), preexisting);
+                chainExceptions(pException.getUnreifiedException(), preexisting);
             }
         }
     }
@@ -99,7 +97,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     public void chainExceptions(PBaseException currentException, PException contextException) {
-        PBaseException context = contextException.getExceptionObject();
+        PBaseException context = contextException.getUnreifiedException();
         if (currentException != context) {
             PBaseException e = currentException;
             while (getContextChainHandledProfile().profile(e != null)) {
@@ -194,10 +192,11 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     }
 
     public static PException wrapJavaException(Throwable e, Node node, PBaseException pythonException) {
-        PException pe = PException.fromObject(pythonException, node, false);
+        PException pe = PException.fromObject(pythonException, node, false, e);
         pe.setHideLocation(true);
-        // Re-attach truffle stacktrace
-        moveTruffleStackTrace(e, pe);
+        // Host exceptions have their stacktrace already filled in, call this to set
+        // the cutoff point to the catch site
+        pe.getTruffleStackTrace();
         return pe;
     }
 
@@ -212,13 +211,5 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
         }
         return null;
-    }
-
-    @TruffleBoundary
-    private static void moveTruffleStackTrace(Throwable e, PException pe) {
-        pe.initCause(e);
-        // Host exceptions have their stacktrace already filled in, call this to set
-        // the cutoff point to the catch site
-        pe.getTruffleStackTrace();
     }
 }

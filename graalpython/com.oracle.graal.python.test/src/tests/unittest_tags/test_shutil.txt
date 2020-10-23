@@ -55,6 +55,7 @@
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_simple
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_special_func
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_subdirectory
+*graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_symlink_dir
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_winerror
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copytree_with_exclude
 *graalpython.lib-python.3.test.test_shutil.TestShutil.test_copyxattr

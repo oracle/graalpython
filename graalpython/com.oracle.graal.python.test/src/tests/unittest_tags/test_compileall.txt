@@ -6,6 +6,10 @@
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_include_file_no_arg
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_include_file_with_arg
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_include_on_stdin
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_invalid_arg_produces_message
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_legacy_paths
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_multiple_dirs
+*graalpython.lib-python.3.test.test_compileall.CommmandLineTestsNoSourceEpoch.test_multiple_runs
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_compiles_as_much_as_possible
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_d_compile_error
 *graalpython.lib-python.3.test.test_compileall.CommmandLineTestsWithSourceEpoch.test_d_runtime_error

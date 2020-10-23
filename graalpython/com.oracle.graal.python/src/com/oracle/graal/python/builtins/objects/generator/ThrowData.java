@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,49 +38,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.exception;
+package com.oracle.graal.python.builtins.objects.generator;
 
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.ExceptionType;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 /**
- * We throw this exception in places where Python would call the operating system's API to exit the
- * process without going through normal exit processing. The usual places are <code>os._exit</code>
- * and leaving the interpreter after the normal <code>SystemExit</code> has been handled.
+ * Simple wrapper to pass a {@link PBaseException} between {@code throw} method and the
+ * {@code yield} expression that will continue the control flow. The wrapper is needed because the
+ * same frame slot is used to pass value from {@code send}, so the exception for {@code throw} needs
+ * to be wrapped in something that is not a Python object to be able to distinguish the two cases.
  */
-@SuppressWarnings("serial")
-@ExportLibrary(InteropLibrary.class)
-public final class PythonExitException extends AbstractTruffleException {
-    private final int status;
+@ValueType
+public final class ThrowData {
+    public final PBaseException pythonException;
+    public final boolean withJavaStacktrace;
 
-    public PythonExitException(Node location, int status) {
-        super(location);
-        this.status = status;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isException() {
-        return true;
-    }
-
-    @ExportMessage
-    RuntimeException throwException() {
-        throw this;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    ExceptionType getExceptionType() {
-        return ExceptionType.EXIT;
-    }
-
-    @ExportMessage
-    public int getExceptionExitStatus() {
-        return status;
+    public ThrowData(PBaseException pythonException, boolean withJavaStacktrace) {
+        this.pythonException = pythonException;
+        this.withJavaStacktrace = withJavaStacktrace;
     }
 }

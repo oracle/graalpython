@@ -70,7 +70,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -82,6 +81,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -207,6 +207,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedLibrary(limit = "1") InteropLibrary exceptionLib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
@@ -215,20 +216,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } catch (RuntimeException e) {
-                return handleError(e, syntaxError, potentialSyntaxError);
+                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
-        @TruffleBoundary
-        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError) {
-            if (e instanceof TruffleException) {
-                potentialSyntaxError.enter(); // this guards the TruffleBoundary invoke
-                if (((TruffleException) e).isSyntaxError()) {
-                    syntaxError.enter();
-                    throw raise(ValueError, "%s", e);
+        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary exceptionLib) {
+            try {
+                if (exceptionLib.isException(e)) {
+                    potentialSyntaxError.enter();
+                    if (exceptionLib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                        syntaxError.enter();
+                        throw raise(ValueError, "%s", e);
+                    }
                 }
+            } catch (UnsupportedMessageException e1) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
             // just re-throw
             throw e;

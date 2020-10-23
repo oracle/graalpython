@@ -42,6 +42,7 @@
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_commonprefix
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_expanduser
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_expandvars
+*graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_expandvars_nonascii
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_isabs
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_ismount
 *graalpython.lib-python.3.test.test_ntpath.TestNtpath.test_join

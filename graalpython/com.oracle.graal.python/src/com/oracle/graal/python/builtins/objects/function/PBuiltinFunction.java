@@ -175,6 +175,17 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return true;
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExecutableName() {
+        return true;
+    }
+
+    @ExportMessage
+    String getExecutableName() {
+        return getName();
+    }
+
     @Override
     @ExportMessage
     @SuppressWarnings("static-method")

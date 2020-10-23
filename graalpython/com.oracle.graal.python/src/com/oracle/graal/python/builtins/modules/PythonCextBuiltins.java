@@ -649,7 +649,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 // getClassNode acts as a branch profile
-                return getClassNode.execute(currentException.getExceptionObject());
+                return getClassNode.execute(currentException.getUnreifiedException());
             }
             return errorMarker;
         }
@@ -1506,7 +1506,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback, withJavaStacktrace));
+                context.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
             }
 
             return 0;

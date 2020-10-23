@@ -25,3 +25,16 @@
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_len
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_long_steadystate_queue_popleft
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_long_steadystate_queue_popright
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_maxlen_attribute
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_maxlen_zero
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_mul
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_remove
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_reverse
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_reversed
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_reversed_new
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_rotate
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_roundtrip_iter_init
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_setitem
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_sizeof
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_underflow
+*graalpython.lib-python.3.test.test_deque.TestSequence.test_addmul

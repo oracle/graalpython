@@ -21,6 +21,8 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_mixed_types_rejected
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_noslash
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_fragments
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_portseparator
@@ -31,6 +33,7 @@
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_result_pairs
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_telurl_params
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_unparse_parse
+*graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_unquote_to_bytes
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urldefrag
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_quote_via
 *graalpython.lib-python.3.test.test_urlparse.UrlParseTestCase.test_urlencode_sequences

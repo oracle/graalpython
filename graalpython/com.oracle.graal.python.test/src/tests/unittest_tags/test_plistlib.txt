@@ -1,6 +1,8 @@
+*graalpython.lib-python.3.test.test_plistlib.MiscTestCase.test__all__
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_cycles
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_identity
+*graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_invalid_binary
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_large_timestamp
 *graalpython.lib-python.3.test.test_plistlib.TestBinaryPlistlib.test_nonstandard_refs_size
 *graalpython.lib-python.3.test.test_plistlib.TestKeyedArchive.test_keyed_archive_data

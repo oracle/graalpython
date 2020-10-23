@@ -80,6 +80,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_relative_to_common
@@ -164,6 +165,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_relative_to_common
@@ -196,6 +198,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_relative_to_common
@@ -234,6 +237,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parent
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parent_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parents
+*graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parts
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_pickling_common

@@ -42,16 +42,14 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -72,12 +70,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
 
     @Child private GetAttributeNode getThrowNode;
     @Child private CallNode callThrowNode;
-    @Child private GetClassNode getExcClassNode;
 
     @Child private GetAttributeNode getSendNode;
     @Child private CallNode callSendNode;
 
-    @Child private GetTracebackNode getTracebackNode;
     @Child private WriteUnraisableNode writeUnraisableNode;
 
     @Child private IsBuiltinClassProfile stopIterProfile1 = IsBuiltinClassProfile.create();
@@ -130,9 +126,9 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                 _y = null;
                 // resuming from yield, write _s
                 Object _s = PArguments.getSpecialArgument(frame);
-                if (_s instanceof PException) {
+                if (_s instanceof ThrowData) {
                     gotException.enter();
-                    PException _e = (PException) _s;
+                    ThrowData _e = (ThrowData) _s;
                     // except GeneratorExit as _e:
                     // ....try:
                     // ........_m = _i.close
@@ -141,7 +137,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     // ....else:
                     // ........_m()
                     // ....raise _e
-                    if (genExitProfile.profileException(_e, PythonBuiltinClassType.GeneratorExit)) {
+                    if (genExitProfile.profileObject(_e.pythonException, PythonBuiltinClassType.GeneratorExit)) {
                         access.setIterator(frame, iteratorSlot, null);
                         Object close = null;
                         try {
@@ -154,7 +150,7 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                         if (close != null) {
                             getCallCloseNode().execute(frame, close);
                         }
-                        throw _e;
+                        throw PException.fromObject(_e.pythonException, this, _e.withJavaStacktrace);
                     }
                     // except BaseException as _e:
                     // ...._x = sys.exc_info()
@@ -174,16 +170,10 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
                     } catch (PException pe) {
                         pe.expectAttributeError(hasNoThrowProfile);
                         access.setIterator(frame, iteratorSlot, null);
-                        throw _e;
+                        throw PException.fromObject(_e.pythonException, this, _e.withJavaStacktrace);
                     }
                     try {
-                        PBaseException pythonException = ((PException) _s).setCatchingFrameAndGetEscapedException(frame, this);
-                        Object excType = getExceptionClassNode().execute(pythonException);
-                        Object excTraceback = ensureGetTracebackNode().execute(((PException) _s).getTraceback());
-                        if (excTraceback == null) {
-                            excTraceback = PNone.NONE;
-                        }
-                        _y = getCallThrowNode().execute(frame, _m, excType, pythonException, excTraceback);
+                        _y = getCallThrowNode().execute(frame, _m, _e.pythonException);
                     } catch (PException _e2) {
                         access.setIterator(frame, iteratorSlot, null);
                         _e2.expectStopIteration(stopIterProfile2);
@@ -228,14 +218,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             getValue = insert(GetAttributeNode.create("value", null));
         }
         return getValue;
-    }
-
-    private GetClassNode getExceptionClassNode() {
-        if (getExcClassNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getExcClassNode = insert(GetClassNode.create());
-        }
-        return getExcClassNode;
     }
 
     private GetAttributeNode getGetCloseNode() {
@@ -284,14 +266,6 @@ public class YieldFromNode extends AbstractYieldNode implements GeneratorControl
             callSendNode = insert(CallNode.create());
         }
         return callSendNode;
-    }
-
-    private GetTracebackNode ensureGetTracebackNode() {
-        if (getTracebackNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getTracebackNode = insert(GetTracebackNode.create());
-        }
-        return getTracebackNode;
     }
 
     private WriteUnraisableNode ensureWriteUnraisable() {

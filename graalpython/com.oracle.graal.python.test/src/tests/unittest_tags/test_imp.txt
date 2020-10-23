@@ -1,6 +1,7 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_bug7732
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_find_module_encoding
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_import_encoded_module
+*graalpython.lib-python.3.test.test_imp.ImportTests.test_issue1267
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue15828_load_extensions
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue16421_multiple_modules_in_one_dll
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue24748_load_module_skips_sys_modules_check
@@ -9,6 +10,7 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue5604
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue9319
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_dynamic_ImportError_path
+*graalpython.lib-python.3.test.test_imp.ImportTests.test_load_from_source
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_module_extension_file_is_None
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_multiple_calls_to_get_data
 *graalpython.lib-python.3.test.test_imp.NullImporterTests.test_unencodeable

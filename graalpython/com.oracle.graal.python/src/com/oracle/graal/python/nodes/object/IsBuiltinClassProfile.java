@@ -90,11 +90,11 @@ public final class IsBuiltinClassProfile extends Node {
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type) {
-        return profileClass(lib.getLazyPythonClass(object.getExceptionObject()), type);
+        return profileClass(lib.getLazyPythonClass(object.getUnreifiedException()), type);
     }
 
     public boolean profileException(PException object, PythonBuiltinClassType type, PythonObjectLibrary elib) {
-        return profileClass(elib.getLazyPythonClass(object.getExceptionObject()), type);
+        return profileClass(elib.getLazyPythonClass(object.getUnreifiedException()), type);
     }
 
     public boolean profileObject(Object object, PythonBuiltinClassType type) {

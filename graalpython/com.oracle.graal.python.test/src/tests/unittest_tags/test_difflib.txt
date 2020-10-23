@@ -18,6 +18,7 @@
 *graalpython.lib-python.3.test.test_difflib.TestSFbugs.test_matching_blocks_cache
 *graalpython.lib-python.3.test.test_difflib.TestSFbugs.test_mdiff_catch_stop_iteration
 *graalpython.lib-python.3.test.test_difflib.TestSFbugs.test_ratio_for_null_seqn
+*graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_html_diff
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_make_file_default_charset
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_make_file_iso88591_charset
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_recursion_limit

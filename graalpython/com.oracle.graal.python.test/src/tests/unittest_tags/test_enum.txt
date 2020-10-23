@@ -101,6 +101,7 @@
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_subclasses_with_reduce_ex
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_subclasses_without_direct_pickle_support
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_subclasses_without_direct_pickle_support_using_name
+*graalpython.lib-python.3.test.test_enum.TestEnum.test_subclassing
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_value_name
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_wrong_enum_in_call
 *graalpython.lib-python.3.test.test_enum.TestEnum.test_wrong_enum_in_mixed_call
@@ -148,6 +149,8 @@
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_repr
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_str
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_type
+*graalpython.lib-python.3.test.test_enum.TestIntFlag.test_unique_composite
+*graalpython.lib-python.3.test.test_enum.TestIntFlag.test_xor
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_enum_has_extra_members
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_enum_has_extra_members_with_aliases
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_order_has_extra_members
@@ -155,3 +158,9 @@
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_same_members
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_same_members_with_aliases
 *graalpython.lib-python.3.test.test_enum.TestOrder.test_same_members_wrong_order
+*graalpython.lib-python.3.test.test_enum.TestStdLib.test_inspect_classify_class_attrs
+*graalpython.lib-python.3.test.test_enum.TestStdLib.test_inspect_getmembers
+*graalpython.lib-python.3.test.test_enum.TestStdLib.test_pydoc
+*graalpython.lib-python.3.test.test_enum.TestUnique.test_unique_clean
+*graalpython.lib-python.3.test.test_enum.TestUnique.test_unique_dirty
+*graalpython.lib-python.3.test.test_enum.TestUnique.test_unique_with_name

@@ -30,8 +30,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -137,7 +142,8 @@ public interface PythonParser {
     /**
      * Runtime exception used to indicate incomplete source code during parsing.
      */
-    public static class PIncompleteSourceException extends RuntimeException implements TruffleException {
+    @ExportLibrary(InteropLibrary.class)
+    class PIncompleteSourceException extends AbstractTruffleException {
 
         private static final long serialVersionUID = 4393080397807767467L;
 
@@ -145,37 +151,60 @@ public interface PythonParser {
         private final int line;
 
         public PIncompleteSourceException(String message, Throwable cause, int line) {
-            super(message, cause);
+            super(message, cause, UNLIMITED_STACK_TRACE, null);
             this.line = line;
-        }
-
-        @Override
-        public Node getLocation() {
-            if (line <= 0 || line > source.getLineCount()) {
-                return null;
-            } else {
-                SourceSection section = source.createSection(line);
-                return new Node() {
-                    @Override
-                    public SourceSection getSourceSection() {
-                        return section;
-                    }
-                };
-            }
-        }
-
-        @Override
-        public boolean isSyntaxError() {
-            return true;
-        }
-
-        @Override
-        public boolean isIncompleteSource() {
-            return true;
         }
 
         public void setSource(Source source) {
             this.source = source;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean isException() {
+            return true;
+        }
+
+        @ExportMessage
+        RuntimeException throwException() {
+            throw this;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        ExceptionType getExceptionType() {
+            return ExceptionType.PARSE_ERROR;
+        }
+
+        @ExportMessage
+        boolean isExceptionIncompleteSource() {
+            return true;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasExceptionMessage() {
+            return true;
+        }
+
+        @ExportMessage
+        String getExceptionMessage() {
+            return getMessage();
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        boolean hasSourceLocation() {
+            return true;
+        }
+
+        @ExportMessage(name = "getSourceLocation")
+        @TruffleBoundary
+        SourceSection getExceptionSourceLocation() {
+            if (line > 0 && line < source.getLineCount()) {
+                return source.createSection(line);
+            }
+            return source.createUnavailableSection();
         }
     }
 }

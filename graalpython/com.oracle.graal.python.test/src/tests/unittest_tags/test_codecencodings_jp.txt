@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_chunkcoding
+*graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_errorhandle
 *graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_incrementaldecoder
 *graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_jp.Test_CP932.test_streamwriter

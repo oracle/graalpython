@@ -51,6 +51,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import java.io.File;
@@ -127,7 +130,7 @@ public class ParserTestBase {
         try {
             parse(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
-            thrown = e.isSyntaxError();
+            thrown = isSyntaxError(e);
         }
 
         assertTrue("Expected SyntaxError was not thrown.", thrown);
@@ -138,7 +141,7 @@ public class ParserTestBase {
         try {
             parse(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
-            thrown = e.isSyntaxError();
+            thrown = isSyntaxError(e);
             Assert.assertTrue("The expected message:\n\"" + expectedMessage + "\"\nwas not found in\n\"" + e.getMessage() + "\"", e.getMessage().contains(expectedMessage));
         }
 
@@ -150,11 +153,15 @@ public class ParserTestBase {
         try {
             parse(source, name.getMethodName(), PythonParser.ParserMode.File);
         } catch (PException e) {
-            thrown = e.isSyntaxError();
+            thrown = isSyntaxError(e);
             Assert.assertEquals(expectedMessage, e.getMessage());
         }
 
         assertTrue("Expected SyntaxError was not thrown.", thrown);
+    }
+
+    private static boolean isSyntaxError(PException e) throws UnsupportedMessageException {
+        return InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR;
     }
 
     public void saveNewTreeResult(File testFile, boolean goldenFileNextToTestFile) throws Exception {

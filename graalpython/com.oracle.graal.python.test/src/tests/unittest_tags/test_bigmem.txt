@@ -62,7 +62,9 @@
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_ascii
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_raw_unicode_escape
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_encode_utf7
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_endswith
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_expandtabs
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_find
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_format
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_index
@@ -87,11 +89,14 @@
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_rstrip
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_split_large
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_split_small
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_splitlines
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_startswith
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_strip
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_swapcase
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_title
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_translate
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_unicode_repr
+*graalpython.lib-python.3.test.test_bigmem.StrTest.test_unicode_repr_wide
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_upper
 *graalpython.lib-python.3.test.test_bigmem.StrTest.test_zfill
 *graalpython.lib-python.3.test.test_bigmem.TupleTest.test_compare
