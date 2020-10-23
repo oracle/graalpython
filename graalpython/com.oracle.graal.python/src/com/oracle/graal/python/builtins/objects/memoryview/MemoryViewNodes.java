@@ -873,7 +873,7 @@ public class MemoryViewNodes {
         public abstract void execute(Object object);
 
         @Specialization
-        static void bytearray(PByteArray object) {
+        static void bytearray(@SuppressWarnings("unused") PByteArray object) {
             // TODO
         }
 

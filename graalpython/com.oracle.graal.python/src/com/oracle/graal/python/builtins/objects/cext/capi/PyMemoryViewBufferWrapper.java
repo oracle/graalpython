@@ -132,7 +132,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     }
 
     @GenerateUncached
-    static abstract class IntArrayToNativePySSizeArray extends Node {
+    abstract static class IntArrayToNativePySSizeArray extends Node {
         public abstract Object execute(int[] array);
 
         @Specialization
