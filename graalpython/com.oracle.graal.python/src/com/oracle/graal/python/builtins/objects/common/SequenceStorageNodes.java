@@ -57,6 +57,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
-import com.oracle.graal.python.nodes.util.ExactMath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2334,26 +2334,44 @@ public abstract class SequenceStorageNodes {
 
         private final Supplier<GeneralizationNode> genNodeProvider;
 
-        ConcatNode(Supplier<GeneralizationNode> genNodeProvider) {
+        /*
+         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
+         * bytes raises OverflowError when the memory might be available but the size overflows
+         * sys.maxint
+         */
+        private final PythonBuiltinClassType errorForOverflow;
+
+        ConcatNode(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
             this.genNodeProvider = genNodeProvider;
+            this.errorForOverflow = errorForOverflow;
         }
 
         public abstract SequenceStorage execute(SequenceStorage left, SequenceStorage right);
 
         @Specialization
         SequenceStorage doRight(SequenceStorage left, SequenceStorage right,
+                        @Cached ConditionProfile shouldOverflow,
                         @Cached PRaiseNode raiseNode,
                         @Cached LenNode lenNode,
                         @Cached BranchProfile outOfMemProfile) {
+            int destlen = 0;
             try {
                 int len1 = lenNode.execute(left);
                 int len2 = lenNode.execute(right);
                 // we eagerly generalize the store to avoid possible cascading generalizations
-                SequenceStorage generalized = generalizeStore(createEmpty(left, right, Math.addExact(len1, len2)), right);
+                destlen = PythonUtils.addExact(len1, len2);
+                if (errorForOverflow == OverflowError && shouldOverflow.profile(destlen >= SysModuleBuiltins.MAXSIZE)) {
+                    // cpython raises an overflow error when this happens
+                    throw raiseNode.raise(OverflowError);
+                }
+                SequenceStorage generalized = generalizeStore(createEmpty(left, right, destlen), right);
                 return doConcat(generalized, left, right);
-            } catch (ArithmeticException | OutOfMemoryError e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
@@ -2382,15 +2400,23 @@ public abstract class SequenceStorageNodes {
         }
 
         public static ConcatNode create() {
-            return ConcatNodeGen.create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG));
+            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), MemoryError);
+        }
+
+        public static ConcatNode createWithOverflowError() {
+            return create(() -> NoGeneralizationCustomMessageNode.create(DEFAULT_ERROR_MSG), OverflowError);
         }
 
         public static ConcatNode create(String msg) {
-            return ConcatNodeGen.create(() -> NoGeneralizationCustomMessageNode.create(msg));
+            return create(() -> NoGeneralizationCustomMessageNode.create(msg), MemoryError);
         }
 
         public static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider) {
-            return ConcatNodeGen.create(genNodeProvider);
+            return create(genNodeProvider, MemoryError);
+        }
+
+        private static ConcatNode create(Supplier<GeneralizationNode> genNodeProvider, PythonBuiltinClassType errorForOverflow) {
+            return ConcatNodeGen.create(genNodeProvider, errorForOverflow);
         }
     }
 
@@ -2408,7 +2434,7 @@ public abstract class SequenceStorageNodes {
 
         private static int lengthResult(int current, int ext) {
             try {
-                return ExactMath.addExact(current, ext);
+                return PythonUtils.addExact(current, ext);
             } catch (OverflowException e) {
                 // (mq) There is no need to ensure capacity as we either
                 // run out of memory or dealing with a fake length.
@@ -2492,6 +2518,17 @@ public abstract class SequenceStorageNodes {
         @Child private GetItemScalarNode getItemNode;
         @Child private RepeatNode recursive;
 
+        /*
+         * CPython is inconsistent when too repeats are done. Most types raise MemoryError, but e.g.
+         * bytes raises OverflowError when the memory might be available but the size overflows
+         * sys.maxint
+         */
+        private final PythonBuiltinClassType errorForOverflow;
+
+        protected RepeatNode(PythonBuiltinClassType errorForOverflow) {
+            this.errorForOverflow = errorForOverflow;
+        }
+
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, Object times);
 
         public abstract SequenceStorage execute(VirtualFrame frame, SequenceStorage left, int times);
@@ -2509,111 +2546,132 @@ public abstract class SequenceStorageNodes {
 
         /* special but common case: something like '[False] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static BoolSequenceStorage doBoolSingleElement(BoolSequenceStorage s, int times,
+        BoolSequenceStorage doBoolSingleElement(BoolSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                boolean[] repeated = new boolean[Math.multiplyExact(s.length(), times)];
+                boolean[] repeated = new boolean[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getBoolItemNormalized(0));
                 return new BoolSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '["\x00"] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static ByteSequenceStorage doByteSingleElement(ByteSequenceStorage s, int times,
+        ByteSequenceStorage doByteSingleElement(ByteSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                byte[] repeated = new byte[Math.multiplyExact(s.length(), times)];
+                byte[] repeated = new byte[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getByteItemNormalized(0));
                 return new ByteSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '["0"] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static CharSequenceStorage doCharSingleElement(CharSequenceStorage s, int times,
+        CharSequenceStorage doCharSingleElement(CharSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                char[] repeated = new char[Math.multiplyExact(s.length(), times)];
+                char[] repeated = new char[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getCharItemNormalized(0));
                 return new CharSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static IntSequenceStorage doIntSingleElement(IntSequenceStorage s, int times,
+        IntSequenceStorage doIntSingleElement(IntSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                int[] repeated = new int[Math.multiplyExact(s.length(), times)];
+                int[] repeated = new int[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getIntItemNormalized(0));
                 return new IntSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0L] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static LongSequenceStorage doLongSingleElement(LongSequenceStorage s, int times,
+        LongSequenceStorage doLongSingleElement(LongSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                long[] repeated = new long[Math.multiplyExact(s.length(), times)];
+                long[] repeated = new long[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getLongItemNormalized(0));
                 return new LongSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '[0.0] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static DoubleSequenceStorage doDoubleSingleElement(DoubleSequenceStorage s, int times,
+        DoubleSequenceStorage doDoubleSingleElement(DoubleSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                double[] repeated = new double[Math.multiplyExact(s.length(), times)];
+                double[] repeated = new double[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getDoubleItemNormalized(0));
                 return new DoubleSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         /* special but common case: something like '[None] * n' */
         @Specialization(guards = {"s.length() == 1", "times > 0"})
-        static ObjectSequenceStorage doObjectSingleElement(ObjectSequenceStorage s, int times,
+        ObjectSequenceStorage doObjectSingleElement(ObjectSequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Cached BranchProfile outOfMemProfile) {
             try {
-                Object[] repeated = new Object[Math.multiplyExact(s.length(), times)];
+                Object[] repeated = new Object[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getItemNormalized(0));
                 return new ObjectSequenceStorage(repeated);
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
-        static SequenceStorage doManaged(BasicSequenceStorage s, int times,
+        SequenceStorage doManaged(BasicSequenceStorage s, int times,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached("create()") BranchProfile outOfMemProfile,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
@@ -2621,15 +2679,18 @@ public abstract class SequenceStorageNodes {
                 SequenceStorage profiled = cachedClass.cast(s);
                 Object arr1 = profiled.getInternalArrayObject();
                 int len = profiled.length();
-                int newLength = Math.multiplyExact(len, times);
+                int newLength = PythonUtils.multiplyExact(len, times);
                 SequenceStorage repeated = profiled.createEmpty(newLength);
                 Object destArr = repeated.getInternalArrayObject();
                 repeat(destArr, arr1, len, times);
                 repeated.setNewLength(newLength);
                 return repeated;
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
@@ -2643,7 +2704,7 @@ public abstract class SequenceStorageNodes {
                         @Cached("create()") LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
-                int newLen = Math.multiplyExact(len, times);
+                int newLen = PythonUtils.multiplyExact(len, times);
                 SequenceStorage repeated = createEmptyNode.execute(s, newLen, -1);
 
                 for (int i = 0; i < len; i++) {
@@ -2659,9 +2720,12 @@ public abstract class SequenceStorageNodes {
 
                 repeated.setNewLength(newLen);
                 return repeated;
-            } catch (OutOfMemoryError | ArithmeticException e) {
+            } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
+            } catch (OverflowException e) {
+                outOfMemProfile.enter();
+                throw raiseNode.raise(errorForOverflow);
             }
         }
 
@@ -2672,7 +2736,7 @@ public abstract class SequenceStorageNodes {
             int i = toIndex(frame, times, raiseNode, lib);
             if (recursive == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursive = insert(RepeatNodeGen.create());
+                recursive = insert(RepeatNodeGen.create(errorForOverflow));
             }
             return recursive.execute(frame, s, i);
         }
@@ -2703,7 +2767,11 @@ public abstract class SequenceStorageNodes {
         }
 
         public static RepeatNode create() {
-            return RepeatNodeGen.create();
+            return RepeatNodeGen.create(MemoryError);
+        }
+
+        public static RepeatNode createWithOverflowError() {
+            return RepeatNodeGen.create(OverflowError);
         }
     }
 
@@ -3280,9 +3348,9 @@ public abstract class SequenceStorageNodes {
                 BasicSequenceStorage profiled = cachedClass.cast(s);
                 profiled.ensureCapacity(cap);
                 return profiled;
-            } catch (ArithmeticException | OutOfMemoryError e) {
+            } catch (OutOfMemoryError | ArithmeticException e) {
                 overflowErrorProfile.enter();
-                throw raiseNode.raise(OverflowError);
+                throw raiseNode.raise(MemoryError);
             }
         }
 

@@ -94,6 +94,50 @@ public final class PythonUtils {
         str.getChars(srcBegin, srcEnd, dst, dstBegin);
     }
 
+    /*
+     * Replacements for JDK's exact math methods that throw the checked singleton {@link
+     * OverflowException}. The implementation is taken from JDK.
+     */
+    public static int addExact(int x, int y) throws OverflowException {
+        int r = x + y;
+        if (((x ^ r) & (y ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static long addExact(long x, long y) throws OverflowException {
+        long r = x + y;
+        if (((x ^ r) & (y ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static int subtractExact(int x, int y) throws OverflowException {
+        int r = x - y;
+        if (((x ^ y) & (x ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static long subtractExact(long x, long y) throws OverflowException {
+        long r = x - y;
+        if (((x ^ y) & (x ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static int toIntExact(long x) throws OverflowException {
+        int r = (int) x;
+        if (r != x) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
     public static int multiplyExact(int x, int y) throws OverflowException {
         // copy&paste from Math.multiplyExact
         long r = (long) x * (long) y;
