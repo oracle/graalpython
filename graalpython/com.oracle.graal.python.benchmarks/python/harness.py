@@ -196,7 +196,7 @@ def _as_int(value):
 
 
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=False):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -276,7 +276,9 @@ class BenchRunner(object):
         report_startup = GRAALPYTHON and self.startup and __graalpython__.startup_nano != -1
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
-        startup = -1
+        startup_ns = -1
+        early_warmup_ns = -1
+        late_warmup_ns = -1
         durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup_runs:
@@ -284,8 +286,8 @@ class BenchRunner(object):
                 for _ in range(self.warmup_runs):
                     bench_func(*args)
                     cur_time_nano = monotonic_ns()
-                    if report_startup and startup == -1:
-                        startup = cur_time_nano - __graalpython__.startup_nano
+                    if report_startup and startup_ns == -1:
+                        startup_ns = cur_time_nano - __graalpython__.startup_nano
                     self._call_attr(ATTR_CLEANUP, *args)
 
             for iteration in range(self.iterations):
@@ -293,8 +295,12 @@ class BenchRunner(object):
                 bench_func(*args)
                 cur_time_nano = monotonic_ns()
                 duration = time() - start
-                if report_startup and startup == -1:
-                    startup = cur_time_nano - __graalpython__.startup_nano
+                if report_startup and startup_ns == -1 and iteration == self.startup[0] - 1:
+                    startup_ns = cur_time_nano - __graalpython__.startup_nano
+                if report_startup and early_warmup_ns == -1 and iteration == self.startup[1] - 1:
+                    early_warmup_ns = cur_time_nano - __graalpython__.startup_nano
+                if report_startup and late_warmup_ns == -1 and iteration == self.startup[2] - 1:
+                    late_warmup_ns = cur_time_nano - __graalpython__.startup_nano
                 durations.append(duration)
                 duration_str = "%.3f" % duration
                 self._call_attr(ATTR_CLEANUP, *args)
@@ -324,7 +330,9 @@ class BenchRunner(object):
         # summary
         # We can do that only on Graalpython
         if report_startup:
-            print("### STARTUP           duration: %.3f s" % (startup / 10e9))
+            print("### STARTUP at iteration: %d, duration: %.3f" % (self.startup[0], startup_ns / 1e9))
+            print("### EARLY WARMUP at iteration: %d, duration: %.3f" % (self.startup[1], early_warmup_ns / 1e9))
+            print("### LATE WARMUP at iteration: %d, duration: %.3f" % (self.startup[2], late_warmup_ns / 1e9))
         if self._run_once:
             print("### SINGLE RUN        duration: %.3f s" % durations[0])
         else:
@@ -359,7 +367,7 @@ def run_benchmark(args):
     warmup = -1
     warmup_runs = 0
     iterations = 1
-    startup = False
+    startup = None
     bench_file = None
     bench_args = []
     paths = []
@@ -385,8 +393,12 @@ def run_benchmark(args):
         elif arg.startswith("--warmup-runs"):
             warmup_runs = _as_int(arg.split("=")[1])
 
-        elif arg == '-s' or arg == '--startup':
-            startup = True
+        elif arg.startswith('--startup'):
+            try:
+                itrs = arg.split("=")[1].split(",")
+                startup = (int(itrs[0]), int(itrs[1]), int(itrs[2]))
+            except:
+                raise TypeError("incorrect argument; must be in form of '-s 1,10,100'")
 
         elif arg == '-p':
             i += 1
@@ -399,6 +411,9 @@ def run_benchmark(args):
         else:
             bench_args.append(arg)
         i += 1
+
+    if startup and iterations < max(startup):
+        print("### WARNING: you've specified less iterations than required to measure the startup")
 
     # set the paths if specified
     print(_HRULE)
