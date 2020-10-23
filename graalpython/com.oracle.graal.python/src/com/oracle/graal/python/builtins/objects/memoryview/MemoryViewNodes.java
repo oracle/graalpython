@@ -471,8 +471,22 @@ public class MemoryViewNodes {
     abstract static class ReadBytesAtNode extends Node {
         public abstract void execute(byte[] dest, int destOffset, int len, PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static void doNative(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+        @Specialization(guards = {"ptr != null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
+        @ExplodeLoop
+        static void doNativeCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+                        @Cached("len") int cachedLen,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            try {
+                for (int i = 0; i < cachedLen; i++) {
+                    dest[destOffset + i] = (byte) lib.readArrayElement(ptr, offset + i);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+
+        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
+        static void doNativeGeneric(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 for (int i = 0; i < len; i++) {
@@ -483,8 +497,21 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = "ptr == null")
-        static void doManaged(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
+        @ExplodeLoop
+        static void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached("len") int cachedLen,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            // TODO assumes byte storage
+            SequenceStorage storage = getStorageNode.execute(self.getOwner());
+            for (int i = 0; i < cachedLen; i++) {
+                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
+            }
+        }
+
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
+        static void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             // TODO assumes byte storage
@@ -499,8 +526,22 @@ public class MemoryViewNodes {
     abstract static class WriteBytesAtNode extends Node {
         public abstract void execute(byte[] src, int srcOffset, int len, PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static void doNative(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+        @Specialization(guards = {"ptr != null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
+        @ExplodeLoop
+        static void doNativeCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+                        @Cached("len") int cachedLen,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            try {
+                for (int i = 0; i < cachedLen; i++) {
+                    lib.writeArrayElement(ptr, offset + i, src[srcOffset + i]);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+
+        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
+        static void doNativeGeneric(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
                         @CachedLibrary(limit = "1") InteropLibrary lib) {
             try {
                 for (int i = 0; i < len; i++) {
@@ -511,8 +552,21 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = "ptr == null")
-        static void doManaged(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
+        @ExplodeLoop
+        static void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached("len") int cachedLen,
+                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
+            // TODO assumes byte storage
+            SequenceStorage storage = getStorageNode.execute(self.getOwner());
+            for (int i = 0; i < cachedLen; i++) {
+                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
+            }
+        }
+
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
+        static void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
             // TODO assumes byte storage
@@ -526,7 +580,7 @@ public class MemoryViewNodes {
     abstract static class ReadItemAtNode extends Node {
         public abstract Object execute(PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
         static Object doNativeCached(PMemoryView self, Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
@@ -559,7 +613,7 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes);
         }
 
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
         static Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
@@ -592,7 +646,7 @@ public class MemoryViewNodes {
     abstract static class WriteItemAtNode extends Node {
         public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
 
-        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
         static void doNativeCached(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,
@@ -625,7 +679,7 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"})
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
         static void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,

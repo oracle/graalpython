@@ -1571,6 +1571,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
                         Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        @Cached ConditionProfile zeroDimProfile,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
@@ -1588,8 +1589,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int[] shape = null;
                 int[] strides = null;
                 int[] suboffsets = null;
-                // TODO profile
-                if (ndim > 0) {
+                if (zeroDimProfile.profile(ndim > 0)) {
                     if (!lib.isNull(shapePointer)) {
                         shape = new int[ndim];
                         for (int i = 0; i < ndim; i++) {
@@ -1616,7 +1616,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     }
                 }
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
-                // TODO factory
                 ManagedBuffer managedBuffer = null;
                 if (!lib.isNull(bufferStructPointer)) {
                     managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
