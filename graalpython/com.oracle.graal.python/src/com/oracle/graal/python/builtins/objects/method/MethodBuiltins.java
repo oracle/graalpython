@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
@@ -225,11 +226,9 @@ public class MethodBuiltins extends PythonBuiltins {
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             PythonModule builtins = getCore().getBuiltins();
-            return factory().createTuple(new Object[]{
-                            pol.lookupAttributeStrict(builtins, frame, GETATTR),
-                            method.getSelf(),
-                            getName(frame, method, toJavaStringNode, pol)
-            });
+            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
+            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method, toJavaStringNode, pol)});
+            return factory().createTuple(new Object[]{getattr, args});
         }
 
         private String getName(VirtualFrame frame, PMethod method, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
