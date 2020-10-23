@@ -90,7 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -254,7 +254,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (self.getDimensions() != 1) {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
-            PMemoryView srcView = createMemoryView.execute(object);
+            PMemoryView srcView = createMemoryView.execute(frame, object);
             PMemoryView destView = (PMemoryView) getItemNode.execute(frame, self, slice);
             if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
@@ -341,7 +341,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
             PMemoryView memoryView;
             try {
-                memoryView = memoryViewNode.execute(other);
+                memoryView = memoryViewNode.execute(frame, other);
             } catch (PException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -762,15 +762,16 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().isForNative()"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
+                        @Cached ExecutionContext.ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.PCallCapiFunction callRelease) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                Object state = IndirectCallContext.enter(frame, getContext(), this);
+                Object state = foreignCallContext.enter(frame, getContext(), this);
                 ManagedBuffer buffer = self.getManagedBuffer();
                 try {
                     callRelease.call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {
-                    IndirectCallContext.exit(frame, getContext(), state);
+                    foreignCallContext.exit(frame, getContext(), state);
                 }
             }
             self.setReleased();

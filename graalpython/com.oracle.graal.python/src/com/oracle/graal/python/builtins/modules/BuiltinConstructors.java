@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -121,7 +122,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -3321,10 +3321,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
-        public abstract PMemoryView execute(Object cls, Object object);
+        public abstract PMemoryView execute(VirtualFrame frame, Object cls, Object object);
 
-        public final PMemoryView execute(Object object) {
-            return execute(PythonBuiltinClassType.PMemoryView, object);
+        public final PMemoryView execute(VirtualFrame frame, Object object) {
+            return execute(frame, PythonBuiltinClassType.PMemoryView, object);
         }
 
         // TODO arrays should support buffer protocol too, but their implementation would be
@@ -3358,11 +3358,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        static PMemoryView fromNative(@SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+        PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+                        @Cached ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached PCallCapiFunction callCapiFunction) {
-            return (PMemoryView) asPythonObjectNode.execute(callCapiFunction.call(NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object)));
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object state = foreignCallContext.enter(frame, getContext(), this);
+            try {
+                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
+                checkFunctionResultNode.execute(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, result);
+                return (PMemoryView) asPythonObjectNode.execute(result);
+            } finally {
+                foreignCallContext.exit(frame, getContext(), state);
+            }
         }
 
         @Fallback
