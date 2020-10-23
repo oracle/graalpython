@@ -642,7 +642,7 @@ public class MemoryViewNodes {
                 index += nitems;
             }
             if (index < 0 || index >= nitems) {
-                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim);
+                throw raise(IndexError, ErrorMessages.INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D, dim + 1);
             }
 
             ptr.offset += self.getBufferStrides()[dim] * index;
