@@ -48,6 +48,7 @@
 
 #include "Python.h"
 #include <truffle.h>
+#include <graalvm/llvm/handles.h>
 
 #define SRC_CS "utf-8"
 
@@ -223,7 +224,7 @@ extern free_upcall_fun_t free_upcall;
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
 
-#define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
+#define resolve_handle_cached(__cache__, __addr__) (__cache__)(__addr__)
 
 void initialize_type_structure(PyTypeObject* structure, PyTypeObject* ptype, polyglot_typeid tid);
 
@@ -232,16 +233,16 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
 
 MUST_INLINE
 PyObject* native_to_java(PyObject* obj) {
-    if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
+    if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
     }
     return ptr_cache(obj);
 }
 
 MUST_INLINE
 PyObject* native_to_java_stealing(PyObject* obj) {
-    if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
+    if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
     }
     return ptr_cache_stealing(obj);
 }
@@ -249,16 +250,16 @@ PyObject* native_to_java_stealing(PyObject* obj) {
 
 MUST_INLINE
 PyTypeObject* native_type_to_java(PyTypeObject* type) {
-	if (!truffle_cannot_be_handle(type)) {
-        return (PyTypeObject *)truffle_managed_from_handle(type);
+	if (points_to_handle_space(type)) {
+        return (PyTypeObject *)resolve_handle(type);
     }
     return type_ptr_cache(type, Py_REFCNT(type));
 }
 
 MUST_INLINE
 void* native_pointer_to_java(void* obj) {
-    if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
+    if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
     }
     return obj;
 }
