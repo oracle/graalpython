@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.List;
 
@@ -134,6 +135,20 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Fallback
         boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return false;
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static long hash(PMethod self) {
+            return self.hash();
+        }
+
+        @Specialization
+        static long hash(PBuiltinMethod self) {
+            return self.hash();
         }
     }
 

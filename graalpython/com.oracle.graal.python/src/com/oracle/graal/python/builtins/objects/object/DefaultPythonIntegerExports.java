@@ -78,12 +78,12 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static int asIndex(Integer value) {
+    static int asIndexWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
         return value;
     }
 
     @ExportMessage
-    static int asSize(Integer value, @SuppressWarnings("unused") Object errorType) {
+    static int asSizeWithState(Integer value, @SuppressWarnings("unused") Object errorType, @SuppressWarnings("unused") ThreadState state) {
         return value;
     }
 
@@ -93,8 +93,8 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static long hash(Integer value) {
-        return hash(value.intValue());
+    static long hashWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore
@@ -103,7 +103,7 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Integer value) {
+    static boolean isTrueWithState(Integer value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0;
     }
 
@@ -252,12 +252,12 @@ final class DefaultPythonIntegerExports {
 
     @ExportMessage
     @CompilerDirectives.TruffleBoundary
-    static String asPString(Integer receiver) {
+    static String asPStringWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
         return Integer.toString(receiver);
     }
 
     @ExportMessage
-    static int asFileDescriptor(Integer x) {
+    static int asFileDescriptorWithState(Integer x, @SuppressWarnings("unused") ThreadState state) {
         return x;
     }
 
@@ -268,7 +268,7 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(Integer receiver) {
+    static double asJavaDoubleWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver.doubleValue();
     }
 
@@ -278,7 +278,7 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static long asJavaLong(Integer receiver) {
+    static long asJavaLongWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 
@@ -288,7 +288,7 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static int asPInt(Integer receiver) {
+    static int asPIntWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 

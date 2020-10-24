@@ -74,13 +74,13 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asIndex(Boolean value) {
+    static int asIndexWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
         return value ? 1 : 0;
     }
 
     @ExportMessage
-    static int asSize(Boolean value, @SuppressWarnings("unused") Object errorType) {
-        return asIndex(value);
+    static int asSizeWithState(Boolean value, @SuppressWarnings("unused") Object errorType, ThreadState state) {
+        return asIndexWithState(value, state);
     }
 
     @ExportMessage
@@ -94,8 +94,8 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static long hash(Boolean value) {
-        return hash((boolean) value);
+    static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore
@@ -104,7 +104,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Boolean value) {
+    static boolean isTrueWithState(Boolean value, @SuppressWarnings("unused") ThreadState threadState) {
         return value;
     }
 
@@ -247,12 +247,12 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static String asPString(Boolean receiver) {
+    static String asPStringWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver ? "True" : "False";
     }
 
     @ExportMessage
-    static int asFileDescriptor(Boolean x) {
+    static int asFileDescriptorWithState(Boolean x, @SuppressWarnings("unused") ThreadState threadState) {
         return x ? 1 : 0;
     }
 
@@ -263,7 +263,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(Boolean receiver) {
+    static double asJavaDoubleWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver ? 1.0 : 0.0;
     }
 
@@ -273,7 +273,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static long asJavaLong(Boolean receiver) {
+    static long asJavaLongWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver ? 1 : 0;
     }
 
@@ -283,7 +283,7 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asPInt(Boolean receiver) {
+    static int asPIntWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver ? 1 : 0;
     }
 

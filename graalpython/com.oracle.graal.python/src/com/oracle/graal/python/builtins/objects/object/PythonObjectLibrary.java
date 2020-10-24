@@ -154,7 +154,7 @@ public abstract class PythonObjectLibrary extends Library {
      * objects.
      */
     public void setLazyPythonClass(Object receiver, Object cls) {
-        PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES_NOT_P, receiver);
     }
 
     /**
@@ -243,19 +243,13 @@ public abstract class PythonObjectLibrary extends Library {
      * result of a {@link PArguments#getThreadState} call. It ensures that we can use fastcalls and
      * pass the thread state in the frame arguments.
      */
-    public long hashWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return hash(receiver);
-    }
+    public abstract long hashWithState(Object receiver, ThreadState threadState);
 
     /**
      * Potentially slower way to get the Python hash for the receiver. If a Python {@link Frame} is
      * available to the caller, {@link #hashWithState} should be preferred.
      */
-    public long hash(Object receiver) {
+    public final long hash(Object receiver) {
         return hashWithState(receiver, null);
     }
 
@@ -293,6 +287,7 @@ public abstract class PythonObjectLibrary extends Library {
 
         @Child private IsSubtypeNode isSubtype;
         @Child private IsSameTypeNode isSameType;
+        @Child private PRaiseNode raiseNode;
         @CompilationFinal byte state = 0;
 
         protected IsSubtypeNode getIsSubtypeNode() {
@@ -310,6 +305,14 @@ public abstract class PythonObjectLibrary extends Library {
                 isSameType = insert(IsSameTypeNodeGen.create());
             }
             return isSameType;
+        }
+
+        protected PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
         }
 
         protected void enterReverseCompare() {
@@ -347,6 +350,11 @@ public abstract class PythonObjectLibrary extends Library {
             @Override
             protected IsSameTypeNode getIsSameTypeNode() {
                 return IsSameTypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected PRaiseNode getRaiseNode() {
+                return PRaiseNode.getUncached();
             }
 
             @Override
@@ -471,7 +479,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #equalsWithState
      */
-    public boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
+    public final boolean equals(Object receiver, Object other, PythonObjectLibrary otherLibrary) {
         return equalsWithState(receiver, other, otherLibrary, null);
     }
 
@@ -517,17 +525,14 @@ public abstract class PythonObjectLibrary extends Library {
      * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
      * object cannot be interpreted as an index.
      */
-    public Object asIndexWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raiseIntegerInterpretationError(receiver);
-        }
-        return asIndex(receiver);
+    public Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw getDefaultNodes().getRaiseNode().raiseIntegerInterpretationError(receiver);
     }
 
     /**
      * @see #asIndexWithState
      */
-    public Object asIndex(Object receiver) {
+    public final Object asIndex(Object receiver) {
         return asIndexWithState(receiver, null);
     }
 
@@ -547,17 +552,14 @@ public abstract class PythonObjectLibrary extends Library {
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
      */
-    public String asPathWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
-        }
-        return asPath(receiver);
+    public String asPathWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, receiver);
     }
 
     /**
      * @see #asPathWithState
      */
-    public String asPath(Object receiver) {
+    public final String asPath(Object receiver) {
         return asPathWithState(receiver, null);
     }
 
@@ -566,18 +568,12 @@ public abstract class PythonObjectLibrary extends Library {
      *
      * Return a Python string from the receiver. Raise TypeError if the result is not a string.
      */
-    public Object asPStringWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asPString(receiver);
-    }
+    public abstract Object asPStringWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asPStringWithState
      */
-    public Object asPString(Object receiver) {
+    public final Object asPString(Object receiver) {
         return asPStringWithState(receiver, null);
     }
 
@@ -588,17 +584,14 @@ public abstract class PythonObjectLibrary extends Library {
      * Converted to int if possible, or if the object defines __fileno__(), then return the result
      * of that method. Raise TypeError otherwise.
      */
-    public int asFileDescriptorWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
-        }
-        return asFileDescriptor(receiver);
+    public int asFileDescriptorWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_INT_OR_HAVE_FILENO_METHOD);
     }
 
     /**
      * @see #asFileDescriptorWithState
      */
-    public int asFileDescriptor(Object receiver) {
+    public final int asFileDescriptor(Object receiver) {
         return asFileDescriptorWithState(receiver, null);
     }
 
@@ -693,7 +686,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Call a callable object.
      */
     public Object callObjectWithState(Object callable, ThreadState state, Object... arguments) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
+        throw getDefaultNodes().getRaiseNode().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callable);
     }
 
     /**
@@ -718,7 +711,7 @@ public abstract class PythonObjectLibrary extends Library {
      * @see #callUnboundMethod(Object, VirtualFrame, Object, Object...)
      */
     public Object callUnboundMethodWithState(Object method, ThreadState state, Object receiver, Object... arguments) {
-        throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
+        throw getDefaultNodes().getRaiseNode().raise(TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, method);
     }
 
     /**
@@ -800,18 +793,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Java {@code double}. This method follows the
      * semantics of CPython's function {@code PyFloat_AsDouble}.
      */
-    public double asJavaDoubleWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asJavaDouble(receiver);
-    }
+    public abstract double asJavaDoubleWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asJavaDoubleWithState
      */
-    public double asJavaDouble(Object receiver) {
+    public final double asJavaDouble(Object receiver) {
         return asJavaDoubleWithState(receiver, null);
     }
 
@@ -833,18 +820,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Python {@code int}. This method follows the
      * semantics of CPython's function {@code _PyLong_AsInt}.
      */
-    public Object asPIntWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asPInt(receiver);
-    }
+    public abstract Object asPIntWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asPIntWithState
      */
-    public Object asPInt(Object receiver) {
+    public final Object asPInt(Object receiver) {
         return asPIntWithState(receiver, null);
     }
 
@@ -866,18 +847,12 @@ public abstract class PythonObjectLibrary extends Library {
      * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
      * of CPython's function {@code PyLong_AsLong}.
      */
-    public long asJavaLongWithState(Object receiver, ThreadState threadState) {
-        if (threadState == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-        }
-        return asJavaLong(receiver);
-    }
+    public abstract long asJavaLongWithState(Object receiver, ThreadState threadState);
 
     /**
      * @see #asJavaLongWithState
      */
-    public long asJavaLong(Object receiver) {
+    public final long asJavaLong(Object receiver) {
         return asJavaLongWithState(receiver, null);
     }
 
@@ -904,20 +879,17 @@ public abstract class PythonObjectLibrary extends Library {
      * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
      */
     public int asSizeWithState(Object receiver, Object errorType, ThreadState threadState) {
-        if (threadState == null) {
-            // this will very likely always raise an integer interpretation error in
-            // asIndexWithState
-            long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, null));
-            int intResult = (int) result;
-            if (intResult == result) {
-                return intResult;
-            } else if (errorType == null) {
-                return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-            } else {
-                throw PRaiseNode.getUncached().raiseNumberTooLarge(errorType, result);
-            }
+        // this will very likely always raise an integer interpretation error in
+        // asIndexWithState
+        long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, threadState));
+        int intResult = (int) result;
+        if (intResult == result) {
+            return intResult;
+        } else if (errorType == null) {
+            return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        } else {
+            throw getDefaultNodes().getRaiseNode().raiseNumberTooLarge(errorType, result);
         }
-        return asSize(receiver, errorType);
     }
 
     /**
@@ -941,7 +913,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #asSizeWithState(Object, Object, ThreadState)
      */
-    public int asSize(Object receiver, Object errorClass) {
+    public final int asSize(Object receiver, Object errorClass) {
         return asSizeWithState(receiver, errorClass, null);
     }
 
@@ -974,16 +946,13 @@ public abstract class PythonObjectLibrary extends Library {
      * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
      */
     public boolean isTrueWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            return true;
-        }
-        return isTrue(receiver);
+        return true;
     }
 
     /**
      * @see #isTrueWithState
      */
-    public boolean isTrue(Object receiver) {
+    public final boolean isTrue(Object receiver) {
         return isTrueWithState(receiver, null);
     }
 
@@ -1009,16 +978,13 @@ public abstract class PythonObjectLibrary extends Library {
      * that slot.
      */
     public int lengthWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            throw PRaiseNode.getUncached().raiseHasNoLength(receiver);
-        }
-        return length(receiver);
+        throw getDefaultNodes().getRaiseNode().raiseHasNoLength(receiver);
     }
 
     /**
      * @see #lengthWithState
      */
-    public int length(Object receiver) {
+    public final int length(Object receiver) {
         return lengthWithState(receiver, null);
     }
 
@@ -1144,16 +1110,13 @@ public abstract class PythonObjectLibrary extends Library {
      * Implements the logic from {@code PyObject_GetIter}.
      */
     public Object getIteratorWithState(Object receiver, ThreadState state) {
-        if (state == null) {
-            throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
-        }
-        return getIterator(receiver);
+        throw getDefaultNodes().getRaiseNode().raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, receiver);
     }
 
     /**
      * @see #getIteratorWithState
      */
-    public Object getIterator(Object receiver) {
+    public final Object getIterator(Object receiver) {
         return getIteratorWithState(receiver, null);
     }
 

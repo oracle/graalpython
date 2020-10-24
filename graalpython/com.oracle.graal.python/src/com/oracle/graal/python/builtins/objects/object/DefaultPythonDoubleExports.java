@@ -80,8 +80,8 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static long hash(Double number) {
-        return hash(number.doubleValue());
+    static long hashWithState(Double number, @SuppressWarnings("unused") ThreadState state) {
+        return hash(number);
     }
 
     // Adapted from CPython _Py_HashDouble
@@ -121,7 +121,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Double value) {
+    static boolean isTrueWithState(Double value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0.0;
     }
 
@@ -193,12 +193,12 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static Object asPString(Double receiver,
+    static Object asPStringWithState(Double receiver, ThreadState state,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raise) {
-        return PythonAbstractObject.asPString(lib, receiver, null, isSubtypeNode, resultLib, raise);
+        return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, resultLib, raise);
     }
 
     @SuppressWarnings("static-method")
@@ -208,7 +208,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(Double receiver) {
+    static double asJavaDoubleWithState(Double receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 
@@ -218,7 +218,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static long asJavaLong(Double receiver,
+    static long asJavaLongWithState(Double receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
     }
@@ -229,7 +229,7 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static int asPInt(Double receiver,
+    static int asPIntWithState(Double receiver, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raise) {
         throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }

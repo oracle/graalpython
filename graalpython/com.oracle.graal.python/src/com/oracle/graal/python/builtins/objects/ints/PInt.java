@@ -246,16 +246,9 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public double asJavaDouble(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("castToDouble") @Cached CastToJavaDoubleNode castToDouble) {
-        return castToDouble.execute(lib.asIndex(this));
-    }
-
-    @ExportMessage
     public double asJavaDoubleWithState(ThreadState threadState,
                     @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("castToDouble") @Cached CastToJavaDoubleNode castToDouble) {
+                    @Cached CastToJavaDoubleNode castToDouble) {
         return castToDouble.execute(lib.asIndexWithState(this, threadState));
     }
 
@@ -266,14 +259,8 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public long asJavaLong(
-                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
-        return castToLong.execute(this);
-    }
-
-    @ExportMessage
     public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached @Shared("asJavaLong") CastToJavaLongLossyNode castToLong) {
+                    @Cached CastToJavaLongLossyNode castToLong) {
         return castToLong.execute(this);
     }
 
@@ -281,11 +268,6 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean canBePInt() {
         return true;
-    }
-
-    @ExportMessage
-    public PInt asPInt() {
-        return this;
     }
 
     @ExportMessage
