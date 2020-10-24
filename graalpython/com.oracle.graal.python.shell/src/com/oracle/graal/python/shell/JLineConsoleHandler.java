@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,9 +43,11 @@ package com.oracle.graal.python.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -54,195 +56,73 @@ import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
-import org.graalvm.polyglot.Context;
-
-import jline.console.ConsoleReader;
-import jline.console.UserInterruptException;
-import jline.console.completer.CandidateListCompletionHandler;
-import jline.console.completer.Completer;
-import jline.console.completer.CompletionHandler;
-import jline.console.history.History;
-import jline.console.history.MemoryHistory;
+import org.graalvm.shadowed.org.jline.reader.Candidate;
+import org.graalvm.shadowed.org.jline.reader.Completer;
+import org.graalvm.shadowed.org.jline.reader.EndOfFileException;
+import org.graalvm.shadowed.org.jline.reader.History;
+import org.graalvm.shadowed.org.jline.reader.LineReader;
+import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
+import org.graalvm.shadowed.org.jline.reader.ParsedLine;
+import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
+import org.graalvm.shadowed.org.jline.terminal.Terminal;
+import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 
 public class JLineConsoleHandler extends ConsoleHandler {
-    private final ConsoleReader console;
-    private final MemoryHistory history;
     private final boolean noPrompt;
+    private final Terminal terminal;
+    private LineReader reader;
+    private History history;
+    private String prompt;
 
     public JLineConsoleHandler(InputStream inStream, OutputStream outStream, boolean noPrompt) {
         this.noPrompt = noPrompt;
         try {
-            console = new ConsoleReader(inStream, outStream);
-            history = new MemoryHistory();
-            console.setHistory(history);
-            console.setHandleUserInterrupt(true);
-            console.setExpandEvents(false);
-            console.setCommentBegin("#");
+            this.terminal = TerminalBuilder.builder().jna(false).streams(inStream, outStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException ex) {
-            // TODO throw proper exception type
             throw new RuntimeException("unexpected error opening console reader", ex);
         }
     }
 
     @Override
-    public void addCompleter(Function<String, List<String>> completer) {
-        console.addCompleter(new Completer() {
-            public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-                if (buffer != null) {
-                    candidates.addAll(completer.apply(buffer));
+    public void setupReader(BooleanSupplier shouldRecord,
+                    IntSupplier getSize,
+                    Consumer<String> addItem,
+                    IntFunction<String> getItem,
+                    BiConsumer<Integer, String> setItem,
+                    IntConsumer removeItem,
+                    Runnable clear,
+                    Function<String, List<String>> completer) {
+        history = new HistoryImpl(shouldRecord, getSize, addItem, getItem, setItem, removeItem, clear);
+
+        LineReaderBuilder builder = LineReaderBuilder.builder();
+        builder = builder.terminal(terminal).history(history);
+        if (completer != null) {
+            builder.completer(new Completer() {
+                @Override
+                public void complete(LineReader r, ParsedLine pl, List<Candidate> candidates) {
+                    String line = pl.line();
+                    if (line != null) {
+                        List<String> l = completer.apply(line);
+                        for (String value : l) {
+                            candidates.add(new Candidate(value, value, null, null, null, null, false));
+                        }
+                    }
                 }
-                return candidates.isEmpty() ? -1 : 0;
-            }
-        });
-
-    }
-
-    @Override
-    public void setHistory(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
-                    Runnable clear) {
-        console.setHistory(new History() {
-            private int pos = getSize.getAsInt();
-
-            public int size() {
-                return getSize.getAsInt();
-            }
-
-            public void set(int arg0, CharSequence arg1) {
-                setItem.accept(arg0, arg1.toString());
-            }
-
-            public void replace(CharSequence arg0) {
-                if (pos < 0 || pos >= size()) {
-                    return;
-                }
-                setItem.accept(pos, arg0.toString());
-            }
-
-            public CharSequence removeLast() {
-                int t = size() - 1;
-                String s = getItem.apply(t);
-                removeItem.accept(t);
-                return s;
-            }
-
-            public CharSequence removeFirst() {
-                int t = size() - 1;
-                String s = getItem.apply(t);
-                removeItem.accept(0);
-                return s;
-            }
-
-            public CharSequence remove(int arg0) {
-                int t = size() - 1;
-                String s = getItem.apply(t);
-                removeItem.accept(arg0);
-                return s;
-            }
-
-            public boolean previous() {
-                if (pos >= 0) {
-                    pos--;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-            public boolean next() {
-                if (pos < size()) {
-                    pos++;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-            public boolean moveToLast() {
-                pos = size();
-                return true;
-            }
-
-            public boolean moveToFirst() {
-                pos = 0;
-                return true;
-            }
-
-            public void moveToEnd() {
-                moveToLast();
-            }
-
-            public boolean moveTo(int arg0) {
-                pos = arg0;
-                int size = size();
-                if (pos < 0 || pos >= size) {
-                    pos = pos % size;
-                    return false;
-                }
-                return true;
-            }
-
-            public Iterator<Entry> iterator() {
-                // TODO Auto-generated method stub
-                return null;
-            }
-
-            public boolean isEmpty() {
-                return size() == 0;
-            }
-
-            public int index() {
-                return pos;
-            }
-
-            public CharSequence get(int arg0) {
-                return getItem.apply(arg0);
-            }
-
-            public ListIterator<Entry> entries(int arg0) {
-                // TODO Auto-generated method stub
-                return null;
-            }
-
-            public ListIterator<Entry> entries() {
-                // TODO Auto-generated method stub
-                return null;
-            }
-
-            public CharSequence current() {
-                if (pos < 0 || pos >= size()) {
-                    return "";
-                }
-                return getItem.apply(pos);
-            }
-
-            public void clear() {
-                clear.run();
-            }
-
-            public void add(CharSequence arg0) {
-                if (shouldRecord.getAsBoolean()) {
-                    addItem.accept(arg0.toString());
-                    pos = size();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void setContext(Context context) {
-        CompletionHandler completionHandler = console.getCompletionHandler();
-        if (completionHandler instanceof CandidateListCompletionHandler) {
-            ((CandidateListCompletionHandler) completionHandler).setPrintSpaceAfterFullCompletion(false);
+            });
         }
+        reader = builder.build();
+        reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
+        reader.setVariable(LineReader.COMMENT_BEGIN, "#");
     }
 
     @Override
     public String readLine(boolean showPrompt) {
         try {
-            console.getTerminal().init();
-            return console.readLine(showPrompt ? console.getPrompt() : "");
+            return reader.readLine(showPrompt ? prompt : "");
         } catch (UserInterruptException e) {
             throw e;
+        } catch (EndOfFileException e) {
+            return null;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -250,33 +130,288 @@ public class JLineConsoleHandler extends ConsoleHandler {
 
     @Override
     public void setPrompt(String prompt) {
-        console.setPrompt(noPrompt ? "" : prompt != null ? prompt : "");
-    }
-
-    public void clearHistory() {
-        history.clear();
-    }
-
-    public void addToHistory(String input) {
-        history.add(input);
-    }
-
-    public String[] getHistory() {
-        String[] result = new String[history.size()];
-        for (int i = 0; i < history.size(); i++) {
-            result[i] = history.get(i).toString();
-        }
-        return result;
+        this.prompt = noPrompt ? "" : prompt != null ? prompt : "";
     }
 
     @Override
     public int getTerminalHeight() {
-        return console.getTerminal().getHeight();
+        return terminal.getHeight();
     }
 
     @Override
     public int getTerminalWidth() {
-        return console.getTerminal().getWidth();
+        return terminal.getWidth();
     }
 
+    private static class HistoryImpl implements History {
+        private final BooleanSupplier shouldRecord;
+        private final IntSupplier getSize;
+        private final Consumer<String> addItem;
+        private final IntFunction<String> getItem;
+        private final BiConsumer<Integer, String> setItem;
+        private final IntConsumer removeItem;
+        private final Runnable clear;
+
+        private int index;
+
+        public HistoryImpl(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
+                        Runnable clear) {
+            this.shouldRecord = shouldRecord;
+            this.getSize = getSize;
+            this.addItem = addItem;
+            this.getItem = getItem;
+            this.setItem = setItem;
+            this.removeItem = removeItem;
+            this.clear = clear;
+            index = getSize.getAsInt();
+        }
+
+        @Override
+        public int size() {
+            return getSize.getAsInt();
+        }
+
+        @Override
+        public void resetIndex() {
+            int size = size();
+            index = index > size ? size : index;
+        }
+
+        @Override
+        public int first() {
+            return 0;
+        }
+
+        @Override
+        public int last() {
+            return size() - 1;
+        }
+
+        @Override
+        public boolean previous() {
+            if (index <= 0) {
+                return false;
+            } else {
+                index--;
+                return true;
+            }
+        }
+
+        @Override
+        public boolean next() {
+            if (index >= size()) {
+                return false;
+            } else {
+                index++;
+                return true;
+            }
+        }
+
+        @Override
+        public boolean moveTo(int idx) {
+            if (idx >= 0 && idx < size()) {
+                this.index = idx;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean moveToLast() {
+            int lastEntry = size() - 1;
+            if (lastEntry >= 0 && lastEntry != index) {
+                index = lastEntry;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void moveToEnd() {
+            index = size();
+        }
+
+        @Override
+        public boolean moveToFirst() {
+            if (size() > 0 && index != 0) {
+                index = 0;
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return size() == 0;
+        }
+
+        @Override
+        public int index() {
+            return index;
+        }
+
+        @Override
+        public String get(int idx) {
+            return getItem.apply(idx);
+        }
+
+        @Override
+        public String current() {
+            if (index < 0 || index >= size()) {
+                return "";
+            }
+            return getItem.apply(index);
+        }
+
+        @Override
+        public void add(String string) {
+            if (shouldRecord.getAsBoolean()) {
+                addItem.accept(string);
+                index = size();
+            }
+        }
+
+        @Override
+        public void add(Instant instnt, String string) {
+            add(string);
+        }
+
+        private void add(int idx, String val) {
+            setItem.accept(idx, val);
+        }
+
+        @Override
+        public void purge() throws IOException {
+            clear.run();
+        }
+
+        @Override
+        public ListIterator<History.Entry> iterator(int i) {
+            return new HistoryIterator(i);
+        }
+
+        private class HistoryIterator implements ListIterator<History.Entry> {
+            private int iterIndex;
+
+            public HistoryIterator(int idx) {
+                this.iterIndex = idx;
+            }
+
+            @Override
+            public boolean hasNext() {
+                int size = HistoryImpl.this.size();
+                return size > 0 && iterIndex < size;
+            }
+
+            @Override
+            public int nextIndex() {
+                return iterIndex;
+            }
+
+            @Override
+            public History.Entry next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                HistoryEntry e = new HistoryEntry(iterIndex++);
+                return e;
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                int size = HistoryImpl.this.size();
+                return size > 0 && iterIndex > 0;
+            }
+
+            @Override
+            public int previousIndex() {
+                return iterIndex - 1;
+            }
+
+            @Override
+            public History.Entry previous() {
+                if (!hasPrevious()) {
+                    throw new NoSuchElementException();
+                }
+                HistoryEntry e = new HistoryEntry(--iterIndex);
+                return e;
+            }
+
+            @Override
+            public void remove() {
+                removeItem.accept(iterIndex);
+                while (iterIndex > HistoryImpl.this.size()) {
+                    iterIndex--;
+                }
+            }
+
+            @Override
+            public void set(History.Entry e) {
+                HistoryImpl.this.add(iterIndex, e.line());
+            }
+
+            @Override
+            public void add(History.Entry e) {
+                HistoryImpl.this.add(size(), e.line());
+            }
+        }
+
+        class HistoryEntry implements Entry {
+            private final int entryIndex;
+
+            public HistoryEntry(int idx) {
+                this.entryIndex = idx;
+            }
+
+            @Override
+            public int index() {
+                return entryIndex;
+            }
+
+            @Override
+            public Instant time() {
+                return Instant.ofEpochMilli(0);
+            }
+
+            @Override
+            public String line() {
+                return HistoryImpl.this.get(entryIndex);
+            }
+
+            @Override
+            public String toString() {
+                return "<HistoryEntry: " + entryIndex + " " + HistoryImpl.this.get(entryIndex) + " >";
+            }
+        }
+
+        @Override
+        public void attach(LineReader reader) {
+
+        }
+
+        @Override
+        public void load() throws IOException {
+
+        }
+
+        @Override
+        public void save() throws IOException {
+
+        }
+
+        @Override
+        public void write(Path path, boolean bln) throws IOException {
+
+        }
+
+        @Override
+        public void append(Path path, boolean bln) throws IOException {
+
+        }
+
+        @Override
+        public void read(Path path, boolean bln) throws IOException {
+
+        }
+    }
 }
