@@ -142,6 +142,7 @@ import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltin
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
@@ -349,6 +350,7 @@ public final class Python3Core implements PythonCore {
                         new AbstractMethodBuiltins(),
                         new MethodBuiltins(),
                         new BuiltinMethodBuiltins(),
+                        new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
                         new MappingproxyBuiltins(),
