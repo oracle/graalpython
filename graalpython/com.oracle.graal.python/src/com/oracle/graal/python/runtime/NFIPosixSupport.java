@@ -63,6 +63,8 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int UNAME_BUF_LENGTH = 256;
+
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
@@ -81,6 +83,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fsync("(sint32):sint32"),
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
+        call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -126,6 +129,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // strerror_r().
         byte[] buf = new byte[1024];
         invokeNode.call(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
+        // TODO PyUnicode_DecodeLocale
         return cStringToJavaString(buf);
     }
 
@@ -354,6 +358,28 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
+    }
+
+    @ExportMessage
+    public String[] uname(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        byte[] sys = new byte[UNAME_BUF_LENGTH];
+        byte[] node = new byte[UNAME_BUF_LENGTH];
+        byte[] rel = new byte[UNAME_BUF_LENGTH];
+        byte[] ver = new byte[UNAME_BUF_LENGTH];
+        byte[] machine = new byte[UNAME_BUF_LENGTH];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_uname, wrap(sys), wrap(node), wrap(rel), wrap(ver), wrap(machine), UNAME_BUF_LENGTH);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new String[] {
+                // TODO PyUnicode_DecodeFSDefault
+                cStringToJavaString(sys),
+                cStringToJavaString(node),
+                cStringToJavaString(rel),
+                cStringToJavaString(ver),
+                cStringToJavaString(machine)
+        };
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

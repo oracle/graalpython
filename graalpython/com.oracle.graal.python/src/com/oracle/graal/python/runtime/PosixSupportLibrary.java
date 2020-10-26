@@ -107,9 +107,12 @@ public abstract class PosixSupportLibrary extends Library {
      * @param filename filename for the error message, can be null
      * @param handleEintr if {@code true}, EINTR causes the call to be repeated
      * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array
-     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is {@code false}
+     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
+     *             {@code false}
      */
     public abstract long[] fstat(Object receiver, int fd, Object filename, boolean handleEintr) throws PosixException;
+
+    public abstract String[] uname(Object receiver) throws PosixException;
 
     public static class PosixException extends Exception {
 

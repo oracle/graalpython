@@ -1530,6 +1530,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_uname", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class NfiUnameNode extends PythonBuiltinNode {
+
+        @Specialization
+        PTuple uname(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return factory().createTuple(posixLib.uname(getPosixSupport()));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

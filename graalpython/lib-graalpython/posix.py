@@ -153,6 +153,12 @@ old_uname = uname
 def uname():
     return uname_result(old_uname())
 
+old_nfi_uname = nfi_uname
+@__graalpython__.builtin
+def nfi_uname():
+    return uname_result(old_nfi_uname())
+
+
 error = OSError
 
 terminal_size = make_named_tuple_class("os.terminal_size", ["columns", "lines"])

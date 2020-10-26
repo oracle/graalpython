@@ -52,6 +52,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/utsname.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -229,6 +231,19 @@ int32_t call_fstat(int32_t fd, int64_t *out) {
     int result = fstat(fd, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) {
+    struct utsname buf;
+    int result = uname(&buf);
+    if (result == 0) {
+        snprintf(sysname, size, "%s", buf.sysname);
+        snprintf(nodename, size, "%s", buf.nodename);
+        snprintf(release, size, "%s", buf.release);
+        snprintf(version, size, "%s", buf.version);
+        snprintf(machine, size, "%s", buf.machine);
     }
     return result;
 }
