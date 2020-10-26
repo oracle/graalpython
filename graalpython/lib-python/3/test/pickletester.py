@@ -198,7 +198,7 @@ class ZeroCopyBytes(bytes):
     zero_copy_reconstruct = True
 
     def __reduce_ex__(self, protocol):
-        if protocol >= 5 and pickle._HAVE_PICKLE_BUFFER:
+        if protocol >= 5:
             return type(self)._reconstruct, (pickle.PickleBuffer(self),), None
         else:
             return type(self)._reconstruct, (bytes(self),)
@@ -2724,6 +2724,7 @@ class AbstractPickleTests(unittest.TestCase):
     # XXX Unfortunately cannot test non-contiguous array
     # (see comment in PicklableNDArray.__reduce_ex__)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_oob_buffers(self):
         # Test out-of-band buffers (PEP 574)
         for obj in self.buffer_like_objects():
@@ -2766,6 +2767,7 @@ class AbstractPickleTests(unittest.TestCase):
                     self.assertIs(type(new), type(obj))
                     self.assertEqual(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_oob_buffers_writable_to_readonly(self):
         # Test reconstructing readonly object from writable buffer
         obj = ZeroCopyBytes(b"foobar")
@@ -2779,6 +2781,7 @@ class AbstractPickleTests(unittest.TestCase):
             self.assertIs(type(new), type(obj))
             self.assertEqual(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_picklebuffer_error(self):
         # PickleBuffer forbidden with protocol < 5
         pb = pickle.PickleBuffer(b"foobar")
@@ -2786,6 +2789,7 @@ class AbstractPickleTests(unittest.TestCase):
             with self.assertRaises(pickle.PickleError):
                 self.dumps(pb, proto)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_buffer_callback_error(self):
         def buffer_callback(buffers):
             1/0
@@ -2793,6 +2797,7 @@ class AbstractPickleTests(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError):
             self.dumps(pb, 5, buffer_callback=buffer_callback)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_buffers_error(self):
         pb = pickle.PickleBuffer(b"foobar")
         for proto in range(5, pickle.HIGHEST_PROTOCOL + 1):
@@ -3185,7 +3190,6 @@ class AbstractPickleModuleTests(unittest.TestCase):
                 dumps(obj, protocol=proto,
                       buffer_callback=[].append)
         for proto in range(5, pickle.HIGHEST_PROTOCOL + 1):
-            print("> special proto > ", proto)
             buffers = []
             buffer_callback = buffers.append
             data = dumps(obj, protocol=proto,
@@ -3198,10 +3202,12 @@ class AbstractPickleModuleTests(unittest.TestCase):
             new = loads(data, buffers=buffers)
             self.assertIs(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_dumps_loads_oob_buffers(self):
         # Test out-of-band buffers (PEP 574) with top-level dumps() and loads()
         self.check_dumps_loads_oob_buffers(self.dumps, self.loads)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_dump_load_oob_buffers(self):
         # Test out-of-band buffers (PEP 574) with top-level dump() and load()
         def dumps(obj, **kwargs):
