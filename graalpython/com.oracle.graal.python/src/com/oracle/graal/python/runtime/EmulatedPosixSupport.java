@@ -450,6 +450,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void unlinkAt(int dirFd, PosixPath pathname) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
     // ------------------
     // Helpers
 

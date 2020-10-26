@@ -114,6 +114,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract String[] uname(Object receiver) throws PosixException;
 
+    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname) throws PosixException;
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;

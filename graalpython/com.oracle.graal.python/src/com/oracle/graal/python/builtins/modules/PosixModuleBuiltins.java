@@ -1545,6 +1545,31 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiUnlinkNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiUnlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object unlink(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.remove", path.originalObject, dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd);
+            try {
+                posixLib.unlinkAt(getPosixSupport(), dirFd, path);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

@@ -71,7 +71,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
-        call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
+        call_openat("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
         call_write("(sint32, [sint8], uint64):sint64"),
@@ -84,6 +84,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
         call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
+        call_unlinkat("(sint32, [sint8]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -154,7 +155,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
+            int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
                 return fd;
             }
@@ -380,6 +381,15 @@ public final class NFIPosixSupport extends PosixSupport {
                 cStringToJavaString(ver),
                 cStringToJavaString(machine)
         };
+    }
+
+    @ExportMessage
+    public void unlinkAt(int dirFd, PosixPath pathname,
+                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname));
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {

@@ -60,7 +60,7 @@
 
 
 int64_t call_getpid() {
-  return getpid();
+    return getpid();
 }
 
 int64_t call_umask(int64_t mask) {
@@ -92,7 +92,7 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
     return res;
 }
 
-int32_t call_open_at(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
     return openat(dirFd, pathname, flags, mode);
 }
 
@@ -246,6 +246,10 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
         snprintf(machine, size, "%s", buf.machine);
     }
     return result;
+}
+
+int32_t call_unlinkat(int32_t dirFd, const char *pathname) {
+    return unlinkat(dirFd, pathname, 0);
 }
 
 int32_t get_errno() {
