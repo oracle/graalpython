@@ -230,7 +230,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
         Object[] oldMRO = this.methodResolutionOrder.getInternalArray();
 
-        Set<PythonAbstractClass> subclasses = GetSubclassesNode.getUncached().execute(this);
+        Set<PythonAbstractClass> subclasses = getSubClasses();
         PythonAbstractClass[] subclassesArray = subclasses.toArray(new PythonAbstractClass[subclasses.size()]);
         Object[][] oldSubClasssMROs = new Object[subclasses.size()][];
         for (int i = 0; i < subclassesArray.length; i++) {
@@ -251,6 +251,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
             this.methodResolutionOrder.lookupChanged();
 
+            if (this.baseClasses == newBaseClasses) {
+                // take no action if bases were replaced through reentrance
                 for (PythonAbstractClass scls : subclasses) {
                     if (scls instanceof PythonManagedClass) {
                         PythonManagedClass pmc = (PythonManagedClass) scls;
@@ -258,6 +260,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                         pmc.methodResolutionOrder.lookupChanged();
                     }
                 }
+                for (PythonAbstractClass obc : oldBaseClasses) {
+                    if (obc instanceof PythonManagedClass) {
+                        ((PythonManagedClass) obc).getSubClasses().remove(this);
+                    }
+                }
+            }
+
         } catch (PException pe) {
             // undo
             for (int i = 0; i < newBaseClasses.length; i++) {
