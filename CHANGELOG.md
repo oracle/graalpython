@@ -3,6 +3,8 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 21.0.0
+
 ## Version 20.3.0
 
 * Fix multiple memory leaks when running Python code in a shared engine.
