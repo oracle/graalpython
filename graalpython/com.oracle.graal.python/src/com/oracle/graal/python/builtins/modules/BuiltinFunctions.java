@@ -1711,7 +1711,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", obj);
         }
 
-        @TruffleBoundary
+	@TruffleBoundary
         private static String strFormat(String fmt, Object... objects) {
             return String.format(fmt, objects);
         }
