@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -60,8 +59,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -141,9 +138,8 @@ public class BuiltinClassmethodBuiltins extends PythonBuiltins {
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object name(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            PythonModule builtins = context.getCore().getBuiltins();
+            PythonModule builtins = getContext().getCore().getBuiltins();
             Object gettattr = lib.lookupAttributeStrict(builtins, frame, GETATTR);
             Object type = lib.lookupAttributeStrict(self, frame, __OBJCLASS__);
             Object name = lib.lookupAttributeStrict(self, frame, __NAME__);
