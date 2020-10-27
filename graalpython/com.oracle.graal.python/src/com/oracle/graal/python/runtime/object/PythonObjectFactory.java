@@ -468,6 +468,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.getInstanceShape(getLanguage()), callable));
     }
 
+    public PDecoratedMethod createBuiltinClassmethodFromCallableObj(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PBuiltinClassMethod, PythonBuiltinClassType.PBuiltinClassMethod.getInstanceShape(getLanguage()), callable));
+    }
+
     public PDecoratedMethod createStaticmethod(Object cls) {
         return trace(new PDecoratedMethod(cls, getShape(cls)));
     }

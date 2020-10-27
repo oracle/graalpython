@@ -69,6 +69,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIterator("iterator", false),
     PBuiltinFunction("method_descriptor", false),
     PBuiltinMethod("builtin_function_or_method", false),
+    PBuiltinClassMethod("classmethod_descriptor", false),
     PByteArray("bytearray", BuiltinNames.BUILTINS),
     PBytes("bytes", BuiltinNames.BUILTINS),
     PCell("cell", false),

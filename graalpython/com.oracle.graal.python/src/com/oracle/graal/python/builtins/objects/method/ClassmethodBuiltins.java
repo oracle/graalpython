@@ -72,7 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PBuiltinClassMethod})
 public class ClassmethodBuiltins extends PythonBuiltins {
 
     @Override

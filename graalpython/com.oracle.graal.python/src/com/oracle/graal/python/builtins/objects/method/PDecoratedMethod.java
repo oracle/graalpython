@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
@@ -72,7 +73,11 @@ public class PDecoratedMethod extends PythonBuiltinObject implements BoundBuilti
         this.callable = callable;
     }
 
+    @SuppressWarnings("unchecked")
     public Object boundToObject(PythonBuiltinClassType binding, PythonObjectFactory factory) {
+        if (PythonObjectLibrary.getUncached().getLazyPythonClass(this) != PythonBuiltinClassType.PStaticmethod && callable instanceof BoundBuiltinCallable) {
+            return factory.createBuiltinClassmethodFromCallableObj(((BoundBuiltinCallable<Object>) callable).boundToObject(binding, factory));
+        }
         return this;
     }
 
