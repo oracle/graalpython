@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMe
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
@@ -453,6 +452,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     public void unlinkAt(int dirFd, PosixPath pathname) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void symlinkAt(PosixPath target, int dirFd, PosixPath linkpath) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

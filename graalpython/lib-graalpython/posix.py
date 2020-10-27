@@ -62,11 +62,19 @@ def stat(filename, follow_symlinks=True):
     return stat_result(old_stat(filename, follow_symlinks=follow_symlinks))
 
 old_nfi_stat = nfi_stat
-
-
 @__graalpython__.builtin
 def nfi_stat(filename, follow_symlinks=True, dir_fd=None):
     return stat_result(old_nfi_stat(filename, follow_symlinks=follow_symlinks, dir_fd=dir_fd))
+
+old_nfi_lstat = nfi_lstat
+@__graalpython__.builtin
+def nfi_lstat(filename, dir_fd=None):
+    return stat_result(old_nfi_lstat(filename, dir_fd=dir_fd))
+
+old_nfi_fstat = nfi_fstat
+@__graalpython__.builtin
+def nfi_fstat(fd):
+    return stat_result(old_nfi_fstat(fd))
 
 
 __dir_entry_old_stat = DirEntry.stat

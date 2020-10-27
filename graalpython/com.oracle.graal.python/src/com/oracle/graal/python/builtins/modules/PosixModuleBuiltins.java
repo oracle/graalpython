@@ -1414,12 +1414,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isDefault(dirFd)", "!followSymlinks"})
         @SuppressWarnings("unused")
-        Object doStat(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
+        Object doStatFdWithFollowSYmlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
             throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "stat");
         }
 
         @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
-        Object doStat(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        Object doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd.fd, fd.originalObject, false);
@@ -1470,10 +1470,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path", "dir_fd"})
-    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    public abstract static class NfiLStatNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class NfiLStatNode extends PythonBinaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1490,28 +1490,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
-
-        @Specialization(guards = "!isDefault(dirFd)")
-        @SuppressWarnings("unused")
-        Object doStatFdWithDirFd(PosixFd fd, int dirFd) {
-            throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "lstat");
-        }
-
-        @Specialization(guards = {"isDefault(dirFd)"})
-        @SuppressWarnings("unused")
-        Object doStat(VirtualFrame frame, PosixFd fd, int dirFd) {
-            throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "lstat");
-        }
-
-        protected static boolean isDefault(int dirFd) {
-            return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
-        }
     }
 
     @Builtin(name = "nfi_fstat", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    abstract static class NfiFStatNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiFStatNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1519,7 +1503,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStatPath(VirtualFrame frame, int fd,
+        Object doStatFd(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd, null, true);
@@ -1557,12 +1541,37 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object unlink(VirtualFrame frame, PosixPath path, int dirFd,
+        PNone unlink(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.remove", path.originalObject, dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd);
             try {
                 posixLib.unlinkAt(getPosixSupport(), dirFd, path);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "nfi_symlink", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst", "target_is_directory"}, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "target_is_directory", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiSymlinkNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiSymlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone symlink(VirtualFrame frame, PosixPath src, PosixPath dst, @SuppressWarnings("unused") boolean targetIsDir, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                posixLib.symlinkAt(getPosixSupport(), src, dirFd, dst);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }

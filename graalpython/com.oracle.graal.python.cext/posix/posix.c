@@ -252,6 +252,10 @@ int32_t call_unlinkat(int32_t dirFd, const char *pathname) {
     return unlinkat(dirFd, pathname, 0);
 }
 
+int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
+    return symlinkat(target, dirFd, linkpath);
+}
+
 int32_t get_errno() {
     return errno;
 }

@@ -85,6 +85,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fstat("(sint32, [sint64]):sint32"),
         call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
         call_unlinkat("(sint32, [sint8]):sint32"),
+        call_symlinkat("([sint8], sint32, [sint8]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -373,22 +374,31 @@ public final class NFIPosixSupport extends PosixSupport {
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        return new String[] {
-                // TODO PyUnicode_DecodeFSDefault
-                cStringToJavaString(sys),
-                cStringToJavaString(node),
-                cStringToJavaString(rel),
-                cStringToJavaString(ver),
-                cStringToJavaString(machine)
+        return new String[]{
+                        // TODO PyUnicode_DecodeFSDefault
+                        cStringToJavaString(sys),
+                        cStringToJavaString(node),
+                        cStringToJavaString(rel),
+                        cStringToJavaString(ver),
+                        cStringToJavaString(machine)
         };
     }
 
     @ExportMessage
     public void unlinkAt(int dirFd, PosixPath pathname,
-                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname));
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
+    }
+
+    @ExportMessage
+    public void symlinkAt(PosixPath target, int dirFd, PosixPath linkpath,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), dirFd, pathToCString(linkpath));
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
         }
     }
 
@@ -410,6 +420,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
         throw new PosixException(errno, strerror(errno, invokeNode), filename);
+    }
+
+    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
+        throw new PosixException(errno, strerror(errno, invokeNode), filename1, filename2);
     }
 
     private Object wrap(byte[] bytes) {
