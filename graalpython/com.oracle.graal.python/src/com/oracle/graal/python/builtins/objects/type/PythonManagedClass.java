@@ -241,12 +241,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
 
         try {
-            for (PythonAbstractClass base : newBaseClasses) {
-                if (base != null) {
-                    GetSubclassesNode.getUncached().execute(base).add(this);
-                }
-            }
-
+            // for what follows see also typeobject.c#type_set_bases()
             this.baseClasses = newBaseClasses;
             this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
             this.methodResolutionOrder.lookupChanged();
@@ -258,6 +253,20 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                     pmc.methodResolutionOrder.lookupChanged();
                 }
             }
+            if (this.baseClasses == newBaseClasses) {
+                // take no action if bases were replaced through reentrance
+                for (PythonAbstractClass base : oldBaseClasses) {
+                    if (base instanceof PythonManagedClass) {
+                        GetSubclassesNode.getUncached().execute(base).remove(this);
+                    }
+                }
+                for (PythonAbstractClass base : newBaseClasses) {
+                    if (base instanceof PythonManagedClass) {
+                        GetSubclassesNode.getUncached().execute(base).add(this);
+                    }
+                }
+            }
+
         } catch (PException pe) {
             // undo
             for (int i = 0; i < newBaseClasses.length; i++) {
@@ -268,8 +277,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                     s.addAll(newBasesSubclasses.get(i));
                 }
             }
-
-            this.baseClasses = oldBaseClasses;
+            if (this.baseClasses == newBaseClasses) {
+                // take no action if bases were replaced through reentrance
+                // revert only if set in this call
+                // e.g. the mro() call might have manipulated __bases__
+                this.baseClasses = oldBaseClasses;
+            }
             this.methodResolutionOrder.setInternalArrayObject(oldMRO);
             this.methodResolutionOrder.lookupChanged();
 
