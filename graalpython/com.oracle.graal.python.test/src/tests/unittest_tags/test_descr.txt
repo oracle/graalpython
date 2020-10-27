@@ -106,6 +106,8 @@
 *graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_on_base
 *graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_on_direct_base
 *graalpython.lib-python.3.test.test_descr.MroTest.test_reent_set_bases_tp_base_cycle
+*graalpython.lib-python.3.test.test_descr.MroTest.test_tp_subclasses_cycle_error_return_path
+*graalpython.lib-python.3.test.test_descr.MroTest.test_tp_subclasses_cycle_in_update_slots
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_complexes
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_dicts
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_explicit_reverse_methods
