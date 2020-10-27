@@ -26,7 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.GETATTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
@@ -36,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -49,11 +47,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
@@ -62,7 +58,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -204,40 +199,6 @@ public class MethodBuiltins extends PythonBuiltins {
                         @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(self);
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonBuiltinNode {
-        protected boolean isSelfModuleOrNull(PMethod method) {
-            return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
-        }
-
-        @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
-                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            return getName(frame, method, toJavaStringNode, pol);
-        }
-
-        @Specialization(guards = "!isSelfModuleOrNull(method)")
-        Object doSelfIsObjet(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
-                        @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            PythonModule builtins = getCore().getBuiltins();
-            Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
-            PTuple args = factory().createTuple(new Object[]{method.getSelf(), getName(frame, method, toJavaStringNode, pol)});
-            return factory().createTuple(new Object[]{getattr, args});
-        }
-
-        private String getName(VirtualFrame frame, PMethod method, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
-            Object func = method.getFunction();
-            Object funcName = pol.lookupAttribute(func, frame, __QUALNAME__);
-            if (funcName == PNone.NO_VALUE) {
-                funcName = pol.lookupAttribute(func, frame, __NAME__);
-            }
-            return toJavaStringNode.execute(funcName);
         }
     }
 
