@@ -1,6 +1,6 @@
 # Python Code Parsing and pyc Files
 
-This guide elaborates on how Python files are parsed on the GraalVM Python runtime.
+This guide elaborates on how Python files are parsed on GraalVM's Python runtime.
 
 ## Parser Performance
 

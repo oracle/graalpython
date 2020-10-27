@@ -1,6 +1,6 @@
 # GraalVM Python Implementation
 
-GraalVM provides the Python 3.8 compliant runtime.
+GraalVM provides a Python 3.8 compliant runtime.
 A primary goal of the Python implementation is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
 At this point, the Python implementation is made available for experimentation and curious end-users.
 See [FAQ](FAQ.md) for commonly asked questions about this implementation.
@@ -33,7 +33,7 @@ graalpython --help --help:tools --help:languages
 
 ## Installing Supported Packages
 
-Python comes with a tool called `ginstall` which may be used to install a small list of packages known to work to some extent with GraalVM's Python runtime.
+GraalVM Python implementation comes with a tool called `ginstall` which may be used to install a small list of packages known to work to some extent with GraalVM's Python runtime.
 It is recommended to always create a virtual environment first, using the standard Python module `venv`.
 Creating such an environment avoids any incompatible interaction with the local user's packages that may have been
 installed using a system installation of CPython:
