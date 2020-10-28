@@ -619,4 +619,8 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
+
+    public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
+        "The ability to return an instance of a strict subclass of %s " +
+        "is deprecated, and may be removed in a future version of Python.";
 }

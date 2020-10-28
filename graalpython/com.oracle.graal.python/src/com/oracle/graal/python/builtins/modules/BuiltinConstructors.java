@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -966,6 +967,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(objectLib, obj)"}, limit = "1")
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
                         @CachedLibrary("obj") PythonObjectLibrary objectLib,
+                        @Cached WarnNode warnNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary indexLib) {
             // Follows logic from PyNumber_Float:
@@ -981,7 +983,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     if (PGuards.isPFloat(result)) {
                         if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PFloat)) {
-                            // TODO deprecation warning
+                            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                            ErrorMessages.P_RETURNED_NON_P,
+                                            obj, "__float__", "float", result, "float");
                         }
                         return ((PFloat) result).getValue();
                     }
