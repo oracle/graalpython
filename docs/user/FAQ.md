@@ -13,10 +13,10 @@ See the [Jython Compatibility](Jython.md) guide for details.
 
 ### Do I need to compile and run native modules as LLVM bitcode to use on GraalVM's Python runtime?
 
-If you want to run C extensions or use certain built-in features, yes, you need to build the module with GraalVM's Python runtime, and then it will run using the GraalVM LLVM runtime.
+On GraalVM, Python C extension modules run using the GraalVM LLVM runtime.
+To use such modules, you cannot use binary distributions, but instead you must install them from source using the GraalVM Python runtime, which will transparently produce LLVM bitcode during the build process.
 However, many of the core features of Python (including, e.g., large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
-So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases
-you can disallow native modules entirely.
+So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases you can disallow native modules entirely.
 
 ### Can I use the GraalVM sandboxing features with Python?
 

@@ -7,7 +7,7 @@ See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 ## Installing Python
 
-Python can be added to GraalVM with the [GraalVM Updater](https://www.graalvm.org/reference-manual/graalvm-updater), gu, tool:
+The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://www.graalvm.org/reference-manual/graalvm-updater), `gu`, tool:
 ```shell
 gu install python
 ```
