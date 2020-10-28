@@ -1,82 +1,69 @@
-# Python Implementation for GraalVM
+# GraalVM Python Runtime
 
-GraalVM provides an implementation of Python 3.8. A primary goal of the Python
-implementation is to support SciPy and its constituent libraries as well as to work
-with other data science and machine learning libraries from the rich Python
-ecosystem. At this point, the Python implementation is made available for
-experimentation and curious end-users.  See [FAQ](FAQ.md) for commonly asked
-questions about this implementation.
+GraalVM provides a Python 3.8 compliant runtime.
+A primary goal of the GraalVM Python runtime is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+At this point, the Python runtime is made available for experimentation and curious end-users.
+See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 ## Installing Python
 
-Python can be added to the GraalVM installation with the [GraalVM Updater](https://www.graalvm.org/docs/reference-manual/gu/), `gu`, tool:
+The Python runtime is not provided by default, and can be added to GraalVM with the [GraalVM Updater](https://www.graalvm.org/reference-manual/graalvm-updater), `gu`, tool:
 ```shell
 gu install python
 ```
-The above command will install a community version of a component from GitHub catalog.
-For GraalVM Enterprise users, the [manual component installation](https://www.graalvm.org/docs/reference-manual/gu/#manual-installation) is required. See `bin/gu --help` for more information.
+
+The above command will install Python from the GitHub catalog for GraalVM Community Edition users.
+For GraalVM Enterprise users, the [manual installation](https://www.graalvm.org/reference-manual/graalvm-updater/#manual-installation) is required.
 
 ## Running Python
 
-GraalVM implementation of Python targets Python 3.8 compatibility. While support
-for the Python language is still limited, you can run simple Python scripts or
-commands with the `graalpython` binary.
+GraalVM's Python support targets Python 3.8 compatibility.
+While the support is still limited, you can run simple Python commands or programs with the `graalpython` launcher:
 ```shell
 graalpython [options] [-c cmd | filename]
 ```
 
 If no program file or command is given, you are dropped into a simple REPL.
 
-GraalVM supports some of the same options as Python 3.8 and some additional
-options to control the underlying Python implementation, the GraalVM tools
-and the execution engine. These can be viewed using the following command:
-
+GraalVM supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
+These can be viewed using the following command:
 ```shell
 graalpython --help --help:tools --help:languages
 ```
 
 ## Installing Supported Packages
 
-Python comes with a tool called `ginstall` used to install a small list of
-packages known to work to some extent with GraalVM implementation of Python.
-It is recommended to always create a virtual environment first, using the
-standard Python module `venv`. Creating such an environment avoids any
-incompatible interaction with the local user's packages that may have been
+GraalVM Python runtime comes with a tool called `ginstall` which may be used to install a small list of packages known to work to some extent with GraalVM's Python runtime.
+It is recommended to always create a virtual environment first, using the standard Python module `venv`.
+Creating such an environment avoids any incompatible interaction with the local user's packages that may have been
 installed using a system installation of CPython:
-
 ```shell
 graalpython -m venv my_new_venv
 source my_new_venv/bin/activate
 ```
 
 To see the list of installable packages, run:
-
 ```shell
 graalpython -m ginstall install --help
 ```
 
-This will print a short help including a comma-separated list of packages you
-can install. The installation works as described in that help:
-
+This will print a short help document including a comma-separated list of packages you
+can install. The installation works as described in that help document:
 ```shell
 graalpython -m ginstall install pandas
 ```
 
-Note that when using the GraalVM implementation of Python from Java, the
-polyglot shell, or another language, you should always evaluate the piece of
-Python code first to make installed packages available:
-
+Note that when calling Python from Java, the polyglot shell, or another language on GraalVM, you should always evaluate the piece of Python code first to make installed packages available:
 ```shell
 import site
 ```
 
-Continue reading to the [Installing Supported Packages](Packages.md) guide.
+For more information, continue reading to the [Installing Supported Packages](Packages.md) guide.
 
-### Native Image and JVM Runtime
+## Native Image and JVM Runtime
 
-By default, GraalVM runs Python from an ahead-of-time compiled binary, yielding
-faster startup time and lower footprint. However, the ahead-of-time compiled
-binary only includes the Python and LLVM interpreters. To interoperate with
-other languages, we had to supply the `--jvm` argument above. This instructs the
-launcher to run on the JVM instead of in the Native Image mode -- you will notice a
-longer startup time.
+By default, GraalVM runs Python from a binary, compiled ahead-of-time with [Native Image](https://www.graalvm.org/reference-manual/native-image/), yielding faster startup time and lower footprint.
+Although the ahead-of-time compiled binary includes the Python and LLVM interpreters, in order to interoperate with
+other languages you have to supply the `--jvm` argument.
+This instructs the launcher to run on the JVM instead of in Native Image mode.
+Thus, you will notice a longer startup time.

@@ -1,65 +1,57 @@
 # Interoperability
 
-GraalVM supports several other programming languages, including JavaScript, R,
-Ruby, and LLVM. GraalVM provides a Python API to interact with other languages
-available on the GraalVM. In fact, GraalVM uses this API internally to
-execute Python C extensions using the LLVM implementation in GraalVM.
+Since GraalVM supports several other programming languages including JavaScript, R,
+Ruby, and those that compile to LLVM bitcode, it also provides a Python API to interact with them.
+In fact, GraalVM uses this API internally to execute Python C extensions using the GraalVM LLVM runtime.
 
-You can import the `polyglot` module to interact with other languages. In order
-to use the polyglot functionality, you need to specify `--jvm --polyglot`
-arguments to the `graalpython` executable.
-
+You can import the `polyglot` module to interact with other languages:
 ```python
 import polyglot
 ```
 
-## Evaluating code in other languages
+You can import a global value from the entire polyglot scope:
+```python
+imported_polyglot_global = polyglot.import_value("global_name")
+```
+
+This global value should then work as expected:
+* Accessing attributes assumes it reads from the `members` namespace.
+* Accessing items is supported both with strings and numbers.
+* Calling methods on the result tries to do a straight invoke and falls
+back to reading the member and trying to execute it.
+
+You can evaluate some inlined code from another language:
 ```python
 polyglot.eval(string="1 + 1", language="ruby")
 ```
 
-It also works with the path to a file:
+You can evaluate some code from a file, by passing the path to it:
 ```python
 polyglot.eval(path="./my_ruby_file.rb", language="ruby")
 ```
 
-If you pass a file, you can also try to rely on the file-based language detection:
+If you pass a file, you can also rely on the file-based language detection:
 ```python
 polyglot.eval(path="./my_ruby_file.rb")
 ```
 
-## Exporting and importing values
-To export something from Python to other Polyglot languages so they can import
+You can export some oblect from Python to other supported languages so they can import
 it:
 ```python
 foo = object()
 polyglot.export_value(foo, name="python_foo")
 ```
 
-The export function can be used as a decorator, in this case the function name
-is used as the globally exported name:
+The export function can be used as a decorator.
+In this case the function name is used as the globally exported name:
 ```python
 @polyglot.export_value
 def python_method():
     return "Hello from Python!"
 ```
 
-You can import a global value from the entire polyglot scope (exported from
-another language):
-```python
-imported_polyglot_global = polyglot.import_value("global_name")
-```
-
-This global should then work as expected; accessing attributes assumes it reads
-from the `members` namespace; accessing items is supported both with strings and
-numbers; calling methods on the result tries to do a straight invoke and falls
-back to reading the member and trying to execute it.
-
-
-## Examples
-Here is an example of how to use JavaScript regular expression engine to
+Here is an example of how to use the JavaScript regular expression engine to
 match Python strings. Save this code to the `polyglot_example.py` file:
-
 ```python
 import polyglot
 
@@ -77,26 +69,23 @@ if not md:
 print("Here is what we found: '%s'" % md[1])
 ```
 
-To run it, pass the `--jvm --polyglot` options to `graalpython` binary:
+To run it, pass the `--jvm --polyglot` option to the `graalpython` launcher:
 ```shell
 graalpython --jvm --polyglot polyglot_example.py
 ```
 
-This example matches Python strings using the JavaScript regular expression object
-and Python reads the captured group from the JavaScript result and prints: `Here
-is what we found: 'This string was matched by Graal.js'`.
+This program matches Python strings using the JavaScript regular expression object.
+Python reads the captured group from the JavaScript result and prints:
+*Here is what we found: 'This string was matched by Graal.js'*.
 
-As a more complex example, we can read a file using R, process the data in
-Python, and use R again to display the resulting data image, using both R and
-Python libraries in conjunction. To run it, first install the
-required R library:
+As a more complex example, see how you can read a file using R, process the data in Python, and use R again to display the resulting data image, using both the R and Python libraries in conjunction.
+To run this example, first install the required R library:
 ```shell
 R -e 'install.packages("https://www.rforge.net/src/contrib/jpeg_0.1-8.tar.gz", repos=NULL)'
 ```
 
 This example also uses [image_magix.py](http://graalvm.org/docs/examples/image_magix.py) and works
-on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder the script below is located in and executed from.
-
+on a JPEG image input (you can try with [this image](https://www.graalvm.org/resources/img/python_demo_picture.jpg)). These files have to be in the same folder that the script below is located in and executed from.
 ```python
 import polyglot
 import sys
@@ -136,36 +125,36 @@ time.sleep(10)
 
 ## Java Interoperability
 
-Finally, to interoperate with Java (only when running on the JVM), you can use
-the `java` module:
+Finally, to interoperate with Java (only when running on the JVM), you can use the `java` module:
 ```python
 import java
 BigInteger = java.type("java.math.BigInteger")
-myBigInt = BigInteger.valueOf(42)
-myBigInt.shiftLeft(128)            # public Java methods can just be called
-myBigInt["not"]()                  # Java method names that are keywords in
-                                   # Python can be accessed using "[]"
+myBigInt = BigInteger(42)
+myBigInt.shiftLeft(128)
+# public Java methods can just be called
+myBigInt["not"]()
+# Java method names that are keywords in Python can be accessed using "[]"
 byteArray = myBigInt.toByteArray()
-print(list(byteArray))             # Java arrays can act like Python lists
+# Java arrays can act like Python lists
+print(list(byteArray))
 ```
 
 For packages under the `java` package, you can also use the normal Python import
-syntax. This syntax is limited to importing concrete classes, it doesn't work
-on packages, unless in [Jython Compatibility](Jython.md) mode.
+syntax:
 ```python
 import java.util.ArrayList
 from java.util import ArrayList
 
-# these are the same class
 java.util.ArrayList == ArrayList
 
 al = ArrayList()
 al.add(1)
 al.add(12)
-print(al) # prints [1, 12]
+print(al)
+# prints [1, 12]
 ```
 
-In addition to the `type` builtin method, the `java` module, exposes the following
+In addition to the `type` builtin method, the `java` module exposes the following
 methods as well:
 
 Builtin                  | Specification
@@ -179,12 +168,16 @@ Builtin                  | Specification
 import java
 ArrayList = java.type('java.util.ArrayList')
 my_list = ArrayList()
-print(java.is_symbol(ArrayList))    # prints True
-print(java.is_symbol(my_list))      # prints False, my_list is not a Java host symbol
-print(java.is_object(ArrayList))    # prints True, symbols are also host objects
-print(java.is_function(my_list.add))# prints True, the add method of ArrayList
-print(java.instanceof(my_list, ArrayList)) # prints True
+print(java.is_symbol(ArrayList))
+# prints True
+print(java.is_symbol(my_list))
+# prints False, my_list is not a Java host symbol
+print(java.is_object(ArrayList))
+# prints True, symbols are also host objects
+print(java.is_function(my_list.add))
+# prints True, the add method of ArrayList
+print(java.instanceof(my_list, ArrayList))
+# prints True
 ```
 
-See the [Polyglot Programming](https://www.graalvm.org/reference-manual/polyglot-programming/) and the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) reference
-for more information about interoperability with other programming languages.
+See [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) for more information about interoperability with other programming languages.
