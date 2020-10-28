@@ -47,6 +47,7 @@ import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -65,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileCla
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -75,6 +78,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -175,11 +179,23 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @CachedLibrary(limit = "5") PythonObjectLibrary resultLib,
                     @Exclusive @Cached PRaiseNode raise,
                     @Exclusive @Cached ConditionProfile noIndex,
-                    @Exclusive @Cached ConditionProfile resultProfile) {
+                    @Exclusive @Cached ConditionProfile resultProfile,
+                    @Exclusive @Cached ConditionProfile gotState,
+                    @Cached IsBuiltinClassProfile isInt,
+                    @Cached WarnNode warnNode) {
         if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
+            if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)){
+                VirtualFrame frame = null;
+                if (gotState.profile(threadState != null)) {
+                    frame = PArguments.frameForCall(threadState);
+                }
+                warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.P_RETURNED_NON_P,
+                                this, "__index__", "int", this, "int");
+            }
             return this; // subclasses of 'int' should do early return
         } else {
-            return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile);
+            return asIndexWithState(threadState, plib, methodLib, resultLib, raise, isSubtypeNode, noIndex, resultProfile, gotState, isInt, warnNode);
         }
     }
 

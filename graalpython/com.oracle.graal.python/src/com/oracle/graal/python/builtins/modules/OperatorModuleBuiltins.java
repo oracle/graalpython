@@ -185,9 +185,9 @@ public class OperatorModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object asIndex(Object value,
+        Object asIndex(VirtualFrame frame, Object value,
                         @CachedLibrary(value = "value") PythonObjectLibrary pol) {
-            return pol.asIndex(value);
+            return pol.asIndexWithFrame(value, frame);
         }
     }
 }

@@ -78,6 +78,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MathGuards;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
@@ -238,7 +239,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached KeyForAttributeAccess getAttributeKey,
                     @Exclusive @Cached KeyForItemAccess getItemKey,
                     @Cached PInteropSetAttributeNode writeNode,
-                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
         try {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
@@ -490,7 +491,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached ConditionProfile profileGetattribute,
                     @Exclusive @Cached ConditionProfile profileMember,
-                    @Exclusive @Cached IsBuiltinClassProfile attributeErrorProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attributeErrorProfile) throws UnknownIdentifierException, UnsupportedMessageException {
         Object memberObj;
         try {
             Object attrGetattribute = lookupGetattributeNode.execute(this, __GETATTRIBUTE__);
@@ -569,7 +570,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached LookupInheritedAttributeNode.Dynamic getDelItemNode,
                     @Cached PInteropDeleteAttributeNode deleteAttributeNode,
                     @Exclusive @Cached PInteropDeleteItemNode delItemNode,
-                    @Exclusive @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
+                    @Shared("attributeErrorProfile") @Cached IsBuiltinClassProfile attrErrorProfile) throws UnsupportedMessageException, UnknownIdentifierException {
         try {
             String attrKey = getAttributeKey.execute(member);
             if (attrKey != null) {
@@ -825,7 +826,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached ConditionProfile noIndex,
-                    @Exclusive @Cached ConditionProfile resultProfile) {
+                    @Exclusive @Cached ConditionProfile resultProfile,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
+                    @Shared("intProfile") @Cached IsBuiltinClassProfile isInt,
+                    @Cached WarnNode warnNode) {
         // n.b.: the CPython shortcut "if (PyLong_Check(item)) return item;" is
         // implemented in the specific Java classes PInt, PythonNativeVoidPtr,
         // and PythonAbstractNativeObject and dispatched polymorphically
@@ -835,9 +839,17 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         Object result = methodLib.callUnboundMethodWithState(indexMethod, state, this);
-
         if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+        }
+        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)){
+            VirtualFrame frame = null;
+            if (gotState.profile(state != null)) {
+                frame = PArguments.frameForCall(state);
+            }
+            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                            ErrorMessages.P_RETURNED_NON_P,
+                            this, "__index__", "int", result, "int");
         }
         return result;
     }
@@ -884,10 +896,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public int asFileDescriptorWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary libResult,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
-                    @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
+                    @Shared("intProfile") @Cached IsBuiltinClassProfile isIntProfile,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
 
@@ -898,7 +909,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         Object result = methodLib.callObjectWithState(filenoFunc, state);
-        if (isIntProfile.profileClass(libResult.getLazyPythonClass(result), PythonBuiltinClassType.PInt)) {
+        if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
             try {
                 return castToJavaIntNode.execute(result);
             } catch (PException e) {
