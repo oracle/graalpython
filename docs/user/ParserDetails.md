@@ -28,7 +28,7 @@ the SST and scope tree are serialized such a file.
 
 ## Creating and Managing pyc Files
 
-#### `.pyc` files are created automatically by the GraalVM Python implementation when no or an invalid `.pyc` file is found matching the desired `.py` file.
+#### `.pyc` files are created automatically by the GraalVM Python runtime when no or an invalid `.pyc` file is found matching the desired `.py` file.
 
 When a Python source file (module) is imported during an execution for the first time, the appropriate `.pyc` file is created automatically.
 If the same module is imported again, then the already created `.pyc` file is used.
@@ -42,14 +42,14 @@ The hashcode is generated only based on the Python source by calling `source.has
 The `.pyc` files are also regenerated if a magic number in the Python parser is changed.
 The magic number is hard-coded in the Python source and can not be changed by the user (unless of course that user has access to the bytecode of Python).
 
-The developers of GraalVM's Python implementation change the magic number when the format of SST or scope tree binary data is altered.
-This is an implementation detail, so the magic number does not have to correspond to the version of GraalVM's Python implementation (just like in CPython).
-The magic number of pyc is a function of the concrete Python implementation Java code that is running.
+The developers of GraalVM's Python runtime change the magic number when the format of SST or scope tree binary data is altered.
+This is an implementation detail, so the magic number does not have to correspond to the version of GraalVM's Python runtime (just like in CPython).
+The magic number of pyc is a function of the concrete Python runtime Java code that is running.
 
 Note that if you use `.pyc` files, you will need to allow write-access to GraalVM's Python runtime at least when switching versions or changing the original source code.
 Otherwise, the regeneration of source files will fail and every import will have the overhead of accessing the old `.pyc` file, parsing the code, serializing it, and trying (and failing) to write out a new `.pyc` file.
 
-A `*.pyc` file is never deleted by GraalVM's Python implementation, only regenerated.
+A `*.pyc` file is never deleted by GraalVM's Python runtime, only regenerated.
 It is regenerated when the appropriate source file is changed (timestamp of last modification or hashcode of the content) or the magic number of the Python imnplementation parser changes.
 Magic number changes will be communicated in the release notes so that embedders or system administrators can delete old `.pyc` files when upgrading.
 
@@ -123,7 +123,7 @@ these language options:
 Note that a Python context will not enable writing `.pyc` files by default.
 The `graalpython` launcher enables it by default, but if this is desired in the embedding use case, care should be taken to ensure that the `__pycache__` location is properly managed and the files in that location are secured against manipulation just like the source `.py` files they were derived from.
 
-Note also that to upgrade the application sources to GraalVM Enteprise's Python implementation, old `.pyc`
+Note also that to upgrade the application sources to GraalVM Enteprise's Python runtime, old `.pyc`
 files must be removed by the embedder as required.
 
 ## Security Considerations

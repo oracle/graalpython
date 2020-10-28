@@ -59,7 +59,7 @@ methods:
 Method overloads are resolved by matching the Python arguments in a best-effort manner to the available parameter types.
 This also happens during when data conversion.
 The goal here is to make using Java from Python as smooth as possible.
-The matching allowed here is similar to Jython, but GraalVM's Python implementation uses a more dynamic approach to matching &mdash; Python types emulating `int` or `float` are also converted to the appropriate Java types.
+The matching allowed here is similar to Jython, but GraalVM's Python runtime uses a more dynamic approach to matching &mdash; Python types emulating `int` or `float` are also converted to the appropriate Java types.
 This allows, for example, to use Pandas frames as `double[][]` or NumPy array elements as `int[]` when the elements fit into those Java primitive types.
 
 | Java type              | Python type                                                                       |

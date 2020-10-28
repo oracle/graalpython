@@ -1,6 +1,6 @@
 # Tooling Support for Python
 
-GraalVM's Python implementation is incomplete and cannot launch the standard Python debugger `pdb`.
+GraalVM's Python runtime is incomplete and cannot launch the standard Python debugger `pdb`.
 However, it can run the tools that GraalVM provides.
 The `graalpython --help:tools` command will give you more information about tools currently supported on Python.
 

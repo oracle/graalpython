@@ -1,8 +1,8 @@
-# GraalVM Python Implementation
+# GraalVM Python Runtime
 
 GraalVM provides a Python 3.8 compliant runtime.
-A primary goal of the Python implementation is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
-At this point, the Python implementation is made available for experimentation and curious end-users.
+A primary goal of the GraalVM Python runtime is to support SciPy and its constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+At this point, the Python runtime is made available for experimentation and curious end-users.
 See [FAQ](FAQ.md) for commonly asked questions about this implementation.
 
 ## Installing Python
@@ -25,7 +25,7 @@ graalpython [options] [-c cmd | filename]
 
 If no program file or command is given, you are dropped into a simple REPL.
 
-GraalVM supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python implementation, GraalVM's tools, and the execution engine.
+GraalVM supports some of the same options as Python 3.8 as well as some additional options to control the underlying Python runtime, GraalVM's tools, and the execution engine.
 These can be viewed using the following command:
 ```shell
 graalpython --help --help:tools --help:languages
@@ -33,7 +33,7 @@ graalpython --help --help:tools --help:languages
 
 ## Installing Supported Packages
 
-GraalVM Python implementation comes with a tool called `ginstall` which may be used to install a small list of packages known to work to some extent with GraalVM's Python runtime.
+GraalVM Python runtime comes with a tool called `ginstall` which may be used to install a small list of packages known to work to some extent with GraalVM's Python runtime.
 It is recommended to always create a virtual environment first, using the standard Python module `venv`.
 Creating such an environment avoids any incompatible interaction with the local user's packages that may have been
 installed using a system installation of CPython:

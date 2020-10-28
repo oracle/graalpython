@@ -3,19 +3,19 @@
 ### Does module/package XYZ work on GraalVM's Python runtime?
 
 It depends, but is currently unlikely.
-The first goal with GraalVM's Python implementation was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
+The first goal with GraalVM's Python runtime was to show that NumPy and related packages can run using the managed GraalVM LLVM runtime.
 The GraalVM team continues to improve the number of passing CPython unittests, and to track the compatibility with popular PyPI packages.
 
-### Can the GraalVM Python implementation replace my Jython use case?
+### Can the GraalVM Python runtime replace my Jython use case?
 
 It can, but there are some caveats, like Python code subclassing Java classes or use through the `javax.script.ScriptEngine` not being supported.
 See the [Jython Compatibility](Jython.md) guide for details.
 
 ### Do I need to compile and run native modules as LLVM bitcode to use on GraalVM's Python runtime?
 
-If you want to run C extensions or use certain built-in features, yes, you need to build the module with GraalVM's Python implementation, and then it will run using the GraalVM LLVM runtime.
+If you want to run C extensions or use certain built-in features, yes, you need to build the module with GraalVM's Python runtime, and then it will run using the GraalVM LLVM runtime.
 However, many of the core features of Python (including, e.g., large parts of the `os` API) are implemented in pure Java and many standard library modules and packages work without running any LLVM bitcode.
-So even though the Python implementation depends on the GraalVM LLVM runtime, for many use cases
+So even though the Python runtime depends on the GraalVM LLVM runtime, for many use cases
 you can disallow native modules entirely.
 
 ### Can I use the GraalVM sandboxing features with Python?
@@ -29,7 +29,7 @@ Also, GraalVM's managed execution mode for LLVM fully works for running extensio
 
 The team is continuously working to ensure all polyglot features of GraalVM work as a Python user would expect.
 There are still many cases where expectations are unclear or where multiple behaviors are imaginable.
-The team is actively looking at use cases and continuously evolving the Python implementation to provide the most
+The team is actively looking at use cases and continuously evolving the GraalVM Python runtime to provide the most
 convenient and least surprising behaviour.
 
 ### What performance can I expect from GraalVM's Python runtime?
@@ -45,5 +45,5 @@ In any case, both with Native Image or when running on the JVM, you first need t
 
 ### Can I share warmed-up code between multiple Python contexts?
 
-Yes, this works, and you will find that starting up multiple contexts in the same engine, and running the same or similar code in them will get increasingly faster, because the compiled code is shared across contexts. 
+Yes, this works, and you will find that starting up multiple contexts in the same engine, and running the same or similar code in them will get increasingly faster, because the compiled code is shared across contexts.
 However, the peak performance in this setup is currently lower than in the single context case.
