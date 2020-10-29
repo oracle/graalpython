@@ -355,7 +355,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isComplexTypeProfile;
+        @Child private IsBuiltinClassProfile isResultComplexTypeProfile;
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private WarnNode warnNode;
 
         private PComplex createComplex(Object cls, double real, double imaginary) {
             if (isPrimitiveProfile.profileClass(cls, PythonBuiltinClassType.PComplex)) {
@@ -563,6 +565,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return isComplexTypeProfile;
         }
 
+        private IsBuiltinClassProfile getIsResultComplexTypeProfile() {
+            if (isResultComplexTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isResultComplexTypeProfile = insert(IsBuiltinClassProfile.create());
+            }
+            return isResultComplexTypeProfile;
+        }
+
+        private WarnNode getWarnNode() {
+            if (warnNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                warnNode = insert(WarnNode.create());
+            }
+            return warnNode;
+        }
+
         private PException raiseFirstArgError(Object x) {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "complex() first", x);
         }
@@ -579,14 +597,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (complexCallable != PNone.NO_VALUE) {
                     Object result = methodLib.callUnboundMethod(complexCallable, frame, object);
                     if (result instanceof PComplex) {
-                        // TODO we need pass here deprecation warning
-                        // DeprecationWarning: __complex__ returned non-complex (type %p).
-                        // The ability to return an instance of a strict subclass of complex is
-                        // deprecated,
-                        // and may be removed in a future version of Python.
+                        if (!getIsResultComplexTypeProfile().profileObject(result, PythonBuiltinClassType.PComplex)) {
+                            getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                            ErrorMessages.P_RETURNED_NON_P,
+                                            object, "__complex__", "complex", result, "complex");
+                        }
                         return (PComplex) result;
                     } else {
-                        throw raise(TypeError, ErrorMessages.COMPLEX_SHOULD_RETURN_COMPLEX);
+                        throw raise(TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
                     }
                 }
                 if (object instanceof PComplex) {

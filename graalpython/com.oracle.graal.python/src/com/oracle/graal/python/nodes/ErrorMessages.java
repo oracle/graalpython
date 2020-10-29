@@ -182,7 +182,6 @@ public abstract class ErrorMessages {
     public static final String COMPLEX_ZERO_TO_NEGATIVE_POWER = "0.0 to a negative or complex power";
     public static final String COMPLEX_MODULO = "complex modulo";
     public static final String COMPLEX_RETURNED_NON_COMPLEX = "__complex__ returned non-complex (type %p)";
-    public static final String COMPLEX_SHOULD_RETURN_COMPLEX = "__complex__ should return a complex object";
     public static final String CONTIGUOUS_BUFFER = "contiguous buffer";
     public static final String CONVERTER_FUNC_FAILED_TO_SET_ERROR = "converter function failed to set an error on failure";
     public static final String CORRUPTED_CAPI_LIB_OBJ = "corrupted C API library object: %s";
