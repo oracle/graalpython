@@ -52,7 +52,6 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
@@ -963,24 +962,6 @@ public class MemoryViewNodes {
 
         public static ToJavaBytesFortranOrderNode create() {
             return MemoryViewNodesFactory.ToJavaBytesFortranOrderNodeGen.create();
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class ReleaseBufferOfManagedObjectNode extends Node {
-        public abstract void execute(Object object);
-
-        @Specialization
-        static void bytearray(@SuppressWarnings("unused") PByteArray object) {
-            // TODO
-        }
-
-        public static ReleaseBufferOfManagedObjectNode create() {
-            return MemoryViewNodesFactory.ReleaseBufferOfManagedObjectNodeGen.create();
-        }
-
-        public static ReleaseBufferOfManagedObjectNode getUncached() {
-            return MemoryViewNodesFactory.ReleaseBufferOfManagedObjectNodeGen.getUncached();
         }
     }
 

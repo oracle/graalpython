@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
@@ -175,7 +176,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         // It's a weakref, it may go away and in that case we don't have to do
                         // anything
                         if (owner != null) {
-                            MemoryViewNodes.ReleaseBufferOfManagedObjectNode.getUncached().execute(owner);
+                            releaseBufferOfManagedObject(owner, ConditionProfile.getUncached());
                         }
                         return null;
                     }
@@ -762,10 +763,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null", "!self.getManagedBuffer().isForNative()"})
         Object releaseManaged(PMemoryView self,
-                        @Cached MemoryViewNodes.ReleaseBufferOfManagedObjectNode release) {
+                        @Cached ConditionProfile isByteArrayProfile) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                release.execute(self.getOwner());
+                releaseBufferOfManagedObject(self.getOwner(), isByteArrayProfile);
             }
             self.setReleased();
             return PNone.NONE;
@@ -807,6 +808,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "itemsize", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -817,6 +819,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "nbytes", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NBytesNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -827,6 +830,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "obj", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ObjNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object get(PMemoryView self) {
             self.checkReleased(this);
@@ -837,6 +841,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "format", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FormatNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object get(PMemoryView self) {
             self.checkReleased(this);
@@ -847,6 +852,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "shape", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ShapeNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -861,6 +867,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "strides", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class StridesNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -875,6 +882,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "suboffsets", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SuboffsetsNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         Object get(PMemoryView self,
                         @Cached ConditionProfile nullProfile) {
@@ -889,6 +897,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "readonly", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ReadonlyNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -899,6 +908,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "ndim", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NDimNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         int get(PMemoryView self) {
             self.checkReleased(this);
@@ -909,6 +919,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "c_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CContiguousNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -919,6 +930,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "f_contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FContiguousNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
@@ -929,10 +941,17 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "contiguous", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ContiguousNode extends PythonUnaryBuiltinNode {
+
         @Specialization
         boolean get(PMemoryView self) {
             self.checkReleased(this);
             return self.isCContiguous() || self.isFortranContiguous();
+        }
+    }
+
+    private static void releaseBufferOfManagedObject(Object object, ConditionProfile isByteArrayProfile) {
+        if (isByteArrayProfile.profile(object instanceof PByteArray)) {
+            // TODO GR-26945
         }
     }
 }
