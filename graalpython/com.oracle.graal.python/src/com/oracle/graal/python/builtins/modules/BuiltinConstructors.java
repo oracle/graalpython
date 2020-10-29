@@ -3317,7 +3317,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    // memoryview([iterable])
+    // memoryview(obj)
     @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
