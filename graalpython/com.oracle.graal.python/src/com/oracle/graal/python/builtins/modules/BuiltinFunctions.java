@@ -789,18 +789,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (lstrip) {
                 code = code.replaceFirst("^[ \t]", "");
             }
-            final String codeToCompile = code;
+            CallTarget ct;
+            String finalCode = code;
             Supplier<CallTarget> createCode = () -> {
-                Source source = PythonLanguage.newSource(context, codeToCompile, filename, mayBeFromFile);
-                return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
+                if (pm == ParserMode.File) {
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(kwOptimize));
+                    return getContext().getEnv().parsePublic(source);
+                } else if (pm == ParserMode.Eval) {
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(kwOptimize));
+                    return getContext().getEnv().parsePublic(source);
+                } else {
+                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
+                    return PythonUtils.getOrCreateCallTarget((RootNode) getCore().getParser().parse(pm, kwOptimize, getCore(), source, null, null));
+                }
             };
-            RootCallTarget ct;
             if (getCore().isInitialized()) {
-                ct = (RootCallTarget) createCode.get();
+                ct = createCode.get();
             } else {
-                ct = (RootCallTarget) getCore().getLanguage().cacheCode(filename, createCode);
+                ct = getCore().getLanguage().cacheCode(filename, createCode);
             }
-            return factory().createCode(ct);
+            return factory().createCode((RootCallTarget) ct);
         }
 
         @Specialization(limit = "3")
@@ -914,7 +922,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private RuntimeException raiseInvalidSyntax(String filename, String format, Object... args) {
             PythonContext context = getContext();
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
-            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile);
+            Source source = PythonLanguage.newSource(context, " ", filename, mayBeFromFile, null);
             throw getCore().raiseInvalidSyntax(source, source.createUnavailableSection(), format, args);
         }
 

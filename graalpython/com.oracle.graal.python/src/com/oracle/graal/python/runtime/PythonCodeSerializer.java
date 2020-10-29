@@ -41,12 +41,11 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 
 public interface PythonCodeSerializer {
     public byte[] serialize(RootNode rootNode);
 
-    public RootNode deserialize(Source source, byte[] data);
+    public RootNode deserialize(byte[] data);
 
-    public RootNode deserialize(Source source, byte[] data, String[] cellvars, String[] freevars);
+    public RootNode deserialize(byte[] data, String[] cellvars, String[] freevars);
 }

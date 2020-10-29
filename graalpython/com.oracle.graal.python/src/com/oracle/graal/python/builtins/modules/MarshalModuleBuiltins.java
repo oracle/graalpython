@@ -33,7 +33,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -273,9 +274,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(v, version, buffer);
         }
 
-        private void writeLong(long v, int version, DataOutputStream buffer) {
-            writeInt((int) (v & 0xffffffff), version, buffer);
-            writeInt((int) ((v >> 32) & 0xffffffff), version, buffer);
+        private void writeLong(long v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
+            try {
+                buffer.writeLong(v);
+            } catch (IOException e) {
+                handleIOException(v);
+            }
         }
 
         @Specialization
@@ -412,7 +416,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         void handlePCode(PCode c, int version, DataOutputStream buffer) {
             writeByte(TYPE_CODE, version, buffer);
-            writeString(getSourceCode(c), version, buffer);
             writeString(c.getFilename(), version, buffer);
             writeInt(c.getFlags(), version, buffer);
             writeBytes(c.getCodestring(), version, buffer);
@@ -495,10 +498,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
+
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
 
         @Child private CodeNodes.CreateCodeNode createCodeNode;
         @Child private StringNodes.InternStringNode internStringNode;
+        @Child private HashingStorageLibrary storeLib = HashingStorageLibrary.getFactory().createDispatched(3);
         private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
         private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
 
@@ -512,81 +517,45 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return dontNeedExceptionState;
         }
 
-        private int index;
-        private byte[] data;
-
-        public void reset() {
-            index = 0;
+        private PInt readPInt(ByteBuffer buffer) {
+            return factory().createInt(new BigInteger(readBytes(buffer)));
         }
 
-        private int readByte() {
-            if (index < data.length) {
-                return data[index++];
-            } else {
-                throw raise(EOFError, "EOF read where not expected");
-            }
-        }
-
-        private int readInt() {
-            int ch1 = readByte() & 0xFF;
-            int ch2 = readByte() & 0xFF;
-            int ch3 = readByte() & 0xFF;
-            int ch4 = readByte() & 0xFF;
-            return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4);
-        }
-
-        private long read_long64() { // cpython calls this r_long64
-            long lo4 = readInt();
-            long hi4 = readInt();
-            long x = (hi4 << 32) | (lo4 & 0xFFFFFFFFL);
-            return x;
-        }
-
-        private PInt readPInt() {
-            byte[] bytes = readBytes();
-            return factory().createInt(new BigInteger(bytes));
-        }
-
-        private double readDouble() {
-            long n = read_long64();
-            return Double.longBitsToDouble(n);
-        }
-
-        private String readString() {
-            int len = readInt();
-            String text = new String(data, index, len);
-            index += len;
+        private static String readString(ByteBuffer buffer) {
+            int len = buffer.getInt();
+            String text = new String(buffer.array(), buffer.position(), len);
+            buffer.position(buffer.position() + len);
             return text;
         }
 
         @TruffleBoundary
-        private String readJavaInternedString() {
-            return readString().intern();
+        private static String readJavaInternedString(ByteBuffer buffer) {
+            return readString(buffer).intern();
         }
 
-        private PString readInternedString() {
-            return ensureInternStringNode().execute(readString());
+        private PString readInternedString(ByteBuffer buffer) {
+            return ensureInternStringNode().execute(readString(buffer));
         }
 
-        private byte[] readBytes() {
-            int len = readInt();
+        private static byte[] readBytes(ByteBuffer buffer) {
+            int len = buffer.getInt();
             if (len > 0) {
-                byte[] bytes = Arrays.copyOfRange(data, index, index + len);
-                index += len;
+                byte[] bytes = new byte[len];
+                buffer.get(bytes);
                 return bytes;
             } else {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             }
         }
 
-        private Object[] readArray(int depth, HashingStorageLibrary lib) {
-            int n = readInt();
+        private Object[] readArray(int depth, ByteBuffer buffer) {
+            int n = buffer.getInt();
             if (n < 0) {
                 throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             Object[] items = new Object[n];
             for (int i = 0; i < n; i++) {
-                Object item = readObject(depth + 1, lib);
+                Object item = readObject(depth + 1, buffer);
                 if (item == null) {
                     throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
                 }
@@ -595,94 +564,92 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return items;
         }
 
-        private PBytes readBytesLike() {
-            byte[] bytes = readBytes();
+        private PBytes readBytesLike(ByteBuffer buffer) {
+            byte[] bytes = readBytes(buffer);
             return factory().createBytes(bytes);
         }
 
-        private PComplex readPComplex() {
-            double real = readDouble();
-            double imag = readDouble();
+        private PComplex readPComplex(ByteBuffer buffer) {
+            double real = buffer.getDouble();
+            double imag = buffer.getDouble();
             return factory().createComplex(real, imag);
         }
 
-        private PCode readCode() {
-            String sourceCode = readString();
+        private PCode readCode(ByteBuffer buffer) {
             // TODO: fix me and use PString interning if needed
-            String fileName = readJavaInternedString();
-            int flags = readInt();
-            byte[] codeString = readBytes();
-            int firstLineNo = readInt();
-            byte[] lnoTab = readBytes();
+            String fileName = readJavaInternedString(buffer);
+            int flags = buffer.getInt();
+            byte[] codeString = readBytes(buffer);
+            int firstLineNo = buffer.getInt();
+            byte[] lnoTab = readBytes(buffer);
 
-            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, sourceCode, flags,
-                            codeString, fileName, firstLineNo, lnoTab);
+            return ensureCreateCodeNode().execute(null, PythonBuiltinClassType.PCode, flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
-        private PDict readDict(int depth, HashingStorageLibrary lib) {
-            int len = readInt();
+        private PDict readDict(int depth, ByteBuffer buffer) {
+            int len = buffer.getInt();
             HashingStorage store = PDict.createNewStorage(PythonLanguage.getCurrent(), false, len);
             PDict dict = factory().createDict(store);
             for (int i = 0; i < len; i++) {
-                Object key = readObject(depth + 1, lib);
+                Object key = readObject(depth + 1, buffer);
                 if (key == null) {
                     break;
                 }
-                Object value = readObject(depth + 1, lib);
+                Object value = readObject(depth + 1, buffer);
                 if (value != null) {
-                    store = lib.setItem(store, key, value);
+                    store = storeLib.setItem(store, key, value);
                 }
             }
             dict.setDictStorage(store);
             return dict;
         }
 
-        private PTuple readTuple(int depth, HashingStorageLibrary lib) {
-            return factory().createTuple(readArray(depth, lib));
+        private PTuple readTuple(int depth, ByteBuffer buffer) {
+            return factory().createTuple(readArray(depth, buffer));
         }
 
-        private PList readList(int depth, HashingStorageLibrary lib) {
-            return factory().createList(readArray(depth, lib));
+        private PList readList(int depth, ByteBuffer buffer) {
+            return factory().createList(readArray(depth, buffer));
         }
 
-        private PSet readSet(int depth, HashingStorageLibrary lib) {
-            int n = readInt();
+        private PSet readSet(int depth, ByteBuffer buffer) {
+            int n = buffer.getInt();
             if (n < 0) {
                 throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1, lib);
+                Object key = readObject(depth + 1, buffer);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transferred
-                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = storeLib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createSet(newStorage);
         }
 
-        private PFrozenSet readFrozenSet(int depth, HashingStorageLibrary lib) {
-            int n = readInt();
+        private PFrozenSet readFrozenSet(int depth, ByteBuffer buffer) {
+            int n = buffer.getInt();
             if (n < 0) {
                 throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             HashingStorage newStorage = EconomicMapStorage.create(n);
             for (int i = 0; i < n; i++) {
-                Object key = readObject(depth + 1, lib);
+                Object key = readObject(depth + 1, buffer);
                 // note: we may pass a 'null' frame here because global state is ensured to be
                 // transfered
-                newStorage = lib.setItem(newStorage, key, PNone.NO_VALUE);
+                newStorage = storeLib.setItem(newStorage, key, PNone.NO_VALUE);
             }
 
             return factory().createFrozenSet(newStorage);
         }
 
         @TruffleBoundary
-        private Object readObject(int depth, HashingStorageLibrary lib) {
+        private Object readObject(int depth, ByteBuffer buffer) {
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             }
-            int type = readByte();
+            int type = buffer.get();
             switch (type) {
                 case TYPE_NULL:
                     return null;
@@ -699,35 +666,35 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_TRUE:
                     return true;
                 case TYPE_INT:
-                    return readInt();
+                    return buffer.getInt();
                 case TYPE_INT64:
-                    return read_long64();
+                    return buffer.getLong();
                 case TYPE_LONG:
-                    return read_long64();
+                    return buffer.getLong();
                 case TYPE_PINT:
-                    return readPInt();
+                    return readPInt(buffer);
                 case TYPE_FLOAT:
-                    return readDouble();
+                    return buffer.getDouble();
                 case TYPE_STRING:
-                    return readString();
+                    return readString(buffer);
                 case TYPE_INTERNED:
-                    return readInternedString();
+                    return readInternedString(buffer);
                 case TYPE_BYTESLIKE:
-                    return readBytesLike();
+                    return readBytesLike(buffer);
                 case TYPE_TUPLE:
-                    return readTuple(depth, lib);
+                    return readTuple(depth, buffer);
                 case TYPE_DICT:
-                    return readDict(depth, lib);
+                    return readDict(depth, buffer);
                 case TYPE_LIST:
-                    return readList(depth, lib);
+                    return readList(depth, buffer);
                 case TYPE_SET:
-                    return readSet(depth, lib);
+                    return readSet(depth, buffer);
                 case TYPE_FROZENSET:
-                    return readFrozenSet(depth, lib);
+                    return readFrozenSet(depth, buffer);
                 case TYPE_CODE:
-                    return readCode();
+                    return readCode(buffer);
                 case TYPE_COMPLEX:
-                    return readPComplex();
+                    return readPComplex(buffer);
                 default:
                     throw raise(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
@@ -751,13 +718,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
-            reset();
-            this.data = dataBytes;
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return readObject(0, lib);
+                return readObject(0, buffer);
+            } catch (BufferUnderflowException e) {
+                throw raise(EOFError, "EOF read where not expected");
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }

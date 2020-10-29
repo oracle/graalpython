@@ -1260,7 +1260,7 @@ public class SSTSerializationTests extends ParserTestBase {
         byte[] serializeResult = serializer.serialize(parserResult);
         Assert.assertNotNull("Serialized data are null", serializeResult);
         // and get the tree from serialized data
-        RootNode deserialize = serializer.deserialize(source, serializeResult);
+        RootNode deserialize = serializer.deserialize(serializeResult);
 
         Assert.assertNotNull("Deserialized result is null", parserResult);
         // compare the tree from parser with the tree from serializer
@@ -1539,7 +1539,7 @@ public class SSTSerializationTests extends ParserTestBase {
         TruffleFile tFile = context.getEnv().getInternalTruffleFile(file.getAbsolutePath() + ".pyc");
         byte[] desbytes = tFile.readAllBytes();
         startMemory = System.nanoTime();
-        serializer.deserialize(source, desbytes);
+        serializer.deserialize(desbytes);
         end = System.nanoTime();
         result[2] = end - startMemory;
         result[5] = end - startFile;

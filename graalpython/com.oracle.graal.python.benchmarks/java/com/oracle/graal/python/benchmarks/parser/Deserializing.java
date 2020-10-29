@@ -53,11 +53,9 @@ import org.openjdk.jmh.infra.Blackhole;
 public class Deserializing extends ParserBenchRunner {
 
     private static class Item {
-        final Source source;
         final byte[] data;
 
-        public Item(Source source, byte[] serialization) {
-            this.source = source;
+        public Item(byte[] serialization) {
             this.data = serialization;
         }
     }
@@ -76,7 +74,7 @@ public class Deserializing extends ParserBenchRunner {
     public void execute(Blackhole bh) {
         for (int n = 0; n < parsingCycles; n++) {
             for (Item serialization : serializations) {
-                bh.consume(parser.deserialize(serialization.source, serialization.data));
+                bh.consume(parser.deserialize(serialization.data));
             }
         }
     }
@@ -88,7 +86,7 @@ public class Deserializing extends ParserBenchRunner {
             try {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
                 PythonParserImpl.CacheItem item = parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null);
-                result.add(new Item(source, PythonParserImpl.serialize(item.getAntlrResult(), item.getGlobalScope(), true)));
+                result.add(new Item(PythonParserImpl.serialize(source, item.getAntlrResult(), item.getGlobalScope(), true)));
             } catch (RuntimeException e) {
                 // do nothing
             }

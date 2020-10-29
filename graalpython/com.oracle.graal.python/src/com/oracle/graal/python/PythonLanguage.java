@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
@@ -109,7 +112,11 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
                 version = PythonLanguage.VERSION, //
-                characterMimeTypes = PythonLanguage.MIME_TYPE, //
+                characterMimeTypes = {PythonLanguage.MIME_TYPE,
+                                PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2,
+                                PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2}, //
+                byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
+                defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
@@ -138,6 +145,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
+    static final String MIME_TYPE_COMPILE0 = "text/x-python-compile0";
+    static final String MIME_TYPE_COMPILE1 = "text/x-python-compile1";
+    static final String MIME_TYPE_COMPILE2 = "text/x-python-compile2";
+    static final String[] MIME_TYPE_COMPILE = {PythonLanguage.MIME_TYPE_COMPILE0, PythonLanguage.MIME_TYPE_COMPILE1, PythonLanguage.MIME_TYPE_COMPILE2};
+    static final String[] MIME_TYPE_EVAL = {PythonLanguage.MIME_TYPE_EVAL0, PythonLanguage.MIME_TYPE_EVAL1, PythonLanguage.MIME_TYPE_EVAL2};
+    static final String MIME_TYPE_EVAL0 = "text/x-python-eval0";
+    static final String MIME_TYPE_EVAL1 = "text/x-python-eval1";
+    static final String MIME_TYPE_EVAL2 = "text/x-python-eval2";
+    public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
@@ -273,27 +289,65 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.initialize();
     }
 
+    public static String getCompileMimeType(int optimize) {
+        if (optimize <= 0) {
+            return MIME_TYPE_COMPILE0;
+        } else if (optimize == 1) {
+            return MIME_TYPE_COMPILE1;
+        } else {
+            return MIME_TYPE_COMPILE2;
+        }
+    }
+
+    public static String getEvalMimeType(int optimize) {
+        if (optimize <= 0) {
+            return MIME_TYPE_EVAL0;
+        } else if (optimize == 1) {
+            return MIME_TYPE_EVAL1;
+        } else {
+            return MIME_TYPE_EVAL2;
+        }
+    }
+
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = getCurrentContext(PythonLanguage.class);
         PythonCore core = context.getCore();
         Source source = request.getSource();
-        CompilerDirectives.transferToInterpreter();
-        if (core.isInitialized()) {
-            context.initializeMainModule(source.getPath());
+        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
+            if (!request.getArgumentNames().isEmpty()) {
+                return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
+            }
+            RootNode root = doParse(context, source, 0);
+            if (core.isInitialized()) {
+                return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
+            } else {
+                return PythonUtils.getOrCreateCallTarget(root);
+            }
         }
         if (!request.getArgumentNames().isEmpty()) {
-            return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
+            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
         }
-        RootNode root = doParse(context, source);
-        if (core.isInitialized()) {
-            return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root));
-        } else {
-            return PythonUtils.getOrCreateCallTarget(root);
+
+        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
+            return PythonUtils.getOrCreateCallTarget(core.getSerializer().deserialize(source.getBytes().toByteArray()));
         }
+        for (int optimize = 0; optimize < MIME_TYPE_EVAL.length; optimize++) {
+            if (MIME_TYPE_EVAL[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return PythonUtils.getOrCreateCallTarget((RootNode) core.getParser().parse(ParserMode.Eval, optimize, core, source, null, null));
+            }
+        }
+        for (int optimize = 0; optimize < MIME_TYPE_COMPILE.length; optimize++) {
+            if (MIME_TYPE_COMPILE[optimize].equals(source.getMimeType())) {
+                assert !source.isInteractive();
+                return PythonUtils.getOrCreateCallTarget((RootNode) core.getParser().parse(ParserMode.File, optimize, core, source, null, null));
+            }
+        }
+        throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + source.getMimeType());
     }
 
-    private RootNode doParse(PythonContext context, Source source) {
+    private RootNode doParse(PythonContext context, Source source, int optimize) {
         ParserMode mode;
         if (source.isInteractive()) {
             if (context.getOption(PythonOptions.TerminalIsInteractive)) {
@@ -311,7 +365,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         PythonCore pythonCore = context.getCore();
         try {
-            return (RootNode) pythonCore.getParser().parse(mode, 0, pythonCore, source, null, null);
+            return (RootNode) pythonCore.getParser().parse(mode, optimize, pythonCore, source, null, null);
         } catch (PException e) {
             // handle PException during parsing (PIncompleteSourceException will propagate through)
             PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
@@ -617,7 +671,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
     }
 
-    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile) {
+    public static Source newSource(PythonContext ctxt, String src, String name, boolean mayBeFile, String mime) {
         try {
             SourceBuilder sourceBuilder = null;
             if (mayBeFile) {
@@ -640,6 +694,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             if (sourceBuilder == null) {
                 sourceBuilder = Source.newBuilder(ID, src, name);
+            }
+            if (mime != null) {
+                sourceBuilder.mimeType(mime);
             }
             return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {

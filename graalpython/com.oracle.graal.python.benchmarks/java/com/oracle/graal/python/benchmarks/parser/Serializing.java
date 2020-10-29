@@ -62,7 +62,7 @@ public class Serializing extends ParserBenchRunner {
     public void execute(Blackhole bh) {
         for (int n = 0; n < parsingCycles; n++) {
             for (PythonParserImpl.CacheItem item : ssts) {
-                bh.consume(PythonParserImpl.serialize(item.getAntlrResult(), item.getGlobalScope(), true));
+                bh.consume(PythonParserImpl.serialize(item.getSource(), item.getAntlrResult(), item.getGlobalScope(), true));
             }
         }
     }

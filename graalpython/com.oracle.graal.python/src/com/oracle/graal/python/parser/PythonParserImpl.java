@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
-import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
 import com.oracle.graal.python.parser.antlr.DescriptiveBailErrorListener;
 import com.oracle.graal.python.parser.antlr.Python3Lexer;
@@ -78,6 +77,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser, PythonCodeSerializer, FStringExprParser {
 
+    private static final String HOME_PREFIX = "%/";
     private final boolean logFiles;
     private final int timeStatistics;
     private long timeInParser = 0;
@@ -112,11 +112,13 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                         null).antlrResult;
     }
 
-    public static byte[] serialize(SSTNode node, ScopeInfo scope, boolean isModule) {
+    public static byte[] serialize(Source source, SSTNode node, ScopeInfo scope, boolean isModule) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
         try {
             dos.writeByte(SerializationUtils.VERSION);
+            dos.writeUTF(source.getName() == null ? "" : encodeHome(source.getName()));
+            dos.writeUTF(source.getPath() == null ? "" : encodeHome(source.getPath()));
             ScopeInfo.write(dos, scope);
             dos.writeInt(isModule ? 0 : node.getStartOffset());
             node.accept(new SSTSerializerVisitor(dos));
@@ -126,6 +128,22 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
 
         return baos.toByteArray();
+    }
+
+    private static String encodeHome(String path) {
+        String home = PythonLanguage.getCurrent().getHome();
+        if (path.startsWith(home)) {
+            return HOME_PREFIX + path.substring(home.length());
+        }
+        return path;
+    }
+
+    private static String decodeHome(String path) {
+        if (path.startsWith(HOME_PREFIX)) {
+            String home = PythonLanguage.getCurrent().getHome();
+            return home + path.substring(HOME_PREFIX.length());
+        }
+        return path;
     }
 
     @Override
@@ -141,52 +159,64 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         }
         if (rootNode instanceof ModuleRootNode) {
             // serialize whole module
-            return serialize(lastParserResult.antlrResult, lastParserResult.globalScope, true);
+            return serialize(source, lastParserResult.antlrResult, lastParserResult.globalScope, true);
         } else {
             // serialize just the part
             SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
             SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
             // store with parent scope
-            return serialize(rootSST, rootSST.getScope().getParent(), false);
+            return serialize(source, rootSST, rootSST.getScope().getParent(), false);
         }
     }
 
     @Override
-    public RootNode deserialize(Source source, byte[] data) {
-        return deserialize(source, data, null, null);
+    public RootNode deserialize(byte[] data) {
+        return deserialize(data, null, null);
     }
 
     @Override
     @TruffleBoundary
-    public RootNode deserialize(Source source, byte[] data, String[] cellvars, String[] freevars) {
+    public RootNode deserialize(byte[] data, String[] cellvars, String[] freevars) {
+        if (data.length == 0) {
+            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
+        }
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         DataInputStream dis = new DataInputStream(bais);
-        ScopeInfo globalScope = null;
-        SSTNode sstNode = null;
-        if (data.length != 0) {
-            try {
-                // Just to be sure that the serialization version is ok.
-                byte version = dis.readByte();
-                if (version != SerializationUtils.VERSION) {
-                    throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
-                }
-                globalScope = ScopeInfo.read(dis, null);
-                int offset = dis.readInt();
-                sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
-                if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
-                    ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
-                    if (cellvars != null) {
-                        rootScope.setCellVars(cellvars);
-                    }
-                    if (freevars != null) {
-                        rootScope.setFreeVars(freevars);
-                    }
-                }
-            } catch (IOException e) {
-                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct data from " + source.getPath());
+        ScopeInfo globalScope;
+        Source source;
+        try {
+            // Just to be sure that the serialization version is ok.
+            byte version = dis.readByte();
+            if (version != SerializationUtils.VERSION) {
+                throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
             }
-        } else {
-            return new BadOPCodeNode(PythonLanguage.getCore().getLanguage());
+            String name = decodeHome(dis.readUTF());
+            String path = decodeHome(dis.readUTF());
+            if (path.isEmpty()) {
+                source = Source.newBuilder(PythonLanguage.ID, "", name).build();
+            } else {
+                source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
+            }
+        } catch (IOException e) {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data");
+        }
+
+        SSTNode sstNode;
+        try {
+            globalScope = ScopeInfo.read(dis, null);
+            int offset = dis.readInt();
+            sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
+        } catch (IOException e) {
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data");
+        }
+        if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
+            ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();
+            if (cellvars != null) {
+                rootScope.setCellVars(cellvars);
+            }
+            if (freevars != null) {
+                rootScope.setFreeVars(freevars);
+            }
         }
         PythonCore core = PythonLanguage.getCore();
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, this);
