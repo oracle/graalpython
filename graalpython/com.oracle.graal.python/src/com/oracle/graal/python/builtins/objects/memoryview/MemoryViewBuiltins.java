@@ -134,7 +134,17 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             ManagedBuffer buffer = reference.getManagedBuffer();
             // Managed buffers should be released directly in the reference queue thread
             assert buffer.isForNative();
-            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
+            boolean shouldLock = !context.getSingleThreadedAssumption().isValid();
+            if (shouldLock) {
+                context.acquireInteropLock();
+            }
+            try {
+                CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbols.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
+            } finally {
+                if (shouldLock) {
+                    context.releaseInteropLock();
+                }
+            }
         }
     }
 
