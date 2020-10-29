@@ -797,7 +797,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
 
         private void checkExports(PMemoryView self) {
-            int exports = self.getExports().get();
+            long exports = self.getExports().get();
             if (exports > 0) {
                 throw raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
             }

@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -81,7 +81,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private final int[] suboffsets;
 
     // Count of exports via native buffer interface
-    private final AtomicInteger exports = new AtomicInteger();
+    private final AtomicLong exports = new AtomicLong();
     // Phantom ref to this object that will decref/release the managed buffer if any
     private BufferReference reference;
     private int flags;
@@ -256,7 +256,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         return flags;
     }
 
-    public AtomicInteger getExports() {
+    public AtomicLong getExports() {
         return exports;
     }
 

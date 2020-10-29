@@ -144,8 +144,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -842,7 +843,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
-        static int doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static long doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return object.getExports().get();
         }
 
@@ -1233,8 +1234,12 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
         static Object doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached CastToJavaIntExactNode cast) {
-            object.getExports().set(cast.execute(value));
+                        @Cached CastToJavaLongExactNode cast) {
+            try {
+                object.getExports().set(cast.execute(value));
+            } catch (CannotCastException | PException e) {
+                throw CompilerDirectives.shouldNotReachHere("Failed to set memoryview exports: invalid type");
+            }
             return value;
         }
 
