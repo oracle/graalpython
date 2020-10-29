@@ -52,8 +52,7 @@ import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public abstract class PClosureRootNode extends PRootNode {
-    private String fileName;
+public abstract class PClosureRootNode extends PRootNodeWithFileName {
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
@@ -128,13 +127,5 @@ public abstract class PClosureRootNode extends PRootNode {
 
     public boolean hasAnnotations() {
         return annotationsAvailable;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public String getFileName() {
-        return fileName;
     }
 }

@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
@@ -190,8 +191,8 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static void setRootNodeFileName(RootNode rootNode, String filename) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PClosureRootNode) {
-            ((PClosureRootNode) funcRootNode).setFileName(filename);
+        if (funcRootNode instanceof PRootNodeWithFileName) {
+            ((PRootNodeWithFileName) funcRootNode).setFileName(filename);
         }
     }
 
@@ -200,15 +201,15 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
-        if (funcRootNode instanceof PClosureRootNode) {
-            PClosureRootNode closureRootNode = (PClosureRootNode) funcRootNode;
-            if (closureRootNode.getFileName() != null) {
+        if (funcRootNode instanceof PRootNodeWithFileName) {
+            PRootNodeWithFileName rootNodeWithFileName = (PRootNodeWithFileName) funcRootNode;
+            if (rootNodeWithFileName.getFileName() != null) {
                 // for compiled modules, _imp._fix_co_filename will set the filename
-                return closureRootNode.getFileName();
+                return rootNodeWithFileName.getFileName();
             } else if (src != null) {
                 return getSourceSectionFileName(src);
             } else {
-                return closureRootNode.getName();
+                return rootNodeWithFileName.getName();
             }
         } else if (src != null) {
             return getSourceSectionFileName(src);

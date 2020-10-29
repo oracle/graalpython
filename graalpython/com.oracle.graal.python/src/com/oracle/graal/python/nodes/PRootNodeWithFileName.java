@@ -38,58 +38,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.nodes;
 
-package com.oracle.graal.python.nodes.util;
-
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 
-public class BadOPCodeNode extends PRootNodeWithFileName {
+public abstract class PRootNodeWithFileName extends PRootNode {
+    private String fileName;
 
-    private String name = "<invalid code>";
-
-    @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> context;
-
-    public BadOPCodeNode(TruffleLanguage<?> language) {
+    public PRootNodeWithFileName(TruffleLanguage<?> language) {
         super(language);
     }
 
-    @Override
-    public Object execute(VirtualFrame frame) {
-        throw getContext().getCore().raise(PythonBuiltinClassType.SystemError, "unknown opcode");
+    public PRootNodeWithFileName(TruffleLanguage<?> language, FrameDescriptor frameDescriptor) {
+        super(language, frameDescriptor);
     }
 
-    private PythonContext getContext() {
-        if (context == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            context = lookupContextReference(PythonLanguage.class);
-        }
-        return context.get();
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
-    @Override
-    public Signature getSignature() {
-        return Signature.EMPTY;
-    }
-
-    @Override
-    public boolean isPythonInternal() {
-        return false;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public String getFileName() {
+        return fileName;
     }
 }
