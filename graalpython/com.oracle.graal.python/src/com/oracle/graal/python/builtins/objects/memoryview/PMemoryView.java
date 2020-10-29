@@ -56,7 +56,7 @@ import com.oracle.truffle.api.object.Shape;
 
 // TODO interop lib
 @ExportLibrary(PythonObjectLibrary.class)
-public class PMemoryView extends PythonBuiltinObject {
+public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
     public static final int FLAG_RELEASED = 0x001;
@@ -288,6 +288,7 @@ public class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }
