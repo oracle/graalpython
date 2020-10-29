@@ -200,12 +200,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitemSlice(PMemoryView self, PSlice slice,
+                        @Shared("zeroDim") @Cached ConditionProfile zeroDimProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             self.checkReleased(this);
-            if (self.getDimensions() == 0) {
+            if (zeroDimProfile.profile(self.getDimensions() == 0)) {
                 throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
             }
             int[] shape = self.getBufferShape();
@@ -227,7 +228,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getitemEllipsis(PMemoryView self, @SuppressWarnings("unused") PEllipsis ellipsis,
-                        @Cached ConditionProfile zeroDimProfile) {
+                        @Shared("zeroDim") @Cached ConditionProfile zeroDimProfile) {
             self.checkReleased(this);
             if (zeroDimProfile.profile(self.getDimensions() == 0)) {
                 return self;
