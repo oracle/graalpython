@@ -369,7 +369,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         Object doBuiltinFunc(VirtualFrame frame, PBuiltinFunction func, @SuppressWarnings("unused") Object obj,
-                             @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             PythonModule builtins = getCore().getBuiltins();
             Object getattr = pol.lookupAttributeStrict(builtins, frame, GETATTR);
             PTuple args = factory().createTuple(new Object[]{func.getEnclosingType(), func.getName()});
