@@ -42,12 +42,13 @@ FunctionType = type(_f)
 descriptor = type(FunctionType.__code__)
 
 
-def make_named_tuple_class(name, fields):
+def make_named_tuple_class(name, fields, n_in_seq=None):
     sealed = False
     class named_tuple(tuple):
         __name__ = name
         __qualname__ = name
-        n_sequence_fields = len(fields)
+        # TODO only first n_sequence_fields items should be accesible by []
+        n_sequence_fields = len(fields) if n_in_seq is None else n_in_seq
         fields = fields
 
         @classmethod
@@ -65,10 +66,10 @@ def make_named_tuple_class(name, fields):
 
         def __repr__(self):
             sb = [name, "("]
-            for f in fields:
+            for i, f in enumerate([f for f in fields if f is not None][:self.n_sequence_fields]):
                 sb.append(f)
                 sb.append("=")
-                sb.append(repr(getattr(self, f)))
+                sb.append(repr(self[i]))
                 sb.append(", ")
             sb.pop()
             sb.append(")")
@@ -76,11 +77,12 @@ def make_named_tuple_class(name, fields):
 
     def _define_named_tuple_methods():
         for i, name in enumerate(fields):
-            def make_func(i):
-                def func(self):
-                    return self[i]
-                return func
-            setattr(named_tuple, name, descriptor(fget=make_func(i), name=name, owner=named_tuple))
+            if name is not None:
+                def make_func(i):
+                    def func(self):
+                        return self[i]
+                    return func
+                setattr(named_tuple, name, descriptor(fget=make_func(i), name=name, owner=named_tuple))
 
 
     _define_named_tuple_methods()

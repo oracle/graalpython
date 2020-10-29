@@ -146,6 +146,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_SPECIFY_MEM_LIMIT = "Cannot specify memory limit with FORMAT_RAW";
     public static final String CANNOT_SPECIFY_PREST_AND_FILTER_CHAIN = "Cannot specify both preset and filter chain";
+    public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
     public static final String CANNOT_USE_TO_INITIALIZE_ARRAY = "cannot use a %p to initialize an array with typecode '%s'";
     public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
@@ -157,6 +158,7 @@ public abstract class ErrorMessages {
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
+    public static final String CANT_SPECIFY_DIRFD_WITHOUT_PATH = "%s: can't specify dir_fd without matching path";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
     public static final String CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = "can't take floor or mod of complex number.";
     public static final String CAPI_SYM_NOT_CALLABLE = "C API symbol %s is not callable";

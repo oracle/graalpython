@@ -63,13 +63,15 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
+    private static final int UNAME_BUF_LENGTH = 256;
+
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
         set_errno("(sint32):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
         call_umask("(sint64):sint64"),
-        call_open_at("(sint32, [sint8], sint32, sint32):sint32"),
+        call_openat("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
         call_write("(sint32, [sint8], uint64):sint64"),
@@ -78,8 +80,17 @@ public final class NFIPosixSupport extends PosixSupport {
         call_pipe2("([sint32]):sint32"),
         call_lseek("(sint32, sint64, sint32):sint64"),
         call_ftruncate("(sint32, sint64):sint32"),
+        call_fsync("(sint32):sint32"),
+        call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
+        call_fstat("(sint32, [sint64]):sint32"),
+        call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
+        call_unlinkat("(sint32, [sint8]):sint32"),
+        call_symlinkat("([sint8], sint32, [sint8]):sint32"),
         get_inheritable("(sint32):sint32"),
-        set_inheritable("(sint32, sint32):sint32");
+        set_inheritable("(sint32, sint32):sint32"),
+        get_blocking("(sint32):sint32"),
+        set_blocking("(sint32, sint32):sint32"),
+        get_terminal_size("(sint32, [sint32]):sint32");
 
         private final String signature;
 
@@ -120,6 +131,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // strerror_r().
         byte[] buf = new byte[1024];
         invokeNode.call(lib, NativeFunctions.call_strerror, errorCode, wrap(buf), buf.length);
+        // TODO PyUnicode_DecodeLocale
         return cStringToJavaString(buf);
     }
 
@@ -144,7 +156,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_open_at, dirFd, pathToCString(pathname), flags, mode);
+            int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
                 return fd;
             }
@@ -276,6 +288,120 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
+    @ExportMessage
+    public void fsync(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
+            if (res == 0) {
+                return;
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public boolean getBlocking(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.get_blocking, fd);
+        if (result < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result != 0;
+    }
+
+    @ExportMessage
+    public void setBlocking(int fd, boolean blocking,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (invokeNode.callInt(lib, NativeFunctions.set_blocking, fd, blocking ? 1 : 0) < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public int[] getTerminalSize(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] size = new int[2];
+        if (invokeNode.callInt(lib, NativeFunctions.get_terminal_size, fd, context.getEnv().asGuestValue(size)) != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return size;
+    }
+
+    @ExportMessage
+    public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] out = new long[13];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
+        return out;
+    }
+
+    @ExportMessage
+    public long[] fstat(int fd, Object filename, boolean handleEintr,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        long[] out = new long[13];
+        while (true) {
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, context.getEnv().asGuestValue(out));
+            if (res == 0) {
+                return out;
+            }
+            int errno = getErrno(invokeNode);
+            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno, filename);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public Object[] uname(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        byte[] sys = new byte[UNAME_BUF_LENGTH];
+        byte[] node = new byte[UNAME_BUF_LENGTH];
+        byte[] rel = new byte[UNAME_BUF_LENGTH];
+        byte[] ver = new byte[UNAME_BUF_LENGTH];
+        byte[] machine = new byte[UNAME_BUF_LENGTH];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_uname, wrap(sys), wrap(node), wrap(rel), wrap(ver), wrap(machine), UNAME_BUF_LENGTH);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return new Object[]{
+                        // TODO PyUnicode_DecodeFSDefault
+                        cStringToJavaString(sys),
+                        cStringToJavaString(node),
+                        cStringToJavaString(rel),
+                        cStringToJavaString(ver),
+                        cStringToJavaString(machine)
+        };
+    }
+
+    @ExportMessage
+    public void unlinkAt(int dirFd, PosixPath pathname,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname));
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
+    }
+
+    @ExportMessage
+    public void symlinkAt(PosixPath target, int linkpathDirFd, PosixPath linkpath,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), linkpathDirFd, pathToCString(linkpath));
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
+        }
+    }
+
     private int getErrno(InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(lib, NativeFunctions.get_errno);
     }
@@ -294,6 +420,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
         throw new PosixException(errno, strerror(errno, invokeNode), filename);
+    }
+
+    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
+        throw new PosixException(errno, strerror(errno, invokeNode), filename1, filename2);
     }
 
     private Object wrap(byte[] bytes) {

@@ -51,13 +51,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <sys/utsname.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
 
 int64_t call_getpid() {
-  return getpid();
+    return getpid();
 }
 
 int64_t call_umask(int64_t mask) {
@@ -89,7 +92,7 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
     return res;
 }
 
-int32_t call_open_at(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
     return openat(dirFd, pathname, flags, mode);
 }
 
@@ -150,6 +153,107 @@ int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
 
 int32_t call_ftruncate(int32_t fd, int64_t length) {
     return ftruncate(fd, length);
+}
+
+int32_t call_fsync(int32_t fd) {
+    return fsync(fd);
+}
+
+int32_t get_blocking(int32_t fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags < 0) {
+        return -1;
+    }
+    return !(flags & O_NONBLOCK);
+}
+
+int32_t set_blocking(int32_t fd, int32_t blocking) {
+    int res = fcntl(fd, F_GETFL);
+    if (res >= 0) {
+        int flags;
+        if (blocking) {
+            flags = res & ~O_NONBLOCK;
+        } else {
+            flags = res | O_NONBLOCK;
+        }
+        res = fcntl(fd, F_SETFL, flags);
+    }
+    return res;
+}
+
+int32_t get_terminal_size(int32_t fd, int32_t *size) {
+    struct winsize w;
+    int res = ioctl(fd, TIOCGWINSZ, &w);
+    if (res == 0) {
+        size[0] = w.ws_col;
+        size[1] = w.ws_row;
+    }
+    return res;
+}
+
+static void stat_struct_to_longs(struct stat *st, int64_t *out) {
+    // TODO some of these use implementation-defined behaviour of unsigned -> signed conversion
+    out[0] = st->st_mode;
+    out[1] = st->st_ino;
+    out[2] = st->st_dev;
+    out[3] = st->st_nlink;
+    out[4] = st->st_uid;
+    out[5] = st->st_gid;
+    out[6] = st->st_size;
+#ifdef __APPLE__
+    out[7] = st->st_atimespec.tv_sec;
+    out[8] = st->st_mtimespec.tv_sec;
+    out[9] = st->st_ctimespec.tv_sec;
+    out[10] = st->st_atimespec.tv_nsec;
+    out[11] = st->st_mtimespec.tv_nsec;
+    out[12] = st->st_ctimespec.tv_nsec;
+#else
+    out[7] = st->st_atim.tv_sec;
+    out[8] = st->st_mtim.tv_sec;
+    out[9] = st->st_ctim.tv_sec;
+    out[10] = st->st_atim.tv_nsec;
+    out[11] = st->st_mtim.tv_nsec;
+    out[12] = st->st_ctim.tv_nsec;
+#endif
+}
+
+int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
+    struct stat st;
+    int result = fstatat(dirFd, path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+int32_t call_fstat(int32_t fd, int64_t *out) {
+    struct stat st;
+    int result = fstat(fd, &st);
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+    }
+    return result;
+}
+
+int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) {
+    struct utsname buf;
+    int result = uname(&buf);
+    if (result == 0) {
+        snprintf(sysname, size, "%s", buf.sysname);
+        snprintf(nodename, size, "%s", buf.nodename);
+        snprintf(release, size, "%s", buf.release);
+        snprintf(version, size, "%s", buf.version);
+        snprintf(machine, size, "%s", buf.machine);
+    }
+    return result;
+}
+
+int32_t call_unlinkat(int32_t dirFd, const char *pathname) {
+    return unlinkat(dirFd, pathname, 0);
+}
+
+int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
+    return symlinkat(target, dirFd, linkpath);
 }
 
 int32_t get_errno() {
