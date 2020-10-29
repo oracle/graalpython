@@ -43,11 +43,11 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 
-class BufferReference extends PhantomReference<Object> {
+class BufferReference extends PhantomReference<PMemoryView> {
     private final ManagedBuffer managedBuffer;
     private boolean released;
 
-    public BufferReference(Object referent, ManagedBuffer managedBuffer, ReferenceQueue<? super Object> q) {
+    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, ReferenceQueue<PMemoryView> q) {
         super(referent, q);
         assert managedBuffer != null;
         managedBuffer.incrementExports();

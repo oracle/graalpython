@@ -154,7 +154,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         MemoryViewNodes.BufferReferences bufferReferences = new MemoryViewNodes.BufferReferences();
         core.lookupType(PythonBuiltinClassType.PMemoryView).setAttribute(bufferReferencesKey, bufferReferences);
         core.getContext().registerAsyncAction(() -> {
-            Reference<?> reference = null;
+            Reference<? extends PMemoryView> reference = null;
             try {
                 reference = bufferReferences.queue.remove();
             } catch (InterruptedException e) {

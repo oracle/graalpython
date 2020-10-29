@@ -996,7 +996,7 @@ public class MemoryViewNodes {
     }
 
     public static class BufferReferences {
-        public final ReferenceQueue<Object> queue = new ReferenceQueue<>();
+        public final ReferenceQueue<PMemoryView> queue = new ReferenceQueue<>();
         public final Set<BufferReference> set = new HashSet<>();
     }
 }
