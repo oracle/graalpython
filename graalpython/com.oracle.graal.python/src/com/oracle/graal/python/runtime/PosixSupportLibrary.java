@@ -112,11 +112,11 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract long[] fstat(Object receiver, int fd, Object filename, boolean handleEintr) throws PosixException;
 
-    public abstract String[] uname(Object receiver) throws PosixException;
+    public abstract Object[] uname(Object receiver) throws PosixException;
 
     public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname) throws PosixException;
 
-    public abstract void symlinkAt(Object receiver, PosixPath target, int dirFd, PosixPath linkpath) throws PosixException;
+    public abstract void symlinkAt(Object receiver, PosixPath target, int linkpathDirFd, PosixPath linkpath) throws PosixException;
 
     public static class PosixException extends Exception {
 

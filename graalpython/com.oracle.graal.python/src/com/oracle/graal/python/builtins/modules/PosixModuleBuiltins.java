@@ -1397,10 +1397,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, followSymlinks);
-                return createStatResult(factory(), out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1420,10 +1421,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
         Object doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd.fd, fd.originalObject, false);
-                return createStatResult(factory(), out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1433,10 +1435,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
         }
 
-        private static Object createStatResult(PythonObjectFactory factory, long[] out) {
+        private static Object createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
             Object[] res = new Object[16];
             for (int i = 0; i < 7; i++) {
-                res[i] = makeUnsignedPInt(factory, out[i]);
+                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
             }
             res[6] = out[6];
             for (int i = 7; i < 10; i++) {
@@ -1457,16 +1459,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             r = r.multiply(BigInteger.valueOf(1000000000));
             return r.add(BigInteger.valueOf(ns));
         }
-
-        private static Object makeUnsignedPInt(PythonObjectFactory factory, long l) {
-            // TODO profile, this is unlikely, also move to PInt or separate node?
-            return l >= 0 ? l : factory.createInt(longToUnsignedBigInt(l));
-        }
-
-        @TruffleBoundary
-        private static BigInteger longToUnsignedBigInt(long l) {
-            return BigInteger.valueOf(l >>> 32).shiftLeft(32).add(BigInteger.valueOf(l & 0xFFFFFFFFL));
-        }
     }
 
     @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path", "dir_fd"})
@@ -1482,10 +1474,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, false);
-                return NfiStatNode.createStatResult(factory(), out);
+                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1504,10 +1497,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doStatFd(VirtualFrame frame, int fd,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd, null, true);
-                return NfiStatNode.createStatResult(factory(), out);
+                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }

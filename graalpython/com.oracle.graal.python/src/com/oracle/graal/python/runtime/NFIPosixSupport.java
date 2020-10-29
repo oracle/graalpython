@@ -363,7 +363,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public String[] uname(
+    public Object[] uname(
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         byte[] sys = new byte[UNAME_BUF_LENGTH];
         byte[] node = new byte[UNAME_BUF_LENGTH];
@@ -374,7 +374,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (res != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
-        return new String[]{
+        return new Object[]{
                         // TODO PyUnicode_DecodeFSDefault
                         cStringToJavaString(sys),
                         cStringToJavaString(node),
@@ -394,9 +394,9 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void symlinkAt(PosixPath target, int dirFd, PosixPath linkpath,
+    public void symlinkAt(PosixPath target, int linkpathDirFd, PosixPath linkpath,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), dirFd, pathToCString(linkpath));
+        int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), linkpathDirFd, pathToCString(linkpath));
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
         }

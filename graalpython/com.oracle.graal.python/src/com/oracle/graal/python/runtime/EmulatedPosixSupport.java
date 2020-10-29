@@ -445,7 +445,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public String[] uname() {
+    public Object[] uname() {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
@@ -457,7 +457,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public void symlinkAt(PosixPath target, int dirFd, PosixPath linkpath) {
+    public void symlinkAt(PosixPath target, int linkpathDirFd, PosixPath linkpath) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
