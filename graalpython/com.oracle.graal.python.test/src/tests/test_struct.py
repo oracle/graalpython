@@ -149,13 +149,13 @@ def test_pack_nan():
 
 def test_pack_large_long():
     for fmt in ('l', 'q'):
-        assert struct.pack(fmt, 0) == b'\x00\x00\x00\x00\x00\x00\x00\x00'
-        assert struct.unpack(fmt, b'\x00\x00\x00\x00\x00\x00\x00\x00') == (0,)
-        assert struct.pack(fmt, -1) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
-        assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (-1,)
+        assert struct.pack(fmt, 0) == b'\x00' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
+        assert struct.pack(fmt, -1) == b'\xff' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\xff' * struct.calcsize(fmt)) == (-1,)
 
     for fmt in ('L', 'Q'):
-        assert struct.pack(fmt, 0) == b'\x00\x00\x00\x00\x00\x00\x00\x00'
-        assert struct.unpack(fmt, b'\x00\x00\x00\x00\x00\x00\x00\x00') == (0,)
+        assert struct.pack(fmt, 0) == b'\x00' * struct.calcsize(fmt)
+        assert struct.unpack(fmt, b'\x00' * struct.calcsize(fmt)) == (0,)
         assert struct.pack(fmt, 18446744073709551615) == b'\xff\xff\xff\xff\xff\xff\xff\xff'
         assert struct.unpack(fmt, b'\xff\xff\xff\xff\xff\xff\xff\xff') == (18446744073709551615,)
