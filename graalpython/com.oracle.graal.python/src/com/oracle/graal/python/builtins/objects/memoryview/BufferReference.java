@@ -38,50 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+class BufferReference extends PhantomReference<PMemoryView> {
+    private final ManagedBuffer managedBuffer;
+    private boolean released;
 
-/**
- * Casts a Python integer to a Java int without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
-
-    public static CastToJavaIntExactNode create() {
-        return CastToJavaIntExactNodeGen.create();
+    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, ReferenceQueue<PMemoryView> q) {
+        super(referent, q);
+        assert managedBuffer != null;
+        managedBuffer.incrementExports();
+        this.managedBuffer = managedBuffer;
     }
 
-    public static CastToJavaIntExactNode getUncached() {
-        return CastToJavaIntExactNodeGen.getUncached();
+    public ManagedBuffer getManagedBuffer() {
+        return managedBuffer;
     }
 
-    @Specialization
-    static int toInt(long x) {
-        try {
-            return PInt.intValueExact(x);
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
+    public boolean isReleased() {
+        return released;
     }
 
-    @Specialization
-    static int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
-        }
+    public void markReleased() {
+        this.released = true;
     }
 }

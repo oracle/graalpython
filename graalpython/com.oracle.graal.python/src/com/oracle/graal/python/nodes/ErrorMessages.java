@@ -48,6 +48,7 @@ public abstract class ErrorMessages {
     public static final String ARG_D_MUST_BE_S_NOT_P = "%s argument %d must be %s, not %p";
     public static final String ARG_S_MUST_BE_S_NOT_P = "%s argument %s must be %s, not %p";
     public static final String ARG_D_MUST_BE_S_OR_S = "%s argument %d must be '%s' or '%s'";
+    public static final String ARG_S_MUST_BE_A_LIST_OR_TUPLE = "%s must be a list or tuple";
     public static final String ARG_D_MUST_NOT_BE_EMPTY = "arg %d must not be empty";
     public static final String ARG_EXPECTED_GOT = "%s argument expected, got %p";
     public static final String ARG_IS_EMPTY_SEQ = "%s() arg is an empty sequence";
@@ -126,10 +127,14 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CREATE_INSTANCES = "cannot create '%s' instances";
     public static final String CANNOT_CREATE_WEAK_REFERENCE_TO = "cannot create weak reference to '%p' object";
     public static final String CANNOT_DELETE_ATTRIBUTE = "can't delete %s.%s";
+    public static final String CANNOT_DELETE_MEMORY = "cannot delete memory";
+    public static final String CANNOT_MODIFY_READONLY_MEMORY = "cannot modify read-only memory";
     public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
+    public static final String CANNOT_HASH_WRITEABLE_MEMORYVIEW = "cannot hash writable memoryview object";
+    public static final String CANNOT_INDEX_D_DIMENSION_VIEW_WITH_D = "cannot index %d-dimension view with %d-element tuple";
     public static final String IMPORT_NOT_FOUND = "__import__ not found";
     public static final String CANNOT_IMPORT_NAME = "cannot import name '%s' from '%s' (%s)";
     public static final String CANNOT_IMPORT_NAME_CIRCULAR = "cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)";
@@ -263,6 +268,7 @@ public abstract class ErrorMessages {
     public static final String HOST_SYM_NOT_DEFINED = "host symbol %s is not defined or access has been denied";
     public static final String IDN_ENC_FAILED = "IDN encoding failed: %s";
     public static final String IF_YOU_GIVE_ONLY_ONE_ARG_TO_DICT = "if you give only one argument to maketrans it must be a dict";
+    public static final String INVALID_INDEXING_OF_0_DIM_MEMORY = "invalid indexing of 0-dim memory";
     public static final String ILLEGAL_ARG = "illegal argument";
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
@@ -271,6 +277,7 @@ public abstract class ErrorMessages {
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
+    public static final String INDEX_OUT_OF_BOUNDS_ON_DIMENSION_D = "index out of bounds on dimension %d";
     public static final String INDEX_OUT_OF_RANGE = "index out of range";
     public static final String INDEX_RETURNED_NON_INT = "__index__ returned non-int (type %p)";
     public static final String INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE = "instance exception may not have a separate value";
@@ -346,6 +353,24 @@ public abstract class ErrorMessages {
     public static final String MATH_RANGE_ERROR = "math range error";
     public static final String MAX_MARSHAL_STACK_DEPTH = "Maximum marshal stack depth";
     public static final String MEM_MAPPED_LENGTH_MUST_BE_POSITIVE = "memory mapped length must be positive";
+    public static final String MEMORYVIEW_INVALID_SLICE_KEY = "memoryview: invalid slice key";
+    public static final String MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P = "memoryview: a bytes-like object is required, not '%p'";
+    public static final String MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S = "memoryview: invalid value for format '%s'";
+    public static final String MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S = "memoryview: invalid type for format '%s'";
+    public static final String MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1 = "memoryview slice assignments are currently restricted to ndim = 1";
+    public static final String MEMORYVIEW_DIFFERENT_STRUCTURES = "memoryview assignment: lvalue and rvalue have different structures";
+    public static final String MEMORYVIEW_FORBIDDEN_RELEASED = "operation forbidden on released memoryview object";
+    public static final String MEMORYVIEW_DESTINATION_FORMAT_ERROR = "memoryview: destination format must be a native single character format prefixed with an optional '@'";
+    public static final String MEMORYVIEW_CANNOT_CAST_NON_BYTE = "memoryview: cannot cast between two non-byte formats";
+    public static final String MEMORYVIEW_LENGTH_NOT_MULTIPLE_OF_ITEMSIZE = "memoryview: length is not a multiple of itemsize";
+    public static final String MEMORYVIEW_CAST_MUST_BE_1D_TO_ND_OR_ND_TO_1D = "memoryview: cast must be 1D -> ND or ND -> 1D";
+    public static final String MEMORYVIEW_NUMBER_OF_DIMENSIONS_MUST_NOT_EXCEED_D = "memoryview: number of dimensions must not exceed %d";
+    public static final String MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS = "memoryview: casts are restricted to C-contiguous views";
+    public static final String MEMORYVIEW_CANNOT_CAST_VIEW_WITH_ZEROS_IN_SHAPE_OR_STRIDES = "memoryview: cannot cast view with zeros in shape or strides";
+    public static final String MEMORYVIEW_CAST_WRONG_LENGTH = "memoryview: product(shape) * itemsize != buffer size";
+    public static final String MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS = "memoryview.cast(): elements of shape must be integers > 0";
+    public static final String MEMORYVIEW_HAS_D_EXPORTED_BUFFERS = "memoryview has %d exported buffers";
+    public static final String MEMORYVIEW_FORMAT_S_NOT_SUPPORTED = "memoryview: format %s not supported";
     public static final String METACLASS_CONFLICT = "metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases";
     public static final String METHOD_NAME_MUST_BE = "method name must be string, not %p";
     public static final String MISSING_D_REQUIRED_S_ARGUMENT_S_POS = "%s() missing required argument '%s' (pos %d)";
@@ -354,6 +379,7 @@ public abstract class ErrorMessages {
     public static final String MODULE_HAS_NO_ATTR_S = "module has no attribute '%s'";
     public static final String MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = "partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)";
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
+    public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
     public static final String MULTIPLE_BASES_LAYOUT_CONFLICT = "multiple bases have instance lay-out conflict";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
@@ -420,6 +446,7 @@ public abstract class ErrorMessages {
     public static final String ODD_LENGTH_STRING = "Odd-length string";
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";
+    public static final String ORDER_MUST_BE_C_F_OR_A = "order must be 'C', 'F' or 'A'";
     public static final String PACKED_IP_WRONG_LENGTH = "packed IP wrong length for %s";
     public static final String PACKET_IP_WRONG_LENGTH_FOR = "packed IP wrong length for %s";
     public static final String PATCHED_DATETIME_CLASS = "patched datetime class: %r";
@@ -495,6 +522,7 @@ public abstract class ErrorMessages {
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
+    public static final String SUB_VIEWS_NOT_IMPLEMENTED = "sub-views are not implemented";
     public static final String SUPER_OBJ_MUST_BE_INST_SUB_OR_TYPE = "super(type, obj): obj must be an instance or subtype of type";
     public static final String TAKES_D_OR_D_ARGS = "%s takes %d or %d arguments";
     public static final String TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = "%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s";

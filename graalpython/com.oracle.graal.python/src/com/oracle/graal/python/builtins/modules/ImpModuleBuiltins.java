@@ -214,7 +214,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CreateDynamic.class);
 
         protected static final String INITIALIZE_CAPI = "initialize_capi";
-        protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
         private static final String LLVM_LANGUAGE = "llvm";
 
@@ -411,10 +410,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
                     context.setCapiWasLoaded(capi);
                     callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
-
-                    // initialization needs to be finished already but load memoryview
-                    // implementation immediately
-                    callNode.executeObject(null, readNode.execute(builtinModule, IMPORT_NATIVE_MEMORYVIEW), capi);
                 } catch (RuntimeException e) {
                     logJavaException(e);
                     throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_DEREF_HANDLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -144,7 +144,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -835,6 +837,21 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return object.isReadOnly() ? 1 : 0;
         }
 
+        @Specialization(guards = "eq(MEMORYVIEW_FLAGS, key)")
+        static int doMemoryViewFlags(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getFlags();
+        }
+
+        @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
+        static long doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getExports().get();
+        }
+
+        @Specialization(guards = "eq(MEMORYVIEW_VIEW, key)")
+        static Object doMemoryViewView(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new PyMemoryViewBufferWrapper(object);
+        }
+
         @Specialization(guards = "eq(START, key)")
         static Object doStart(PSlice object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
@@ -938,24 +955,6 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached HashingCollectionNodes.GetDictStorageNode getStorageNode,
                         @CachedLibrary("getStorageNode.execute(object)") HashingStorageLibrary lib) {
             return lib.length(getStorageNode.execute(object));
-        }
-
-        @Specialization
-        static Object doMemoryview(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, String key,
-                        @Cached PRaiseNode raise,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
-                        @CachedLibrary(limit = "1") InteropLibrary read,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
-                try {
-                    return read.readMember(PythonNativeObject.cast(delegateObj).getPtr(), key);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw raise.raise(PythonBuiltinClassType.TypeError, e);
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
         @Specialization(guards = "eq(MMAP_DATA, key)")
@@ -1233,17 +1232,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return value;
         }
 
-        @Specialization
-        static Object doMemoryview(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, String key, Object value,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
-            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
-            if (isNativeObject.profile(PythonNativeObject.isInstance(delegateObj))) {
-                interopLib.writeMember(PythonNativeObject.cast(delegateObj).getPtr(), key, value);
+        @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
+        static Object doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                        @Cached CastToJavaLongExactNode cast) {
+            try {
+                object.getExports().set(cast.execute(value));
+            } catch (CannotCastException | PException e) {
+                throw CompilerDirectives.shouldNotReachHere("Failed to set memoryview exports: invalid type");
             }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("delegate of memoryview object is not native");
+            return value;
         }
 
         @Specialization(guards = "eq(F_LINENO, key)")
@@ -1258,7 +1255,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             }
         }
 
-        @Specialization(guards = "isGenericCase(object, key)", limit = "1")
+        @Specialization(guards = "isGenericCase(key)", limit = "1")
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key, Object value,
                         @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) throws UnknownIdentifierException {
@@ -1282,10 +1279,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return expected.getMemberName().equals(actual);
         }
 
-        protected static boolean isGenericCase(Object object, String key) {
-            if (object instanceof PMemoryView) {
-                return false;
-            }
+        protected static boolean isGenericCase(String key) {
             return !(OB_TYPE.getMemberName().equals(key) ||
                             OB_REFCNT.getMemberName().equals(key) ||
                             TP_FLAGS.getMemberName().equals(key) ||
@@ -1315,7 +1309,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         TP_SUBCLASSES.getMemberName().equals(member) ||
                         MD_DEF.getMemberName().equals(member) ||
                         TP_DICT.getMemberName().equals(member) ||
-                        TP_DICTOFFSET.getMemberName().equals(member);
+                        TP_DICTOFFSET.getMemberName().equals(member) ||
+                        MEMORYVIEW_EXPORTS.getMemberName().equals(member);
     }
 
     @ExportMessage

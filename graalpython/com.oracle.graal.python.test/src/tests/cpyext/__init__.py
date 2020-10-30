@@ -54,6 +54,11 @@ def unhandled_error_compare(x, y):
     else:
         return x == y
 
+def unhandled_error_compare_with_message(x, y):
+    if (isinstance(x, BaseException) and isinstance(y, BaseException)):
+        return type(x) == type(y) and str(x) == str(y)
+    else:
+        return x == y
 
 class CPyExtTestCase():
 

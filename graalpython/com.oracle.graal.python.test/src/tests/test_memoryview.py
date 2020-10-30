@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -50,3 +50,115 @@ def test_tobytes():
     b = b"\xff\x00\x00"
     v = memoryview(b)
     assert v.tobytes() == b
+
+
+def test_slice():
+    b = bytes(range(8))
+    m = memoryview(b)
+    for i in (-10, -5, -1, 0, 1, 5, 10):
+        for j in (-10, -5, -1, 0, 1, 5, 10):
+            for k in (-10, -2, -1, 0, 1, 2, 10):
+                for i2 in (-10, -5, -1, 0, 1, 5, 10):
+                    for j2 in (-10, -5, -1, 0, 1, 5, 10):
+                        for k2 in (-10, -2, -1, 0, 1, 2, 10):
+                            try:
+                                s1 = b[i:j:k][i2:j2:k2]
+                            except Exception as e1:
+                                try:
+                                    m[i:j:k][i2:j2:k2]
+                                except Exception as e2:
+                                    assert type(e1) == type(e2)
+                                else:
+                                    assert False
+                            else:
+                                s2 = m[i:j:k][i2:j2:k2]
+                                assert len(s1) == len(s2)
+                                for l in range(-len(s1) - 1, len(s1) + 2):
+                                    try:
+                                        e1 = s1[l]
+                                    except Exception as e1:
+                                        try:
+                                            s2[l]
+                                        except Exception as e2:
+                                            assert type(e1) == type(e2)
+                                        else:
+                                            assert False
+                                    else:
+                                        e2 = s2[l]
+                                        assert e1 == e2
+
+def test_unpack():
+    assert memoryview(b'\xaa')[0] == 170
+    assert memoryview(b'\xaa').cast('B')[0] == 170
+    assert memoryview(b'\xaa').cast('b')[0] == -86
+    assert memoryview(b'\xaa\xaa').cast('H')[0] == 43690
+    assert memoryview(b'\xaa\xaa').cast('h')[0] == -21846
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('I')[0] == 2863311530
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('i')[0] == -1431655766
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('L')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('l')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('Q')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('q')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('N')[0] == 12297829382473034410
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('n')[0] == -6148914691236517206
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('P')[0] == 12297829382473034410
+    assert memoryview(b'\x00').cast('?')[0] is False
+    assert memoryview(b'\xaa').cast('?')[0] is True
+    assert memoryview(b'\xaa\xaa\xaa\xaa').cast('f')[0] == -3.0316488252093987e-13
+    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('d')[0] == -3.7206620809969885e-103
+    assert memoryview(b'\xaa').cast('c')[0] == b'\xaa'
+
+def test_pack():
+    b = bytearray(1)
+    memoryview(b).cast('B')[0] = 170
+    assert b == b'\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('b')[0] = -86
+    assert b == b'\xaa'
+    b = bytearray(2)
+    memoryview(b).cast('H')[0] = 43690
+    assert b == b'\xaa\xaa'
+    b = bytearray(2)
+    memoryview(b).cast('h')[0] = -21846
+    assert b == b'\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('I')[0] = 2863311530
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('i')[0] = -1431655766
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('L')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('l')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('Q')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('q')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('N')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('n')[0] = -6148914691236517206
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('P')[0] = 12297829382473034410
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(4)
+    memoryview(b).cast('f')[0] = -3.0316488252093987e-13
+    assert b == b'\xaa\xaa\xaa\xaa'
+    b = bytearray(8)
+    memoryview(b).cast('d')[0] = -3.7206620809969885e-103
+    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('c')[0] = b'\xaa'
+    assert b == b'\xaa'
+    b = bytearray(1)
+    memoryview(b).cast('?')[0] = True
+    assert b == b'\x01'
+    memoryview(b).cast('?')[0] = False
+    assert b == b'\x00'

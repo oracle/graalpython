@@ -13,6 +13,7 @@ import array
 import io
 import copy
 import pickle
+import time
 
 
 class AbstractMemoryTests:
@@ -28,7 +29,8 @@ class AbstractMemoryTests:
 
     def check_getitem_with_type(self, tp):
         b = tp(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         self.assertEqual(m[0], ord(b"a"))
         self.assertIsInstance(m[0], int)
@@ -45,7 +47,7 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, lambda: m[0.0])
         self.assertRaises(TypeError, lambda: m["a"])
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_getitem(self):
         for tp in self._types:
@@ -61,7 +63,8 @@ class AbstractMemoryTests:
         if not self.ro_type:
             self.skipTest("no read-only type to test")
         b = self.ro_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         def setitem(value):
             m[0] = value
@@ -69,14 +72,15 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, setitem, 65)
         self.assertRaises(TypeError, setitem, memoryview(b"a"))
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_setitem_writable(self):
         if not self.rw_type:
             self.skipTest("no writable type to test")
         tp = self.rw_type
         b = self.rw_type(self._source)
-        oldrefcount = sys.getrefcount(b)
+        # XXX GraalVM change - no refcount
+        # oldrefcount = sys.getrefcount(b)
         m = self._view(b)
         m[0] = ord(b'1')
         self._check_contents(tp, b, b"1bcdef")
@@ -112,7 +116,11 @@ class AbstractMemoryTests:
         self.assertRaises(TypeError, setitem, "a", b"a")
         # Not implemented: multidimensional slices
         slices = (slice(0,1,1), slice(0,1,2))
-        self.assertRaises(NotImplementedError, setitem, slices, b"a")
+        # XXX GraalVM change - we raise TypeError instead of NotImplementedError because the dimensions are invalid.
+        # Adding an expensive separate pre-check for multislices is not worth it and if CPython ever implements
+        # multislices, this is going to raise the same TypeError as we do.
+        # self.assertRaises(NotImplementedError, setitem, slices, b"a")
+        self.assertRaises((NotImplementedError, TypeError), setitem, slices, b"a")
         # Trying to resize the memory object
         exc = ValueError if m.format == 'c' else TypeError
         self.assertRaises(exc, setitem, 0, b"")
@@ -121,7 +129,7 @@ class AbstractMemoryTests:
         self.assertRaises(ValueError, setitem, slice(0,2), b"a")
 
         m = None
-        self.assertEqual(sys.getrefcount(b), oldrefcount)
+        # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_delitem(self):
         for tp in self._types:
@@ -205,14 +213,15 @@ class AbstractMemoryTests:
         # Test PyObject_GetBuffer() on a memoryview object.
         for tp in self._types:
             b = tp(self._source)
-            oldrefcount = sys.getrefcount(b)
+            # XXX GraalVM change - no refcount
+            # oldrefcount = sys.getrefcount(b)
             m = self._view(b)
-            oldviewrefcount = sys.getrefcount(m)
+            # oldviewrefcount = sys.getrefcount(m)
             s = str(m, "utf-8")
             self._check_contents(tp, b, s.encode("utf-8"))
-            self.assertEqual(sys.getrefcount(m), oldviewrefcount)
+            # self.assertEqual(sys.getrefcount(m), oldviewrefcount)
             m = None
-            self.assertEqual(sys.getrefcount(b), oldrefcount)
+            # self.assertEqual(sys.getrefcount(b), oldrefcount)
 
     def test_gc(self):
         for tp in self._types:
@@ -237,8 +246,11 @@ class AbstractMemoryTests:
             b.o = o
             wr = weakref.ref(o)
             b = m = o = None
+            # XXX GraalVM change - add more collect calls
+            for i in range(10):
+                test.support.gc_collect()
+                time.sleep(0.1)
             # The cycle must be broken
-            gc.collect()
             self.assertTrue(wr() is None, wr())
 
             # This exercises memory_clear().
@@ -248,8 +260,11 @@ class AbstractMemoryTests:
             m.o = o
             wr = weakref.ref(o)
             m = o = None
+            # XXX GraalVM change - add more collect calls
+            for i in range(10):
+                test.support.gc_collect()
+                time.sleep(0.1)
             # The cycle must be broken
-            gc.collect()
             self.assertTrue(wr() is None, wr())
 
     def _check_released(self, m, tp):
@@ -350,7 +365,10 @@ class AbstractMemoryTests:
             wr = weakref.ref(m, callback)
             self.assertIs(wr(), m)
             del m
-            test.support.gc_collect()
+            # XXX GraalVM change - add collect call
+            for i in range(10):
+                test.support.gc_collect()
+                time.sleep(0.1)
             self.assertIs(wr(), None)
             self.assertIs(L[0], b)
 
@@ -443,6 +461,7 @@ class BaseMemorySliceTests:
     def _check_contents(self, tp, obj, contents):
         self.assertEqual(obj[1:7], tp(contents))
 
+    @test.support.impl_detail("refcounting", graalvm=False)
     def test_refs(self):
         for tp in self._types:
             m = memoryview(tp(self._source))
@@ -506,6 +525,7 @@ class ArrayMemorySliceSliceTest(unittest.TestCase,
 
 
 class OtherTest(unittest.TestCase):
+    @test.support.impl_detail("ctypes", graalvm=False)
     def test_ctypes_cast(self):
         # Issue 15944: Allow all source formats when casting to bytes.
         ctypes = test.support.import_module("ctypes")

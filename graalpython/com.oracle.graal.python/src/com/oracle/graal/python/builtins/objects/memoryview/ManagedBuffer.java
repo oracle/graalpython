@@ -38,50 +38,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Casts a Python integer to a Java int without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
+ * Object for tracking lifetime of buffers inside memoryviews. The only purpose is to release the
+ * underlying buffer when this object's export count goes to 0 or it gets garbage collected. Should
+ * only be created for buffers that actually need to be released.
+ *
+ * Rough equivalent of CPython's {@code _PyManagedBuffer_Type}
  */
-@GenerateUncached
-public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
+public class ManagedBuffer {
+    // Buffer owner, null for native objects
+    final WeakReference<Object> owner;
+    // Pointer to native Py_buffer if any, null for managed objects
+    final Object bufferStructPointer;
 
-    public static CastToJavaIntExactNode create() {
-        return CastToJavaIntExactNodeGen.create();
+    final AtomicInteger exports = new AtomicInteger();
+
+    private ManagedBuffer(WeakReference<Object> owner, Object bufferStructPointer) {
+        this.owner = owner;
+        this.bufferStructPointer = bufferStructPointer;
     }
 
-    public static CastToJavaIntExactNode getUncached() {
-        return CastToJavaIntExactNodeGen.getUncached();
+    public static ManagedBuffer createForManaged(Object owner) {
+        assert owner != null;
+        return new ManagedBuffer(new WeakReference<>(owner), null);
     }
 
-    @Specialization
-    static int toInt(long x) {
-        try {
-            return PInt.intValueExact(x);
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
+    public static ManagedBuffer createForNative(Object bufferStructPointer) {
+        assert bufferStructPointer != null;
+        return new ManagedBuffer(null, bufferStructPointer);
     }
 
-    @Specialization
-    static int toInt(PInt x) {
-        try {
-            return x.intValueExact();
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
-        }
+    public boolean isForNative() {
+        return bufferStructPointer != null;
+    }
+
+    public Object getOwner() {
+        return owner.get();
+    }
+
+    public Object getBufferStructPointer() {
+        return bufferStructPointer;
+    }
+
+    public AtomicInteger getExports() {
+        return exports;
+    }
+
+    public int incrementExports() {
+        return exports.incrementAndGet();
+    }
+
+    public int decrementExports() {
+        return exports.decrementAndGet();
     }
 }

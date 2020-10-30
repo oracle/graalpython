@@ -180,6 +180,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -228,6 +231,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -1539,6 +1543,93 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
             return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
+        }
+    }
+
+    @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_MemoryViewFromObject extends NativeBuiltin {
+        @Specialization
+        Object wrap(VirtualFrame frame, Object object,
+                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return memoryViewNode.execute(frame, object);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    // Called without landing node
+    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
+
+        @Specialization
+        Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
+                        Object readonlyObj, Object itemsizeObj, Object formatObj,
+                        Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        @Cached ConditionProfile zeroDimProfile,
+                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+            try {
+                int ndim = castToIntNode.execute(ndimObj);
+                int itemsize = castToIntNode.execute(itemsizeObj);
+                int len = castToIntNode.execute(lenObj);
+                boolean readonly = castToIntNode.execute(readonlyObj) != 0;
+                String format = (String) asPythonObjectNode.execute(formatObj);
+                Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
+                int[] shape = null;
+                int[] strides = null;
+                int[] suboffsets = null;
+                if (zeroDimProfile.profile(ndim > 0)) {
+                    if (!lib.isNull(shapePointer)) {
+                        shape = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            shape[i] = castToIntNode.execute(lib.readArrayElement(shapePointer, i));
+                        }
+                    } else {
+                        assert ndim == 1;
+                        shape = new int[1];
+                        shape[0] = len / itemsize;
+                    }
+                    if (!lib.isNull(stridesPointer)) {
+                        strides = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
+                        }
+                    } else {
+                        strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
+                    }
+                    if (!lib.isNull(suboffsetsPointer)) {
+                        suboffsets = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            suboffsets[i] = castToIntNode.execute(lib.readArrayElement(suboffsetsPointer, i));
+                        }
+                    }
+                }
+                int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
+                ManagedBuffer managedBuffer = null;
+                if (!lib.isNull(bufferStructPointer)) {
+                    managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
+                }
+                PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
+                                PMemoryView.BufferFormat.fromString(format),
+                                format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+                return toNewRefNode.execute(memoryview);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return toNewRefNode.execute(getNativeNullNode.execute());
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 

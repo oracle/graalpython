@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_OBJECT_NEW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBePint;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -76,6 +77,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
@@ -114,18 +116,19 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -150,6 +153,8 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -184,7 +189,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -3314,12 +3318,81 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // memoryview(obj)
-    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
+    @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
+        public abstract PMemoryView execute(VirtualFrame frame, Object cls, Object object);
+
+        public final PMemoryView execute(VirtualFrame frame, Object object) {
+            return execute(frame, PythonBuiltinClassType.PMemoryView, object);
+        }
+
+        // TODO arrays should support buffer protocol too, but their implementation would be
+        // complex, because they don't have an underlying byte array
         @Specialization
-        public PMemoryView doGeneric(Object cls, Object value) {
-            return factory().createMemoryView(cls, value);
+        PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(object);
+            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false, getQueue.execute());
+        }
+
+        @Specialization
+        PMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(object);
+            return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
+        }
+
+        @Specialization
+        PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+            object.checkReleased(this);
+            return factory().createMemoryView(getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
+                            object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
+                            object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
+                            object.getBufferSuboffsets(), object.getFlags());
+        }
+
+        @Specialization
+        PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+                        @Cached ForeignCallContext foreignCallContext,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object state = foreignCallContext.enter(frame, getContext(), this);
+            try {
+                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
+                checkFunctionResultNode.execute(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, result);
+                return (PMemoryView) asPythonObjectNode.execute(result);
+            } finally {
+                foreignCallContext.exit(frame, getContext(), state);
+            }
+        }
+
+        @Fallback
+        PMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
+            throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+        }
+
+        private PMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
+                        MemoryViewNodes.BufferReferences refQueue) {
+            ManagedBuffer managedBuffer = null;
+            if (needsRelease) {
+                // TODO We should lock the underlying storage for resizing
+                managedBuffer = ManagedBuffer.createForManaged(object);
+            }
+            return factory().createMemoryView(refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
+                            null, 0, new int[]{length}, new int[]{itemsize}, null,
+                            PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+        }
+
+        public static MemoryViewNode create() {
+            return BuiltinConstructorsFactory.MemoryViewNodeFactory.create(null);
         }
     }
 

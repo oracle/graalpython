@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -127,6 +129,14 @@ public abstract class PGuards {
 
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
+    }
+
+    public static boolean isEllipsis(Object object) {
+        return object == PEllipsis.INSTANCE;
+    }
+
+    public static boolean isMemoryView(Object object) {
+        return object instanceof PMemoryView;
     }
 
     public static boolean isDeleteMarker(Object object) {

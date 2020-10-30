@@ -211,6 +211,7 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
+POLYGLOT_DECLARE_TYPE(Py_buffer);
 
 
 static void initialize_globals() {
@@ -248,6 +249,7 @@ static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memoryview_getbuffer, (releasebufferproc)memoryview_releasebuffer);
 }
 
 __attribute__((constructor (20000)))
@@ -739,6 +741,10 @@ int truffle_ptr_compare(void* x, void* y, int op) {
     default:
         return -1;
     }
+}
+
+void* truffle_ptr_add(void* x, Py_ssize_t y) {
+    return x + y;
 }
 
 double truffle_read_ob_fval(PyFloatObject* fobj) {
