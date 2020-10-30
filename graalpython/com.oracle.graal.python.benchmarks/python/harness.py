@@ -37,14 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from time import time
+
+# Capture module load time as soon as possible for other engines. The unit is seconds.
+_module_start_time = time()
+
 import _io
 import os
 import sys
 import types
-from time import time, monotonic_ns
 
 GRAALPYTHON = sys.implementation.name == "graalpython"
 
+# Try to use the timer with best accuracy. Unfortunately, 'monotonic_ns' is not available everywhere.
+if GRAALPYTHON:
+    from time import monotonic_ns
+    monotonic_best_accuracy = monotonic_ns
+    UNITS_PER_SECOND = 1e9
+else:
+    monotonic_best_accuracy = time
+    UNITS_PER_SECOND = 1.0
+    
 _HRULE = '-'.join(['' for i in range(80)])
 
 #: this function is used to pre-process the arguments as expected by the __benchmark__ and __setup__ entry points
@@ -57,6 +70,13 @@ ATTR_BENCHMARK = '__benchmark__'
 ATTR_CLEANUP = '__cleanup__'
 #: performs any teardown needed in the benchmark
 ATTR_TEARDOWN = '__teardown__'
+
+
+def get_seconds_since_startup(cur_time):
+    if GRAALPYTHON and __graalpython__.startup_nano != -1:
+        return (cur_time - __graalpython__.startup_nano) / UNITS_PER_SECOND
+    # note: the unit of _module_start_time is seconds
+    return cur_time / UNITS_PER_SECOND - _module_start_time
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -273,34 +293,31 @@ class BenchRunner(object):
         self._call_attr(ATTR_SETUP, *args)
         print("### start benchmark ... ")
 
-        report_startup = GRAALPYTHON and self.startup and __graalpython__.startup_nano != -1
+        report_startup = self.startup
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
-        startup_ns = -1
-        early_warmup_ns = -1
-        late_warmup_ns = -1
+        startup_s = -1.0
+        early_warmup_s = -1.0
+        late_warmup_s = -1.0
         durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup_runs:
                 print("### (pre)warming up for %s iterations ... " % self.warmup_runs)
                 for _ in range(self.warmup_runs):
                     bench_func(*args)
-                    cur_time_nano = monotonic_ns()
-                    if report_startup and startup_ns == -1:
-                        startup_ns = cur_time_nano - __graalpython__.startup_nano
                     self._call_attr(ATTR_CLEANUP, *args)
 
             for iteration in range(self.iterations):
                 start = time()
                 bench_func(*args)
-                cur_time_nano = monotonic_ns()
+                cur_time = monotonic_best_accuracy()
                 duration = time() - start
-                if report_startup and startup_ns == -1 and iteration == self.startup[0] - 1:
-                    startup_ns = cur_time_nano - __graalpython__.startup_nano
-                if report_startup and early_warmup_ns == -1 and iteration == self.startup[1] - 1:
-                    early_warmup_ns = cur_time_nano - __graalpython__.startup_nano
-                if report_startup and late_warmup_ns == -1 and iteration == self.startup[2] - 1:
-                    late_warmup_ns = cur_time_nano - __graalpython__.startup_nano
+                if report_startup and startup_s < 0.0 and iteration == self.startup[0] - 1:
+                    startup_s = get_seconds_since_startup(cur_time)
+                if report_startup and early_warmup_s < 0.0 and iteration == self.startup[1] - 1:
+                    early_warmup_s = get_seconds_since_startup(cur_time)
+                if report_startup and late_warmup_s < 0 and iteration == self.startup[2] - 1:
+                    late_warmup_s = get_seconds_since_startup(cur_time)
                 durations.append(duration)
                 duration_str = "%.3f" % duration
                 self._call_attr(ATTR_CLEANUP, *args)
@@ -330,9 +347,9 @@ class BenchRunner(object):
         # summary
         # We can do that only on Graalpython
         if report_startup:
-            print("### STARTUP at iteration: %d, duration: %.3f" % (self.startup[0], startup_ns / 1e9))
-            print("### EARLY WARMUP at iteration: %d, duration: %.3f" % (self.startup[1], early_warmup_ns / 1e9))
-            print("### LATE WARMUP at iteration: %d, duration: %.3f" % (self.startup[2], late_warmup_ns / 1e9))
+            print("### STARTUP at iteration: %d, duration: %.3f" % (self.startup[0], startup_s))
+            print("### EARLY WARMUP at iteration: %d, duration: %.3f" % (self.startup[1], early_warmup_s))
+            print("### LATE WARMUP at iteration: %d, duration: %.3f" % (self.startup[2], late_warmup_s))
         if self._run_once:
             print("### SINGLE RUN        duration: %.3f s" % durations[0])
         else:
@@ -356,7 +373,7 @@ class BenchRunner(object):
                 print("### WARMUP iteration not specified or could not be detected")
 
             if GRAALPYTHON and self.startup and __graalpython__.startup_nano == -1:
-                print("### Startup could not be measured. You need to enable startup time snapshotting.")
+                print("### NOTE: enable startup time snapshotting to increase accuracy.")
 
         print(_HRULE)
         print("### RAW DURATIONS: %s" % str(durations))
