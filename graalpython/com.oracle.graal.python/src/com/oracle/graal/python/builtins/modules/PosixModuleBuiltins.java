@@ -162,6 +162,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -2263,7 +2264,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary(allowInlining = true)
         PTuple uname() {
-            String sysname = SysModuleBuiltins.getPythonOSName();
+            String sysname = PythonUtils.getPythonOSName();
             String nodename = "";
             try {
                 InetAddress addr;
@@ -2273,7 +2274,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
             String release = System.getProperty("os.version", "");
             String version = "";
-            String machine = SysModuleBuiltins.getPythonArch();
+            String machine = PythonUtils.getPythonArch();
             return factory().createTuple(new Object[]{sysname, nodename, release, version, machine});
         }
     }

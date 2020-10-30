@@ -182,12 +182,12 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }));
         builtinConstants.put("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
-        String os = getPythonOSName();
+        String os = PythonUtils.getPythonOSName();
         builtinConstants.put("platform", os);
         if (os.equals(PLATFORM_DARWIN)) {
             builtinConstants.put("_framework", FRAMEWORK);
         }
-        builtinConstants.put("__gmultiarch", getPythonArch() + "-" + os);
+        builtinConstants.put("__gmultiarch", PythonUtils.getPythonArch() + "-" + os);
 
         super.initialize(core);
 
@@ -293,36 +293,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
             scriptPath = "";
         }
         return scriptPath;
-    }
-
-    static String getPythonArch() {
-        String arch = System.getProperty("os.arch", "");
-        if (arch.equals("amd64")) {
-            // be compatible with CPython's designation
-            arch = "x86_64";
-        }
-        return arch;
-    }
-
-    static String getPythonOSName() {
-        String property = System.getProperty("os.name");
-        String os = "java";
-        if (property != null) {
-            if (property.toLowerCase().contains("cygwin")) {
-                os = "cygwin";
-            } else if (property.toLowerCase().contains("linux")) {
-                os = "linux";
-            } else if (property.toLowerCase().contains("mac")) {
-                os = PLATFORM_DARWIN;
-            } else if (property.toLowerCase().contains("windows")) {
-                os = PLATFORM_WIN32;
-            } else if (property.toLowerCase().contains("sunos")) {
-                os = "sunos";
-            } else if (property.toLowerCase().contains("freebsd")) {
-                os = "freebsd";
-            }
-        }
-        return os;
     }
 
     @Builtin(name = "exc_info", needsFrame = true)

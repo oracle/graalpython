@@ -574,7 +574,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
             // only use '.dylib' if we are on 'Darwin-native'
             String soExt;
-            if ("darwin".equals(SysModuleBuiltins.getPythonOSName()) && "native".equals(toolchainId)) {
+            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
                 soExt = ".dylib";
             } else {
                 soExt = ".so";

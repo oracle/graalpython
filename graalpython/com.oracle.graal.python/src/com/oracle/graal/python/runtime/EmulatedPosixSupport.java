@@ -40,19 +40,45 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
+import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
+import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
+import static com.oracle.truffle.api.TruffleFile.IS_SYMBOLIC_LINK;
+import static com.oracle.truffle.api.TruffleFile.LAST_ACCESS_TIME;
+import static com.oracle.truffle.api.TruffleFile.LAST_MODIFIED_TIME;
+import static com.oracle.truffle.api.TruffleFile.SIZE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_CTIME;
+import static com.oracle.truffle.api.TruffleFile.UNIX_DEV;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GID;
+import static com.oracle.truffle.api.TruffleFile.UNIX_GROUP;
+import static com.oracle.truffle.api.TruffleFile.UNIX_INODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_MODE;
+import static com.oracle.truffle.api.TruffleFile.UNIX_NLINK;
+import static com.oracle.truffle.api.TruffleFile.UNIX_OWNER;
+import static com.oracle.truffle.api.TruffleFile.UNIX_PERMISSIONS;
+import static com.oracle.truffle.api.TruffleFile.UNIX_UID;
+
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.LinkOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -61,15 +87,18 @@ import org.graalvm.nativeimage.ProcessProperties;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleFile.Attributes;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -82,10 +111,12 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.sun.security.auth.UnixNumericGroupPrincipal;
 
 // TODO: user documentation that "java" POSIX support
 //    * ignores PyUnicode_FSConverter (the conversion function will be part of the PosixSupportLibrary)
@@ -169,6 +200,14 @@ public final class EmulatedPosixSupport extends PosixResources {
                     new PosixFilePermission[]{PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE},
     };
 
+    private static final int S_IFIFO = 0010000;
+    private static final int S_IFCHR = 0020000;
+    private static final int S_IFBLK = 0060000;
+    private static final int S_IFSOCK = 0140000;
+    private static final int S_IFLNK = 0120000;
+    private static final int S_IFDIR = 0040000;
+    private static final int S_IFREG = 0100000;
+
     private final PythonContext context;
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
@@ -244,8 +283,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openAt(int dirFd, PosixPath path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Exclusive @Cached ConditionProfile defaultDirFdPofile,
-                    @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
         String pathname = pathToJavaStr.execute(path);
         TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
         Set<StandardOpenOption> options = flagsToOptions(flags);
@@ -255,20 +294,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-            throw posixException(errAndMsg.oserror, errAndMsg.message, path);
-        }
-    }
-
-    private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
-        if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
-            return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-        } else {
-            String dirPath = getFilePathOrDefault(dirFd, null);
-            if (dirPath == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            TruffleFile dir = context.getPublicTruffleFileRelaxed(dirPath, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
-            return dir.resolve(pathname);
+            throw posixException(errAndMsg, path);
         }
     }
 
@@ -408,57 +434,364 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage(name = "fsync")
-    @SuppressWarnings({"static-method", "unused"})
-    public void fsyncMessage(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void fsyncMessage(int fd) throws PosixException {
+        if (fsync(fd)) {
+            throw posixException(OSErrorEnum.ENOENT);
+        }
+    }
+
+    @ExportMessage
+    public boolean getBlocking(int fd,
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+        PSocket socket = getSocket(fd);
+        if (socket != null) {
+            return SocketBuiltins.GetBlockingNode.get(socket);
+        }
+        Channel fileChannel = getFileChannel(fd, channelClassProfile);
+        if (fileChannel instanceof SelectableChannel) {
+            return getBlocking((SelectableChannel) fileChannel);
+        }
+        // if we reach this point, it's an invalid FD (either it does not exist or is not
+        // selectable)
+        throw posixException(OSErrorEnum.EBADFD);
+    }
+
+    @TruffleBoundary
+    @Ignore
+    private static boolean getBlocking(SelectableChannel channel) {
+        return channel.isBlocking();
     }
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public boolean getBlocking(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void setBlocking(int fd, boolean blocking,
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
+        try {
+            PSocket socket = getSocket(fd);
+            if (socket != null) {
+                SocketBuiltins.SetBlockingNode.setBlocking(socket, blocking);
+                return;
+            }
+            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            if (fileChannel instanceof SelectableChannel) {
+                setBlocking((SelectableChannel) fileChannel, blocking);
+            }
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e));
+        }
+
+        // if we reach this point, it's an invalid FD (either it does not exist or is not
+        // selectable)
+        throw posixException(OSErrorEnum.EBADFD);
+    }
+
+    @TruffleBoundary
+    @Ignore
+    private static void setBlocking(SelectableChannel channel, boolean block) throws IOException {
+        channel.configureBlocking(block);
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void setBlocking(int fd, boolean blocking) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public int[] getTerminalSize(int fd) throws PosixException {
+        if (getFileChannel(fd) == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        return new int[]{context.getOption(PythonOptions.TerminalWidth), context.getOption(PythonOptions.TerminalHeight)};
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public int[] getTerminalSize(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public long[] fstatAt(int dirFd, PosixPath path, boolean followSymlinks,
+                    @Shared("statFallback") @Cached BranchProfile fallbackBranch,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        String pathname = pathToJavaStr.execute(path);
+        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+        try {
+            return fstat(f, linkOptions, fallbackBranch);
+        } catch (Exception e) {
+            errorBranch.enter();
+            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            throw posixException(errAndMsg, path);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public long[] fstat(int fd, Object originalPath, boolean handleEintr,
+                    @Exclusive @Cached BranchProfile nullPathProfile,
+                    @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
+                    @Shared("statFallback") @Cached BranchProfile fallbackBranch,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        String path = getFilePath(fd);
+        if (path == null) {
+            nullPathProfile.enter();
+            Channel fileChannel = getFileChannel(fd, channelClassProfile);
+            if (fileChannel == null) {
+                errorBranch.enter();
+                throw posixException(OSErrorEnum.EBADF);
+            }
+            return fstatWithoutPath(fileChannel);
+        }
+        TruffleFile f = context.getPublicTruffleFileRelaxed(path);
+        try {
+            return fstat(f, new LinkOption[]{LinkOption.NOFOLLOW_LINKS}, fallbackBranch);
+        } catch (Exception e) {
+            errorBranch.enter();
+            ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
+            throw posixException(errAndMsg, originalPath);
+        }
+    }
+
+    private static long[] fstatWithoutPath(Channel fileChannel) {
+        int mode = 0;
+        if (fileChannel instanceof ReadableByteChannel) {
+            mode |= 0444;
+        }
+        if (fileChannel instanceof WritableByteChannel) {
+            mode |= 0222;
+        }
+        long[] res = new long[13];
+        res[0] = mode;
+        return res;
+    }
+
+    @Ignore
+    private long[] fstat(TruffleFile f, LinkOption[] linkOptions, BranchProfile fallbackBranch) throws IOException {
+        try {
+            return unixStat(f, linkOptions);
+        } catch (UnsupportedOperationException unsupported) {
+            fallbackBranch.enter();
+            try {
+                return posixStat(f, linkOptions);
+            } catch (UnsupportedOperationException unsupported2) {
+                return basicStat(f, linkOptions);
+            }
+        }
+    }
+
+    private static long[] unixStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
+        TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                        UNIX_MODE,
+                        UNIX_INODE,
+                        UNIX_DEV,
+                        UNIX_NLINK,
+                        UNIX_UID,
+                        UNIX_GID,
+                        SIZE,
+                        LAST_ACCESS_TIME,
+                        LAST_MODIFIED_TIME,
+                        UNIX_CTIME), linkOptions);
+        return setTimestamps(attributes, new long[]{
+                        attributes.get(UNIX_MODE),
+                        attributes.get(UNIX_INODE),
+                        attributes.get(UNIX_DEV),
+                        attributes.get(UNIX_NLINK),
+                        attributes.get(UNIX_UID),
+                        attributes.get(UNIX_GID),
+                        attributes.get(SIZE),
+                        // dummy values will be filled in by setTimestamps
+                        0, 0, 0, 0, 0, 0
+        });
+    }
+
+    private long[] posixStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
+        TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                        IS_DIRECTORY,
+                        IS_SYMBOLIC_LINK,
+                        IS_REGULAR_FILE,
+                        LAST_MODIFIED_TIME,
+                        LAST_ACCESS_TIME,
+                        CREATION_TIME,
+                        SIZE,
+                        UNIX_OWNER,
+                        UNIX_GROUP,
+                        UNIX_PERMISSIONS), linkOptions);
+        final Set<PosixFilePermission> posixFilePermissions = attributes.get(UNIX_PERMISSIONS);
+        return setTimestamps(attributes, new long[]{
+                        posixPermissionsToMode(fileTypeBitsFromAttributes(attributes), posixFilePermissions),
+                        getInode(file), // ino
+                        0, // dev
+                        0, // nlink
+                        getPrincipalId(attributes.get(UNIX_OWNER)),
+                        getPrincipalId(attributes.get(UNIX_GROUP)),
+                        attributes.get(SIZE),
+                        // dummy values will be filled in by setTimestamps
+                        0, 0, 0, 0, 0, 0
+        });
+    }
+
+    private long[] basicStat(TruffleFile file, LinkOption... linkOptions) throws IOException {
+        TruffleFile.Attributes attributes = file.getAttributes(Arrays.asList(
+                        IS_DIRECTORY,
+                        IS_SYMBOLIC_LINK,
+                        IS_REGULAR_FILE,
+                        LAST_MODIFIED_TIME,
+                        LAST_ACCESS_TIME,
+                        CREATION_TIME,
+                        SIZE), linkOptions);
+        int mode = fileTypeBitsFromAttributes(attributes);
+        if (file.isReadable()) {
+            mode |= 0004;
+            mode |= 0040;
+            mode |= 0400;
+        }
+        if (file.isWritable()) {
+            mode |= 0002;
+            mode |= 0020;
+            mode |= 0200;
+        }
+        if (file.isExecutable()) {
+            mode |= 0001;
+            mode |= 0010;
+            mode |= 0100;
+        }
+        int inode = getInode(file);
+        return setTimestamps(attributes, new long[]{
+                        mode,
+                        inode, // ino
+                        0, // dev
+                        0, // nlink
+                        0,
+                        0,
+                        attributes.get(SIZE),
+                        // dummy values will be filled in by setTimestamps
+                        0, 0, 0, 0, 0, 0
+        });
+    }
+
+    private static long[] setTimestamps(Attributes attributes, long[] statResult) {
+        FileTime atime = attributes.get(LAST_ACCESS_TIME);
+        FileTime mtime = attributes.get(LAST_MODIFIED_TIME);
+        FileTime ctime = attributes.get(UNIX_CTIME);
+        statResult[7] = fileTimeToSeconds(atime);
+        statResult[8] = fileTimeToSeconds(mtime);
+        statResult[9] = fileTimeToSeconds(ctime);
+        statResult[10] = fileTimeToNanoSeconds(atime);
+        statResult[11] = fileTimeToNanoSeconds(mtime);
+        statResult[12] = fileTimeToNanoSeconds(ctime);
+        return statResult;
+    }
+
+    private static int fileTypeBitsFromAttributes(TruffleFile.Attributes attributes) {
+        int mode = 0;
+        if (attributes.get(IS_REGULAR_FILE)) {
+            mode |= S_IFREG;
+        } else if (attributes.get(IS_DIRECTORY)) {
+            mode |= S_IFDIR;
+        } else if (attributes.get(IS_SYMBOLIC_LINK)) {
+            mode |= S_IFLNK;
+        } else {
+            // TODO: differentiate these
+            mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
+        }
+        return mode;
+    }
+
+    private int getInode(TruffleFile file) {
+        TruffleFile canonical;
+        try {
+            canonical = file.getCanonicalFile();
+        } catch (IOException | SecurityException e) {
+            // best effort
+            canonical = file.getAbsoluteFile();
+        }
+        return context.getResources().getInodeId(canonical.getPath());
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static long getPrincipalId(UserPrincipal principal) {
+        if (principal instanceof UnixNumericGroupPrincipal) {
+            try {
+                return Long.decode(principal.getName());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static int posixPermissionsToMode(int inputMode, final Set<PosixFilePermission> posixFilePermissions) {
+        int mode = inputMode;
+        if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
+            mode |= 0004;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.OTHERS_WRITE)) {
+            mode |= 0002;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.OTHERS_EXECUTE)) {
+            mode |= 0001;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.GROUP_READ)) {
+            mode |= 0040;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.GROUP_WRITE)) {
+            mode |= 0020;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.GROUP_EXECUTE)) {
+            mode |= 0010;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.OWNER_READ)) {
+            mode |= 0400;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.OWNER_WRITE)) {
+            mode |= 0200;
+        }
+        if (posixFilePermissions.contains(PosixFilePermission.OWNER_EXECUTE)) {
+            mode |= 0100;
+        }
+        return mode;
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public long[] fstat(int fd, Object filename, boolean handleEintr) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
+    @SuppressWarnings("static-method")
     public Object[] uname() {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        String sysname = PythonUtils.getPythonOSName();
+        String nodename = "";
+        try {
+            InetAddress addr;
+            addr = InetAddress.getLocalHost();
+            nodename = addr.getHostName();
+        } catch (UnknownHostException | SecurityException ex) {
+        }
+        String release = System.getProperty("os.version", "");
+        String version = "";
+        String machine = PythonUtils.getPythonArch();
+        return new Object[]{sysname, nodename, release, version, machine};
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void unlinkAt(int dirFd, PosixPath pathname) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void unlinkAt(int dirFd, PosixPath path,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        String pathname = pathToJavaStr.execute(path);
+        TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        try {
+            f.delete();
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e), path);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void symlinkAt(PosixPath target, int linkpathDirFd, PosixPath linkpath) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void symlinkAt(PosixPath target, int linkDirFd, PosixPath link,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
+                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        String linkPath = pathToJavaStr.execute(link);
+        TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile);
+        String targetPath = pathToJavaStr.execute(target);
+        TruffleFile targetFile = context.getEnv().getPublicTruffleFile(targetPath);
+        try {
+            linkFile.createSymbolicLink(targetFile);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e), target, link);
+        }
     }
 
     // ------------------
@@ -468,12 +801,47 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw new PosixException(osError.getNumber(), osError.getMessage());
     }
 
-    static PosixException posixException(OSErrorEnum osError, String customMessage, PosixPath path1) throws PosixException {
-        throw new PosixException(osError.getNumber(), customMessage, path1.originalObject);
+    static PosixException posixException(ErrorAndMessagePair pair, PosixPath path1) throws PosixException {
+        throw new PosixException(pair.oserror.getNumber(), pair.message, path1.originalObject);
+    }
+
+    static PosixException posixException(ErrorAndMessagePair pair, PosixPath path1, PosixPath path2) throws PosixException {
+        throw new PosixException(pair.oserror.getNumber(), pair.message, path1.originalObject, path2.originalObject);
+    }
+
+    static PosixException posixException(ErrorAndMessagePair pair, Object path1) throws PosixException {
+        throw new PosixException(pair.oserror.getNumber(), pair.message, path1);
     }
 
     private static PosixException posixException(ErrorAndMessagePair pair) throws PosixException {
         throw new PosixException(pair.oserror.getNumber(), pair.message);
+    }
+
+    @TruffleBoundary
+    static long fileTimeToSeconds(FileTime t) {
+        return t.to(TimeUnit.SECONDS);
+    }
+
+    @TruffleBoundary
+    static long fileTimeToNanoSeconds(FileTime t) {
+        return t.to(TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * Resolves the path relative to the directory given as file descriptor. Honors the
+     * {@link PosixSupportLibrary#DEFAULT_DIR_FD}.
+     */
+    private TruffleFile resolvePath(int dirFd, String pathname, ConditionProfile defaultDirFdPofile) throws PosixException {
+        if (defaultDirFdPofile.profile(dirFd == PosixSupportLibrary.DEFAULT_DIR_FD)) {
+            return context.getPublicTruffleFileRelaxed(pathname, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        } else {
+            String dirPath = getFilePathOrDefault(dirFd, null);
+            if (dirPath == null) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
+            TruffleFile dir = context.getPublicTruffleFileRelaxed(dirPath, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+            return dir.resolve(pathname);
+        }
     }
 
     @GenerateUncached
