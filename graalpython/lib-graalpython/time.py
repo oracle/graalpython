@@ -44,7 +44,6 @@ def make_struct_time():
     struct_time_type = make_named_tuple_class("struct_time", fields)
 
     class struct_time(struct_time_type):
-
         def __new__(cls, iterable):
             def create_struct(iter, zone, gmtoff):
                 result = tuple.__new__(cls, iter)
@@ -64,7 +63,6 @@ def make_struct_time():
             if count == 9:
                 return create_struct(iterable, None, None)
 
-
         def __repr__(self):
             text = "{}(".format(self.__class__.__name__)
             n = len(self)
@@ -79,6 +77,8 @@ def make_struct_time():
 
 
 struct_time = make_struct_time()
+struct_time.__qualname__ = "struct_time"
+struct_time.__name__ = "struct_time"
 del make_struct_time
 
 _STRUCT_TM_ITEMS = 11
