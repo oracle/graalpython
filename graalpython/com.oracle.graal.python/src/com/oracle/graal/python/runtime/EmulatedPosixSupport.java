@@ -669,9 +669,9 @@ public final class EmulatedPosixSupport extends PosixResources {
         statResult[7] = fileTimeToSeconds(atime);
         statResult[8] = fileTimeToSeconds(mtime);
         statResult[9] = fileTimeToSeconds(ctime);
-        statResult[10] = fileTimeToNanoSeconds(atime);
-        statResult[11] = fileTimeToNanoSeconds(mtime);
-        statResult[12] = fileTimeToNanoSeconds(ctime);
+        statResult[10] = fileTimeNanoSecondsPart(atime);
+        statResult[11] = fileTimeNanoSecondsPart(mtime);
+        statResult[12] = fileTimeNanoSecondsPart(ctime);
         return statResult;
     }
 
@@ -823,8 +823,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @TruffleBoundary
-    static long fileTimeToNanoSeconds(FileTime t) {
-        return t.to(TimeUnit.NANOSECONDS);
+    static long fileTimeNanoSecondsPart(FileTime t) {
+        return t.toInstant().getNano();
     }
 
     /**
