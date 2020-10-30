@@ -150,6 +150,11 @@ void PyTruffle_ReleaseBuffer(Py_buffer* buffer) {
 
 PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
     Py_ssize_t ndim = buffer->ndim;
+    if (buffer->buf == NULL) {
+        PyErr_SetString(PyExc_ValueError,
+            "PyMemoryView_FromBuffer(): info->buf must not be NULL");
+        return NULL;
+    }
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
             NULL,
             NULL,
