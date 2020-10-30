@@ -435,7 +435,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage(name = "fsync")
     public void fsyncMessage(int fd) throws PosixException {
-        if (fsync(fd)) {
+        if (!fsync(fd)) {
             throw posixException(OSErrorEnum.ENOENT);
         }
     }
@@ -451,9 +451,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (fileChannel instanceof SelectableChannel) {
             return getBlocking((SelectableChannel) fileChannel);
         }
-        // if we reach this point, it's an invalid FD (either it does not exist or is not
-        // selectable)
-        throw posixException(OSErrorEnum.EBADFD);
+        if (fileChannel == null) {
+            throw posixException(OSErrorEnum.EBADFD);
+        }
+        // If the file channel is not selectable, we assume it to be blocking
+        // Note: Truffle does not seem to provide API to get selectable channel for files
+        return true;
     }
 
     @TruffleBoundary
@@ -476,12 +479,18 @@ public final class EmulatedPosixSupport extends PosixResources {
             if (fileChannel instanceof SelectableChannel) {
                 setBlocking((SelectableChannel) fileChannel, blocking);
             }
+            if (fileChannel != null) {
+                if (blocking) {
+                    // Already blocking
+                    return;
+                }
+                throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
+            }
+
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
-
-        // if we reach this point, it's an invalid FD (either it does not exist or is not
-        // selectable)
+        // if we reach this point, it's an invalid FD
         throw posixException(OSErrorEnum.EBADFD);
     }
 
@@ -537,7 +546,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         TruffleFile f = context.getPublicTruffleFileRelaxed(path);
         try {
-            return fstat(f, new LinkOption[]{LinkOption.NOFOLLOW_LINKS}, fallbackBranch);
+            return fstat(f, new LinkOption[0], fallbackBranch);
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
