@@ -120,7 +120,7 @@ class AbstractMemoryTests:
         # Adding an expensive separate pre-check for multislices is not worth it and if CPython ever implements
         # multislices, this is going to raise the same TypeError as we do.
         # self.assertRaises(NotImplementedError, setitem, slices, b"a")
-        self.assertRaises(TypeError, setitem, slices, b"a")
+        self.assertRaises((NotImplementedError, TypeError), setitem, slices, b"a")
         # Trying to resize the memory object
         exc = ValueError if m.format == 'c' else TypeError
         self.assertRaises(exc, setitem, 0, b"")

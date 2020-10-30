@@ -409,6 +409,7 @@ class TestObject(object):
         assert mv3[2] == 126
         del mv1
         del mv3
-        gc.collect()
-        time.sleep(1)
+        for i in range(10):
+            gc.collect()
+            time.sleep(0.1)
         assert obj.get_bufcount() == 0
