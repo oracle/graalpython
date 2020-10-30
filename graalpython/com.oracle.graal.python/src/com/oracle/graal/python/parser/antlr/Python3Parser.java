@@ -31,31 +31,75 @@
 // Generated from graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4 by ANTLR 4.7.2
 package com.oracle.graal.python.parser.antlr;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.antlr.v4.runtime.IntStream;
+import org.antlr.v4.runtime.NoViableAltException;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.RuntimeMetaData;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.VocabularyImpl;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.RuleNode;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.parser.sst.*;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
-
+import com.oracle.graal.python.parser.sst.AndSSTNode;
+import com.oracle.graal.python.parser.sst.ArgDefListBuilder;
+import com.oracle.graal.python.parser.sst.ArgListBuilder;
+import com.oracle.graal.python.parser.sst.AssertSSTNode;
+import com.oracle.graal.python.parser.sst.BinaryArithmeticSSTNode;
+import com.oracle.graal.python.parser.sst.BlockSSTNode;
+import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.CallSSTNode;
+import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.ComparisonSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratedSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
+import com.oracle.graal.python.parser.sst.DelSSTNode;
+import com.oracle.graal.python.parser.sst.ExceptSSTNode;
+import com.oracle.graal.python.parser.sst.ExpressionStatementSSTNode;
+import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
+import com.oracle.graal.python.parser.sst.ForSSTNode;
+import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
+import com.oracle.graal.python.parser.sst.GetAttributeSSTNode;
+import com.oracle.graal.python.parser.sst.IfSSTNode;
+import com.oracle.graal.python.parser.sst.LambdaSSTNode;
+import com.oracle.graal.python.parser.sst.NotSSTNode;
+import com.oracle.graal.python.parser.sst.NumberLiteralSSTNode;
+import com.oracle.graal.python.parser.sst.OrSSTNode;
+import com.oracle.graal.python.parser.sst.RaiseSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
-
+import com.oracle.graal.python.parser.sst.SimpleSSTNode;
+import com.oracle.graal.python.parser.sst.SliceSSTNode;
+import com.oracle.graal.python.parser.sst.StarSSTNode;
+import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
+import com.oracle.graal.python.parser.sst.TernaryIfSSTNode;
+import com.oracle.graal.python.parser.sst.TrySSTNode;
+import com.oracle.graal.python.parser.sst.UnarySSTNode;
+import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
+import com.oracle.graal.python.parser.sst.WhileSSTNode;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-
-import java.util.Arrays;
-
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.*;
-import org.antlr.v4.runtime.tree.*;
-import java.util.List;
-import java.util.Iterator;
-import java.util.ArrayList;
 
 @SuppressWarnings("all")
 public class Python3Parser extends Parser {

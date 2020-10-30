@@ -44,6 +44,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -340,6 +341,7 @@ public final class Python3Core implements PythonCore {
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
+                        new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),

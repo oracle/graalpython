@@ -253,6 +253,8 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
 
 @parser::header
 {
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -512,7 +514,7 @@ decorator:
         } else {
             factory.getScopeEnvironment().addSeenVar(dottedName);
         }
-        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx)));
     }
 ;
 
@@ -543,7 +545,7 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = factory.mangleName($n.getText()); 
+            String name = factory.mangleName($n.getText());
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -612,7 +614,7 @@ defparameter [ArgDefListBuilder args]
             if (name != null) {
                 name = factory.mangleName(name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -700,7 +702,7 @@ vdefparameter [ArgDefListBuilder args]
             if (name != null) {
                 name = factory.mangleName(name);
             }
-            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
+            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
                     throw new PythonRecognitionException("non-default argument follows default argument", this, _input, $ctx, getCurrentToken());
@@ -1702,7 +1704,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
                    scopeEnvironment.popScope();
                 }
 	|
-                { 
+                {
                     String name = getCurrentToken().getText();
                     if (isForbiddenName(name)) {
                         factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
