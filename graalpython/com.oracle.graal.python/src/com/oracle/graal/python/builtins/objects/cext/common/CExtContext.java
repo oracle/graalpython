@@ -62,7 +62,7 @@ public abstract class CExtContext {
 
     /** A factory for creating context-specific conversion nodes. */
     private final ConversionNodeSupplier supplier;
-    
+
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
         this.llvmLibrary = llvmLibrary;

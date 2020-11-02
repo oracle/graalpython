@@ -415,7 +415,7 @@ public abstract class ExternalFunctionNodes {
                 PCell[] frameClosure = PArguments.getClosure(frame);
                 assert frameClosure.length == 1 : "invalid closure for MethDirectRoot";
                 Object callable = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
-                
+
                 if (externalInvokeNode != null) {
                     Object[] cArguments = prepareCArguments(frame);
                     try {

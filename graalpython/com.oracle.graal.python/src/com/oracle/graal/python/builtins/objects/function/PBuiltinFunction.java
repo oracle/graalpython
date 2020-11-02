@@ -89,7 +89,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
         this(lang, name, enclosingType, numDefaults, null, callTarget);
     }
-    
+
     public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, PCell[] closure, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
         this.name = name;
