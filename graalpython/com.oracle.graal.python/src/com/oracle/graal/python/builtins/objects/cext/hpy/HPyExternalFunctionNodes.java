@@ -45,6 +45,8 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
@@ -106,6 +108,18 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class HPyExternalFunctionNodes {
 
     /**
+     * The index of the cell that contains the target (e.g. the pointer of native getter/setter
+     * function).
+     */
+    private static final int CELL_INDEX_TARGET = 0;
+
+    private static PCell[] createPythonClosure(Object target, PythonObjectFactory factory, Assumption effectivelyFinal) {
+        PCell targetCell = factory.createCell(effectivelyFinal);
+        targetCell.setRef(target);
+        return new PCell[]{targetCell};
+    }
+
+    /**
      * Creates a built-in function that accepts the specified signatures, does appropriate argument
      * and result conversion and calls the provided callable.
      *
@@ -119,6 +133,7 @@ public abstract class HPyExternalFunctionNodes {
      */
     @TruffleBoundary
     static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPyFuncSignature signature, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+        assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         PRootNode rootNode;
         int numDefaults = 0;
         switch (signature) {
@@ -128,41 +143,42 @@ public abstract class HPyExternalFunctionNodes {
             case GETITERFUNC:
             case ITERNEXTFUNC:
             case DESTROYFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, callable, false);
+                rootNode = new HPyMethNoargsRoot(language, name, false);
                 break;
             case O:
             case BINARYFUNC:
-                rootNode = new HPyMethORoot(language, name, callable, false);
+                rootNode = new HPyMethORoot(language, name, false);
                 break;
             case KEYWORDS:
-                rootNode = new HPyMethKeywordsRoot(language, name, callable);
+                rootNode = new HPyMethKeywordsRoot(language, name);
                 break;
             case INITPROC:
-                rootNode = new HPyMethInitProcRoot(language, name, callable);
+                rootNode = new HPyMethInitProcRoot(language, name);
                 break;
             case VARARGS:
-                rootNode = new HPyMethVarargsRoot(language, name, callable);
+                rootNode = new HPyMethVarargsRoot(language, name);
                 break;
             case TERNARYFUNC:
-                rootNode = new HPyMethTernaryRoot(language, name, callable);
+                rootNode = new HPyMethTernaryRoot(language, name);
                 // the third argument is optional
                 // so it has a default value (this implicitly is 'None')
                 numDefaults = 1;
                 break;
             case LENFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, callable, true);
+                rootNode = new HPyMethNoargsRoot(language, name, true);
                 break;
             case INQUIRY:
-                rootNode = new HPyMethInquiryRoot(language, name, callable);
+                rootNode = new HPyMethInquiryRoot(language, name);
                 break;
             case SSIZEARGFUNC:
-                rootNode = new HPyMethSSizeArgFuncRoot(language, name, callable);
+                rootNode = new HPyMethSSizeArgFuncRoot(language, name);
                 break;
             default:
                 // TODO(fa): support remaining signatures
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
         }
-        return factory.createBuiltinFunction(name, enclosingType, numDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
+        PCell[] closure = createPythonClosure(callable, factory, language.getCallableStableAssumption());
+        return factory.createBuiltinFunction(name, enclosingType, numDefaults, closure, PythonUtils.getOrCreateCallTarget(rootNode));
     }
 
     /**
@@ -257,27 +273,21 @@ public abstract class HPyExternalFunctionNodes {
         @Child private CalleeContext calleeContext;
         @Child private HPyExternalFunctionInvokeNode invokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
+        @Child private CellBuiltins.GetRefNode readTargetCellNode;
 
         private final String name;
-        private final Object callable;
 
         @TruffleBoundary
-        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, Object callable, HPyConvertArgsToSulongNode convertArgsToSulongNode) {
+        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, HPyConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language);
-            assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
             this.name = name;
-            this.callable = callable;
             this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(convertArgsToSulongNode);
         }
 
         @TruffleBoundary
-        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, Object callable,
-                        HPyCheckFunctionResultNode checkFunctionResultNode,
-                        HPyConvertArgsToSulongNode convertArgsToSulongNode) {
+        public HPyMethodDescriptorRootNode(PythonLanguage language, String name, HPyCheckFunctionResultNode checkFunctionResultNode, HPyConvertArgsToSulongNode convertArgsToSulongNode) {
             super(language);
-            assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
             this.name = name;
-            this.callable = callable;
             this.invokeNode = HPyExternalFunctionInvokeNodeGen.create(checkFunctionResultNode, convertArgsToSulongNode);
         }
 
@@ -285,6 +295,9 @@ public abstract class HPyExternalFunctionNodes {
         public Object execute(VirtualFrame frame) {
             getCalleeContext().enter(frame);
             try {
+                PCell[] frameClosure = PArguments.getClosure(frame);
+                assert frameClosure.length == 1 : "invalid closure for HPyMethodDescriptorRootNode";
+                Object callable = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
                 return processResult(frame, invokeNode.execute(frame, name, callable, prepareCArguments(frame)));
             } finally {
                 getCalleeContext().exit(frame, this);
@@ -311,6 +324,14 @@ public abstract class HPyExternalFunctionNodes {
                 calleeContext = insert(CalleeContext.create());
             }
             return calleeContext;
+        }
+
+        private CellBuiltins.GetRefNode ensureReadTargetCellNode() {
+            if (readTargetCellNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readTargetCellNode = insert(CellBuiltins.GetRefNode.create());
+            }
+            return readTargetCellNode;
         }
 
         @Override
@@ -343,8 +364,8 @@ public abstract class HPyExternalFunctionNodes {
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
 
-        public HPyMethNoargsRoot(PythonLanguage language, String name, Object callable, boolean nativePrimitiveResult) {
-            super(language, name, callable, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        public HPyMethNoargsRoot(PythonLanguage language, String name, boolean nativePrimitiveResult) {
+            super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
 
         @Override
@@ -363,8 +384,8 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        public HPyMethORoot(PythonLanguage language, String name, Object callable, boolean nativePrimitiveResult) {
-            super(language, name, callable, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        public HPyMethORoot(PythonLanguage language, String name, boolean nativePrimitiveResult) {
+            super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
 
         @Override
@@ -392,8 +413,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
 
         @TruffleBoundary
-        public HPyMethVarargsRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyVarargsToSulongNodeGen.create());
+        public HPyMethVarargsRoot(PythonLanguage language, String name) {
+            super(language, name, HPyVarargsToSulongNodeGen.create());
         }
 
         @Override
@@ -423,8 +444,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadVarKeywordsNode readKwargsNode;
 
         @TruffleBoundary
-        public HPyMethKeywordsRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyKeywordsToSulongNodeGen.create());
+        public HPyMethKeywordsRoot(PythonLanguage language, String name) {
+            super(language, name, HPyKeywordsToSulongNodeGen.create());
         }
 
         @Override
@@ -462,8 +483,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadVarKeywordsNode readKwargsNode;
 
         @TruffleBoundary
-        public HPyMethInitProcRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyCheckPrimitiveResultNodeGen.create(), HPyKeywordsToSulongNodeGen.create());
+        public HPyMethInitProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyKeywordsToSulongNodeGen.create());
         }
 
         @Override
@@ -508,8 +529,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
 
-        public HPyMethTernaryRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyAllAsHandleNodeGen.create());
+        public HPyMethTernaryRoot(PythonLanguage language, String name) {
+            super(language, name, HPyAllAsHandleNodeGen.create());
         }
 
         @Override
@@ -545,8 +566,8 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArg1Node;
 
-        public HPyMethSSizeArgFuncRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPySSizeArgFuncToSulongNodeGen.create());
+        public HPyMethSSizeArgFuncRoot(PythonLanguage language, String name) {
+            super(language, name, HPySSizeArgFuncToSulongNodeGen.create());
         }
 
         @Override
@@ -574,8 +595,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
 
-        public HPyMethSSizeSSizeArgFuncRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPySSizeArgFuncToSulongNodeGen.create());
+        public HPyMethSSizeSSizeArgFuncRoot(PythonLanguage language, String name) {
+            super(language, name, HPySSizeArgFuncToSulongNodeGen.create());
         }
 
         @Override
@@ -613,8 +634,8 @@ public abstract class HPyExternalFunctionNodes {
 
         @Child private CastToJavaIntExactNode castToJavaIntExactNode;
 
-        public HPyMethInquiryRoot(PythonLanguage language, String name, Object callable) {
-            super(language, name, callable, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        public HPyMethInquiryRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
         }
 
         @Override
