@@ -429,8 +429,10 @@ def run_benchmark(args):
             bench_args.append(arg)
         i += 1
 
-    if startup and iterations < max(startup):
-        print("### WARNING: you've specified less iterations than required to measure the startup")
+    min_required_iterations = max(startup)
+    if startup and iterations < min_required_iterations:
+        print("### WARNING: you've specified less iterations than required to measure the startup. Overriding iterations with %d" % min_required_iterations)
+        iterations = min_required_iterations
 
     # set the paths if specified
     print(_HRULE)
