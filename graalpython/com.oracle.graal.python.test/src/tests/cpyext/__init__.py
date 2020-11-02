@@ -62,7 +62,7 @@ def unhandled_error_compare_with_message(x, y):
 
 class CPyExtTestCase():
 
-    def setUp(self):
+    def setUpClass(self):
         for typ in type(self).mro():
             for k, v in typ.__dict__.items():
                 if k.startswith("test_"):
