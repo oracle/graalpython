@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_context_manager
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_context_manager_exception
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_crasher_on_windows
+*graalpython.lib-python.3.test.test_mmap.MmapTests.test_double_close
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_entire_file
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_find_end
 *graalpython.lib-python.3.test.test_mmap.MmapTests.test_invalid_descriptor

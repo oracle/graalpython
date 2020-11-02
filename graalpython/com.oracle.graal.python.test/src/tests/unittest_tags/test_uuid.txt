@@ -10,6 +10,7 @@
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithExtModule.test_unix_getnode
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithExtModule.test_windll_getnode
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithoutExtModule.test_arp_getnode
+*graalpython.lib-python.3.test.test_uuid.TestInternalsWithoutExtModule.test_find_mac
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithoutExtModule.test_ifconfig_getnode
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithoutExtModule.test_ip_getnode
 *graalpython.lib-python.3.test.test_uuid.TestInternalsWithoutExtModule.test_ipconfig_getnode

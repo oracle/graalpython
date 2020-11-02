@@ -38,11 +38,13 @@
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_samestat_on_symlink
 *graalpython.lib-python.3.test.test_posixpath.PosixCommonTest.test_splitdrive
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_basename
+*graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_commonpath
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_dirname
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_expanduser
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_expanduser_home_envvar
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_isabs
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_islink
+*graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount_different_device
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount_directory_not_readable
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount_non_existent

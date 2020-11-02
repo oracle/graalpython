@@ -1,3 +1,4 @@
+*graalpython.lib-python.3.test.test_getargs2.Boolean_TestCase.test_p
 *graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_c
 *graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_w_star
 *graalpython.lib-python.3.test.test_getargs2.Bytes_TestCase.test_y_star

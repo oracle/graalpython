@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_bug7732
+*graalpython.lib-python.3.test.test_imp.ImportTests.test_find_and_load_checked_pyc
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_find_module_encoding
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_import_encoded_module
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_issue1267
@@ -13,6 +14,7 @@
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_from_source
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_load_module_extension_file_is_None
 *graalpython.lib-python.3.test.test_imp.ImportTests.test_multiple_calls_to_get_data
+*graalpython.lib-python.3.test.test_imp.ImportTests.test_pyc_invalidation_mode_from_cmdline
 *graalpython.lib-python.3.test.test_imp.NullImporterTests.test_unencodeable
 *graalpython.lib-python.3.test.test_imp.PEP3147Tests.test_cache_from_source
 *graalpython.lib-python.3.test.test_imp.PEP3147Tests.test_source_from_cache
