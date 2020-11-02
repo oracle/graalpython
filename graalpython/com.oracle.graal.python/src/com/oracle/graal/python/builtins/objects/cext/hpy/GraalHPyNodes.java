@@ -447,7 +447,7 @@ public class GraalHPyNodes {
             // CPy-style methods
             // TODO(fa) support static and class methods
             PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
-            PCell[] closure = ExternalFunctionNodes.createPythonClosure(mlMethObj, factory, context.getCallableStableAssumption());
+            PCell[] closure = ExternalFunctionNodes.createPythonClosure(mlMethObj, factory, language.getCallableStableAssumption());
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, 0, closure, PythonUtils.getOrCreateCallTarget(rootNode));
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed

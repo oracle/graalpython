@@ -251,12 +251,10 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -510,8 +508,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                Assumption callableStableAssumption = getCallableStableAssumption();
-                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), callableStableAssumption);
+                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), lang.getCallableStableAssumption());
                 return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
             }
             return managedCallable;
@@ -542,8 +539,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                Assumption callableStableAssumption = getCallableStableAssumption();
-                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), callableStableAssumption);
+                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), lang.getCallableStableAssumption());
                 return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
             }
 
@@ -558,8 +554,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, true);
-            Assumption callableStableAssumption = getCallableStableAssumption();
-            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), callableStableAssumption);
+            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), lang.getCallableStableAssumption());
             return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
         }
 
@@ -574,8 +569,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, name));
-            Assumption callableStableAssumption = getCallableStableAssumption();
-            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), callableStableAssumption);
+            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), lang.getCallableStableAssumption());
             return factory().createBuiltinFunction(name, type, 0, closure, callTarget);
         }
 
@@ -583,19 +577,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang, null);
-        }
-
-        private Assumption getCallableStableAssumption() {
-            CApiContext cApiContext = getContext().getCApiContext();
-            if (cApiContext != null) {
-                return cApiContext.getCallableStableAssumption();
-            }
-            return createAssumption();
-        }
-
-        @TruffleBoundary
-        private static Assumption createAssumption() {
-            return Truffle.getRuntime().createAssumption();
         }
 
         static boolean isNativeWrapper(Object obj) {
