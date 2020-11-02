@@ -74,7 +74,7 @@ if syscfg.get_config_var('WITH_THREAD'):
 
     class BasicThreadTest(unittest.TestCase):
 
-        def setUp(self):
+        def setUpClass(self):
             self.done_mutex = thread.allocate_lock()
             self.done_mutex.acquire()
             self.running_mutex = thread.allocate_lock()
@@ -85,7 +85,7 @@ if syscfg.get_config_var('WITH_THREAD'):
 
             self._threads = support.threading_setup()
 
-        def tearDown(self):
+        def tearDownClass(self):
             support.threading_cleanup(*self._threads)
 
 
@@ -296,10 +296,10 @@ if syscfg.get_config_var('WITH_THREAD'):
     class BaseTestCase(unittest.TestCase):
         failureException = AssertionError
 
-        def setUp(self):
+        def setUpClass(self):
             self._threads = support.threading_setup()
 
-        def tearDown(self):
+        def tearDownClass(self):
             support.threading_cleanup(*self._threads)
             # TODO: revert patch when os.waitpid(-1, ...) is implemented
             # support.reap_children()

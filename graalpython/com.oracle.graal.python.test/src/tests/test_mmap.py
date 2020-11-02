@@ -19,11 +19,11 @@ PAGESIZE = mmap.PAGESIZE
 
 class MmapTests(unittest.TestCase):
 
-    def setUp(self):
+    def setUpClass(self):
         if os.path.exists(TESTFN):
             os.unlink(TESTFN)
 
-    def tearDown(self):
+    def tearDownClass(self):
         try:
             os.unlink(TESTFN)
         except OSError:

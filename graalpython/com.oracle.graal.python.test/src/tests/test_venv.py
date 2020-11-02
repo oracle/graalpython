@@ -46,11 +46,11 @@ import tempfile
 
 
 class VenvTest():
-    def setUp(self):
+    def setUpClass(self):
         self.env_dir = os.path.realpath(tempfile.mkdtemp())
         self.env_dir2 = os.path.realpath(tempfile.mkdtemp())
 
-    def tearDown(self):
+    def tearDownClass(self):
         shutil.rmtree(self.env_dir)
         shutil.rmtree(self.env_dir2)
 
