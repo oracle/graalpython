@@ -65,8 +65,8 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -173,15 +173,10 @@ public class MethodBuiltins extends PythonBuiltins {
             }
 
             try {
-                return strFormat("<bound method %s of %s>", toJavaStringNode.execute(funcName), callReprNode.executeObject(frame, self));
+                return PythonUtils.format("<bound method %s of %s>", toJavaStringNode.execute(funcName), callReprNode.executeObject(frame, self));
             } catch (CannotCastException e) {
-                return strFormat("<bound method %s of %s>", defname, callReprNode.executeObject(frame, self));
+                return PythonUtils.format("<bound method %s of %s>", defname, callReprNode.executeObject(frame, self));
             }
-        }
-
-        @TruffleBoundary
-        private static String strFormat(String fmt, Object... objects) {
-            return String.format(fmt, objects);
         }
     }
 

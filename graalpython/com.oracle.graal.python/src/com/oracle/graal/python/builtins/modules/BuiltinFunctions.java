@@ -1702,18 +1702,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } catch (PException e) {
                 // as in PyObject_Repr
                 Object qualName = readQualNameNode.executeObject(frame, klass);
-                return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(obj));
+                return PythonUtils.format("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(obj));
             }
             result = callRepr.executeObject(frame, callable, obj);
             if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                 return result;
             }
             throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", obj);
-        }
-
-	@TruffleBoundary
-        private static String strFormat(String fmt, Object... objects) {
-            return String.format(fmt, objects);
         }
     }
 

@@ -197,6 +197,11 @@ public final class PythonUtils {
         return ct;
     }
 
+    @TruffleBoundary
+    public static String format(String fmt, Object... args) {
+        return String.format(fmt, args);
+    }
+
     @TruffleBoundary(allowInlining = true)
     public static String newString(byte[] bytes) {
         return new String(bytes);

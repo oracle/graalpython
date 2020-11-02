@@ -107,6 +107,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -374,14 +375,9 @@ public class ObjectBuiltins extends PythonBuiltins {
             Object moduleName = readModuleNode.executeObject(frame, type);
             Object qualName = readQualNameNode.executeObject(frame, type);
             if (moduleName != PNone.NO_VALUE && !BuiltinNames.BUILTINS.equals(moduleName)) {
-                return strFormat("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
+                return PythonUtils.format("<%s.%s object at 0x%x>", moduleName, qualName, PythonAbstractObject.systemHashCode(self));
             }
-            return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
-        }
-
-        @TruffleBoundary
-        private static String strFormat(String fmt, Object... objects) {
-            return String.format(fmt, objects);
+            return PythonUtils.format("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(self));
         }
     }
 

@@ -407,7 +407,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(imag)", limit = "1")
         PComplex complexFromDouble(VirtualFrame frame, Object cls, PFloat real, @SuppressWarnings("unused") PNone imag,
                         @CachedLibrary("real") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             return complexFromObject(frame, cls, real, imag, objectLib, methodLib);
         }
 
@@ -424,7 +424,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(imag)", limit = "1")
         PComplex complexFromLong(VirtualFrame frame, Object cls, PInt real, @SuppressWarnings("unused") PNone imag,
                         @CachedLibrary("real") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             return complexFromObject(frame, cls, real, imag, objectLib, methodLib);
         }
 
@@ -476,7 +476,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexDouble(VirtualFrame frame, Object cls, Object one, double two,
                         @CachedLibrary("one") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
             if (value == null) {
                 if (objectLib.canBeJavaDouble(one)) {
@@ -491,7 +491,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexPInt(VirtualFrame frame, Object cls, Object one, PInt two,
                         @CachedLibrary("one") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
             if (value == null) {
                 if (objectLib.canBeJavaDouble(one)) {
@@ -506,7 +506,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isString(one)", limit = "1")
         PComplex complexFromComplexComplex(VirtualFrame frame, Object cls, Object one, PComplex two,
                         @CachedLibrary("one") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             PComplex value = getComplexNumberFromObject(frame, one, objectLib, methodLib);
             if (value == null) {
                 if (methodLib.canBeJavaDouble(one)) {
@@ -521,7 +521,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!isString(one)", "!isNoValue(two)", "!isPComplex(two)"})
         PComplex complexFromComplexObject(VirtualFrame frame, Object cls, Object one, Object two,
                         @CachedLibrary(limit = "2") PythonObjectLibrary objectLib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             PComplex oneValue = getComplexNumberFromObject(frame, one, objectLib, methodLib);
             if (objectLib.canBeJavaDouble(two)) {
                 double twoValue = objectLib.asJavaDouble(two);
@@ -1392,7 +1392,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(base)", limit = "1")
         Object parsePInt(VirtualFrame frame, Object cls, PString arg, @SuppressWarnings("unused") PNone base,
                         @CachedLibrary("arg") PythonObjectLibrary lib,
-			@CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             Object result = callInt(frame, arg, lib, methodLib);
             if (result != PNone.NO_VALUE) {
                 return result;
