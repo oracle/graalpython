@@ -510,7 +510,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public long[] fstatAt(int dirFd, PosixPath path, boolean followSymlinks,
-                    @Shared("statFallback") @Cached BranchProfile fallbackBranch,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
                     @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
@@ -518,7 +517,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
         LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
         try {
-            return fstat(f, linkOptions, fallbackBranch);
+            return fstat(f, linkOptions);
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
@@ -530,7 +529,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     public long[] fstat(int fd, Object originalPath, boolean handleEintr,
                     @Exclusive @Cached BranchProfile nullPathProfile,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
-                    @Shared("statFallback") @Cached BranchProfile fallbackBranch,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
                     @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
@@ -546,7 +544,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
         TruffleFile f = context.getPublicTruffleFileRelaxed(path);
         try {
-            return fstat(f, new LinkOption[0], fallbackBranch);
+            return fstat(f, new LinkOption[0]);
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
@@ -568,11 +566,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @Ignore
-    private long[] fstat(TruffleFile f, LinkOption[] linkOptions, BranchProfile fallbackBranch) throws IOException {
+    @TruffleBoundary
+    private long[] fstat(TruffleFile f, LinkOption[] linkOptions) throws IOException {
         try {
             return unixStat(f, linkOptions);
         } catch (UnsupportedOperationException unsupported) {
-            fallbackBranch.enter();
             try {
                 return posixStat(f, linkOptions);
             } catch (UnsupportedOperationException unsupported2) {
@@ -757,18 +755,24 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object[] uname() {
-        String sysname = PythonUtils.getPythonOSName();
-        String nodename = "";
+        return new Object[]{PythonUtils.getPythonOSName(), getHostName(),
+                        getOsVersion(), "", PythonUtils.getPythonArch()};
+    }
+
+    @TruffleBoundary
+    private static String getOsVersion() {
+        return System.getProperty("os.version", "");
+    }
+
+    @TruffleBoundary
+    private static String getHostName() {
         try {
             InetAddress addr;
             addr = InetAddress.getLocalHost();
-            nodename = addr.getHostName();
-        } catch (UnknownHostException | SecurityException ex) {
+            return addr.getHostName();
+        } catch (UnknownHostException | SecurityException ignore) {
+            return "";
         }
-        String release = System.getProperty("os.version", "");
-        String version = "";
-        String machine = PythonUtils.getPythonArch();
-        return new Object[]{sysname, nodename, release, version, machine};
     }
 
     @ExportMessage
