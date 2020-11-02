@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -114,11 +115,14 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import static com.oracle.graal.python.nodes.BuiltinNames.FORMAT;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
@@ -131,9 +135,11 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -498,12 +504,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return list;
         }
 
-        @Specialization(guards = "!isNoValue(object)")
-        Object dir(VirtualFrame frame, Object object,
+        @Specialization(guards = "!isNoValue(object)", limit = "1")
+        static Object dir(VirtualFrame frame, Object object,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode,
-                        @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
-            PList list = constructListNode.execute(dirNode.executeObject(frame, object));
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            PList list = constructListNode.execute(lib.lookupAndCallSpecialMethod(object, frame, __DIR__));
             sortNode.sort(frame, list);
             return list;
         }
@@ -1680,17 +1686,52 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        public Object repr(VirtualFrame frame, Object obj,
-                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprCallNode,
+        @Specialization(limit = "1")
+        Object repr(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached("create(__REPR__)") LookupSpecialMethodNode lookupSpecialRepr,
+                        @Cached("create()") CallUnaryMethodNode callRepr,
                         @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString) {
-
-            Object result = reprCallNode.executeObject(frame, obj);
+                        @Cached("createBinaryProfile()") ConditionProfile isPString,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
+            Object result = null;
+            Object callable = null;
+            Object klass = lib.getLazyPythonClass(obj);
+            try {
+                callable = lookupSpecialRepr.execute(frame, klass, obj);
+            } catch (PException e) {
+                // as in PyObject_Repr
+                Object qualName = readQualNameNode.executeObject(frame, klass);
+                return strFormat("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(obj));
+            }
+            result = callRepr.executeObject(frame, callable, obj);
             if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                 return result;
             }
             throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", obj);
+        }
+
+        @TruffleBoundary
+        private static String strFormat(String fmt, Object... objects) {
+            return String.format(fmt, objects);
+        }
+    }
+
+    // format(object, [format_spec])
+    @Builtin(name = FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
+    @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
+    public abstract static class FormatNode extends PythonBuiltinNode {
+        @Specialization(limit = "1")
+        static Object repr(VirtualFrame frame, Object obj, @SuppressWarnings("unused") PNone formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, "");
+        }
+
+        @Specialization(guards = "!isNoValue(formatSpec)", limit = "1")
+        static Object repr(VirtualFrame frame, Object obj, Object formatSpec,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallSpecialMethod(obj, frame, __FORMAT__, formatSpec);
         }
     }
 

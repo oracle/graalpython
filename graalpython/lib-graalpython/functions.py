@@ -92,16 +92,6 @@ def vars(*obj):
 
 
 @__graalpython__.builtin
-def format(value, format_spec=''):
-    """Return value.__format__(format_spec)
-
-    format_spec defaults to the empty string.
-    See the Format Specification Mini-Language section of help('FORMATTING') for
-    details."""
-    return type(value).__format__(value, format_spec)
-
-
-@__graalpython__.builtin
 def sorted(iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 
