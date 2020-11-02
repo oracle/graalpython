@@ -128,7 +128,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     public static FunctionInvokeNode create(PBuiltinFunction callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return FunctionInvokeNodeGen.create(null, callTarget, null, null, builtin, false);
+        return FunctionInvokeNodeGen.create(null, callTarget, null, callee.getClosure(), builtin, false);
     }
 
     /**

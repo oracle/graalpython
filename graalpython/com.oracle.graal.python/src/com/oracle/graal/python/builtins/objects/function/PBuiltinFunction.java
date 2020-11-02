@@ -33,6 +33,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -72,10 +73,24 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final Signature signature;
+
+    /**
+     * Built-in function can usually not have a closure but we also use this class to represent
+     * method descriptors and for those, we need to store the actual receiver (e.g. a native
+     * function pointer) and pass the closure to the appropriate root node. So, if the built-in
+     * function is implemented in Java (which is the main use case), the closure will be
+     * {@code null}.
+     */
+    @CompilationFinal(dimensions = 1) private final PCell[] closure;
+
     @CompilationFinal(dimensions = 1) private final PNone[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
     public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
+        this(lang, name, enclosingType, numDefaults, null, callTarget);
+    }
+    
+    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, PCell[] closure, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
         this.name = name;
         if (enclosingType != null) {
@@ -93,6 +108,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         for (int i = 0; i < keywordNames.length; i++) {
             kwDefaults[i] = new PKeyword(keywordNames[i], PNone.NO_VALUE);
         }
+        this.closure = closure;
     }
 
     public RootNode getFunctionRootNode() {
@@ -143,6 +159,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     public Object getEnclosingType() {
         return enclosingType;
+    }
+
+    public PCell[] getClosure() {
+        return closure;
     }
 
     @Override

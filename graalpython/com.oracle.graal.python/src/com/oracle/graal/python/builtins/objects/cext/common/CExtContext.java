@@ -41,6 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Truffle;
 
 public abstract class CExtContext {
 
@@ -62,6 +66,12 @@ public abstract class CExtContext {
 
     /** A factory for creating context-specific conversion nodes. */
     private final ConversionNodeSupplier supplier;
+    
+    /**
+     * A shared assumption that indicates that the delegate of a built-in function that decorates a
+     * native member method or similar did not change.
+     */
+    @CompilationFinal private Assumption callableStableAssumption;
 
     public CExtContext(PythonContext context, Object llvmLibrary, ConversionNodeSupplier supplier) {
         this.context = context;
@@ -106,4 +116,11 @@ public abstract class CExtContext {
         return (flags & METH_FASTCALL) != 0 && (flags & METH_KEYWORDS) != 0;
     }
 
+    public Assumption getCallableStableAssumption() {
+        if (callableStableAssumption == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            callableStableAssumption = Truffle.getRuntime().createAssumption("method descriptor delegate stable assumption");
+        }
+        return callableStableAssumption;
+    }
 }
