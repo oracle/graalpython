@@ -768,10 +768,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public long hashWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                     @Shared("raise") @Cached PRaiseNode raise,
                     @Exclusive @Cached CastToJavaLongExactNode castToLong) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
-        if (!methodLib.isCallable(hashMethod)) {
+        if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
         }
         Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
