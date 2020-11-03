@@ -75,6 +75,7 @@ public class ErrorMessageFormatter {
         return format(null, format, args);
     }
 
+    @TruffleBoundary
     public String format(PythonObjectLibrary lib, String format, Object... args) {
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);
