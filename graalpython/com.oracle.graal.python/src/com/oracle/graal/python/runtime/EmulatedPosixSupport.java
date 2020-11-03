@@ -99,12 +99,10 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -220,23 +218,19 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @ImportStatic(ImageInfo.class)
     public static class Getpid {
+        @Specialization(rewriteOn = Exception.class)
         @TruffleBoundary
-        @Specialization(guards = "inImageRuntimeCode()")
-        static long inNativeImage(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
-            return ProcessProperties.getProcessID();
-        }
-
-        @TruffleBoundary
-        @Specialization(guards = "!inImageRuntimeCode()", rewriteOn = Exception.class)
-        static long usingProc(@SuppressWarnings("unused") EmulatedPosixSupport receiver,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef) throws Exception {
-            TruffleFile statFile = ctxRef.get().getPublicTruffleFileRelaxed("/proc/self/stat");
+        static long getPid(EmulatedPosixSupport receiver) throws Exception {
+            if (ImageInfo.inImageRuntimeCode()) {
+                return ProcessProperties.getProcessID();
+            }
+            TruffleFile statFile = receiver.context.getPublicTruffleFileRelaxed("/proc/self/stat");
             return Long.parseLong(new String(statFile.readAllBytes()).trim().split(" ")[0]);
         }
 
+        @Specialization(replaces = "getPid")
         @TruffleBoundary
-        @Specialization(guards = "!inImageRuntimeCode()", replaces = "usingProc")
-        static long usingMXBean(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
+        static long getPidFallback(@SuppressWarnings("unused") EmulatedPosixSupport receiver) {
             String info = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
             return Long.parseLong(info.split("@")[0]);
         }
@@ -930,15 +924,15 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @TruffleBoundary
     public static void compatibilityInfo(String fmt, Object arg) {
-        if (COMPATIBILITY_LOGGER.isLoggable(Level.INFO)) {
-            COMPATIBILITY_LOGGER.info(String.format(fmt, arg));
+        if (COMPATIBILITY_LOGGER.isLoggable(Level.FINER)) {
+            COMPATIBILITY_LOGGER.log(Level.FINER, String.format(fmt, arg));
         }
     }
 
     @TruffleBoundary
     public static void compatibilityIgnored(String fmt, Object... args) {
-        if (COMPATIBILITY_LOGGER.isLoggable(Level.WARNING)) {
-            COMPATIBILITY_LOGGER.warning("Ignored: " + String.format(fmt, args));
+        if (COMPATIBILITY_LOGGER.isLoggable(Level.FINE)) {
+            COMPATIBILITY_LOGGER.log(Level.FINE, "Ignored: " + String.format(fmt, args));
         }
     }
 }
