@@ -641,11 +641,11 @@ public abstract class HashingStorage {
         }
     }
 
-    protected long getHash(Object key, PythonObjectLibrary lib) {
+    protected static long getHash(Object key, PythonObjectLibrary lib) {
         return lib.hash(key);
     }
 
-    protected long getHashWithState(Object key, PythonObjectLibrary lib, ThreadState state, ConditionProfile gotState) {
+    protected static long getHashWithState(Object key, PythonObjectLibrary lib, ThreadState state, ConditionProfile gotState) {
         if (gotState.profile(state == null)) {
             return getHash(key, lib);
         }

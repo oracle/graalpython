@@ -182,7 +182,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            final long h = self.getHashWithState(key, lib, state, gotState);
+            final long h = getHashWithState(key, lib, state, gotState);
             DictKey newKey = new DictKey(key, h);
             return self.map.get(newKey, lib, otherlib, findProfile, gotState, state);
         }
@@ -276,7 +276,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
+            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             self.map.put(newKey, value, lib, otherlib, findProfile, gotState, state);
             return self;
         }
@@ -363,7 +363,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
+            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             self.map.removeKey(newKey, lib, otherlib, gotState, state);
             return self;
         }
@@ -375,7 +375,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached CallUnaryMethodNode callNode,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, self.getHashWithState(key, lib, state, gotState));
+            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             Object value = self.map.removeKey(newKey, lib, otherlib, gotState, state);
             if (hasSideEffect(key, lookup)) {
                 callNode.executeObject(lookup.execute(key, __DEL__), key);
