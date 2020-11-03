@@ -3,20 +3,18 @@
 Most Jython code that uses Java integration will be based on a
 stable Jython release, and these only come in Python 2.x versions.
 GraalVM's Python runtime, in contrast, is only targeting Python 3.x.
-Thus, GraalVM does not provide full compatibility with these earlier 2.x versions of Jython.
+GraalVM does not provide a full compatibility with these earlier 2.x versions of Jython.
+Thus, a significant migration step will have to be taken to migrate all your code to Python 3.
 
-Thus, a significant migration step will have to be to migrate all your code to
-Python 3. For Jython specific features, follow this document to learn about
-migration to GraalVM's Python runtime.
+For Jython specific features, follow this document to learn about migration to GraalVM's Python runtime.
 
-Be adviced: some features of Jython have a negative impact on runtime
-performance, and thus are disabled by default. To make migration easier, we
-enable some features with a command line flag on GraalVM:
-`--python.EmulateJython`.
+Note that some features of Jython have a negative impact on runtime performance, and are disabled by default.
+To make migration easier, you can enable some features with a command line flag on GraalVM: `--python.EmulateJython`.
 
-### Importing
-There are certain features of Jython's Java integration that we also offer. Here
-is an example:
+## Importing Java Packages
+
+There are certain features of Jython's Java integration that are enabled by default on GraalVM's Python runtime.
+Here is an example:
 
     >>> import java.awt as awt
     >>> win = awt.Frame()
@@ -26,14 +24,13 @@ is an example:
     'java.awt.Dimension[width=200,height=200]'
     >>> win.show()
 
-This example works exactly the same on both Jython and Python on
-GraalVM. However, on GraalVM only packages in the `java` namespace can be
-directly imported. Importing classes from packages outside `java` namespace also
-requires the `--python.EmulateJython` option to be active.
+This example works exactly the same on both Jython and Python on GraalVM.
+However, on GraalVM only packages in the `java` namespace can be directly imported.
+Importing classes from packages outside the `java` namespace also requires the `--python.EmulateJython` option to be active.
 
-Additionally, importing Java packages as Python modules is only supported under
-very specific circumstances. This will work:
-```
+Additionally, importing Java packages as Python modules is only supported under very specific circumstances.
+For example, this will work:
+```python
 import java.lang as lang
 ```
 
