@@ -49,9 +49,6 @@ import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.CheckFunction
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
-import com.oracle.graal.python.builtins.objects.cell.CellBuiltins.GetRefNode;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
@@ -117,24 +114,16 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    /**
-     * The index of the cell that contains the target (e.g. the pointer of native getter/setter
-     * function).
-     */
-    static final int CELL_INDEX_TARGET = 0;
-
-    public static PCell[] createPythonClosure(Object target, PythonObjectFactory factory, Assumption effectivelyFinal) {
-        PCell targetCell = factory.createCell(effectivelyFinal);
-        targetCell.setRef(target);
-        return new PCell[]{targetCell};
-    }
+    public static final String KW_CALLABLE = "$callable";
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
 
     public static final class MethDirectRoot extends PRootNode {
-        private static final Signature SIGNATURE = Signature.createVarArgsAndKwArgsOnly();
+
+        private static final Signature SIGNATURE = new Signature(-1, true, 0, false, null, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ExternalFunctionInvokeNode invokeNode;
         @Child private CalleeContext calleeContext = CalleeContext.create();
-        @Child private CellBuiltins.GetRefNode readTargetCellNode;
+        @Child private ReadIndexedArgumentNode readCallableNode = ReadIndexedArgumentNode.create(0);
 
         private final String name;
 
@@ -148,9 +137,7 @@ public abstract class ExternalFunctionNodes {
         public Object execute(VirtualFrame frame) {
             calleeContext.enter(frame);
             try {
-                PCell[] frameClosure = PArguments.getClosure(frame);
-                assert frameClosure.length == 1 : "invalid closure for MethDirectRoot";
-                Object callable = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
+                Object callable = readCallableNode.execute(frame);
                 return ensureInvokeNode().execute(frame, name, callable, PArguments.getVariableArguments(frame), 0);
             } finally {
                 calleeContext.exit(frame, this);
@@ -189,14 +176,6 @@ public abstract class ExternalFunctionNodes {
                 invokeNode = insert(ExternalFunctionInvokeNode.create());
             }
             return invokeNode;
-        }
-
-        private GetRefNode ensureReadTargetCellNode() {
-            if (readTargetCellNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readTargetCellNode = insert(GetRefNode.create());
-            }
-            return readTargetCellNode;
         }
 
         @TruffleBoundary
@@ -388,8 +367,8 @@ public abstract class ExternalFunctionNodes {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CallVarargsMethodNode invokeNode;
         @Child private ExternalFunctionInvokeNode externalInvokeNode;
-        @Child private CellBuiltins.GetRefNode readTargetCellNode;
         @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
+        @Child private ReadIndexedArgumentNode readCallableNode;
 
         private final String name;
 
@@ -412,10 +391,7 @@ public abstract class ExternalFunctionNodes {
         public Object execute(VirtualFrame frame) {
             calleeContext.enter(frame);
             try {
-                PCell[] frameClosure = PArguments.getClosure(frame);
-                assert frameClosure.length == 1 : "invalid closure for MethDirectRoot";
-                Object callable = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
-
+                Object callable = ensureReadCallableNode().execute(frame);
                 if (externalInvokeNode != null) {
                     Object[] cArguments = prepareCArguments(frame);
                     try {
@@ -443,7 +419,8 @@ public abstract class ExternalFunctionNodes {
             Object[] variableArguments = PArguments.getVariableArguments(frame);
 
             int variableArgumentsLength = variableArguments != null ? variableArguments.length : 0;
-            int userArgumentLength = PArguments.getUserArgumentLength(frame);
+            // we need to subtract 1 due to the hidden default param that carries the callable
+            int userArgumentLength = PArguments.getUserArgumentLength(frame) - 1;
             int argumentsLength = userArgumentLength + variableArgumentsLength;
             Object[] arguments = new Object[argumentsLength];
 
@@ -469,12 +446,14 @@ public abstract class ExternalFunctionNodes {
             return objects;
         }
 
-        private GetRefNode ensureReadTargetCellNode() {
-            if (readTargetCellNode == null) {
+        private ReadIndexedArgumentNode ensureReadCallableNode() {
+            if (readCallableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readTargetCellNode = insert(GetRefNode.create());
+                // we insert a hidden argument at the end of the positional arguments
+                int hiddenArg = getSignature().getParameterIds().length;
+                readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
-            return readTargetCellNode;
+            return readCallableNode;
         }
 
         @Override
@@ -505,7 +484,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -553,7 +532,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
@@ -598,7 +577,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
 
         public MethNoargsRoot(PythonLanguage language, String name) {
             super(language, name);
@@ -621,7 +600,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         public MethORoot(PythonLanguage language, String name) {
@@ -647,7 +626,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -685,7 +664,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -716,7 +695,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code allocfunc} and {@code ssizeargfunc}.
      */
     static class AllocFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
@@ -752,7 +731,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
     static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
 
@@ -785,7 +764,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
     static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key", "value"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key", "value"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
@@ -821,7 +800,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a rich compare function (C type {@code richcmpfunc}).
      */
     static final class RichCmpFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -860,7 +839,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code ssizeobjargproc}.
      */
     static final class SSizeObjArgProcRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -899,7 +878,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for reverse binary operations.
      */
     static final class MethReverseRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "obj"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "obj"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -939,7 +918,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static class MethPowRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, 0, false, new String[]{"args"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, 0, false, new String[]{"args"}, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -998,7 +977,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static final class MethRichcmpOpRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other"}, PythonUtils.EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         private final int op;

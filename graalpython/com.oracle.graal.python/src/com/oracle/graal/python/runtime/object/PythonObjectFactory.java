@@ -463,14 +463,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, callTarget));
     }
 
-    /**
-     * Creates a built-in function that has a closure. This is mostly useful if the built-in
-     * function is not implemented in Java and needs to delegate to a different receiver. Then the
-     * closure can store this receiver. However, as soon as you have a non-null closure,
-     * AST-inlining won't be possible.
-     */
-    public PBuiltinFunction createBuiltinFunction(String name, Object type, int numDefaults, PCell[] closure, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, closure, callTarget));
+    public PBuiltinFunction createBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, callTarget));
     }
 
     public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {

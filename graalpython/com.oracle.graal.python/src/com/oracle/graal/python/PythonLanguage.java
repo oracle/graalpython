@@ -184,12 +184,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
 
-    /**
-     * A shared assumption that indicates that the delegate of a built-in function that decorates a
-     * native member method or similar did not change.
-     */
-    @CompilationFinal private Assumption callableStableAssumption;
-
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
     }
@@ -772,13 +766,5 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         assert callTarget != null;
         return callTarget;
-    }
-
-    public Assumption getCallableStableAssumption() {
-        if (callableStableAssumption == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callableStableAssumption = Truffle.getRuntime().createAssumption("method descriptor delegate stable assumption");
-        }
-        return callableStableAssumption;
     }
 }

@@ -97,7 +97,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -508,8 +507,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), lang.getCallableStableAssumption());
-                return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
+                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(managedCallable), wrappedCallTarget);
             }
             return managedCallable;
         }
@@ -539,8 +537,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, false);
             if (wrappedCallTarget != null) {
-                PCell[] closure = ExternalFunctionNodes.createPythonClosure(managedCallable, factory(), lang.getCallableStableAssumption());
-                return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
+                return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(managedCallable), wrappedCallTarget);
             }
 
             // Special case: if the returned 'wrappedCallTarget' is null, this indicates we want to
@@ -554,8 +551,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget wrappedCallTarget = wrapper.getOrCreateCallTarget(lang, name, true);
-            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), lang.getCallableStableAssumption());
-            return factory().createBuiltinFunction(name, type, 0, closure, wrappedCallTarget);
+            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(callable), wrappedCallTarget);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -569,8 +565,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(MethDirectRoot.create(lang, name));
-            PCell[] closure = ExternalFunctionNodes.createPythonClosure(callable, factory(), lang.getCallableStableAssumption());
-            return factory().createBuiltinFunction(name, type, 0, closure, callTarget);
+            return factory().createBuiltinFunction(name, type, PythonUtils.EMPTY_OBJECT_ARRAY, createKwDefaults(callable), callTarget);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -585,6 +580,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
+        }
+
+        private static PKeyword[] createKwDefaults(Object callable) {
+            return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable)};
         }
 
         public static CreateFunctionNode create() {

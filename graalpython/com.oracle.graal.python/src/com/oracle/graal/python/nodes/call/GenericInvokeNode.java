@@ -158,7 +158,6 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
                     @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
                     @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
-        PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
         return doCall(frame, null, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }

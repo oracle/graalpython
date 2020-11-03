@@ -95,11 +95,6 @@ abstract class CallSpecialMethodNode extends Node {
         if (builtinNodeFactory == null) {
             return null; // see for example MethodDescriptorRoot and subclasses
         }
-        // built-in function that have a closure cannot be AST-inlined otherwise we would
-        // potentially overwrite the caller's closure
-        if (func.getClosure() != null) {
-            return null;
-        }
         assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + func + " is expected to have a Builtin annotated node.";
         if (builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0].needsFrame() && frame == null) {
             return null;

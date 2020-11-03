@@ -42,11 +42,11 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -107,17 +108,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class HPyExternalFunctionNodes {
 
-    /**
-     * The index of the cell that contains the target (e.g. the pointer of native getter/setter
-     * function).
-     */
-    private static final int CELL_INDEX_TARGET = 0;
-
-    private static PCell[] createPythonClosure(Object target, PythonObjectFactory factory, Assumption effectivelyFinal) {
-        PCell targetCell = factory.createCell(effectivelyFinal);
-        targetCell.setRef(target);
-        return new PCell[]{targetCell};
-    }
+    private static final String KW_CALLABLE = "$callable";
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
 
     /**
      * Creates a built-in function that accepts the specified signatures, does appropriate argument
@@ -177,8 +169,9 @@ public abstract class HPyExternalFunctionNodes {
                 // TODO(fa): support remaining signatures
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
         }
-        PCell[] closure = createPythonClosure(callable, factory, language.getCallableStableAssumption());
-        return factory.createBuiltinFunction(name, enclosingType, numDefaults, closure, PythonUtils.getOrCreateCallTarget(rootNode));
+        Object[] defaults = new Object[numDefaults];
+        Arrays.fill(defaults, PNone.NO_VALUE);
+        return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
     }
 
     /**
@@ -273,7 +266,7 @@ public abstract class HPyExternalFunctionNodes {
         @Child private CalleeContext calleeContext;
         @Child private HPyExternalFunctionInvokeNode invokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
-        @Child private CellBuiltins.GetRefNode readTargetCellNode;
+        @Child private ReadIndexedArgumentNode readCallableNode;
 
         private final String name;
 
@@ -295,9 +288,7 @@ public abstract class HPyExternalFunctionNodes {
         public Object execute(VirtualFrame frame) {
             getCalleeContext().enter(frame);
             try {
-                PCell[] frameClosure = PArguments.getClosure(frame);
-                assert frameClosure.length == 1 : "invalid closure for HPyMethodDescriptorRootNode";
-                Object callable = ensureReadTargetCellNode().execute(frameClosure[CELL_INDEX_TARGET]);
+                Object callable = ensureReadCallableNode().execute(frame);
                 return processResult(frame, invokeNode.execute(frame, name, callable, prepareCArguments(frame)));
             } finally {
                 getCalleeContext().exit(frame, this);
@@ -326,12 +317,14 @@ public abstract class HPyExternalFunctionNodes {
             return calleeContext;
         }
 
-        private CellBuiltins.GetRefNode ensureReadTargetCellNode() {
-            if (readTargetCellNode == null) {
+        private ReadIndexedArgumentNode ensureReadCallableNode() {
+            if (readCallableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readTargetCellNode = insert(CellBuiltins.GetRefNode.create());
+                // we insert a hidden argument at the end of the positional arguments
+                int hiddenArg = getSignature().getParameterIds().length;
+                readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
-            return readTargetCellNode;
+            return readCallableNode;
         }
 
         @Override
@@ -362,7 +355,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethNoargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         public HPyMethNoargsRoot(PythonLanguage language, String name, boolean nativePrimitiveResult) {
             super(language, name, nativePrimitiveResult ? HPyCheckPrimitiveResultNodeGen.create() : HPyCheckHandleResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
@@ -380,7 +373,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethORoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -408,7 +401,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethVarargsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -438,7 +431,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethKeywordsRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -477,7 +470,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethInitProcRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -524,7 +517,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethTernaryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"x", "y", "z"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -562,7 +555,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(2, false, -1, false, new String[]{"$self", "n"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -590,7 +583,7 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     static final class HPyMethSSizeSSizeArgFuncRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "n", "m"}, EMPTY_STRING_ARRAY, true);
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "n", "m"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -630,7 +623,7 @@ public abstract class HPyExternalFunctionNodes {
      * Very similar to {@link HPyMethNoargsRoot} but converts the result to a boolean.
      */
     static final class HPyMethInquiryRoot extends HPyMethodDescriptorRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, EMPTY_STRING_ARRAY);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private CastToJavaIntExactNode castToJavaIntExactNode;
 

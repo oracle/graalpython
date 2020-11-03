@@ -129,7 +129,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callBuiltinFunctionCachedCt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, null, null, callee.getClosure(), arguments);
+        return invoke.execute(frame, null, null, null, arguments);
     }
 
     @Specialization(replaces = {"callFunctionCached", "callFunctionCachedCode", "callFunctionCachedCt"})
