@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -201,12 +202,11 @@ public class ArrayBuiltins extends PythonBuiltins {
             return Arrays.toString(values);
         }
 
-        @TruffleBoundary
         private static String format(String typeName, String typeCode, String array, int storagelen) {
             if (storagelen == 0) {
-                return String.format("%s('%s')", typeName, typeCode);
+                return PythonUtils.format("%s('%s')", typeName, typeCode);
             } else {
-                return String.format("%s('%s', %s)", typeName, typeCode, array);
+                return PythonUtils.format("%s('%s', %s)", typeName, typeCode, array);
             }
         }
 

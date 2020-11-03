@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.charset;
 
+import com.oracle.graal.python.util.PythonUtils;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -82,7 +83,7 @@ public class PythonRawUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 // ASCII
                 target.put((byte) codePoint);
             } else {
-                String hexString = String.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
+                String hexString = PythonUtils.format((codePoint <= 0xFFFF ? "\\u%04x" : "\\U%08x"), codePoint);
                 for (int i = 0; i < hexString.length(); i++) {
                     if (!target.hasRemaining()) {
                         source.position(initialPosition);

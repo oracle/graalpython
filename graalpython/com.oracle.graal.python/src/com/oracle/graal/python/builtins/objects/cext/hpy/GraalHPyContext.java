@@ -799,23 +799,18 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             if (LOGGER.isLoggable(Level.WARNING)) {
                 LOGGER.warning(() -> String.format("tried to release invalid handle %d", handle));
             }
-            assert false : format("tried to release invalid handle %d", handle);
+            assert false : PythonUtils.format("tried to release invalid handle %d", handle);
         }
     }
 
     public void releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
-        assert hpyHandleTable[handle] != null : format("releasing handle that has already been released: %d", handle);
+        assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(() -> "releasing HPy handle " + handle);
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
-    }
-
-    @TruffleBoundary
-    private static String format(String fmt, Object... args) {
-        return String.format(fmt, args);
     }
 
     // nb. keep in sync with 'meth.h'
