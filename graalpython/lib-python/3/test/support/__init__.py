@@ -17,8 +17,7 @@ import importlib
 import importlib.util
 import locale
 import logging.handlers
-# TODO: Truffle reenable me once supported (GR-9138)
-# import nntplib
+import nntplib
 import os
 import platform
 import re
@@ -61,11 +60,10 @@ try:
 except ImportError:
     bz2 = None
 
-# TODO: Truffle reenable me once supported (GR-9149)
+# TODO: Truffle reenable me once supported (GR-9149,GR-23309)
 # try:
 #     import lzma
 # except ImportError:
-#     lzma = None
 lzma = None
 
 try:
