@@ -25,16 +25,21 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
+import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
+import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
@@ -87,6 +92,8 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Children protected final ExpressionNode[] argumentNodes;
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
+    @Child private GetAttributeNode getNameAttributeNode;
+    @Child private StringNodes.CastToJavaStringCheckedNode castToStringNode;
 
     protected final String calleeName;
 
@@ -325,8 +332,36 @@ public abstract class PythonCallNode extends ExpressionNode {
         return argumentNodes != null ? PositionalArgumentsNode.evaluateArguments(frame, argumentNodes) : positionalArguments.execute(frame);
     }
 
-    private PKeyword[] evaluateKeywords(VirtualFrame frame) {
-        return keywordArguments == null ? PKeyword.EMPTY_KEYWORDS : keywordArguments.execute(frame);
+    private PKeyword[] evaluateKeywords(VirtualFrame frame, Object callable, PRaiseNode raise, BranchProfile keywordsError) {
+        PKeyword[] result;
+        if (keywordArguments == null) {
+            result = PKeyword.EMPTY_KEYWORDS;
+        } else {
+            try {
+                result = keywordArguments.execute(frame);
+            } catch (SameDictKeyException ex) {
+                keywordsError.enter();
+                if (castToStringNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    castToStringNode = insert(StringNodes.CastToJavaStringCheckedNode.create());
+                }
+                Object functionName = getNameAttributeNode().executeObject(frame, callable);
+                String keyName = castToStringNode.execute(ex.getKey(), ErrorMessages.KEYWORDS_MUST_BE_STRINGS, new Object[]{functionName});
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.GOT_MULTIPLE_VALUES_FOR_ARG, functionName, keyName);
+            } catch (NonMappingException ex) {
+                keywordsError.enter();
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, getNameAttributeNode().executeObject(frame, callable), ex.getObject());
+            }
+        }
+        return result;
+    }
+
+    private GetAttributeNode getNameAttributeNode() {
+        if (getNameAttributeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getNameAttributeNode = insert(GetAttributeNode.create(SpecialAttributeNames.__NAME__));
+        }
+        return getNameAttributeNode;
     }
 
     @ImportStatic({PythonOptions.class})
@@ -364,7 +399,7 @@ public abstract class PythonCallNode extends ExpressionNode {
                     @Cached("create()") BranchProfile keywordsError,
                     @Cached InvokeForeign invoke) {
         Object[] arguments = evaluateArguments(frame);
-        PKeyword[] keywords = evaluateKeywords(frame);
+        PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         if (keywords.length != 0) {
             keywordsError.enter();
             throw raise.raise(PythonErrorType.TypeError, ErrorMessages.FOREIGN_INVOCATION_DOESNT_SUPPORT_KEYWORD_ARG);
@@ -400,9 +435,10 @@ public abstract class PythonCallNode extends ExpressionNode {
     }
 
     @Specialization(guards = "!isForeignInvoke(callable)")
-    Object call(VirtualFrame frame, Object callable) {
+    Object call(VirtualFrame frame, Object callable, @Cached PRaiseNode raise,
+                    @Cached("create()") BranchProfile keywordsError) {
         Object[] arguments = evaluateArguments(frame);
-        PKeyword[] keywords = evaluateKeywords(frame);
+        PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         return callNode.execute(frame, callable, arguments, keywords);
     }
 

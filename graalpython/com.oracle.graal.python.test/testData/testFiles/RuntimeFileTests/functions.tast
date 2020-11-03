@@ -1272,17 +1272,16 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                             PythonCallNodeGen SourceSection: [4922,4959]`result.sort(key=key,...`
                               CallNodeGen SourceSection: None
                               KeywordArgumentsNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [4938,4941]`key`
-                                    Frame: [1,key,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                KeywordLiteralNode SourceSection: None
-                                  ReadLocalVariableNode SourceSection: [4951,4958]`reverse`
-                                    Frame: [2,reverse,Illegal]
-                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                CompactKeywordsNodeGen SourceSection: None
-                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
+                                ExecuteKeywordArgumentsNode SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [4938,4941]`key`
+                                      Frame: [1,key,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                  KeywordLiteralNode SourceSection: None
+                                    ReadLocalVariableNode SourceSection: [4951,4958]`reverse`
+                                      Frame: [2,reverse,Illegal]
+                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNode SourceSection: [4922,4928]`result`
                                   Frame: [3,result,Illegal]

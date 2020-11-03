@@ -14,12 +14,11 @@ ModuleRootNode Name: <module 'fnCall02'> SourceSection: [0,16]`foo(*args, **kw)`
             CachedDispatchFirst SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       KeywordArgumentsNodeGen SourceSection: None
-        CompactKeywordsNodeGen SourceSection: None
-        ExecuteKeywordStarargsNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [13,15]`kw`
-            Identifier: kw
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+        ExecuteKeywordArgumentsNode SourceSection: None
+        ReadNameNodeGen SourceSection: [13,15]`kw`
+          Identifier: kw
+          IsBuiltinClassProfile SourceSection: None
+            CachedDispatchFirst SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None
