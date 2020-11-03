@@ -233,7 +233,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Cached ConditionProfile gotState,
                     @Cached IsBuiltinClassProfile isInt,
                     @Cached WarnNode warnNode) {
-        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)){
+        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
             VirtualFrame frame = null;
             if (gotState.profile(threadState != null)) {
                 frame = PArguments.frameForCall(threadState);

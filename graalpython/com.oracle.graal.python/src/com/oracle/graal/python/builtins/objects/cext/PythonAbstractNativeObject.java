@@ -184,7 +184,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Cached IsBuiltinClassProfile isInt,
                     @Cached WarnNode warnNode) {
         if (isSubtypeNode.execute(plib.getLazyPythonClass(this), PythonBuiltinClassType.PInt)) {
-            if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)){
+            if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
                 VirtualFrame frame = null;
                 if (gotState.profile(threadState != null)) {
                     frame = PArguments.frameForCall(threadState);

@@ -620,6 +620,6 @@ public abstract class ErrorMessages {
     public static final String CANNOT_INTERN_P = "can't intern %p";
 
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
-        "The ability to return an instance of a strict subclass of %s " +
-        "is deprecated, and may be removed in a future version of Python.";
+                    "The ability to return an instance of a strict subclass of %s " +
+                    "is deprecated, and may be removed in a future version of Python.";
 }

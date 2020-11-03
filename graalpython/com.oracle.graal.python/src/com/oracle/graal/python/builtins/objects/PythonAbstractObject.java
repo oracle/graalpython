@@ -842,7 +842,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         if (resultProfile.profile(!isSubtype.execute(resultLib.getLazyPythonClass(result), PythonBuiltinClassType.PInt))) {
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
         }
-        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)){
+        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
             VirtualFrame frame = null;
             if (gotState.profile(state != null)) {
                 frame = PArguments.frameForCall(state);
