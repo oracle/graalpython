@@ -435,7 +435,7 @@ locals
 		NEWLINE
 		| simple_stmt
 		| compound_stmt
-	) NEWLINE* EOF
+	)* EOF
 	{ $result = new BlockSSTNode(getArray(start, SSTNode[].class), getStartIndex($ctx),  getLastIndex($ctx)); }
 	{
             if ($interactive || $curInlineLocals != null) {
