@@ -1,12 +1,22 @@
-# Jython Compatibility
+# Jython Migration Guide
 
 Most Jython code that uses Java integration will be based on a
 stable Jython release, and these only come in Python 2.x versions.
 GraalVM's Python runtime, in contrast, is only targeting Python 3.x.
 Thus, GraalVM does not provide full compatibility with these earlier 2.x versions of Jython.
 
-Nonetheless, there are certain features of Jython's Java integration that we can offer similarly.
-Here is an example:
+Thus, a significant migration step will have to be to migrate all your code to
+Python 3. For Jython specific features, follow this document to learn about
+migration to GraalVM's Python runtime.
+
+Be adviced: some features of Jython have a negative impact on runtime
+performance, and thus are disabled by default. To make migration easier, we
+enable some features with a command line flag on GraalVM:
+`--python.EmulateJython`.
+
+### Importing
+There are certain features of Jython's Java integration that we also offer. Here
+is an example:
 
     >>> import java.awt as awt
     >>> win = awt.Frame()
@@ -16,24 +26,23 @@ Here is an example:
     'java.awt.Dimension[width=200,height=200]'
     >>> win.show()
 
-This example works exactly the same on both Jython and Python on GraalVM.
-Some features of Jython are more expensive at runtime, and thus are hidden behind a
-command line flag on GraalVM: `--python.EmulateJython`.
+This example works exactly the same on both Jython and Python on
+GraalVM. However, on GraalVM only packages in the `java` namespace can be
+directly imported. Importing classes from packages outside `java` namespace also
+requires the `--python.EmulateJython` option to be active.
 
-## Import Java Classes
-
-Import statements allow you to import Java classes, but (unlike Jython), only
-packages in the `java` namespace can be directly imported.
-
-For example, this will work:
-```python
+Additionally, importing Java packages as Python modules is only supported under
+very specific circumstances. This will work:
+```
 import java.lang as lang
 ```
+
 But this will not:
 ```python
 import javax.swing as swing
 from javax.swing import *
 ```
+
 Instead, you will have to import one of the classes you are interested in directly:
 ```python
 import javax.swing.Window as Window
