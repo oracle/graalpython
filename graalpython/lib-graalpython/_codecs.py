@@ -153,10 +153,10 @@ def lookup_error(errors='strict'):
 def escape_encode(data, errors=None):
     return unicode_escape_encode(data, errors)
 
-
-@__graalpython__.builtin
-def escape_decode(data, errors=None):
-    return unicode_escape_decode(data, errors)
+#
+# @__graalpython__.builtin
+# def escape_decode(data, errors=None):
+#     return unicode_escape_decode(data, errors)
 
 
 @__graalpython__.builtin

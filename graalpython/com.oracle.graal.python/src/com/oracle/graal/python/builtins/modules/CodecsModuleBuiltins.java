@@ -40,12 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
+import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -69,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -90,6 +96,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -562,7 +569,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, bytes);
+            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
         }
 
         Object decodeBytes(PBytesLike input, String encoding, String errors, boolean finalData) {
@@ -625,6 +632,186 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             handleDecodingErrorNode.execute(encoder, errorAction, input);
         }
     }
+
+    @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @GenerateNodeFactory
+    abstract static class CodecsEscapeDecodeNode extends EncodeBaseNode {
+        private static final int[] _PyLong_DigitValue = {
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 37, 37, 37, 37, 37, 37,
+                        37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+                        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
+                        37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+                        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
+        };
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object decode(Object data, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            return decode(data, STRICT, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @TruffleBoundary
+        Object decode(Object data, String errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            try {
+                byte[] bytes = pol.getBufferBytes(data);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                for (int i = 0; i < bytes.length; i++) {
+                    char chr = (char) bytes[i];
+                    if (chr != '\\') {
+                        bos.write(chr);
+                        continue;
+                    }
+
+                    i++;
+                    if (i >= bytes.length) {
+                        throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                    }
+
+                    chr = (char) bytes[i];
+                    switch (chr) {
+                        case '\n':
+                            break;
+                        case '\\':
+                            bos.write('\\');
+                            break;
+                        case '\'':
+                            bos.write('\'');
+                            break;
+                        case '\"':
+                            bos.write('\"');
+                            break;
+                        case 'b':
+                            bos.write('\b');
+                            break;
+                        case 'f':
+                            bos.write('\014');
+                            break; /* FF */
+                        case 't':
+                            bos.write('\t');
+                            break;
+                        case 'n':
+                            bos.write('\n');
+                            break;
+                        case 'r':
+                            bos.write('\r');
+                            break;
+                        case 'v':
+                            bos.write('\013');
+                            break; /* VT */
+                        case 'a':
+                            bos.write('\007');
+                            break; /* BEL */
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                            int code = chr - '0';
+                            if (i + 1 < bytes.length) {
+                                char nextChar = (char) bytes[i + 1];
+                                if ('0' <= nextChar && nextChar <= '7') {
+                                    code = (code << 3) + nextChar - '0';
+                                    i++;
+
+                                    if (i + 1 < bytes.length) {
+                                        nextChar = (char) bytes[i + 1];
+                                        if ('0' <= nextChar && nextChar <= '7') {
+                                            code = (code << 3) + nextChar - '0';
+                                            i++;
+                                        }
+                                    }
+                                }
+                            }
+                            bos.write((char) code);
+                            break;
+                        case 'x':
+                            if (i + 2 < bytes.length) {
+                                int digit1 = _PyLong_DigitValue[bytes[i + 1] & 0xff];
+                                int digit2 = _PyLong_DigitValue[bytes[i + 2] & 0xff];
+                                if (digit1 < 16 && digit2 < 16) {
+                                    bos.write((digit1 << 4) + digit2);
+                                    i += 2;
+                                    break;
+                                }
+                            }
+                            // invalid hexadecimal digits
+                            if (errors.equals(STRICT)) {
+                                throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
+                            }
+                            if (errors.equals(REPLACE)) {
+                                bos.write('?');
+                            } else if (errors.equals(IGNORE)) {
+                                // do nothing
+                            } else {
+                                throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
+                            }
+
+                            // skip \x
+                            if (i < bytes.length && isHexDigit((char) bytes[i])) {
+                                i++;
+                            }
+                            break;
+
+                        default:
+                            bos.write('\\');
+                            bos.write(chr);
+                    }
+                }
+
+                return factory().createTuple(new Object[]{
+                                factory().createBytes(bos.toByteArray()),
+                                pol.getBufferLength(data)
+                });
+            } catch (UnsupportedMessageException e) {
+                throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+            }
+        }
+
+        private static boolean isHexDigit(char digit) {
+            return ('0' <= digit && digit <= '9') ||
+                            ('a' <= digit && digit <= 'f') ||
+                            ('A' <= digit && digit <= 'F');
+        }
+    }
+
+    // @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data",
+    // "errors"})
+    // @GenerateNodeFactory
+    // abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
+    // @Specialization
+    // Object encode(Object data, @SuppressWarnings("unused") PNone errors,
+    // @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+    // return encode(data, STRICT ,pol);
+    // }
+    //
+    // @Specialization
+    // @TruffleBoundary
+    // Object encode(Object data, String errors,
+    // @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+    // try {
+    // byte[] bytes = pol.getBufferBytes(data);
+    //
+    //
+    // } catch (UnsupportedMessageException e) {
+    // throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+    // }
+    // }
 
     @Builtin(name = "__truffle_lookup__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory

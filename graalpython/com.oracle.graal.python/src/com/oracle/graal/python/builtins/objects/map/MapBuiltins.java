@@ -184,7 +184,7 @@ public final class MapBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         PTuple doit(PMap self, @SuppressWarnings("unused") Object ignored,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             Object[] iterators = self.getIterators();
             Object[] args = new Object[iterators.length + 1];
             args[0] = self.getFunction();
