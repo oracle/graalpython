@@ -193,3 +193,78 @@ def test_decode_report_consumed():
     dec, consumed = codecs.utf_8_decode(data)
     assert dec == "memory of “unsigned bytes” of the given length."
     assert consumed == len(data)
+
+
+class EscapeEncodeTest(unittest.TestCase):
+
+    def test_escape_encode(self):
+        tests = [
+            (b'', (b'', 0)),
+            (b'foobar', (b'foobar', 6)),
+            (b'spam\0eggs', (b'spam\\x00eggs', 9)),
+            (b'a\'b', (b"a\\'b", 3)),
+            (b'b\\c', (b'b\\\\c', 3)),
+            (b'c\nd', (b'c\\nd', 3)),
+            (b'd\re', (b'd\\re', 3)),
+            (b'f\x7fg', (b'f\\x7fg', 3)),
+        ]
+        for data, output in tests:
+            self.assertEqual(codecs.escape_encode(data), output)
+        self.assertRaises(TypeError, codecs.escape_encode, 'spam')
+        self.assertRaises(TypeError, codecs.escape_encode, bytearray(b'spam'))
+
+
+class EscapeDecodeTest(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(codecs.escape_decode(b""), (b"", 0))
+        self.assertEqual(codecs.escape_decode(bytearray()), (b"", 0))
+
+    def test_raw(self):
+        decode = codecs.escape_decode
+        for b in range(256):
+            b = bytes([b])
+            if b != b'\\':
+                self.assertEqual(decode(b + b'0'), (b + b'0', 2))
+
+    def test_escape(self):
+        decode = codecs.escape_decode
+        check = coding_checker(self, decode)
+        check(b"[\\\n]", b"[]")
+        check(br'[\"]', b'["]')
+        check(br"[\']", b"[']")
+        check(br"[\\]", b"[\\]")
+        check(br"[\a]", b"[\x07]")
+        check(br"[\b]", b"[\x08]")
+        check(br"[\t]", b"[\x09]")
+        check(br"[\n]", b"[\x0a]")
+        check(br"[\v]", b"[\x0b]")
+        check(br"[\f]", b"[\x0c]")
+        check(br"[\r]", b"[\x0d]")
+        check(br"[\7]", b"[\x07]")
+        check(br"[\78]", b"[\x078]")
+        check(br"[\41]", b"[!]")
+        check(br"[\418]", b"[!8]")
+        check(br"[\101]", b"[A]")
+        check(br"[\1010]", b"[A0]")
+        check(br"[\501]", b"[A]")
+        check(br"[\x41]", b"[A]")
+        check(br"[\x410]", b"[A0]")
+        for i in range(97, 123):
+            b = bytes([i])
+            if b not in b'abfnrtvx':
+                check(b"\\" + b, b"\\" + b)
+            check(b"\\" + b.upper(), b"\\" + b.upper())
+        check(br"\8", b"\\8")
+        check(br"\9", b"\\9")
+        check(b"\\\xfa", b"\\\xfa")
+
+    def test_errors(self):
+        decode = codecs.escape_decode
+        self.assertRaises(ValueError, decode, br"\x")
+        self.assertRaises(ValueError, decode, br"[\x]")
+        self.assertEqual(decode(br"[\x]\x", "ignore"), (b"[]", 6))
+        self.assertEqual(decode(br"[\x]\x", "replace"), (b"[?]?", 6))
+        self.assertRaises(ValueError, decode, br"\x0")
+        self.assertRaises(ValueError, decode, br"[\x0]")
+        self.assertEqual(decode(br"[\x0]\x0", "ignore"), (b"[]", 8))
+        self.assertEqual(decode(br"[\x0]\x0", "replace"), (b"[?]?", 8))

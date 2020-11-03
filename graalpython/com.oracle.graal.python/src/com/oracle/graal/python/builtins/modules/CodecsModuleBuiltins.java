@@ -50,7 +50,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeD
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -81,6 +80,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -655,6 +655,25 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
         };
 
+        enum Errors {
+            ERR_STRICT,
+            ERR_IGNORE,
+            ERR_REPLACE,
+            ERR_UNKNOWN,
+        }
+
+        private Errors getErrors(String err) {
+            if (err.equals(STRICT)) {
+                return Errors.ERR_STRICT;
+            } else if (err.equals(REPLACE)) {
+                return Errors.ERR_REPLACE;
+            } else if (err.equals(IGNORE)) {
+                return Errors.ERR_IGNORE;
+            } else {
+                return Errors.ERR_UNKNOWN;
+            }
+        }
+
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object decode(Object data, @SuppressWarnings("unused") PNone errors,
                         @CachedLibrary(value = "data") PythonObjectLibrary pol) {
@@ -662,16 +681,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        @TruffleBoundary
         Object decode(Object data, String errors,
                         @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            Errors err = getErrors(errors);
             try {
                 byte[] bytes = pol.getBufferBytes(data);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ByteArrayBuffer buffer = new ByteArrayBuffer();
                 for (int i = 0; i < bytes.length; i++) {
                     char chr = (char) bytes[i];
                     if (chr != '\\') {
-                        bos.write(chr);
+                        buffer.append(chr);
                         continue;
                     }
 
@@ -685,34 +704,34 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         case '\n':
                             break;
                         case '\\':
-                            bos.write('\\');
+                            buffer.append('\\');
                             break;
                         case '\'':
-                            bos.write('\'');
+                            buffer.append('\'');
                             break;
                         case '\"':
-                            bos.write('\"');
+                            buffer.append('\"');
                             break;
                         case 'b':
-                            bos.write('\b');
+                            buffer.append('\b');
                             break;
                         case 'f':
-                            bos.write('\014');
+                            buffer.append('\014');
                             break; /* FF */
                         case 't':
-                            bos.write('\t');
+                            buffer.append('\t');
                             break;
                         case 'n':
-                            bos.write('\n');
+                            buffer.append('\n');
                             break;
                         case 'r':
-                            bos.write('\r');
+                            buffer.append('\r');
                             break;
                         case 'v':
-                            bos.write('\013');
+                            buffer.append('\013');
                             break; /* VT */
                         case 'a':
-                            bos.write('\007');
+                            buffer.append('\007');
                             break; /* BEL */
                         case '0':
                         case '1':
@@ -738,44 +757,44 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                                     }
                                 }
                             }
-                            bos.write((char) code);
+                            buffer.append((char) code);
                             break;
                         case 'x':
                             if (i + 2 < bytes.length) {
                                 int digit1 = _PyLong_DigitValue[bytes[i + 1] & 0xff];
                                 int digit2 = _PyLong_DigitValue[bytes[i + 2] & 0xff];
                                 if (digit1 < 16 && digit2 < 16) {
-                                    bos.write((digit1 << 4) + digit2);
+                                    buffer.append((digit1 << 4) + digit2);
                                     i += 2;
                                     break;
                                 }
                             }
                             // invalid hexadecimal digits
-                            if (errors.equals(STRICT)) {
+                            if (err == Errors.ERR_STRICT) {
                                 throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
                             }
-                            if (errors.equals(REPLACE)) {
-                                bos.write('?');
-                            } else if (errors.equals(IGNORE)) {
+                            if (err == Errors.ERR_REPLACE) {
+                                buffer.append('?');
+                            } else if (err == Errors.ERR_IGNORE) {
                                 // do nothing
                             } else {
                                 throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
                             }
 
                             // skip \x
-                            if (i < bytes.length && isHexDigit((char) bytes[i])) {
+                            if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
                                 i++;
                             }
                             break;
 
                         default:
-                            bos.write('\\');
-                            bos.write(chr);
+                            buffer.append('\\');
+                            buffer.append(chr);
                     }
                 }
 
                 return factory().createTuple(new Object[]{
-                                factory().createBytes(bos.toByteArray()),
+                                factory().createBytes(buffer.getByteArray()),
                                 pol.getBufferLength(data)
                 });
             } catch (UnsupportedMessageException e) {
@@ -784,34 +803,68 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         private static boolean isHexDigit(char digit) {
-            return ('0' <= digit && digit <= '9') ||
-                            ('a' <= digit && digit <= 'f') ||
-                            ('A' <= digit && digit <= 'F');
+            return ('0' <= digit && digit <= '9') || ('a' <= digit && digit <= 'f') || ('A' <= digit && digit <= 'F');
         }
     }
 
-    // @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data",
-    // "errors"})
-    // @GenerateNodeFactory
-    // abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
-    // @Specialization
-    // Object encode(Object data, @SuppressWarnings("unused") PNone errors,
-    // @CachedLibrary(value = "data") PythonObjectLibrary pol) {
-    // return encode(data, STRICT ,pol);
-    // }
-    //
-    // @Specialization
-    // @TruffleBoundary
-    // Object encode(Object data, String errors,
-    // @CachedLibrary(value = "data") PythonObjectLibrary pol) {
-    // try {
-    // byte[] bytes = pol.getBufferBytes(data);
-    //
-    //
-    // } catch (UnsupportedMessageException e) {
-    // throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
-    // }
-    // }
+    @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @GenerateNodeFactory
+    abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
+        private static final String Py_hexdigits = "0123456789abcdef";
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object encode(PBytes data, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            return encode(data, STRICT, pol);
+        }
+
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        Object encode(PBytes data, @SuppressWarnings("unused") String errors,
+                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+            try {
+                byte[] bytes = pol.getBufferBytes(data);
+                int size = pol.getBufferLength(data);
+                ByteArrayBuffer buffer = new ByteArrayBuffer();
+                char c;
+                for (byte aByte : bytes) {
+                    // There's at least enough room for a hex escape
+                    c = (char) aByte;
+                    if (c == '\'' || c == '\\') {
+                        buffer.append('\\');
+                        buffer.append(c);
+                    } else if (c == '\t') {
+                        buffer.append('\\');
+                        buffer.append('t');
+                    } else if (c == '\n') {
+                        buffer.append('\\');
+                        buffer.append('n');
+                    } else if (c == '\r') {
+                        buffer.append('\\');
+                        buffer.append('r');
+                    } else if (c < ' ' || c >= 0x7f) {
+                        buffer.append('\\');
+                        buffer.append('x');
+                        buffer.append(Py_hexdigits.charAt((c & 0xf0) >> 4));
+                        buffer.append(Py_hexdigits.charAt(c & 0xf));
+                    } else {
+                        buffer.append(c);
+                    }
+                }
+
+                return factory().createTuple(new Object[]{
+                                factory().createBytes(buffer.getByteArray()),
+                                size
+                });
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Fallback
+        Object encode(Object data, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
+        }
+    }
 
     @Builtin(name = "__truffle_lookup__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
