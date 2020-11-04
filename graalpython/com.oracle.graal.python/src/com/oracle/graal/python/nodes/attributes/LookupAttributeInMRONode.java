@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -63,6 +64,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
@@ -190,17 +192,17 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return findAttr(getCore(), klass, key, readAttrNode);
     }
 
-    static final class PythonClassAssumptionPair {
+    static final class AttributeAssumptionPair {
         public final Assumption assumption;
         public final Object value;
 
-        PythonClassAssumptionPair(Assumption assumption, Object value) {
+        AttributeAssumptionPair(Assumption assumption, Object value) {
             this.assumption = assumption;
             this.value = value;
         }
     }
 
-    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(Object klass) {
+    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
@@ -215,19 +217,24 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             }
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
-                return new PythonClassAssumptionPair(attrAssumption, value);
+                return new AttributeAssumptionPair(attrAssumption, value);
             }
         }
-        return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
+        return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, //
+    /**
+     * NOTE: Guard for case when attributes stored in a dict. Calling __eq__ or __hash__ on such
+     * could have mro related sideeffects.
+     */
+    @Specialization(guards = {"!lib.hasDict(klass)", "isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    assumptions = {"cachedClassInMROInfo.assumption", "singleContextAssumption()"})
+                    assumptions = {"cachedAttrInMROInfo.assumption", "singleContextAssumption()"})
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
-        return cachedClassInMROInfo.value;
+                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
+        return cachedAttrInMROInfo.value;
     }
 
     protected static ReadAttributeFromObjectNode[] create(int size) {
@@ -248,8 +255,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
-        for (int i = 0; i < mroLength; i++) {
-            Object kls = mro.getItemNormalized(i);
+        // create snapshot, mro storage can change during lookup
+        Object[] mroArray = new Object[mroLength];
+        for (int i = 0; i < mroArray.length; i++) {
+            mroArray[i] = mro.getItemNormalized(i);
+        }
+
+        for (int i = 0; i < mroArray.length; i++) {
+            Object kls = mroArray[i];
             if (skipPythonClasses && kls instanceof PythonClass) {
                 continue;
             }
@@ -281,16 +294,21 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     public static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
-        for (int i = 0; i < mro.length(); i++) {
-            Object kls = mro.getItemNormalized(i);
-            if (skipPythonClasses && kls instanceof PythonClass) {
-                continue;
-            }
-            Object value = readAttrNode.execute(kls, key);
-            if (value != PNone.NO_VALUE) {
-                return value;
-            }
-        }
+	// create snapshot, mro storage could change during lookup
+	Object[] mroArray = new Object[mro.length()];
+	for (int i = 0; i < mroArray.length; i++) {
+	    mroArray[i] = mro.getItemNormalized(i);
+	}
+	for (int i = 0; i < mroArray.length; i++) {
+	    Object kls = mroArray[i];
+	    if (skipPythonClasses && kls instanceof PythonClass) {
+		continue;
+	    }
+	    Object value = readAttrNode.execute(kls, key);
+	    if (value != PNone.NO_VALUE) {
+		return value;
+	    }
+	}
         return PNone.NO_VALUE;
     }
 
