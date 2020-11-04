@@ -142,17 +142,13 @@ class BisectResult:
 
     @property
     def good_commit(self):
-        try:
+        if 0 <= self.good_index < len(self.commits):
             return self.commits[self.good_index]
-        except IndexError:
-            return None
 
     @property
     def bad_commit(self):
-        try:
+        if 0 <= self.bad_index < len(self.commits):
             return self.commits[self.bad_index]
-        except IndexError:
-            return None
 
     def visualize(self, level=1):
         level_marker = '=' * level
