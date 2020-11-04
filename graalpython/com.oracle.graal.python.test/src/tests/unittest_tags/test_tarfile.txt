@@ -57,6 +57,7 @@
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_gettarinfo_pathlike_name
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_link_size
 *graalpython.lib-python.3.test.test_tarfile.Bz2WriteTest.test_open_nonwritable_fileobj
+*graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_bad_use
 *graalpython.lib-python.3.test.test_tarfile.GzipListTest.test_list
 *graalpython.lib-python.3.test.test_tarfile.GzipListTest.test_list_members
 *graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_fileobj_iter
