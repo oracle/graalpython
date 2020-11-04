@@ -598,7 +598,8 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
 
 
-def run_hpy_unittests(python_binary, args=[]):
+def run_hpy_unittests(python_binary, args=None):
+    args = [] if args is None else args
     with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
         env = os.environ.copy()
         prefix = str(d)
