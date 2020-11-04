@@ -429,7 +429,7 @@ def run_benchmark(args):
             bench_args.append(arg)
         i += 1
 
-    min_required_iterations = max(startup)
+    min_required_iterations = max(startup) if startup else 0
     if startup and iterations < min_required_iterations:
         print("### WARNING: you've specified less iterations than required to measure the startup. Overriding iterations with %d" % min_required_iterations)
         iterations = min_required_iterations
