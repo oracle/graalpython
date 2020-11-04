@@ -62,13 +62,11 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
-        long startupNanoTime = System.nanoTime();
-        long startupWallClockTime = System.currentTimeMillis();
         if (GraalPythonMain.startupNanoTime == -1) {
-            GraalPythonMain.startupNanoTime = startupNanoTime;
+            GraalPythonMain.startupNanoTime = System.nanoTime();
         }
         if (GraalPythonMain.startupWallClockTime == -1) {
-            GraalPythonMain.startupWallClockTime = startupWallClockTime;
+            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
         }
         new GraalPythonMain().launch(args);
     }
@@ -78,7 +76,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     // provided by GraalVM bash launchers, ignored in native image mode
     private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
-    
+
     private static long startupWallClockTime = -1;
     private static long startupNanoTime = -1;
 
@@ -492,7 +490,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         int rc = 1;
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
-            
+
             if (snaptshotStartup) {
                 evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
             }
