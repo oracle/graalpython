@@ -134,7 +134,7 @@ public class HashMapStorage extends HashingStorage {
         }
 
         @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
-        static Object getItemNotSupportedKey(HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
+        static Object getItemNotSupportedKey(@SuppressWarnings("unused") HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {

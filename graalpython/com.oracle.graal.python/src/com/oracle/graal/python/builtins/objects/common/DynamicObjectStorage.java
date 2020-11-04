@@ -142,7 +142,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedLen(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             int len = 0;
             for (int i = 0; i < keys.length; i++) {
                 Object key = keys[i];
@@ -155,7 +155,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static int cachedKeys(DynamicObjectStorage self,
                         @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             int len = 0;
             for (int i = 0; i < keys.length; i++) {
                 Object key = keys[i];
@@ -379,7 +379,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object cachedLen(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             Object result = firstValue;
             for (int i = 0; i < keys.length; i++) {
                 Object key = keys[i];
@@ -392,7 +392,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         static Object cachedKeys(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             Object result = firstValue;
             for (int i = 0; i < keys.length; i++) {
                 Object key = keys[i];
@@ -403,7 +403,7 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(replaces = "cachedKeys")
         static Object addAll(DynamicObjectStorage self, ForEachNode<Object> node, Object firstValue,
-                        @Cached ReadAttributeFromDynamicObjectNode readNode) {
+                        @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             return cachedKeys(self, node, firstValue, self.store.getShape(), keyArray(self), readNode);
         }
 

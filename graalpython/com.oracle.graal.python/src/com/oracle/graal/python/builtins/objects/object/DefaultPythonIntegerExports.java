@@ -213,7 +213,7 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static boolean iI(Integer receiver, PInt other, PythonObjectLibrary oLib, ThreadState threadState) {
-            return oLib.equals(other, receiver, oLib);
+            return other.compareTo((long) receiver) == 0;
         }
 
         @Specialization
