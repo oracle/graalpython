@@ -2198,8 +2198,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary nslib,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -2229,9 +2229,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
 
-                for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
+                for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
                         try {
@@ -2253,7 +2253,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(globals, nslib);
+                        String moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2261,8 +2261,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // delete __qualname__ from namespace
-                if (nslib.hasKey(namespace.getDictStorage(), __QUALNAME__)) {
-                    HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __QUALNAME__);
+                if (hashingStoragelib.hasKey(namespace.getDictStorage(), __QUALNAME__)) {
+                    HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), __QUALNAME__);
                     if (newStore != namespace.getDictStorage()) {
                         updatedStorage.enter();
                         namespace.setDictStorage(newStore);
@@ -2270,15 +2270,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // set __class__ cell contents
-                Object classcell = nslib.getItem(namespace.getDictStorage(), __CLASSCELL__);
+                Object classcell = hashingStoragelib.getItem(namespace.getDictStorage(), __CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    if (nslib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
-                        HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __CLASSCELL__);
+                    if (hashingStoragelib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
+                        HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), __CLASSCELL__);
                         if (newStore != namespace.getDictStorage()) {
                             updatedStorage.enter();
                             namespace.setDictStorage(newStore);
@@ -2324,8 +2324,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
-                        HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode, LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode,
-                        GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+                        PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
+                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2359,7 +2359,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, nslib, slots, qualnameSet);
+            copyDictSlots(pythonClass, namespace, lib, hashingStorageLib, slots, qualnameSet);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2369,9 +2369,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
-            Object hashMethod = nslib.getItem(namespace.getDictStorage(), __HASH__);
+            Object hashMethod = hashingStorageLib.getItem(namespace.getDictStorage(), __HASH__);
             if (hashMethod == null) {
-                Object eqMethod = nslib.getItem(namespace.getDictStorage(), __EQ__);
+                Object eqMethod = hashingStorageLib.getItem(namespace.getDictStorage(), __EQ__);
                 if (eqMethod != null) {
                     pythonClass.setAttribute(__HASH__, PNone.NONE);
                 }
@@ -2455,7 +2455,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
 
                     // checks for some name errors too
-                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, nslib);
+                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, hashingStorageLib);
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
@@ -2515,10 +2515,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary nslib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
-            for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
+            PDict typeDict = null;
+            for (DictEntry entry : hashingStorageLib.entries(namespace.getDictStorage())) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
                 if (__SLOTS__.equals(key)) {
@@ -2565,8 +2566,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
                     // don't populate this attribute
-                } else {
+                } else if (key instanceof String && typeDict == null) {
                     pythonClass.setAttribute(key, value);
+                } else {
+                    // DynamicObjectStorage ignores non-string keys
+                    typeDict = lib.getDict(pythonClass);
+                    if (typeDict == null) {
+                        // 1.) create DynamicObjectStorage based dict from pythonClass
+                        typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);
+                        try {
+                            lib.setDict(pythonClass, typeDict);
+                        } catch (UnsupportedMessageException ex) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw new IllegalStateException("can't set dict into " + pythonClass, ex);
+                        }
+                    }
+                    // 2.) writing a non string key converts DynamicObjectStorage to
+                    // EconomicMapStorage
+                    HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
+                    typeDict.setDictStorage(updatedStore);
                 }
             }
         }
