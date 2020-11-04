@@ -112,6 +112,7 @@ public abstract class ErrorMessages {
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
     public static final String CANNOT_ASSIGN_TO = "cannot assign to %s";
+    public static final String CANNOT_ASSIGN_TO_COMPREHENSION = "cannot assign to %s comprehension";
     public static final String CANNOT_BE_INTEPRETED_AS_LONG = "%s cannot be interpreted as long (type %p)";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
     public static final String CANNOT_CALL_CTOR_OF = "cannot call constructor of %s";
