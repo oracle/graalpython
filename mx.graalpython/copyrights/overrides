@@ -117,6 +117,7 @@ graalpython/com.oracle.graal.python.cext/include/memoryobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/methodobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/modsupport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/moduleobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/namespaceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/objimpl.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/patchlevel.h,python.copyright
