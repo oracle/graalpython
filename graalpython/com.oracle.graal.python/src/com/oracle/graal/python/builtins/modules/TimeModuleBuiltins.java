@@ -100,6 +100,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         builtinConstants.put("daylight", PInt.intValue(hasDaylightSaving));
+        int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
+        builtinConstants.put("timezone", rawOffsetSeconds);
+        builtinConstants.put("altzone", rawOffsetSeconds - 3600);
     }
 
     @TruffleBoundary
