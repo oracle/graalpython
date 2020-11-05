@@ -105,6 +105,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "_warnings")
 public class WarningsModuleBuiltins extends PythonBuiltins {
@@ -942,12 +943,18 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         protected abstract void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs);
 
         private static final class WarnNodeCached extends WarnNode {
+            @CompilationFinal BranchProfile noFrame = BranchProfile.create();
             @CompilationFinal ContextReference<PythonContext> ctxRef;
             @Child PythonObjectLibrary lib;
             @Child WarningsModuleNode moduleFunctionsNode;
 
             @Override
             protected void execute(Frame frame, Object source, Object category, String format, int stackLevel, Object... formatArgs) {
+                if (frame == null) {
+                    noFrame.enter();
+                    UNCACHED.execute(null, source, category, format, stackLevel, formatArgs);
+                    return;
+                }
                 assert frame instanceof VirtualFrame;
                 if (ctxRef == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1006,7 +1013,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 }
                 lib.callObject(warn, null, message, category, stackLevel, source);
             }
-
         }
     }
 }

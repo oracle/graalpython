@@ -32,12 +32,15 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
@@ -50,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -57,6 +61,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PInt extends PythonBuiltinObject {
@@ -224,7 +229,19 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
+    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState,
+                    @Cached ConditionProfile gotState,
+                    @Cached IsBuiltinClassProfile isInt,
+                    @Cached WarnNode warnNode) {
+        if (!isInt.profileObject(this, PythonBuiltinClassType.PInt)) {
+            VirtualFrame frame = null;
+            if (gotState.profile(threadState != null)) {
+                frame = PArguments.frameForCall(threadState);
+            }
+            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                            ErrorMessages.P_RETURNED_NON_P,
+                            this, "__index__", "int", this, "int");
+        }
         return this;
     }
 
