@@ -66,6 +66,7 @@ import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
 import com.oracle.graal.python.parser.sst.ForSSTNode;
 import com.oracle.graal.python.parser.sst.FunctionDefSSTNode;
 import com.oracle.graal.python.parser.sst.GeneratorFactorySSTVisitor;
+import com.oracle.graal.python.parser.sst.GetAttributeSSTNode;
 import com.oracle.graal.python.parser.sst.ImportFromSSTNode;
 import com.oracle.graal.python.parser.sst.ImportSSTNode;
 import com.oracle.graal.python.parser.sst.SSTNode;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.parser.sst.SimpleSSTNode;
 import com.oracle.graal.python.parser.sst.StarSSTNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.StringUtils;
+import com.oracle.graal.python.parser.sst.SubscriptSSTNode;
 import com.oracle.graal.python.parser.sst.VarLookupSSTNode;
 import com.oracle.graal.python.parser.sst.WithSSTNode;
 import com.oracle.graal.python.parser.sst.YieldExpressionSSTNode;
@@ -217,6 +219,18 @@ public final class PythonSSTNodeFactory {
         declareVar(lhs);
         if (!scopeEnvironment.getCurrentScope().hasAnnotations()) {
             scopeEnvironment.getCurrentScope().setHasAnnotations(true);
+        }
+        // checking if the annotation has the right target
+        if (!(lhs instanceof VarLookupSSTNode || lhs instanceof GetAttributeSSTNode || lhs instanceof SubscriptSSTNode)) {
+            if (lhs instanceof CollectionSSTNode) {
+                CollectionSSTNode collectionNode = (CollectionSSTNode) lhs;
+                if (collectionNode.getType() == PythonBuiltinClassType.PList) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "list");
+                } else if (collectionNode.getType() == PythonBuiltinClassType.PTuple) {
+                    throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ONLY_SINGLE_TARGET_CAN_BE_ANNOTATED, "tuple");
+                }
+            }
+            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.getStartOffset(), lhs.getEndOffset()), ErrorMessages.ILLEGAL_TARGET_FOR_ANNOTATION);
         }
         return new AnnAssignmentSSTNode(lhs, type, rhs, start, end);
     }
