@@ -215,8 +215,7 @@ def _bisect_benchmark(argv, initial_branch, email_to):
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         env = os.environ.copy()
-        if 'CI' not in os.environ:
-            env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
+        env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute the build command for {}".format(commit))
