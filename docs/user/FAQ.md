@@ -9,7 +9,7 @@ The GraalVM team continues to improve the number of passing CPython unittests, a
 ### Can the GraalVM Python runtime replace my Jython use case?
 
 It can, but there are some caveats, like Python code subclassing Java classes or use through the `javax.script.ScriptEngine` not being supported.
-See the [Jython Compatibility](Jython.md) guide for details.
+See the [Jython Migration](Jython.md) guide for details.
 
 ### Do I need to compile and run native modules as LLVM bitcode to use on GraalVM's Python runtime?
 
