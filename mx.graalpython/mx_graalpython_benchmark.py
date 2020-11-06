@@ -58,8 +58,10 @@ SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
+CONFIGURATION_DEFAULT_MULTI_TIER = "default-multi-tier"
 CONFIGURATION_NATIVE = "native"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
+CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
 CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
 
@@ -284,7 +286,7 @@ class GraalPythonVm(GuestVm):
 
     def run(self, cwd, args):
         _check_vm_args(self.name(), args)
-        extra_polyglot_args = ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
+        extra_polyglot_args = ["--experimental-options", "-snapshot-startup", "--python.MaxNativeMemory=%s" % (2**34)] + self._extra_polyglot_args
 
         host_vm = self.host_vm()
         if hasattr(host_vm, 'run_lang'): # this is a full GraalVM build
@@ -601,3 +603,58 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: {bench: args, ... }, ...}"
         return [cls(suite_name, suite_info[0]) for suite_name, suite_info in benchmarks.items()]
+
+
+class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
+    def rules(self, output, benchmarks, bm_suite_args):
+        bench_name = self.get_bench_name(benchmarks)
+        arg = self.get_arg(bench_name)
+
+        return [
+            # startup (difference between start of VM to end of first iteration)
+            StdOutRule(
+                r"### STARTUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "startup",
+                    "metric.iteration": ("<iteration>", int),
+                    "metric.type": "numeric",
+                    "metric.value": ("<time>", float),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
+
+            StdOutRule(
+                r"### EARLY WARMUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "early-warmup",
+                    "metric.iteration": ("<iteration>", int),
+                    "metric.type": "numeric",
+                    "metric.value": ("<time>", float),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
+
+            StdOutRule(
+                r"### LATE WARMUP +at iteration: (?P<iteration>[0-9]+), +duration: (?P<time>[0-9]+(\.[0-9]+)?$)",
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "late-warmup",
+                    "metric.iteration": ("<iteration>", int),
+                    "metric.type": "numeric",
+                    "metric.value": ("<time>", float),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
+        ]
+

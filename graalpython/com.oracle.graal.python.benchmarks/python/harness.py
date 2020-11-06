@@ -37,13 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from time import time
+
+# Capture module load time as soon as possible for other engines. The unit is seconds.
+_module_start_time = time()
+
 import _io
 import os
 import sys
 import types
-from time import time
 
+GRAALPYTHON = sys.implementation.name == "graalpython"
 
+# Try to use the timer with best accuracy. Unfortunately, 'monotonic_ns' is not available everywhere.
+if GRAALPYTHON:
+    from time import monotonic_ns
+    monotonic_best_accuracy = monotonic_ns
+    UNITS_PER_SECOND = 1e9
+else:
+    monotonic_best_accuracy = time
+    UNITS_PER_SECOND = 1.0
+    
 _HRULE = '-'.join(['' for i in range(80)])
 
 #: this function is used to pre-process the arguments as expected by the __benchmark__ and __setup__ entry points
@@ -56,6 +70,13 @@ ATTR_BENCHMARK = '__benchmark__'
 ATTR_CLEANUP = '__cleanup__'
 #: performs any teardown needed in the benchmark
 ATTR_TEARDOWN = '__teardown__'
+
+
+def get_seconds_since_startup(cur_time):
+    if GRAALPYTHON and __graalpython__.startup_nano != -1:
+        return (cur_time - __graalpython__.startup_nano) / UNITS_PER_SECOND
+    # note: the unit of _module_start_time is seconds
+    return cur_time / UNITS_PER_SECOND - _module_start_time
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -195,7 +216,7 @@ def _as_int(value):
 
 
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -213,6 +234,7 @@ class BenchRunner(object):
         self.iterations = 1 if self._run_once else _iterations
         self.warmup_runs = warmup_runs if warmup_runs > 0 else 0
         self.warmup = warmup if warmup > 0 else -1
+        self.startup = startup
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -271,7 +293,12 @@ class BenchRunner(object):
         self._call_attr(ATTR_SETUP, *args)
         print("### start benchmark ... ")
 
+        report_startup = self.startup
+
         bench_func = self._get_attr(ATTR_BENCHMARK)
+        startup_s = -1.0
+        early_warmup_s = -1.0
+        late_warmup_s = -1.0
         durations = []
         if bench_func and hasattr(bench_func, '__call__'):
             if self.warmup_runs:
@@ -283,7 +310,14 @@ class BenchRunner(object):
             for iteration in range(self.iterations):
                 start = time()
                 bench_func(*args)
+                cur_time = monotonic_best_accuracy()
                 duration = time() - start
+                if report_startup and startup_s < 0.0 and iteration == self.startup[0] - 1:
+                    startup_s = get_seconds_since_startup(cur_time)
+                if report_startup and early_warmup_s < 0.0 and iteration == self.startup[1] - 1:
+                    early_warmup_s = get_seconds_since_startup(cur_time)
+                if report_startup and late_warmup_s < 0 and iteration == self.startup[2] - 1:
+                    late_warmup_s = get_seconds_since_startup(cur_time)
                 durations.append(duration)
                 duration_str = "%.3f" % duration
                 self._call_attr(ATTR_CLEANUP, *args)
@@ -311,6 +345,11 @@ class BenchRunner(object):
         print(_HRULE)
 
         # summary
+        # We can do that only on Graalpython
+        if report_startup:
+            print("### STARTUP at iteration: %d, duration: %.3f" % (self.startup[0], startup_s))
+            print("### EARLY WARMUP at iteration: %d, duration: %.3f" % (self.startup[1], early_warmup_s))
+            print("### LATE WARMUP at iteration: %d, duration: %.3f" % (self.startup[2], late_warmup_s))
         if self._run_once:
             print("### SINGLE RUN        duration: %.3f s" % durations[0])
         else:
@@ -333,6 +372,9 @@ class BenchRunner(object):
             else:
                 print("### WARMUP iteration not specified or could not be detected")
 
+            if GRAALPYTHON and self.startup and __graalpython__.startup_nano == -1:
+                print("### NOTE: enable startup time snapshotting to increase accuracy.")
+
         print(_HRULE)
         print("### RAW DURATIONS: %s" % str(durations))
         print(_HRULE)
@@ -342,6 +384,7 @@ def run_benchmark(args):
     warmup = -1
     warmup_runs = 0
     iterations = 1
+    startup = None
     bench_file = None
     bench_args = []
     paths = []
@@ -367,6 +410,13 @@ def run_benchmark(args):
         elif arg.startswith("--warmup-runs"):
             warmup_runs = _as_int(arg.split("=")[1])
 
+        elif arg.startswith('--startup'):
+            try:
+                itrs = arg.split("=")[1].split(",")
+                startup = (int(itrs[0]), int(itrs[1]), int(itrs[2]))
+            except:
+                raise TypeError("incorrect argument; must be in form of '-s 1,10,100'")
+
         elif arg == '-p':
             i += 1
             paths = args[i].split(",")
@@ -379,6 +429,11 @@ def run_benchmark(args):
             bench_args.append(arg)
         i += 1
 
+    min_required_iterations = max(startup) if startup else 0
+    if startup and iterations < min_required_iterations:
+        print("### WARNING: you've specified less iterations than required to measure the startup. Overriding iterations with %d" % min_required_iterations)
+        iterations = min_required_iterations
+
     # set the paths if specified
     print(_HRULE)
     sys.path.append(os.path.split(bench_file)[0])
@@ -389,7 +444,7 @@ def run_benchmark(args):
     else:
         print("### no extra module search paths specified")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup).run()
 
 
 if __name__ == '__main__':

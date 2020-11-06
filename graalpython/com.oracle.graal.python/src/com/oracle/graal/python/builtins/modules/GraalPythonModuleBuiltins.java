@@ -145,6 +145,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
         this.builtinConstants.put("stdio_encoding", standardStreamEncoding);
         this.builtinConstants.put("stdio_error", standardStreamError);
+        this.builtinConstants.put("startup_wall_clock_ts", -1L);
+        this.builtinConstants.put("startup_nano", -1L);
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize(core);
     }
@@ -508,6 +510,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         boolean typeCheck(Object instance, Object cls,
                         @CachedLibrary("instance") PythonObjectLibrary lib) {
             return lib.typeCheck(instance, cls);
+        }
+    }
+
+    @Builtin(name = "time_millis", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1, doc = "Like time.time() but in milliseconds resolution.")
+    @GenerateNodeFactory
+    public abstract static class TimeMillis extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static long doIt(@SuppressWarnings("unused") Object dummy) {
+            return System.currentTimeMillis();
         }
     }
 }

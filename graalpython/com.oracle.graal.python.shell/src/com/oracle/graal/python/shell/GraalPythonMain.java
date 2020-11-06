@@ -62,6 +62,12 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
+        if (GraalPythonMain.startupNanoTime == -1) {
+            GraalPythonMain.startupNanoTime = System.nanoTime();
+        }
+        if (GraalPythonMain.startupWallClockTime == -1) {
+            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
+        }
         new GraalPythonMain().launch(args);
     }
 
@@ -70,6 +76,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
     // provided by GraalVM bash launchers, ignored in native image mode
     private static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
+
+    private static long startupWallClockTime = -1;
+    private static long startupNanoTime = -1;
 
     private ArrayList<String> programArgs = null;
     private String commandString = null;
@@ -84,6 +93,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private final boolean stdinIsInteractive = System.console() != null;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
+    private boolean snaptshotStartup = false;
     private VersionAction versionAction = VersionAction.None;
     private List<String> givenArguments;
     private List<String> relaunchArgs;
@@ -246,6 +256,13 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "--check-hash-based-pycs":
                     i += 1;
                     checkHashPycsMode = arguments.get(i);
+                    break;
+                case "-snapshot-startup":
+                    if (wantsExperimental) {
+                        snaptshotStartup = true;
+                    } else {
+                        unrecognized.add(arg);
+                    }
                     break;
                 default:
                     if (!arg.startsWith("-")) {
@@ -473,6 +490,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         int rc = 1;
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
+
+            if (snaptshotStartup) {
+                evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
+            }
 
             if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && stdinIsInteractive))) {
                 print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());

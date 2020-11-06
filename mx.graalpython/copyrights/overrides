@@ -53,6 +53,9 @@ graalpython/com.oracle.graal.python.benchmarks/python/micro/object-layout-change
 graalpython/com.oracle.graal.python.benchmarks/python/micro/special-add-int-sized.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/special-add-sized.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/special-len.py,zippy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/warmup/binarytrees3.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/warmup/gcbench.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/warmup/pads-integerpartitions.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.cext/include/abstract.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/boolobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytearrayobject.h,python.copyright
