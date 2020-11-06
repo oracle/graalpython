@@ -124,6 +124,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public String getBackend() {
+        return lib.getNfiBackend() == NFIBackend.LLVM ? "llvm" : "native";
+    }
+
+    @ExportMessage
     public String strerror(int errorCode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         // From man pages: The GNU C Library uses a buffer of 1024 characters for strerror().

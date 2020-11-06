@@ -60,6 +60,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public static final int O_CLOEXEC = 524288;
 
+    public abstract String getBackend(Object recevier);
+
     public abstract String strerror(Object receiver, int errorCode);
 
     public abstract long getpid(Object receiver);

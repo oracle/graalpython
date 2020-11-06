@@ -129,6 +129,10 @@ public class NativeLibrary {
         this.noNativeAccessHelp = noNativeAccessHelp;
     }
 
+    public NFIBackend getNfiBackend() {
+        return nfiBackend;
+    }
+
     private Object getCachedLibrary(PythonContext context) {
         if (cachedLibrary == null) {
             // This should be a one-off thing for each context

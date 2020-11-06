@@ -216,6 +216,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    public String getBackend() {
+        return "java";
+    }
+
+    @ExportMessage
     @ImportStatic(ImageInfo.class)
     public static class Getpid {
         @Specialization(rewriteOn = Exception.class)
