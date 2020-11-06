@@ -144,6 +144,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
                         @Cached ConditionProfile surrogateescapeProfile,
+                        @Cached ConditionProfile xmlcharrefreplaceProfile,
                         @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             boolean fixed;
@@ -157,6 +158,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     fixed = surrogatepass(encoder);
                 } else if (surrogateescapeProfile.profile(SURROGATEESCAPE.equals(errorAction))) {
                     fixed = surrogateescape(encoder);
+                } else if (xmlcharrefreplaceProfile.profile(XMLCHARREFREPLACE.equals(errorAction))) {
+                    fixed = xmlcharrefreplace(encoder);
                 } else {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
                 }
@@ -231,6 +234,72 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 i += Character.charCount(ch);
             }
             encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
+            return true;
+        }
+
+        @TruffleBoundary
+        private static boolean xmlcharrefreplace(TruffleEncoder encoder) {
+            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
+            int size = 0;
+            for (int i = 0; i < encoder.getErrorLength(); ++i) {
+                // object is guaranteed to be "ready"
+                int ch = p.codePointAt(i);
+                if (ch < 10) {
+                    size += 2 + 1 + 1;
+                } else if (ch < 100) {
+                    size += 2 + 2 + 1;
+                } else if (ch < 1000) {
+                    size += 2 + 3 + 1;
+                } else if (ch < 10000) {
+                    size += 2 + 4 + 1;
+                } else if (ch < 100000) {
+                    size += 2 + 5 + 1;
+                } else if (ch < 1000000) {
+                    size += 2 + 6 + 1;
+                } else {
+                    size += 2 + 7 + 1;
+                }
+            }
+
+            byte[] replacement = new byte[size];
+            int consumed = 0;
+            // generate replacement
+            for (int i = 0; i < p.length(); ++i) {
+                int digits;
+                int base;
+                int ch = p.codePointAt(i);
+                replacement[consumed++] = '&';
+                replacement[consumed++] = '#';
+                if (ch < 10) {
+                    digits = 1;
+                    base = 1;
+                } else if (ch < 100) {
+                    digits = 2;
+                    base = 10;
+                } else if (ch < 1000) {
+                    digits = 3;
+                    base = 100;
+                } else if (ch < 10000) {
+                    digits = 4;
+                    base = 1000;
+                } else if (ch < 100000) {
+                    digits = 5;
+                    base = 10000;
+                } else if (ch < 1000000) {
+                    digits = 6;
+                    base = 100000;
+                } else {
+                    digits = 7;
+                    base = 1000000;
+                }
+                while (digits-- > 0) {
+                    replacement[consumed++] = (byte) ('0' + ch / base);
+                    ch %= base;
+                    base /= 10;
+                }
+                replacement[consumed++] = ';';
+            }
+            encoder.replace(encoder.getErrorLength(), replacement, 0, consumed);
             return true;
         }
 
@@ -369,13 +438,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     break;
                 case REPLACE:
                 case NAMEREPLACE:
-                case XMLCHARREFREPLACE:
                     errorAction = CodingErrorAction.REPLACE;
                     break;
                 case STRICT:
                 case BACKSLASHREPLACE:
                 case SURROGATEPASS:
                 case SURROGATEESCAPE:
+                case XMLCHARREFREPLACE:
                 default:
                     // Everything else will be handled by our Handle nodes
                     errorAction = CodingErrorAction.REPORT;
