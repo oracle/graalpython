@@ -59,6 +59,11 @@
 #include <unistd.h>
 
 
+// TODO remove this once we properly synchronize constants between Java and C
+static int fixDirFd(int dirFd) {
+    return dirFd == -100 ? AT_FDCWD : dirFd;
+}
+
 int64_t call_getpid() {
     return getpid();
 }
@@ -93,7 +98,7 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
 }
 
 int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
-    return openat(dirFd, pathname, flags, mode);
+    return openat(fixDirFd(dirFd), pathname, flags, mode);
 }
 
 int32_t call_close(int32_t fd) {
@@ -219,7 +224,7 @@ static void stat_struct_to_longs(struct stat *st, int64_t *out) {
 
 int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
     struct stat st;
-    int result = fstatat(dirFd, path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    int result = fstatat(fixDirFd(dirFd), path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
     }
@@ -249,11 +254,11 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
 }
 
 int32_t call_unlinkat(int32_t dirFd, const char *pathname) {
-    return unlinkat(dirFd, pathname, 0);
+    return unlinkat(fixDirFd(dirFd), pathname, 0);
 }
 
 int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
-    return symlinkat(target, dirFd, linkpath);
+    return symlinkat(target, fixDirFd(dirFd), linkpath);
 }
 
 int32_t get_errno() {
