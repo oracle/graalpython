@@ -1,5 +1,5 @@
 {
-    "warmup:binarytrees3": 3,
-    "warmup:gcbench": 3,
-    "warmup:pads-integerpartitions": 3
+    "python-warmup:binarytrees3": 3,
+    "python-warmup:gcbench": 3,
+    "python-warmup:pads-integerpartitions": 3
 }
