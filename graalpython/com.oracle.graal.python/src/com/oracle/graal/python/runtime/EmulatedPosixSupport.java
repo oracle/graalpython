@@ -216,6 +216,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public String getBackend() {
         return "java";
     }
