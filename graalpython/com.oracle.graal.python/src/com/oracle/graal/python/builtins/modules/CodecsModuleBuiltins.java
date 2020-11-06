@@ -143,6 +143,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile strictProfile,
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
+                        @Cached ConditionProfile surrogateescapeProfile,
                         @Cached RaiseEncodingErrorNode raiseEncodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             boolean fixed;
@@ -154,6 +155,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     fixed = backslashreplace(encoder);
                 } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
                     fixed = surrogatepass(encoder);
+                } else if (surrogateescapeProfile.profile(SURROGATEESCAPE.equals(errorAction))) {
+                    fixed = surrogateescape(encoder);
                 } else {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
                 }
@@ -213,6 +216,24 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
+        @TruffleBoundary
+        private static boolean surrogateescape(TruffleEncoder encoder) {
+            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
+            byte[] replacement = new byte[p.length()];
+            int outp = 0;
+            for (int i = 0; i < p.length();) {
+                int ch = p.codePointAt(i);
+                if (!(0xDC80 <= ch && ch <= 0xDCFF)) {
+                    // Not a surrogate
+                    return false;
+                }
+                replacement[outp++] = (byte) (ch - 0xdc00);
+                i += Character.charCount(ch);
+            }
+            encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
+            return true;
+        }
+
         public static HandleEncodingErrorNode create() {
             return CodecsModuleBuiltinsFactory.HandleEncodingErrorNodeGen.create();
         }
@@ -250,6 +271,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile strictProfile,
                         @Cached ConditionProfile backslashreplaceProfile,
                         @Cached ConditionProfile surrogatepassProfile,
+                        @Cached ConditionProfile surrogateescapeProfile,
                         @Cached RaiseDecodingErrorNode raiseDecodingErrorNode,
                         @Cached PRaiseNode raiseNode) {
             boolean fixed;
@@ -261,6 +283,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     fixed = backslashreplace(decoder);
                 } else if (surrogatepassProfile.profile(SURROGATEPASS.equals(errorAction))) {
                     fixed = surrogatepass(decoder);
+                } else if (surrogateescapeProfile.profile(SURROGATEESCAPE.equals(errorAction))) {
+                    fixed = surrogateescape(decoder);
                 } else {
                     throw raiseNode.raise(LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
                 }
@@ -308,6 +332,27 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
+        @TruffleBoundary
+        private static boolean surrogateescape(TruffleDecoder decoder) {
+            int errorLength = decoder.getErrorLength();
+            // decode up to 4 bytes
+            int consumed = 0;
+            boolean replaced = false;
+            byte[] inputBytes = decoder.getInputBytes(errorLength);
+            while (consumed < 4 && consumed < errorLength) {
+                int b = inputBytes[consumed] & 0xff;
+                // Refuse to escape ASCII bytes.
+                if (b < 128) {
+                    break;
+                }
+                int codePoint = 0xdc00 + b;
+                decoder.replace(1, Character.toChars(codePoint));
+                replaced = true;
+                consumed += 1;
+            }
+            return replaced;
+        }
+
         public static HandleDecodingErrorNode create() {
             return CodecsModuleBuiltinsFactory.HandleDecodingErrorNodeGen.create();
         }
@@ -323,7 +368,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     errorAction = CodingErrorAction.IGNORE;
                     break;
                 case REPLACE:
-                case SURROGATEESCAPE:
                 case NAMEREPLACE:
                 case XMLCHARREFREPLACE:
                     errorAction = CodingErrorAction.REPLACE;
@@ -331,6 +375,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 case STRICT:
                 case BACKSLASHREPLACE:
                 case SURROGATEPASS:
+                case SURROGATEESCAPE:
                 default:
                     // Everything else will be handled by our Handle nodes
                     errorAction = CodingErrorAction.REPORT;
