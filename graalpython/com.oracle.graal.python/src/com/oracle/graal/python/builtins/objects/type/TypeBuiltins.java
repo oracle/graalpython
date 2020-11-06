@@ -852,12 +852,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -943,6 +943,16 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
 
+        @Specialization(guards = "!isNoValue(value)")
+        Object setModuleType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setModuleBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
         @TruffleBoundary
         private static Object getModuleName(String fqname) {
             int firstDotIdx = fqname.indexOf('.');
@@ -967,7 +977,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -1026,12 +1036,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -1118,12 +1128,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
