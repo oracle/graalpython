@@ -43,23 +43,23 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BUFFER_R;
-import static com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols.FUN_GET_BUFFER_RW;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_BUFFER_R;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols.FUN_GET_BUFFER_RW;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeComplexNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativePrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetLLVMType;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativeComplexNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsNativePrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.PCallCExtFunction;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ConvertArgNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNodeFactory.ParseTupleAndKeywordsNodeGen;
@@ -76,8 +76,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -949,12 +947,12 @@ public abstract class CExtParseArgumentsNode {
         static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode) throws InteropException, ParseArgumentsException {
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                // TODO(fa) refactor 'CastToBooleanNode' to provide uncached version and use it
-                writeOutVarNode.writeInt32(varargs, state.outIndex, LookupAndCallUnaryDynamicNode.getUncached().executeObject(arg, SpecialMethodNames.__BOOL__));
+                writeOutVarNode.writeInt32(varargs, state.outIndex, lib.isTrue(arg) ? 1 : 0);
             }
             return state.incrementOutIndex();
         }
@@ -1023,13 +1021,18 @@ public abstract class CExtParseArgumentsNode {
         static Object doNoKeywords(ParserState state, Object kwds, Object kwdnames, boolean keywordsOnly,
                         @Shared("lenNode") @Cached SequenceNodes.LenNode lenNode,
                         @Shared("getSequenceStorageNode") @Cached GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
+                        @Shared("getItemNode") @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) {
 
             Object out = null;
             assert !keywordsOnly;
             int l = lenNode.execute(state.v.argv);
             if (state.v.argnum < l) {
                 out = getItemNode.execute(getSequenceStorageNode.execute(state.v.argv), state.v.argnum);
+            }
+            if (out == null && !state.restOptional) {
+                raiseNode.raiseIntWithoutFrame(0, TypeError, "%s missing required argument (pos %d)", state.funName, state.v.argnum);
+                throw ParseArgumentsException.raise();
             }
             state.v.argnum++;
             return out;
@@ -1043,7 +1046,8 @@ public abstract class CExtParseArgumentsNode {
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorageNode,
                         @CachedLibrary(limit = "1") InteropLibrary kwdnamesLib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                        @Cached PCallCExtFunction callCStringToString) throws InteropException {
+                        @Cached PCallCExtFunction callCStringToString,
+                        @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException {
 
             Object out = null;
             if (!keywordsOnly) {
@@ -1063,6 +1067,10 @@ public abstract class CExtParseArgumentsNode {
                     // the guards)
                     out = lib.getItem(getDictStorageNode.execute((PDict) kwds), kwdname);
                 }
+            }
+            if (out == null && !state.restOptional) {
+                raiseNode.raiseIntWithoutFrame(0, TypeError, "%s missing required argument (pos %d)", state.funName, state.v.argnum);
+                throw ParseArgumentsException.raise();
             }
             state.v.argnum++;
             return out;

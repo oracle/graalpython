@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_class_var_with_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_classvar_default_factory
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_compare_subclasses
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_dataclassses_pickleable
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_default_factory
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_default_factory_derived
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_default_factory_not_called_if_value_given
@@ -19,7 +20,9 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_eq_order
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_default_default_factory_error
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_custom_mapping
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_default
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_metadata_mapping
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_like_builtin
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_like_builtin_frozen
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_named_object

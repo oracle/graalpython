@@ -45,9 +45,14 @@ __dir__ = __file__.rpartition("/")[0]
 def _reference_get_item(args):
     try:
         d = args[0]
-        return d[args[1]]
-    except:
-        raise SystemError
+        return d.get(args[1])
+    except Exception:
+        return None
+
+
+def _reference_get_item_with_error(args):
+    d = args[0]
+    return d.get(args[1])
 
 
 def _reference_set_item(args):
@@ -136,6 +141,17 @@ def fresh_dict():
     return ExampleDict
 
 
+class BadEq:
+    def __init__(self, s):
+        self.s = s
+
+    def __eq__(self, other):
+        raise RuntimeError("boom")
+
+    def __hash__(self):
+        return hash(self.s)
+
+
 class TestPyDict(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -160,15 +176,41 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_GetItem
     test_PyDict_GetItem = CPyExtFunction(
         _reference_get_item,
-        lambda: (({}, "a", "dflt"), ({'a': "hello"}, "a", "dflt"), ({'a': "hello"}, "b", "dflt")),
-        code='''PyObject* wrap_PyDict_GetItem(PyObject* dict, PyObject* key, PyObject* defaultVal) {
+        lambda: (({}, "a"), ({'a': "hello"}, "a"), ({'a': "hello"}, "b"), ({BadEq('a'): "hello"}, "a")),
+        code='''PyObject* wrap_PyDict_GetItem(PyObject* dict, PyObject* key) {
             PyObject* result = PyDict_GetItem(dict, key);
-            return result;
+            if (result != NULL) {
+                Py_INCREF(result);
+                return result;
+            }
+            Py_RETURN_NONE;
         }''',
         resultspec="O",
-        argspec='OOO',
-        arguments=("PyObject* dict", "PyObject* key", "PyObject* defaultVal"),
+        argspec='OO',
+        arguments=("PyObject* dict", "PyObject* key"),
         callfunction="wrap_PyDict_GetItem",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_GetItemWithError
+    test_PyDict_GetItemWithError = CPyExtFunction(
+        _reference_get_item_with_error,
+        lambda: (({}, "a"), ({'a': "hello"}, "a"), ({'a': "hello"}, "b"), ({BadEq('a'): "hello"}, "a")),
+        code='''PyObject* wrap_PyDict_GetItemWithError(PyObject* dict, PyObject* key) {
+            PyObject* result = PyDict_GetItemWithError(dict, key);
+            if (result != NULL) {
+                Py_INCREF(result);
+                return result;
+            }
+            if (PyErr_Occurred()) {
+                return NULL;
+            }
+            Py_RETURN_NONE;
+        }''',
+        resultspec="O",
+        argspec='OO',
+        arguments=("PyObject* dict", "PyObject* key"),
+        callfunction="wrap_PyDict_GetItemWithError",
         cmpfunc=unhandled_error_compare
     )
 
@@ -194,20 +236,45 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_GetItemString
     test_PyDict_GetItemString = CPyExtFunctionOutVars(
         _reference_get_item,
-        lambda: (({}, "a", "dflt"), ({'a': "hello"}, "a", "dflt"), ({'a': "hello"}, "b", "dflt")),
-        code='''PyObject* wrap_PyDict_GetItemString(PyObject* dict, char* key, PyObject* defaultValue) {
+        lambda: (({}, "a"), ({'a': "hello"}, "a"), ({'a': "hello"}, "b"), ({BadEq('a'): "hello"}, "a")),
+        code='''PyObject* wrap_PyDict_GetItemString(PyObject* dict, char* key) {
             PyObject* result = PyDict_GetItemString(dict, key);
             if (result != NULL) {
                 Py_INCREF(result);
+                return result;
             }
-            return result;
+            Py_RETURN_NONE;
         }
         ''',
         resultspec="O",
-        argspec='OsO',
-        arguments=("PyObject* dict", "char* key", "PyObject* defaultValue"),
+        argspec='Os',
+        arguments=("PyObject* dict", "char* key"),
         resulttype="PyObject*",
         callfunction="wrap_PyDict_GetItemString",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # _PyDict_GetItemStringWithError
+    test_PyDict_GetItemStringWithError = CPyExtFunctionOutVars(
+        _reference_get_item_with_error,
+        lambda: (({}, "a"), ({'a': "hello"}, "a"), ({'a': "hello"}, "b"), ({BadEq('a'): "hello"}, "a")),
+        code='''PyObject* wrap_PyDict_GetItemStringWithError(PyObject* dict, char* key) {
+            PyObject* result = _PyDict_GetItemStringWithError(dict, key);
+            if (result != NULL) {
+                Py_INCREF(result);
+                return result;
+            }
+            if (PyErr_Occurred()) {
+                return NULL;
+            }
+            Py_RETURN_NONE;
+        }
+        ''',
+        resultspec="O",
+        argspec='Os',
+        arguments=("PyObject* dict", "char* key"),
+        resulttype="PyObject*",
+        callfunction="wrap_PyDict_GetItemStringWithError",
         cmpfunc=unhandled_error_compare
     )
 

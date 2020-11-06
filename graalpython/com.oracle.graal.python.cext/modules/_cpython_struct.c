@@ -19,6 +19,11 @@
 class Struct "PyStructObject *" "&PyStructType"
 [clinic start generated code]*/
 /*[clinic end generated code: output=da39a3ee5e6b4b0d input=9b032058a83ed7c3]*/
+/* name of this module, minus the leading underscore */
+#if !defined(STRUCT_MODULE)
+#define STRUCT_MODULE "cpython_struct"
+#endif
+
 
 static PyTypeObject PyStructType;
 
@@ -2320,7 +2325,7 @@ The variable struct.error is an exception raised on errors.\n");
 
 static struct PyModuleDef _structmodule = {
     PyModuleDef_HEAD_INIT,
-    "_struct",
+    "_" STRUCT_MODULE,
     module_doc,
     -1,
     module_functions,

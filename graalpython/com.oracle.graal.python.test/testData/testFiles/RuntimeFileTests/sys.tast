@@ -74,26 +74,25 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         PythonCallNodeGen SourceSection: [2242,2406]`SimpleNamespace(↵   ...`
                           CallNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              StringLiteralNode SourceSection: [2272,2285]`"graalpython"`
-                            KeywordLiteralNode SourceSection: None
-                              StringLiteralNode SourceSection: [2305,2318]`"graalpython"`
-                            KeywordLiteralNode SourceSection: None
-                              PythonCallUnary SourceSection: [2336,2367]`version_info_type(ve...`
-                                CallUnaryMethodNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [2336,2353]`version_info_type`
-                                  Frame: [2,version_info_type,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [2354,2366]`version_info`
-                                  Identifier: version_info
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                StringLiteralNode SourceSection: [2272,2285]`"graalpython"`
+                              KeywordLiteralNode SourceSection: None
+                                StringLiteralNode SourceSection: [2305,2318]`"graalpython"`
+                              KeywordLiteralNode SourceSection: None
+                                PythonCallUnary SourceSection: [2336,2367]`version_info_type(ve...`
+                                  CallUnaryMethodNodeGen SourceSection: None
+                                  ReadLocalVariableNode SourceSection: [2336,2353]`version_info_type`
+                                    Frame: [2,version_info_type,Illegal]
+                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                  ReadGlobalOrBuiltinNodeGen SourceSection: [2354,2366]`version_info`
+                                    Identifier: version_info
+                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [2388,2400]`__gmultiarch`
+                                  Identifier: __gmultiarch
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [2388,2400]`__gmultiarch`
-                                Identifier: __gmultiarch
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadLocalVariableNode SourceSection: [2242,2257]`SimpleNamespace`
                             Frame: [0,SimpleNamespace,Illegal]
                             ReadVariableFromFrameNodeGen SourceSection: None
@@ -366,26 +365,25 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                               PythonCallNodeGen SourceSection: [3171,3235]`get_set_descriptor(f...`
                                 CallNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    PythonCallUnary SourceSection: [3195,3207]`make_func(i)`
-                                      CallUnaryMethodNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [3195,3204]`make_func`
-                                        Frame: [4,make_func,Illegal]
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      PythonCallUnary SourceSection: [3195,3207]`make_func(i)`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [3195,3204]`make_func`
+                                          Frame: [4,make_func,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                        ReadLocalVariableNode SourceSection: [3205,3206]`i`
+                                          Frame: [5,i,Illegal]
+                                          ReadVariableFromFrameNodeGen SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [3214,3215]`f`
+                                        Frame: [6,f,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                      ReadLocalVariableNode SourceSection: [3205,3206]`i`
-                                        Frame: [5,i,Illegal]
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [3223,3234]`flags_class`
+                                        Frame: [3,flags_class,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [3214,3215]`f`
-                                      Frame: [6,f,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [3223,3234]`flags_class`
-                                      Frame: [3,flags_class,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                  EmptyNode SourceSection: None
                                 ReadLocalVariableNode SourceSection: [3171,3189]`get_set_descriptor`
                                   Frame: [1,get_set_descriptor,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -760,13 +758,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       CallNodeGen SourceSection: None
                                       StringLiteralNode SourceSection: [4636,4672]`"Traceback (most rec...`
                                       KeywordArgumentsNodeGen SourceSection: None
-                                        KeywordLiteralNode SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [4679,4685]`stderr`
-                                            Identifier: stderr
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        CompactKeywordsNodeGen SourceSection: None
-                                        ExecuteKeywordStarargsNodeGen SourceSection: None
-                                          EmptyNode SourceSection: None
+                                        ExecuteKeywordArgumentsNode SourceSection: None
+                                          KeywordLiteralNode SourceSection: None
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [4679,4685]`stderr`
+                                              Identifier: stderr
+                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        EmptyNode SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4630,4635]`print`
                                         Identifier: print
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -872,13 +869,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                           ReadVariableFromFrameNodeGen SourceSection: None
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [4940,4946]`stderr`
-                                                    Identifier: stderr
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [4940,4946]`stderr`
+                                                      Identifier: stderr
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [4759,4764]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -946,13 +942,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonObjectFactoryNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          KeywordLiteralNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [5076,5082]`stderr`
-                                              Identifier: stderr
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                            KeywordLiteralNode SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5076,5082]`stderr`
+                                                Identifier: stderr
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5025,5030]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -976,13 +971,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                               Frame: [0,e,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          KeywordLiteralNode SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [5143,5149]`stderr`
-                                              Identifier: stderr
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                            KeywordLiteralNode SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [5143,5149]`stderr`
+                                                Identifier: stderr
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [5110,5115]`print`
                                           Identifier: print
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1071,13 +1065,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5348,5376]`"Error in sys.except...`
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5383,5389]`stderr`
-                                                    Identifier: stderr
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [5383,5389]`stderr`
+                                                      Identifier: stderr
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5342,5347]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1097,13 +1090,12 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                               CallNodeGen SourceSection: None
                                               StringLiteralNode SourceSection: [5449,5478]`"\nOriginal exceptio...`
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [5485,5491]`stderr`
-                                                    Identifier: stderr
-                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [5485,5491]`stderr`
+                                                      Identifier: stderr
+                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                EmptyNode SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [5443,5448]`print`
                                                 Identifier: print
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1419,11 +1411,10 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                 ReadVariableFromFrameNodeGen SourceSection: None
                               ExecutePositionalStarargsNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                ReadLocalVariableNode SourceSection: [6424,6427]`kws`
-                                  Frame: [1,kws,Illegal]
-                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                              ReadLocalVariableNode SourceSection: [6424,6427]`kws`
+                                Frame: [1,kws,Illegal]
+                                ReadVariableFromFrameNodeGen SourceSection: None
                             ReadLocalVariableNode SourceSection: [6410,6414]`hook`
                               Frame: [10,hook,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None

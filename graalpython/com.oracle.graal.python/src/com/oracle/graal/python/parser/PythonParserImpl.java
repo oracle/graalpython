@@ -33,6 +33,10 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -394,8 +398,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
-        if (e instanceof PException && ((PException) e).isSyntaxError()) {
-            throw (PException) e;
+        try {
+            if (e instanceof PException && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                throw (PException) e;
+            }
+        } catch (UnsupportedMessageException unsupportedMessageException) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
         SourceSection section = PythonErrorStrategy.getPosition(source, e);
         // from parser we are getting RuntimeExceptions

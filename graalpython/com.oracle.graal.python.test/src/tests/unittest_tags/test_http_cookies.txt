@@ -24,3 +24,4 @@
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_setitem
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_setter
 *graalpython.lib-python.3.test.test_http_cookies.MorselTests.test_update
+*graalpython.lib-python.3.test.test_http_cookies.TestMain.test_main

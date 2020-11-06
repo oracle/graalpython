@@ -46,7 +46,6 @@ import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -96,7 +95,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
             if (shouldCatchJavaExceptions() && getContext().getEnv().isHostException(e)) {
-                boolean handled = catchException(frame, (TruffleException) e);
+                boolean handled = catchException(frame, e);
                 if (handled) {
                     return;
                 }
@@ -116,7 +115,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    private boolean catchException(VirtualFrame frame, TruffleException exception) {
+    private boolean catchException(VirtualFrame frame, Throwable exception) {
         try {
             for (ExceptNode exceptNode : exceptNodes) {
                 if (everMatched.profile(exceptNode.matchesException(frame, exception))) {

@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.ThrowData;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.GeneratorInfo;
@@ -57,12 +58,11 @@ public class YieldNode extends AbstractYieldNode implements GeneratorControlNode
             if (specialArgument == null) {
                 gotNothing.enter();
                 return PNone.NONE;
-            } else if (specialArgument instanceof PException) {
+            } else if (specialArgument instanceof ThrowData) {
                 gotException.enter();
-                PException exception = (PException) specialArgument;
+                ThrowData throwData = (ThrowData) specialArgument;
                 // The exception needs to appear as if raised from the yield
-                ((PException) specialArgument).setLocation(this);
-                throw exception;
+                throw PException.fromObject(throwData.pythonException, this, throwData.withJavaStacktrace);
             } else {
                 gotValue.enter();
                 return specialArgument;

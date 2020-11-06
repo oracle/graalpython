@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2020, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -19,11 +19,11 @@ PAGESIZE = mmap.PAGESIZE
 
 class MmapTests(unittest.TestCase):
 
-    def setUp(self):
+    def setUpClass(self):
         if os.path.exists(TESTFN):
             os.unlink(TESTFN)
 
-    def tearDown(self):
+    def tearDownClass(self):
         try:
             os.unlink(TESTFN)
         except OSError:

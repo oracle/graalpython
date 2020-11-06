@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,13 +95,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         Object reprBuiltinFunction(VirtualFrame frame, PMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
             // (tfel): this only happens for builtin modules ... I think
-            return strFormat("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+            return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
         String reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode) {
-            return strFormat("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+            return PythonUtils.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
@@ -109,7 +110,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
+            return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)", limit = "3")
@@ -118,12 +119,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
                         @Cached("create()") GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
-            return strFormat("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
-        }
-
-        @TruffleBoundary
-        private static String strFormat(String fmt, Object... objects) {
-            return String.format(fmt, objects);
+            return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
 
         protected static GetAttributeNode createGetAttributeNode() {
@@ -277,12 +273,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
             }
 
-            return getQualNameGeneric(typeQualName, methodName);
-        }
-
-        @TruffleBoundary
-        private static Object getQualNameGeneric(String typeQualName, String name) {
-            return String.format("%s.%s", typeQualName, name);
+            return PythonUtils.format("%s.%s", typeQualName, methodName);
         }
     }
 }

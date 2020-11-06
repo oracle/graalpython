@@ -61,6 +61,7 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                                       ReadVariableFromFrameNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [58,59]`1`
                                       Value: 1
+                                    ObjectLiteralNode SourceSection: None
                                 IfNode SourceSection: [68,112]`if count >= 3:â†µ     ...`
                                   YesNodeGen SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None

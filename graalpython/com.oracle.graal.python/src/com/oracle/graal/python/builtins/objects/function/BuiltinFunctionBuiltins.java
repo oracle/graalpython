@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -66,16 +67,14 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
-        @TruffleBoundary
         Object reprModuleFunction(PBuiltinFunction self) {
             // (tfel): these really shouldn't be accessible, I think
-            return String.format("<built-in function %s>", self.getName());
+            return PythonUtils.format("<built-in function %s>", self.getName());
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
-        @TruffleBoundary
         Object reprClassFunction(PBuiltinFunction self) {
-            return String.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
+            return PythonUtils.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }
 

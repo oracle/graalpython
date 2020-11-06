@@ -13,6 +13,7 @@
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_header
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_help
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_huntrleaks
+*graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_ignore
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_long_option__partial
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_match
 *graalpython.lib-python.3.test.test_regrtest.ParseArgsTestCase.test_memlimit

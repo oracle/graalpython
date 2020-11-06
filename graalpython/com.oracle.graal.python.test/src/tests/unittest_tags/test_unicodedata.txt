@@ -1,5 +1,7 @@
+*graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_category
 *graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_issue10254
 *graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_normalize
 *graalpython.lib-python.3.test.test_unicodedata.UnicodeFunctionsTest.test_pr29
 *graalpython.lib-python.3.test.test_unicodedata.UnicodeMiscTest.test_bug_1704793
+*graalpython.lib-python.3.test.test_unicodedata.UnicodeMiscTest.test_bug_4971
 *graalpython.lib-python.3.test.test_unicodedata.UnicodeMiscTest.test_bug_5828

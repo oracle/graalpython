@@ -273,6 +273,22 @@ public class PZipImporter extends PythonBuiltinObject {
         return ModuleInfo.NOT_FOUND;
     }
 
+    @TruffleBoundary
+    protected boolean isDir(String path) {
+        String dirPath = path + separator;
+        for (Object key : files.keys()) {
+            if (key.equals(dirPath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @TruffleBoundary
+    protected String getModulePath(String modPath) {
+        return this.archive + separator + modPath;
+    }
+
     /**
      *
      * @param fullname

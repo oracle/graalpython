@@ -24,3 +24,4 @@ ModuleRootNode Name: <module 'tuple11'> SourceSection: [0,10]`a += 1,2,3`
               IntegerLiteralNode SourceSection: [9,10]`3`
                 Value: 3
               PythonObjectFactoryNodeGen SourceSection: None
+            ObjectLiteralNode SourceSection: None

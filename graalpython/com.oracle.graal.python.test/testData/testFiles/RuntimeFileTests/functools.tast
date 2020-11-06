@@ -341,21 +341,20 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             Identifier: update_wrapper
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [3138,3145]`wrapped`
-                                Frame: [0,wrapped,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [3175,3183]`assigned`
-                                Frame: [1,assigned,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [3193,3200]`updated`
-                                Frame: [2,updated,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [3138,3145]`wrapped`
+                                  Frame: [0,wrapped,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [3175,3183]`assigned`
+                                  Frame: [1,assigned,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [3193,3200]`updated`
+                                  Frame: [2,updated,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [3106,3113]`partial`
                             Identifier: partial
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3048,11 +3047,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [10292,10303]`newkeywords`
-                                                Frame: [3,newkeywords,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [10292,10303]`newkeywords`
+                                              Frame: [3,newkeywords,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [10261,10265]`self`
                                               Frame: [2,self,Illegal]
@@ -4371,69 +4369,68 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         PythonCallNodeGen SourceSection: [13280,13557]`format_string.format...`
                                           CallNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [13308,13333]`self.__class__.__mod...`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: __module__
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [13308,13322]`self.__class__`
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [13308,13333]`self.__class__.__mod...`
                                                   GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: __class__
+                                                    Key: __module__
                                                     CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [13308,13312]`self`
-                                                    Frame: [0,self,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [13375,13402]`self.__class__.__qua...`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: __qualname__
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                GetAttributeNodeGen SourceSection: [13375,13389]`self.__class__`
+                                                  GetAttributeNodeGen SourceSection: [13308,13322]`self.__class__`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: __class__
+                                                      CachedDispatchFirst SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [13308,13312]`self`
+                                                      Frame: [0,self,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [13375,13402]`self.__class__.__qua...`
                                                   GetFixedAttributeNodeGen SourceSection: None
-                                                    Key: __class__
+                                                    Key: __qualname__
                                                     CachedDispatchFirst SourceSection: None
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [13375,13379]`self`
+                                                  GetAttributeNodeGen SourceSection: [13375,13389]`self.__class__`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: __class__
+                                                      CachedDispatchFirst SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
+                                                        CachedDispatchFirst SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [13375,13379]`self`
+                                                      Frame: [0,self,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                GetAttributeNodeGen SourceSection: [13445,13454]`self.func`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: func
+                                                    CachedDispatchFirst SourceSection: None
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      CachedDispatchFirst SourceSection: None
+                                                  ReadLocalVariableNode SourceSection: [13445,13449]`self`
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              GetAttributeNodeGen SourceSection: [13445,13454]`self.func`
-                                                GetFixedAttributeNodeGen SourceSection: None
-                                                  Key: func
-                                                  CachedDispatchFirst SourceSection: None
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __getattribute__
-                                                  IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [13445,13449]`self`
-                                                  Frame: [0,self,Illegal]
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [13497,13501]`args`
+                                                  Frame: [1,args,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [13497,13501]`args`
-                                                Frame: [1,args,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            KeywordLiteralNode SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [13548,13556]`keywords`
-                                                Frame: [2,keywords,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              EmptyNode SourceSection: None
+                                              KeywordLiteralNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [13548,13556]`keywords`
+                                                  Frame: [2,keywords,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                            EmptyNode SourceSection: None
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNode SourceSection: [13280,13293]`format_string`
                                               Frame: [3,format_string,Illegal]
@@ -4624,11 +4621,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadVariableFromFrameNodeGen SourceSection: None
                                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                                         KeywordArgumentsNodeGen SourceSection: None
-                                                          CompactKeywordsNodeGen SourceSection: None
-                                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                            ReadLocalVariableNode SourceSection: [13873,13886]`call_keywords`
-                                                              Frame: [2,call_keywords,Illegal]
-                                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                                          ReadLocalVariableNode SourceSection: [13873,13886]`call_keywords`
+                                                            Frame: [2,call_keywords,Illegal]
+                                                            ReadVariableFromFrameNodeGen SourceSection: None
                                                         GetCallAttributeNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [13849,13853]`self`
                                                             ReadLocalVariableNode SourceSection: None
@@ -4822,19 +4818,18 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                   ExecutePositionalStarargsNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    GetAttributeNodeGen SourceSection: [14409,14422]`self.keywords`
-                                                      GetFixedAttributeNodeGen SourceSection: None
-                                                        Key: keywords
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                  GetAttributeNodeGen SourceSection: [14409,14422]`self.keywords`
+                                                    GetFixedAttributeNodeGen SourceSection: None
+                                                      Key: keywords
+                                                      CachedDispatchFirst SourceSection: None
+                                                      LookupAndCallBinaryNodeGen SourceSection: None
+                                                        Op: __getattribute__
+                                                      IsBuiltinClassProfile SourceSection: None
                                                         CachedDispatchFirst SourceSection: None
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __getattribute__
-                                                        IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
-                                                      ReadLocalVariableNode SourceSection: [14409,14413]`self`
-                                                        Frame: [0,self,Illegal]
-                                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                                    ReadLocalVariableNode SourceSection: [14409,14413]`self`
+                                                      Frame: [0,self,Illegal]
+                                                      ReadVariableFromFrameNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [14377,14384]`partial`
                                                   Identifier: partial
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5345,6 +5340,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                             ReadLocalVariableNode SourceSection: [16532,16540]`kwd_mark`
                               Frame: [3,kwd_mark,Illegal]
                               ReadVariableFromFrameNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         ElseNode SourceSection: [16549,16603]`for item in kwds.ite...`
                           ForNode SourceSection: None
                             ForRepeatingNode SourceSection: None
@@ -5364,6 +5360,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                   ReadLocalVariableNode SourceSection: [16594,16598]`item`
                                     Frame: [9,item,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                  ObjectLiteralNode SourceSection: None
                             GetIteratorExpressionNodeGen SourceSection: [16561,16573]`kwds.items()`
                               PythonCallNodeGen SourceSection: [16561,16573]`kwds.items()`
                                 CallNodeGen SourceSection: None
@@ -5455,6 +5452,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                     Frame: [0,args,Illegal]
                                     ReadVariableFromFrameNodeGen SourceSection: None
                                 PythonObjectFactoryNodeGen SourceSection: None
+                            ObjectLiteralNode SourceSection: None
                         IfNode SourceSection: [16665,16735]`if kwds:↵           ...`
                           YesNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
@@ -5539,6 +5537,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [1,kwds,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                   PythonObjectFactoryNodeGen SourceSection: None
+                              ObjectLiteralNode SourceSection: None
                           BlockNode SourceSection: None
                       IfNode SourceSection: [16735,16811]`elif len(key) == 1 a...`
                         YesNodeGen SourceSection: None
@@ -6107,11 +6106,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [19326,19330]`kwds`
-                                              Frame: [1,kwds,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [19326,19330]`kwds`
+                                            Frame: [1,kwds,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [19303,19316]`user_function`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [3,user_function,Illegal]
@@ -6130,6 +6128,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadFromCellNodeGen SourceSection: None
                                         IntegerLiteralNode SourceSection: [19354,19355]`1`
                                           Value: 1
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [19368,19381]`return result`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -6264,6 +6263,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [19695,19696]`1`
                                                 Value: 1
+                                              ObjectLiteralNode SourceSection: None
                                           FrameReturnNode SourceSection: [19713,19726]`return result`
                                             WriteLocalVariableNodeGen SourceSection: None
                                               Identifier: <return_val>
@@ -6285,11 +6285,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [19771,19775]`kwds`
-                                                Frame: [1,kwds,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [19771,19775]`kwds`
+                                              Frame: [1,kwds,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [19748,19761]`user_function`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [4,user_function,Illegal]
@@ -6320,6 +6319,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadFromCellNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [19831,19832]`1`
                                             Value: 1
+                                          ObjectLiteralNode SourceSection: None
                                       FrameReturnNode SourceSection: [19845,19858]`return result`
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
@@ -6583,6 +6583,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     ReadFromCellNodeGen SourceSection: None
                                                   IntegerLiteralNode SourceSection: [20586,20587]`1`
                                                     Value: 1
+                                                  ObjectLiteralNode SourceSection: None
                                               FrameReturnNode SourceSection: [20608,20621]`return result`
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
@@ -6597,16 +6598,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Frame: [26,lock,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        CallNodeGen SourceSection: None
-                                        CallNodeGen SourceSection: None
+                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -6623,11 +6619,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             ExecutePositionalStarargsNodeGen SourceSection: None
                                           KeywordArgumentsNodeGen SourceSection: None
-                                            CompactKeywordsNodeGen SourceSection: None
-                                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                                              ReadLocalVariableNode SourceSection: [20666,20670]`kwds`
-                                                Frame: [1,kwds,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
+                                            ExecuteKeywordArgumentsNode SourceSection: None
+                                            ReadLocalVariableNode SourceSection: [20666,20670]`kwds`
+                                              Frame: [1,kwds,Illegal]
+                                              ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [20643,20656]`user_function`
                                             ReadLocalVariableNode SourceSection: None
                                               Frame: [12,user_function,Illegal]
@@ -6912,21 +6907,17 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadFromCellNodeGen SourceSection: None
                                               IntegerLiteralNode SourceSection: [22677,22678]`1`
                                                 Value: 1
+                                              ObjectLiteralNode SourceSection: None
                                         ReadLocalCellNodeGen SourceSection: [20689,20693]`lock`
                                           ReadLocalVariableNode SourceSection: None
                                             Frame: [26,lock,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        LookupInheritedAttributeNode SourceSection: None
-                                          LookupAttributeInMRONodeGen SourceSection: None
-                                            IsSameTypeNodeGen SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
-                                        CallNodeGen SourceSection: None
-                                        CallNodeGen SourceSection: None
+                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        CachedDispatchFirst SourceSection: None
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
                                             CachedDispatchFirst SourceSection: None
@@ -7009,16 +7000,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [5,lock,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
-                                    CallNodeGen SourceSection: None
-                                    CallNodeGen SourceSection: None
+                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
+                                    CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -7125,16 +7111,11 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Frame: [4,lock,Illegal]
                                         ReadVariableFromFrameNodeGen SourceSection: None
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
-                                    LookupInheritedAttributeNode SourceSection: None
-                                      LookupAttributeInMRONodeGen SourceSection: None
-                                        IsSameTypeNodeGen SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
-                                    CallNodeGen SourceSection: None
-                                    CallNodeGen SourceSection: None
+                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    CachedDispatchFirst SourceSection: None
+                                    CallUnaryMethodNodeGen SourceSection: None
+                                    CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
@@ -7889,15 +7870,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [0,base,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          KeywordLiteralNode SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: [26204,26208]`abcs`
-                                              ReadGeneratorFrameVariableNode SourceSection: None
-                                                Frame: [1,abcs,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                            KeywordLiteralNode SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [26204,26208]`abcs`
+                                                ReadGeneratorFrameVariableNode SourceSection: None
+                                                  Frame: [1,abcs,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                          EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26185,26192]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -7967,15 +7947,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [0,base,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          KeywordLiteralNode SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: [26281,26285]`abcs`
-                                              ReadGeneratorFrameVariableNode SourceSection: None
-                                                Frame: [1,abcs,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                            KeywordLiteralNode SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [26281,26285]`abcs`
+                                                ReadGeneratorFrameVariableNode SourceSection: None
+                                                  Frame: [1,abcs,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                          EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26262,26269]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8045,15 +8024,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Frame: [0,base,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          KeywordLiteralNode SourceSection: None
-                                            ReadLocalCellNodeGen SourceSection: [26355,26359]`abcs`
-                                              ReadGeneratorFrameVariableNode SourceSection: None
-                                                Frame: [1,abcs,Illegal]
-                                                ReadVariableFromFrameNodeGen SourceSection: None
-                                              ReadFromCellNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            EmptyNode SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                            KeywordLiteralNode SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [26355,26359]`abcs`
+                                                ReadGeneratorFrameVariableNode SourceSection: None
+                                                  Frame: [1,abcs,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                                ReadFromCellNodeGen SourceSection: None
+                                          EmptyNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [26336,26343]`_c3_mro`
                                           Identifier: _c3_mro
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -8779,15 +8757,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 PythonCallNodeGen SourceSection: [27951,27984]`found.sort(key=len, ...`
                                   CallNodeGen SourceSection: None
                                   KeywordArgumentsNodeGen SourceSection: None
-                                    KeywordLiteralNode SourceSection: None
-                                      ReadGlobalOrBuiltinNodeGen SourceSection: [27966,27969]`len`
-                                        Identifier: len
-                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                    KeywordLiteralNode SourceSection: None
-                                      BooleanLiteralNode SourceSection: [27979,27983]`True`
-                                    CompactKeywordsNodeGen SourceSection: None
-                                    ExecuteKeywordStarargsNodeGen SourceSection: None
-                                      EmptyNode SourceSection: None
+                                    ExecuteKeywordArgumentsNode SourceSection: None
+                                      KeywordLiteralNode SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [27966,27969]`len`
+                                          Identifier: len
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      KeywordLiteralNode SourceSection: None
+                                        BooleanLiteralNode SourceSection: [27979,27983]`True`
+                                    EmptyNode SourceSection: None
                                   GetCallAttributeNodeGen SourceSection: None
                                     ReadLocalVariableNode SourceSection: [27951,27956]`found`
                                       Frame: [7,found,Illegal]
@@ -8865,13 +8842,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               ReadVariableFromFrameNodeGen SourceSection: None
                             ReadFromCellNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [28148,28151]`mro`
-                                Frame: [6,mro,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [28148,28151]`mro`
+                                  Frame: [6,mro,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [28130,28137]`_c3_mro`
                             Identifier: _c3_mro
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -9783,11 +9759,10 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [31944,31946]`kw`
-                                                  Frame: [1,kw,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [31944,31946]`kw`
+                                                Frame: [1,kw,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [31907,31934]`dispatch(args[0].__c...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [31907,31915]`dispatch`

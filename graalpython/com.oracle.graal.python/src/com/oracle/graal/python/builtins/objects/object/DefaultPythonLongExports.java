@@ -83,19 +83,19 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static Object asIndex(Long value) {
+    static Object asIndexWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
         return value;
     }
 
     @ExportMessage
-    static class AsSize {
+    static class AsSizeWithState {
         @Specialization(rewriteOn = OverflowException.class)
-        static int noOverflow(Long self, @SuppressWarnings("unused") Object type) throws OverflowException {
+        static int noOverflow(Long self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") ThreadState state) throws OverflowException {
             return PInt.intValueExact(self);
         }
 
         @Specialization(replaces = "noOverflow")
-        static int withOverflow(Long self, Object type,
+        static int withOverflow(Long self, Object type, @SuppressWarnings("unused") ThreadState state,
                         @Exclusive @Cached PRaiseNode raise) {
             try {
                 return PInt.intValueExact(self);
@@ -115,8 +115,8 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static long hash(Long value) {
-        return hash(value.longValue());
+    static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
+        return hash(value);
     }
 
     @Ignore
@@ -126,7 +126,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static boolean isTrue(Long value) {
+    static boolean isTrueWithState(Long value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0;
     }
 
@@ -275,12 +275,12 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     @TruffleBoundary
-    static String asPString(Long x) {
+    static String asPStringWithState(Long x, @SuppressWarnings("unused") ThreadState state) {
         return Long.toString(x);
     }
 
     @ExportMessage
-    static int asFileDescriptor(Long x,
+    static int asFileDescriptorWithState(Long x, @SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile errorProfile) {
@@ -300,7 +300,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static double asJavaDouble(Long receiver) {
+    static double asJavaDoubleWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver.doubleValue();
     }
 
@@ -310,7 +310,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static long asJavaLong(Long receiver) {
+    static long asJavaLongWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 
@@ -320,7 +320,7 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static long asPInt(Long receiver) {
+    static long asPIntWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
         return receiver;
     }
 

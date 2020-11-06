@@ -23,6 +23,7 @@
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testPy
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testTraceback
 *graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.testUnencodable
+*graalpython.lib-python.3.test.test_zipimport.CompressedZipImportTestCase.test_checked_hash_based_change_pyc
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testAFakeZlib
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBadMTime
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testBadMagic
@@ -41,3 +42,4 @@
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testPy
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testTraceback
 *graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.testUnencodable
+*graalpython.lib-python.3.test.test_zipimport.UncompressedZipImportTestCase.test_checked_hash_based_change_pyc

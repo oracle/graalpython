@@ -2,4 +2,9 @@
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_dash_m_bad_pyc
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_dash_m_error_code_is_one
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_dash_m_errors
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_dash_m_init_traceback
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_dash_m_main_traceback
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_directory_error
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_issue20500_exit_with_exception_value
+*graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_issue20884
 *graalpython.lib-python.3.test.test_cmd_line_script.CmdLineTest.test_nonexisting_script

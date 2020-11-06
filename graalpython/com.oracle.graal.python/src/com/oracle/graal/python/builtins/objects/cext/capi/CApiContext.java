@@ -51,22 +51,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.CAPIConversionNodeSupplier;
-import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -105,7 +102,7 @@ public final class CApiContext extends CExtContext {
 
     private final ReferenceQueue<Object> nativeObjectsQueue;
     private Map<Object, AllocInfo> allocatedNativeMemory;
-    private final NativeReferenceStack nativeObjectWrapperList;
+    private final ReferenceStack<NativeObjectReference> nativeObjectWrapperList;
     private TraceMallocDomain[] traceMallocDomains;
 
     /** Container of pointers that have seen to be free'd. */
@@ -132,10 +129,13 @@ public final class CApiContext extends CExtContext {
     /** Cache for polyglot types of primitive and pointer types. */
     @CompilationFinal(dimensions = 1) private final TruffleObject[] llvmTypeCache;
 
+    /** same as {@code moduleobject.c: max_module_number} */
+    private long maxModuleNumber;
+
     public CApiContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, CAPIConversionNodeSupplier.INSTANCE);
         nativeObjectsQueue = new ReferenceQueue<>();
-        nativeObjectWrapperList = new NativeReferenceStack();
+        nativeObjectWrapperList = new ReferenceStack<>();
 
         // avoid 0 to be used as ID
         int nullID = nativeObjectWrapperList.reserve();
@@ -191,6 +191,10 @@ public final class CApiContext extends CExtContext {
 
     public void setLLVMTypeID(LLVMType llvmType, TruffleObject llvmTypeId) {
         llvmTypeCache[llvmType.ordinal()] = llvmTypeId;
+    }
+
+    public long getAndIncMaxModuleNumber() {
+        return maxModuleNumber++;
     }
 
     @TruffleBoundary
@@ -801,5 +805,4 @@ public final class CApiContext extends CExtContext {
             return false;
         }
     }
-
 }

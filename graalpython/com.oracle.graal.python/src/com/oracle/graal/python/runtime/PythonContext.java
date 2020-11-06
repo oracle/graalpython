@@ -57,9 +57,9 @@ import org.graalvm.options.OptionKey;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
@@ -92,12 +92,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.Source;
@@ -240,6 +241,9 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+
+    // decides if we run the async weakref callbacks and destructors
+    private boolean gcEnabled = true;
 
     // A thread-local to store the full path to the currently active import statement, for Jython
     // compat
@@ -736,12 +740,16 @@ public final class PythonContext {
             try {
                 CallNode.getUncached().execute(null, attrShutdown);
             } catch (Exception | StackOverflowError e) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    ExceptionUtils.printPythonLikeStackTrace(e);
-                    if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
-                        e.printStackTrace(new PrintWriter(getStandardErr()));
+                try {
+                    boolean exitException = InteropLibrary.getUncached().isException(e) && InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.EXIT;
+                    if (!exitException) {
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                        if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
+                            e.printStackTrace(new PrintWriter(getStandardErr()));
+                        }
                     }
+                } catch (UnsupportedMessageException unsupportedMessageException) {
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
                 throw e;
             }
@@ -1069,5 +1077,13 @@ public final class PythonContext {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
+    }
+
+    public boolean isGcEnabled() {
+        return gcEnabled;
+    }
+
+    public void setGcEnabled(boolean flag) {
+        gcEnabled = flag;
     }
 }

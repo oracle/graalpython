@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -73,7 +72,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -98,6 +96,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -157,7 +156,7 @@ public abstract class BytesNodes {
             Object iterator = lib.getIteratorWithFrame(iterable, frame);
             while (true) {
                 try {
-                    partsTotalSize += append(parts, toBytesNode.execute(frame, getNextNode.execute(frame, iterator)));
+                    partsTotalSize += append(parts, toBytesNode.execute(getNextNode.execute(frame, iterator)));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile);
                     return joinArrays(sep, parts, partsTotalSize);
@@ -203,15 +202,13 @@ public abstract class BytesNodes {
 
         private final PythonBuiltinClassType errorType;
         private final String errorMessageFormat;
-        final boolean allowRecursive;
 
-        ToBytesNode(boolean allowRecursive, PythonBuiltinClassType errorType, String errorMessageFormat) {
-            this.allowRecursive = allowRecursive;
+        ToBytesNode(PythonBuiltinClassType errorType, String errorMessageFormat) {
             this.errorType = errorType;
             this.errorMessageFormat = errorMessageFormat;
         }
 
-        public abstract byte[] execute(VirtualFrame frame, Object obj);
+        public abstract byte[] execute(Object obj);
 
         @Specialization
         byte[] doBytes(PBytesLike bytes,
@@ -225,11 +222,14 @@ public abstract class BytesNodes {
             }
         }
 
-        @Specialization(guards = "allowRecursive")
-        byte[] doMemoryView(VirtualFrame frame, PMemoryView memoryView,
-                        @Cached("createRecursive()") ToBytesNode recursive,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode) {
-            return recursive.execute(frame, callToBytesNode.executeObject(frame, memoryView));
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        static byte[] doBuffer(Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            try {
+                return bufferLib.getBufferBytes(buffer);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         @Fallback
@@ -237,20 +237,12 @@ public abstract class BytesNodes {
             throw raise.raise(errorType, errorMessageFormat, obj);
         }
 
-        ToBytesNode createRecursive() {
-            return ToBytesNode.create(false);
-        }
-
         public static ToBytesNode create() {
-            return ToBytesNodeGen.create(true);
+            return ToBytesNodeGen.create(TypeError, DEFAULT_FORMAT);
         }
 
-        public static ToBytesNode create(boolean allowRecursive) {
-            return ToBytesNodeGen.create(allowRecursive, TypeError, DEFAULT_FORMAT);
-        }
-
-        public static ToBytesNode create(boolean allowRecursive, PythonBuiltinClassType errorType, String errorMessageFormat) {
-            return ToBytesNodeGen.create(allowRecursive, errorType, errorMessageFormat);
+        public static ToBytesNode create(PythonBuiltinClassType errorType, String errorMessageFormat) {
+            return ToBytesNodeGen.create(errorType, errorMessageFormat);
         }
     }
 

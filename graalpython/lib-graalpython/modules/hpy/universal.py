@@ -40,5 +40,9 @@
 import _imp
 
 def load_from_spec(spec):
-    return _imp.create_dynamic(spec)
-
+    try:
+        return _imp.create_dynamic(spec)
+    except ImportError as e:
+        if e.__cause__:
+            raise e.__cause__
+        raise

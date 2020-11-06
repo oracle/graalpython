@@ -54,6 +54,16 @@ def _reference_typecheck(args, expected_type):
     return args[0][0]
 
 
+def _reference_parse_O(args):
+    assert isinstance(args[0], tuple)
+    assert isinstance(args[1], dict)
+    if args[0]:
+        return args[0][0]
+    elif "arg0" in args[1]:
+        return args[1]["arg0"]
+    raise TypeError
+
+
 class Indexable:
     def __int__(self):
         return 456
@@ -104,6 +114,32 @@ class TestModsupport(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* bytesLike"],
         callfunction="wrap_PyArg_ParseTuple",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_parseargs_O = CPyExtFunction(
+        _reference_parse_O,
+        lambda: (
+            (('helloworld', ), dict()),
+            (tuple(), {"arg0": 'helloworld'}),
+            (tuple(), dict()),
+            (tuple(), {"arg1": 'helloworld'}),
+        ),
+        code='''
+        static PyObject* wrap_PyArg_ParseTupleAndKeywords(PyObject* argTuple, PyObject* kwargs) {
+            PyObject* out = NULL;
+            static char *kwdnames[] = {"arg0", NULL};
+            if (PyArg_ParseTupleAndKeywords(argTuple, kwargs, "O", kwdnames, &out) == 0) {
+                return NULL;
+            }
+            Py_XINCREF(out);
+            return out;
+        }
+        ''',
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* argTuple", "PyObject* kwargs"],
+        callfunction="wrap_PyArg_ParseTupleAndKeywords",
         cmpfunc=unhandled_error_compare
     )
 

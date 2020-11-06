@@ -31,14 +31,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -55,10 +56,11 @@ public class WithNode extends ExceptionHandlingStatementNode {
     @Child private StatementNode body;
     @Child private WriteNode targetNode;
     @Child private ExpressionNode withContext;
-    @Child private LookupInheritedAttributeNode enterGetter = LookupInheritedAttributeNode.create(__ENTER__);
-    @Child private LookupInheritedAttributeNode exitGetter = LookupInheritedAttributeNode.create(__EXIT__);
-    @Child private CallNode enterDispatch = CallNode.create();
-    @Child private CallNode exitDispatch = CallNode.create();
+    @Child private LookupSpecialMethodNode enterSpecialGetter = LookupSpecialMethodNode.create(__ENTER__);
+    @Child private LookupSpecialMethodNode exitSpecialGetter = LookupSpecialMethodNode.create(__EXIT__);
+    @Child private PythonObjectLibrary objectLibrary = PythonObjectLibrary.getFactory().createDispatched(1);
+    @Child private CallUnaryMethodNode enterDispatch = CallUnaryMethodNode.create();
+    @Child private CallQuaternaryMethodNode exitDispatch = CallQuaternaryMethodNode.create();
     @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private PRaiseNode raiseNode;
@@ -105,12 +107,12 @@ public class WithNode extends ExceptionHandlingStatementNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object withObject = getWithObject(frame);
-        Object enterCallable = enterGetter.execute(withObject);
+        Object enterCallable = enterSpecialGetter.execute(frame, objectLibrary.getLazyPythonClass(withObject), withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __ENTER__);
         }
-        Object exitCallable = exitGetter.execute(withObject);
+        Object exitCallable = exitSpecialGetter.execute(frame, objectLibrary.getLazyPythonClass(withObject), withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);
@@ -154,14 +156,14 @@ public class WithNode extends ExceptionHandlingStatementNode {
      * reset the exception state.
      */
     protected void doLeave(VirtualFrame frame, Object withObject, Object exitCallable) {
-        exitDispatch.execute(frame, exitCallable, new Object[]{withObject, PNone.NONE, PNone.NONE, PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
+        exitDispatch.execute(frame, exitCallable, withObject, PNone.NONE, PNone.NONE, PNone.NONE);
     }
 
     /**
      * Call the __enter__ method
      */
     protected void doEnter(VirtualFrame frame, Object withObject, Object enterCallable) {
-        applyValues(frame, enterDispatch.execute(frame, enterCallable, new Object[]{withObject}, PKeyword.EMPTY_KEYWORDS));
+        applyValues(frame, enterDispatch.executeObject(frame, enterCallable, withObject));
     }
 
     /**
@@ -178,8 +180,7 @@ public class WithNode extends ExceptionHandlingStatementNode {
         // If exit handler returns 'true', suppress
         boolean handled;
         try {
-            Object returnValue = exitDispatch.execute(frame, exitCallable,
-                            new Object[]{withObject, type, caughtException, tb != null ? tb : PNone.NONE}, PKeyword.EMPTY_KEYWORDS);
+            Object returnValue = exitDispatch.execute(frame, exitCallable, withObject, type, caughtException, tb != null ? tb : PNone.NONE);
             handled = toBooleanNode.executeBoolean(frame, returnValue);
         } catch (PException handlerException) {
             tryChainExceptionFromHandler(handlerException, pException);

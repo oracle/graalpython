@@ -40,6 +40,45 @@
  */
 #include "capi.h"
 
+#if SIZEOF_SIZE_T == 8
+#define polyglot_from_size_array polyglot_from_i64_array
+#elif SIZEOF_SIZE_T == 4
+#define polyglot_from_size_array polyglot_from_i32_array
+#endif
+
+/* Macros taken from CPython */
+/* Memoryview buffer properties */
+#define MV_C_CONTIGUOUS(flags) (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C))
+#define MV_F_CONTIGUOUS(flags) \
+    (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_FORTRAN))
+#define MV_ANY_CONTIGUOUS(flags) \
+    (flags&(_Py_MEMORYVIEW_SCALAR|_Py_MEMORYVIEW_C|_Py_MEMORYVIEW_FORTRAN))
+
+/* getbuffer() requests */
+#define REQ_INDIRECT(flags) ((flags&PyBUF_INDIRECT) == PyBUF_INDIRECT)
+#define REQ_C_CONTIGUOUS(flags) ((flags&PyBUF_C_CONTIGUOUS) == PyBUF_C_CONTIGUOUS)
+#define REQ_F_CONTIGUOUS(flags) ((flags&PyBUF_F_CONTIGUOUS) == PyBUF_F_CONTIGUOUS)
+#define REQ_ANY_CONTIGUOUS(flags) ((flags&PyBUF_ANY_CONTIGUOUS) == PyBUF_ANY_CONTIGUOUS)
+#define REQ_STRIDES(flags) ((flags&PyBUF_STRIDES) == PyBUF_STRIDES)
+#define REQ_SHAPE(flags) ((flags&PyBUF_ND) == PyBUF_ND)
+#define REQ_WRITABLE(flags) (flags&PyBUF_WRITABLE)
+#define REQ_FORMAT(flags) (flags&PyBUF_FORMAT)
+
+#define BASE_INACCESSIBLE(mv) \
+    (((PyMemoryViewObject *)mv)->flags&_Py_MEMORYVIEW_RELEASED)
+#define CHECK_RELEASED(mv) \
+    if (BASE_INACCESSIBLE(mv)) {                                  \
+        PyErr_SetString(PyExc_ValueError,                         \
+            "operation forbidden on released memoryview object"); \
+        return NULL;                                              \
+    }
+#define CHECK_RELEASED_INT(mv) \
+    if (BASE_INACCESSIBLE(mv)) {                                  \
+        PyErr_SetString(PyExc_ValueError,                         \
+            "operation forbidden on released memoryview object"); \
+        return -1;                                                \
+    }
+
 PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE_WITH_ITEMSIZE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, offsetof(PyMemoryViewObject, ob_array), sizeof(Py_ssize_t));
 PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
 
@@ -47,9 +86,190 @@ int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flag
     return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self) * sizeof(PyObject*), self->readonly, flags);
 }
 
-PyObject * PyMemoryView_FromObject(PyObject *v) {
-	// TODO(fa): This needs to be fixed. The actual implementation is located in
-	// '_memoryview.c'. However, the current way we use it does not allow C exts
-	// to link to it. We need to restructure this.
-	return NULL;
+/* called from memoryview implementation to do pointer arithmetics currently not possible from Java */
+int8_t* truffle_add_suboffset(int8_t *ptr, Py_ssize_t offset, Py_ssize_t suboffset, Py_ssize_t remaining_length) {
+        return polyglot_from_i8_array(*(int8_t**)(ptr + offset) + suboffset, remaining_length);
+}
+
+UPCALL_ID(PyMemoryView_FromObject)
+PyObject* PyMemoryView_FromObject(PyObject *v) {
+        return UPCALL_CEXT_O(_jls_PyMemoryView_FromObject, native_to_java(v));
+}
+
+/* called back from the above upcall only if the object was native */
+PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
+    if (PyObject_CheckBuffer(v)) {
+        Py_buffer* buffer = malloc(sizeof(Py_buffer));
+        if (PyObject_GetBuffer(v, buffer, PyBUF_FULL_RO) < 0) {
+            return NULL;
+        }
+        Py_ssize_t ndim = buffer->ndim;
+        int needs_release = 0;
+        if (buffer->obj != NULL) {
+            PyBufferProcs *pb;
+            pb = Py_TYPE(buffer->obj)->tp_as_buffer;
+            if (pb) {
+                needs_release = pb->bf_releasebuffer != NULL;
+            }
+        }
+        PyObject *mv = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+                needs_release ? buffer : NULL, /* We only need the ptr for the release */
+                native_to_java(buffer->obj),
+                buffer->len,
+                buffer->readonly,
+                buffer->itemsize,
+                polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
+                buffer->ndim,
+                polyglot_from_i8_array(buffer->buf, buffer->len),
+                buffer->shape ? polyglot_from_size_array(buffer->shape, ndim) : NULL,
+                buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
+                buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
+        if (!needs_release) {
+            free(buffer);
+        }
+        return mv;
+    }
+
+    PyErr_Format(PyExc_TypeError,
+        "memoryview: a bytes-like object is required, not '%.200s'",
+        Py_TYPE(v)->tp_name);
+    return NULL;
+}
+
+/* Release buffer struct allocated in PyTruffle_MemoryViewFromObject */
+void PyTruffle_ReleaseBuffer(Py_buffer* buffer) {
+    if (buffer->obj != NULL) {
+        PyBufferProcs *pb;
+        pb = Py_TYPE(buffer->obj)->tp_as_buffer;
+        if (pb) {
+            pb->bf_releasebuffer(buffer->obj, buffer);
+        }
+    }
+    free(buffer);
+}
+
+PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
+    Py_ssize_t ndim = buffer->ndim;
+    if (buffer->buf == NULL) {
+        PyErr_SetString(PyExc_ValueError,
+            "PyMemoryView_FromBuffer(): info->buf must not be NULL");
+        return NULL;
+    }
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+            NULL,
+            NULL,
+            buffer->len,
+            buffer->readonly,
+            buffer->itemsize,
+            polyglot_from_string(buffer->format ? buffer->format : "B", "ascii"),
+            buffer->ndim,
+            polyglot_from_i8_array(buffer->buf, buffer->len),
+            buffer->shape ? polyglot_from_size_array(buffer->shape, ndim) : NULL,
+            buffer->strides ? polyglot_from_size_array(buffer->strides, ndim) : NULL,
+            buffer->suboffsets ? polyglot_from_size_array(buffer->suboffsets, ndim) : NULL);
+}
+
+PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
+    assert(mem != NULL);
+    assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
+    int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
+            NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL);
+}
+
+UPCALL_ID(PyMemoryView_GetContiguous)
+PyObject* PyMemoryView_GetContiguous(PyObject *obj, int buffertype, char order) {
+    return UPCALL_CEXT_O(_jls_PyMemoryView_GetContiguous, native_to_java(obj), buffertype, (int)order);
+}
+
+/* Taken from CPython memoryobject.c: memory_getbuf */
+int memoryview_getbuffer(PyMemoryViewObject *self, Py_buffer *view, int flags)
+{
+    Py_buffer *base = &self->view;
+    int baseflags = self->flags;
+
+    CHECK_RELEASED_INT(self);
+
+    /* start with complete information */
+    //*view = *base;
+    view->buf = base->buf;
+    view->format = base->format;
+    view->itemsize = base->itemsize;
+    view->len = base->len;
+    view->ndim = base->ndim;
+    view->readonly = base->readonly;
+    view->shape = base->shape;
+    view->strides = base->strides;
+    view->suboffsets = base->suboffsets;
+    view->obj = NULL;
+
+    if (REQ_WRITABLE(flags) && base->readonly) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not writable");
+        return -1;
+    }
+    if (!REQ_FORMAT(flags)) {
+        /* NULL indicates that the buffer's data type has been cast to 'B'.
+           view->itemsize is the _previous_ itemsize. If shape is present,
+           the equality product(shape) * itemsize = len still holds at this
+           point. The equality calcsize(format) = itemsize does _not_ hold
+           from here on! */
+        view->format = NULL;
+    }
+
+    if (REQ_C_CONTIGUOUS(flags) && !MV_C_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not C-contiguous");
+        return -1;
+    }
+    if (REQ_F_CONTIGUOUS(flags) && !MV_F_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not Fortran contiguous");
+        return -1;
+    }
+    if (REQ_ANY_CONTIGUOUS(flags) && !MV_ANY_CONTIGUOUS(baseflags)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer is not contiguous");
+        return -1;
+    }
+    if (!REQ_INDIRECT(flags) && (baseflags & _Py_MEMORYVIEW_PIL)) {
+        PyErr_SetString(PyExc_BufferError,
+            "memoryview: underlying buffer requires suboffsets");
+        return -1;
+    }
+    if (!REQ_STRIDES(flags)) {
+        if (!MV_C_CONTIGUOUS(baseflags)) {
+            PyErr_SetString(PyExc_BufferError,
+                "memoryview: underlying buffer is not C-contiguous");
+            return -1;
+        }
+        view->strides = NULL;
+    }
+    if (!REQ_SHAPE(flags)) {
+        /* PyBUF_SIMPLE or PyBUF_WRITABLE: at this point buf is C-contiguous,
+           so base->buf = ndbuf->data. */
+        if (view->format != NULL) {
+            /* PyBUF_SIMPLE|PyBUF_FORMAT and PyBUF_WRITABLE|PyBUF_FORMAT do
+               not make sense. */
+            PyErr_Format(PyExc_BufferError,
+                "memoryview: cannot cast to unsigned bytes if the format flag "
+                "is present");
+            return -1;
+        }
+        /* product(shape) * itemsize = len and calcsize(format) = itemsize
+           do _not_ hold from here on! */
+        view->ndim = 1;
+        view->shape = NULL;
+    }
+
+
+    view->obj = (PyObject *)self;
+    Py_INCREF(view->obj);
+    self->exports++;
+
+    return 0;
+}
+
+void memoryview_releasebuffer(PyMemoryViewObject *self, Py_buffer *view) {
+        self->exports--;
 }

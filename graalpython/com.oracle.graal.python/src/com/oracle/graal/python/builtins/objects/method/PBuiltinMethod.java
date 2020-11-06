@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 // Corresponds to PyCFunction, but that name is just confusing
@@ -70,12 +71,28 @@ public final class PBuiltinMethod extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isHashable() {
+    boolean hasExecutableName() {
         return true;
     }
 
     @ExportMessage
-    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
+    Object getExecutableName() {
+        return function.getName();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isHashable() {
+        return true;
+    }
+
+    @Ignore
+    public long hash() {
         return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
+    }
+
+    @ExportMessage
+    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
+        return hash();
     }
 }

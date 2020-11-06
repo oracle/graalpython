@@ -800,6 +800,37 @@ def PyUnicode_Replace(s, substr, replstr, count):
     return s.replace(substr, replstr, count)
 
 
+##################### MEMORY_VIEW
+@may_raise
+def PyMemoryView_GetContiguous(obj, buffertype, order_int):
+    PyBUF_READ = 0x100
+    PyBUF_WRITE = 0x200
+    assert buffertype == PyBUF_READ or buffertype == PyBUF_WRITE
+    order = chr(order_int)
+    assert order == 'C' or order == 'F' or order == 'A'
+    mv = memoryview(obj)
+    release = True
+    try:
+        if buffertype == PyBUF_WRITE and mv.readonly:
+            raise BufferError("underlying buffer is not writable")
+        if mv.contiguous:
+            release = False
+            return mv
+        if buffertype == PyBUF_WRITE:
+            raise BufferError("writable contiguous buffer requested for a non-contiguous object.")
+        mv_bytes = memoryview(mv.tobytes(order))
+        if mv.format == 'B':
+            return mv_bytes
+        else:
+            try:
+                return mv_bytes.cast(mv.format)
+            finally:
+                mv_bytes.release()
+    finally:
+        if release:
+            mv.release()
+
+
 ##################### CAPSULE
 
 
@@ -966,6 +997,10 @@ def PyMethod_New(func, self):
     return bound_function
 
 
+def PyMethodDescr_Check(func):
+    return 1 if isinstance(func, type(list.append)) else 0
+
+
 # corresponds to PyInstanceMethod_Type
 class instancemethod:
     def __init__(self, func):
@@ -1100,7 +1135,7 @@ def PyObject_DelItem(obj, key):
     return 0
 
 
-@may_raise(1)
+@may_raise(-1)
 def PyObject_SetItem(obj, key, value):
     obj[key] = value
     return 0
@@ -1403,11 +1438,6 @@ def run_capi_loaded_hooks(capi_library):
     _capi_hooks.clear()
     for hook in local_hooks:
         hook()
-
-
-def import_native_memoryview(capi_library):
-    import _memoryview
-    assert _memoryview is not None
 
 
 def initialize_datetime_capi():

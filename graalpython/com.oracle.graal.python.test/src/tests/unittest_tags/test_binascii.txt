@@ -1,4 +1,5 @@
 *graalpython.lib-python.3.test.test_binascii.ArrayBinASCIITest.test_b2a_base64_newline
+*graalpython.lib-python.3.test.test_binascii.ArrayBinASCIITest.test_base64valid
 *graalpython.lib-python.3.test.test_binascii.ArrayBinASCIITest.test_exceptions
 *graalpython.lib-python.3.test.test_binascii.ArrayBinASCIITest.test_hex
 *graalpython.lib-python.3.test.test_binascii.BinASCIITest.test_b2a_base64_newline
@@ -10,5 +11,6 @@
 *graalpython.lib-python.3.test.test_binascii.BytearrayBinASCIITest.test_exceptions
 *graalpython.lib-python.3.test.test_binascii.BytearrayBinASCIITest.test_hex
 *graalpython.lib-python.3.test.test_binascii.MemoryviewBinASCIITest.test_b2a_base64_newline
+*graalpython.lib-python.3.test.test_binascii.MemoryviewBinASCIITest.test_base64valid
 *graalpython.lib-python.3.test.test_binascii.MemoryviewBinASCIITest.test_exceptions
 *graalpython.lib-python.3.test.test_binascii.MemoryviewBinASCIITest.test_hex

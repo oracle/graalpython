@@ -33,12 +33,15 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,6 +69,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PIterator("iterator", false),
     PBuiltinFunction("method_descriptor", false),
     PBuiltinMethod("builtin_function_or_method", false),
+    PBuiltinClassMethod("classmethod_descriptor", false),
     PByteArray("bytearray", BuiltinNames.BUILTINS),
     PBytes("bytes", BuiltinNames.BUILTINS),
     PCell("cell", false),
@@ -91,7 +95,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PInt("int", BuiltinNames.BUILTINS),
     PList("list", BuiltinNames.BUILTINS),
     PMappingproxy("mappingproxy", false),
-    PMemoryView("memoryview", BuiltinNames.BUILTINS),
+    PMemoryView("memoryview", BuiltinNames.BUILTINS, false),
     PMethod("method", false),
     PMMap("mmap", "mmap"),
     PNone("NoneType", false),
@@ -109,6 +113,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PTuple("tuple", BuiltinNames.BUILTINS),
     PythonClass("type", BuiltinNames.BUILTINS),
     PythonModule("module"),
+    PythonModuleDef("moduledef", false),
     PythonObject("object", BuiltinNames.BUILTINS),
     Super("super", BuiltinNames.BUILTINS),
     PCode("code", false),
@@ -413,91 +418,91 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     public Object getMembers(boolean includeInternal,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
         return lib.getMembers(context.getCore().lookupType(this), includeInternal);
     }
 
     @ExportMessage
     public boolean isMemberReadable(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberReadable(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public Object readMember(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
         return lib.readMember(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public boolean isMemberModifiable(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberModifiable(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public boolean isMemberInsertable(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberInsertable(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public void writeMember(String key, Object value,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
         lib.writeMember(context.getCore().lookupType(this), key, value);
     }
 
     @ExportMessage
     public boolean isMemberRemovable(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberRemovable(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public void removeMember(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
         lib.removeMember(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public boolean isMemberInvocable(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberInvocable(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public Object invokeMember(String key, Object[] arguments,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, ArityException, UnknownIdentifierException, UnsupportedTypeException {
         return lib.invokeMember(context.getCore().lookupType(this), key, arguments);
     }
 
     @ExportMessage
     public boolean isMemberInternal(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.isMemberInternal(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public boolean hasMemberReadSideEffects(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.hasMemberReadSideEffects(context.getCore().lookupType(this), key);
     }
 
     @ExportMessage
     public boolean hasMemberWriteSideEffects(String key,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
+                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         return lib.hasMemberWriteSideEffects(context.getCore().lookupType(this), key);
     }
@@ -505,22 +510,43 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     static boolean isSequenceType(PythonBuiltinClassType type,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         return lib.isSequenceType(context.getCore().lookupType(type));
     }
 
     @ExportMessage
     static boolean isMappingType(PythonBuiltinClassType type,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         return lib.isMappingType(context.getCore().lookupType(type));
     }
 
     @ExportMessage
     static long hashWithState(PythonBuiltinClassType type, ThreadState state,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         return lib.hashWithState(context.getCore().lookupType(type), state);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    static double asJavaDoubleWithState(PythonBuiltinClassType type, ThreadState state,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, type);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    static Object asPIntWithState(PythonBuiltinClassType type, ThreadState state,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, type);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    static long asJavaLongWithState(PythonBuiltinClassType type, ThreadState state,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
+        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, type);
     }
 
     @ExportMessage
@@ -610,12 +636,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
      * TypeBuiltins.ReprNode}
      */
     @ExportMessage
-    String asPString() {
-        return getQualifiedName();
-    }
-
-    @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return asPString();
+        return getQualifiedName();
     }
 }

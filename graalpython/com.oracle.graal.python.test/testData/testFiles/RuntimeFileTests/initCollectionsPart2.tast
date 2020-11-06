@@ -1781,12 +1781,11 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 Identifier: DeprecationWarning
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  IntegerLiteralNode SourceSection: [4637,4638]`2`
-                                                    Value: 2
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    IntegerLiteralNode SourceSection: [4637,4638]`2`
+                                                      Value: 2
+                                                EmptyNode SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNode SourceSection: [4514,4522]`warnings`
                                                   Frame: [4,warnings,Illegal]
@@ -4168,6 +4167,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [8083,8088]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                          ObjectLiteralNode SourceSection: None
                                       IfNode SourceSection: [8102,8233]`elif isinstance(othe...`
                                         YesNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
@@ -4216,6 +4216,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadLocalVariableNode SourceSection: [8168,8173]`other`
                                               Frame: [1,other,Illegal]
                                               ReadVariableFromFrameNodeGen SourceSection: None
+                                            ObjectLiteralNode SourceSection: None
                                         SetAttributeNodeGen SourceSection: [8200,8224]`self.data += list(ot...`
                                           Attribute: data
                                           ReadLocalVariableNode SourceSection: [8200,8204]`self`
@@ -4241,6 +4242,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               ReadLocalVariableNode SourceSection: [8218,8223]`other`
                                                 Frame: [1,other,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
+                                            ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [8233,8244]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -4403,6 +4405,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                         ReadLocalVariableNode SourceSection: [8385,8386]`n`
                                           Frame: [1,n,Illegal]
                                           ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [8395,8406]`return self`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -5052,11 +5055,10 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [8930,8934]`kwds`
-                                              Frame: [2,kwds,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [8930,8934]`kwds`
+                                            Frame: [2,kwds,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [8906,8915]`self.data`
                                             GetFixedAttributeNodeGen SourceSection: None
@@ -7987,11 +7989,10 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                                 ExecutePositionalStarargsNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  ReadLocalVariableNode SourceSection: [12825,12829]`kwds`
-                                                    Frame: [2,kwds,Illegal]
-                                                    ReadVariableFromFrameNodeGen SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                ReadLocalVariableNode SourceSection: [12825,12829]`kwds`
+                                                  Frame: [2,kwds,Illegal]
+                                                  ReadVariableFromFrameNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNodeGen SourceSection: [12799,12808]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None

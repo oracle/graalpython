@@ -67,7 +67,7 @@ void _PyObject_Free(void* ptr) {
 	if (ptr == NULL) {
 		return;
 	}
-	if((!truffle_cannot_be_handle(ptr) && truffle_is_handle_to_managed(ptr)) || polyglot_is_value(ptr)) {
+	if((points_to_handle_space(ptr) && is_handle(ptr)) || polyglot_is_value(ptr)) {
 		if(free_upcall(native_pointer_to_java(ptr))) {
 		    /* If 1 is returned, the upcall function already took care of freeing */
 		    return;

@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.RichCmpFun
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SSizeObjArgProcRootNode;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetAttrFuncRootNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeFactory;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -96,62 +97,64 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AddRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AllToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsNativeDoubleNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectStealingNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.BinaryFirstToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToJavaDoubleNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CextUpcallNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ConvertArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.DirectUpcallNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ObjectUpcallNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PRaiseNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ResolveHandleNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstSecondToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TernaryFirstThirdToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.TransformExceptionToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.VoidPtrToJavaNode;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CastToNativeLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.PRaiseNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TransformExceptionToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.HandleCache;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cext.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.PyCFunctionDecorator;
-import com.oracle.graal.python.builtins.objects.cext.PyDateTimeCAPIWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeWrapperLibrary;
-import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.AllocInfo;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectStealingNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.BinaryFirstToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstSecondToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstThirdToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.HandleCache;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
@@ -177,6 +180,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -199,7 +205,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
-import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -225,6 +231,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -249,6 +256,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -474,6 +482,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
 
+        abstract Object execute(String name, Object callable, Object wrapper, Object type);
+
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)"}, limit = "3")
         static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object type,
@@ -571,6 +581,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static boolean isDecoratedManagedFunction(Object obj) {
             return obj instanceof PyCFunctionDecorator && CApiGuards.isNativeWrapper(((PyCFunctionDecorator) obj).getNativeFunction());
         }
+
+        public static CreateFunctionNode create() {
+            return CreateFunctionNodeFactory.create(null);
+        }
+
     }
 
     @Builtin(name = "PyErr_Restore", minNumOfPositionalArgs = 3)
@@ -638,7 +653,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 // getClassNode acts as a branch profile
-                return getClassNode.execute(currentException.getExceptionObject());
+                return getClassNode.execute(currentException.getUnreifiedException());
             }
             return errorMarker;
         }
@@ -1361,10 +1376,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        byte[] doSequenceArrayWrapper(VirtualFrame frame, PySequenceArrayWrapper obj, long n,
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper obj, long n,
                         @CachedLibrary(value = "obj") PythonNativeWrapperLibrary lib,
                         @Cached BytesNodes.ToBytesNode toBytesNode) {
-            return subRangeIfNeeded(toBytesNode.execute(frame, lib.getDelegate(obj)), n);
+            return subRangeIfNeeded(toBytesNode.execute(lib.getDelegate(obj)), n);
         }
 
         @Specialization(limit = "5")
@@ -1408,10 +1423,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asWideCharNode = insert(UnicodeAsWideCharNode.createLittleEndian());
+                    asWideCharNode = insert(UnicodeAsWideCharNodeGen.create());
                 }
 
-                PBytes wchars = asWideCharNode.execute(s, elementSize, elements);
+                PBytes wchars = asWideCharNode.executeLittleEndian(s, elementSize, elements);
                 if (wchars != null) {
                     return wchars;
                 } else {
@@ -1495,7 +1510,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
                 PTraceback newTraceback = factory().createTraceback(frame, frame.getLine(), traceback);
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-                context.setCurrentException(PException.fromExceptionInfo(currentException.getExceptionObject(), newTraceback, withJavaStacktrace));
+                context.setCurrentException(PException.fromExceptionInfo(currentException.getUnreifiedException(), newTraceback, withJavaStacktrace));
             }
 
             return 0;
@@ -1528,6 +1543,93 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doPythonObject(PythonManagedClass obj, Object getBufferProc, Object releaseBufferProc) {
             return doNativeWrapper(obj.getClassNativeWrapper(), getBufferProc, releaseBufferProc);
+        }
+    }
+
+    @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_MemoryViewFromObject extends NativeBuiltin {
+        @Specialization
+        Object wrap(VirtualFrame frame, Object object,
+                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return memoryViewNode.execute(frame, object);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    // Called without landing node
+    @Builtin(name = NativeCAPISymbols.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_BUFFER, minNumOfPositionalArgs = 11)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
+
+        @Specialization
+        Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
+                        Object readonlyObj, Object itemsizeObj, Object formatObj,
+                        Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        @Cached ConditionProfile zeroDimProfile,
+                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+            try {
+                int ndim = castToIntNode.execute(ndimObj);
+                int itemsize = castToIntNode.execute(itemsizeObj);
+                int len = castToIntNode.execute(lenObj);
+                boolean readonly = castToIntNode.execute(readonlyObj) != 0;
+                String format = (String) asPythonObjectNode.execute(formatObj);
+                Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
+                int[] shape = null;
+                int[] strides = null;
+                int[] suboffsets = null;
+                if (zeroDimProfile.profile(ndim > 0)) {
+                    if (!lib.isNull(shapePointer)) {
+                        shape = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            shape[i] = castToIntNode.execute(lib.readArrayElement(shapePointer, i));
+                        }
+                    } else {
+                        assert ndim == 1;
+                        shape = new int[1];
+                        shape[0] = len / itemsize;
+                    }
+                    if (!lib.isNull(stridesPointer)) {
+                        strides = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            strides[i] = castToIntNode.execute(lib.readArrayElement(stridesPointer, i));
+                        }
+                    } else {
+                        strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
+                    }
+                    if (!lib.isNull(suboffsetsPointer)) {
+                        suboffsets = new int[ndim];
+                        for (int i = 0; i < ndim; i++) {
+                            suboffsets[i] = castToIntNode.execute(lib.readArrayElement(suboffsetsPointer, i));
+                        }
+                    }
+                }
+                int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
+                ManagedBuffer managedBuffer = null;
+                if (!lib.isNull(bufferStructPointer)) {
+                    managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
+                }
+                PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
+                                PMemoryView.BufferFormat.fromString(format),
+                                format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+                return toNewRefNode.execute(memoryview);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return toNewRefNode.execute(getNativeNullNode.execute());
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
@@ -2638,11 +2740,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
         // PythonNativeObject)
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
+        Object doGeneric(@SuppressWarnings("unused") Object module, PythonNativeWrapper object, long size,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode,
                         @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode) {
-            byte[] ary = getByteArrayNode.execute(frame, asPythonObjectNode.execute(object));
+            byte[] ary = getByteArrayNode.execute(asPythonObjectNode.execute(object));
             PBytes result;
             if (size >= 0 && size < ary.length) {
                 // cast to int is guaranteed because of 'size < ary.length'
@@ -3194,7 +3296,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Shared("kwargsToJavaNode") @Cached AsPythonObjectNode kwargsToJavaNode,
                         @Shared("lib") @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib,
                         @Cached ExpandKeywordStarargsNode expandKwargsNode) {
-            return expandKwargsNode.executeWith(kwargsToJavaNode.execute(kwargsObj));
+            return expandKwargsNode.execute(kwargsToJavaNode.execute(kwargsObj));
         }
 
         static boolean isEmptyDict(AsPythonObjectNode asPythonObjectNode, HashingCollectionNodes.LenNode lenNode, Object kwargsObj) {
@@ -3644,6 +3746,54 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         static Object doGeneric(Object object) {
             return new PyDateTimeCAPIWrapper(object);
+        }
+    }
+
+    @Builtin(name = "_PyModule_GetAndIncMaxModuleNumber")
+    @GenerateNodeFactory
+    abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
+
+        @Specialization
+        static long doIt(
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            CApiContext nativeContext = context.getCApiContext();
+            return nativeContext.getAndIncMaxModuleNumber();
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class PyDescrNewClassMethod extends PythonBuiltinNode {
+
+        @Specialization(guards = "meth != null")
+        @SuppressWarnings("unused")
+        Object doPBuiltinFunction(Object typeObj, Object nameObj, Object methObj,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") PBuiltinFunction meth,
+                        @Cached ToNewRefNode toNewRefNode) {
+            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(meth));
+        }
+
+        @Specialization(guards = "meth != null")
+        Object doNativeCallable(Object type, Object nameObj, Object methObj,
+                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") @SuppressWarnings("unused") PBuiltinFunction meth,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached CreateFunctionNode createFunctionNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            String name = castToJavaStringNode.execute(fromCharPointerNode.execute(nameObj));
+            Object callable = createFunctionNode.execute(name, methObj, PNone.NONE, type);
+            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(callable));
+        }
+
+        static PBuiltinFunction asBuiltinFunction(Object methObj, AsPythonObjectNode asPythonObjectNode) {
+            Object object = asPythonObjectNode.execute(methObj);
+            if (object instanceof PBuiltinFunction) {
+                return (PBuiltinFunction) object;
+            }
+            return null;
         }
     }
 }

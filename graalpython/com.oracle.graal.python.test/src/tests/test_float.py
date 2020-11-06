@@ -85,6 +85,47 @@ class BasicTests(unittest.TestCase):
             pass
         else:
             assert False, "rounding with a float should have raised"
+            
+        class F: 
+            pass
+
+        setattr(F, "__round__", round)
+        try:
+            round(F())
+        except TypeError:
+            pass
+        else:
+            assert False, "rounding with a non-float should have raised"
+            
+        class F(float): 
+            pass
+
+        setattr(F, "__round__", round)
+        try:
+            round(F(4.2))
+        except TypeError:
+            pass
+        else:
+            assert False, "rounding with only 1 arg should have raised"
+        
+        round(F(4.2), 1)
+
+        def r(o):
+            return(42)
+
+        setattr(F, "__round__", r)
+        assert round(F(4.2)) == 42
+
+        l = []
+        def r(arg1, arg2):
+            l.append(arg1)
+            l.append(arg2)
+            return(42)
+
+        setattr(F, "__round__", r)
+        assert round(F(4.2), 2) == 42
+        assert l[0] == 4.2
+        assert l[1] == 2
 
     def test_magic_rounding(self):
         class C():

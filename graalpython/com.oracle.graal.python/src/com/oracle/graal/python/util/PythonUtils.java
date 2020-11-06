@@ -49,6 +49,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -60,6 +61,8 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonUtils {
+
+    public static final PCell[] NO_CLOSURE = new PCell[0];
 
     private PythonUtils() {
         // no instances
@@ -90,6 +93,50 @@ public final class PythonUtils {
     @TruffleBoundary
     public static void getChars(String str, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
         str.getChars(srcBegin, srcEnd, dst, dstBegin);
+    }
+
+    /*
+     * Replacements for JDK's exact math methods that throw the checked singleton {@link
+     * OverflowException}. The implementation is taken from JDK.
+     */
+    public static int addExact(int x, int y) throws OverflowException {
+        int r = x + y;
+        if (((x ^ r) & (y ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static long addExact(long x, long y) throws OverflowException {
+        long r = x + y;
+        if (((x ^ r) & (y ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static int subtractExact(int x, int y) throws OverflowException {
+        int r = x - y;
+        if (((x ^ y) & (x ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static long subtractExact(long x, long y) throws OverflowException {
+        long r = x - y;
+        if (((x ^ y) & (x ^ r)) < 0) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
+    }
+
+    public static int toIntExact(long x) throws OverflowException {
+        int r = (int) x;
+        if (r != x) {
+            throw OverflowException.INSTANCE;
+        }
+        return r;
     }
 
     public static int multiplyExact(int x, int y) throws OverflowException {
@@ -149,6 +196,11 @@ public final class PythonUtils {
             ct = Truffle.getRuntime().createCallTarget(rootNode);
         }
         return ct;
+    }
+
+    @TruffleBoundary
+    public static String format(String fmt, Object... args) {
+        return String.format(fmt, args);
     }
 
     @TruffleBoundary(allowInlining = true)

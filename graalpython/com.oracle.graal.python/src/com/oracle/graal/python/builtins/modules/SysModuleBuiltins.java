@@ -304,7 +304,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (currentException == null) {
                 return factory.createTuple(new PNone[]{PNone.NONE});
             }
-            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getExceptionObject())});
+            return factory.createTuple(new Object[]{getClassNode.execute(currentException.getUnreifiedException())});
         }
 
         @Specialization

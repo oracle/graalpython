@@ -96,7 +96,7 @@ static void initialize_upcall_functions() {
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
-    cache = (cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
+    cache = (cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", resolve_handle);
     ptr_cache = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
     ptr_cache_stealing = (ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 1);
     type_ptr_cache = (type_ptr_cache_t) polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_PtrCache_Create", 0);
@@ -171,6 +171,7 @@ declare_type(PyTuple_Type, tuple, PyTupleObject);
 declare_type(PyList_Type, list, PyListObject);
 declare_type(PyComplex_Type, complex, PyComplexObject);
 declare_type(PyModule_Type, module, PyModuleObject);
+declare_type(PyModuleDef_Type, moduledef, PyModuleDef);
 declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
 declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
 declare_type(PySet_Type, set, PySetObject);
@@ -210,6 +211,7 @@ initialize_type(_PyWeakref_CallableProxyType, CallableProxyType, PyWeakReference
 
 POLYGLOT_DECLARE_TYPE(PyThreadState);
 POLYGLOT_DECLARE_TYPE(newfunc);
+POLYGLOT_DECLARE_TYPE(Py_buffer);
 
 
 static void initialize_globals() {
@@ -247,6 +249,7 @@ static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memoryview_getbuffer, (releasebufferproc)memoryview_releasebuffer);
 }
 
 __attribute__((constructor (20000)))
@@ -266,8 +269,8 @@ void* native_long_to_java(uint64_t val) {
         return Py_NoValue;
     } else if (obj == Py_None) {
         return Py_None;
-    } else if (!truffle_cannot_be_handle(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
+    } else if (points_to_handle_space(obj)) {
+        return resolve_handle_cached(cache, (uint64_t)obj);
     }
     return obj;
 }
@@ -450,8 +453,8 @@ uint64_t PyTruffle_Wchar_Size() {
 
 /** free's a native pointer or releases a Sulong handle; DO NOT CALL WITH MANAGED POINTERS ! */
 void PyTruffle_Free(void* obj) {
-	if(!truffle_cannot_be_handle(obj) && truffle_is_handle_to_managed(obj)) {
-		truffle_release_handle(obj);
+	if(points_to_handle_space(obj) && is_handle(obj)) {
+		release_handle(obj);
 	} else {
 		free(obj);
 	}
@@ -459,7 +462,7 @@ void PyTruffle_Free(void* obj) {
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
 void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
-    return truffle_deref_handle_for_managed(jobj);
+    return create_deref_handle(jobj);
 }
 
 const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
@@ -738,6 +741,10 @@ int truffle_ptr_compare(void* x, void* y, int op) {
     default:
         return -1;
     }
+}
+
+void* truffle_ptr_add(void* x, Py_ssize_t y) {
+    return x + y;
 }
 
 double truffle_read_ob_fval(PyFloatObject* fobj) {

@@ -140,8 +140,9 @@ import com.oracle.graal.python.builtins.objects.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.map.MapBuiltins;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
@@ -239,7 +240,6 @@ public final class Python3Core implements PythonCore {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        "memoryview",
                         "list",
                         "_codecs",
                         "_codecs_truffle",
@@ -349,6 +349,7 @@ public final class Python3Core implements PythonCore {
                         new AbstractMethodBuiltins(),
                         new MethodBuiltins(),
                         new BuiltinMethodBuiltins(),
+                        new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
                         new MappingproxyBuiltins(),
@@ -393,7 +394,7 @@ public final class Python3Core implements PythonCore {
                         new LocaleModuleBuiltins(),
                         new SysModuleBuiltins(),
                         new BufferBuiltins(),
-                        new MemoryviewBuiltins(),
+                        new MemoryViewBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),

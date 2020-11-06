@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -75,6 +76,7 @@ public class ErrorMessageFormatter {
         return format(null, format, args);
     }
 
+    @TruffleBoundary
     public String format(PythonObjectLibrary lib, String format, Object... args) {
         CompilerAsserts.neverPartOfCompilation();
         Matcher m = fsPattern.matcher(format);
@@ -119,7 +121,7 @@ public class ErrorMessageFormatter {
                 matchIdx++;
             }
         }
-        return String.format(sb.toString(), compact(args, removedCnt));
+        return PythonUtils.format(sb.toString(), compact(args, removedCnt));
     }
 
     @TruffleBoundary

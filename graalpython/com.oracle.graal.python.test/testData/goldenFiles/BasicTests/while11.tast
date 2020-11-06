@@ -58,6 +58,7 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                                   CachedDispatchFirst SourceSection: None
                               IntegerLiteralNode SourceSection: [103,104]`1`
                                 Value: 1
+                              ObjectLiteralNode SourceSection: None
                     BlockNode SourceSection: None
                       WriteNameNodeGen SourceSection: [123,133]`iters += 1`
                         Identifier: iters
@@ -68,6 +69,7 @@ ModuleRootNode Name: <module 'while11'> SourceSection: [0,147]`iters = 0↵while
                               CachedDispatchFirst SourceSection: None
                           IntegerLiteralNode SourceSection: [132,133]`1`
                             Value: 1
+                          ObjectLiteralNode SourceSection: None
                       BreakNode SourceSection: [142,147]`break`
               BlockNode SourceSection: None
       SideEffect:

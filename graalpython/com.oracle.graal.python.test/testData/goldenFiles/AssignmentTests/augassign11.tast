@@ -20,3 +20,4 @@ ModuleRootNode Name: <module 'augassign11'> SourceSection: [0,7]`a >>= b`
               Identifier: b
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
+            ObjectLiteralNode SourceSection: None

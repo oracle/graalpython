@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_449000
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_449964
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_612074
+*graalpython.lib-python.3.test.test_re.ReTests.test_bug_6509
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_6561
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_725149
 *graalpython.lib-python.3.test.test_re.ReTests.test_bug_764548
@@ -58,6 +59,7 @@
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_escape_non_ascii_bytes
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_findall
+*graalpython.lib-python.3.test.test_re.ReTests.test_re_split
 *graalpython.lib-python.3.test.test_re.ReTests.test_re_subn
 *graalpython.lib-python.3.test.test_re.ReTests.test_repeat_minmax_overflow_maxrepeat
 *graalpython.lib-python.3.test.test_re.ReTests.test_scanner

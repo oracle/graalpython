@@ -598,6 +598,18 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
         return mx.run([python_binary] + args, nonZeroIsFatal=True, env=env)
 
 
+def run_hpy_unittests(python_binary, args=None):
+    args = [] if args is None else args
+    with tempfile.TemporaryDirectory(prefix='hpy-test-site-') as d:
+        env = os.environ.copy()
+        prefix = str(d)
+        env.update(PYTHONUSERBASE=prefix)
+        mx.log("Ensure 'setuptools' is installed")
+        mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "setuptools"], nonZeroIsFatal=True, env=env)
+
+        return run_python_unittests(python_binary, args=args, paths=[_hpy_test_root()], env=env)
+
+
 def run_tagged_unittests(python_binary, env=None):
     if env is None:
         env = os.environ
@@ -651,11 +663,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
         if task:
-            run_python_unittests(python_gvm(), paths=[_hpy_test_root()])
+            run_hpy_unittests(python_gvm())
 
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
-            run_python_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"], paths=[_hpy_test_root()])
+            run_hpy_unittests(python_gvm(["sandboxed"]), args=["--llvm.managed"])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.tagged]) as task:
         if task:
@@ -1216,7 +1228,6 @@ def import_python_sources(args):
 
     # mappings for files that are renamed
     mapping = {
-        "memoryobject.c": "_memoryview.c",
         "_sre.c": "_cpython_sre.c",
         "unicodedata.c": "_cpython_unicodedata.c",
         "_bz2module.c": "_bz2.c",
@@ -1750,6 +1761,9 @@ class GraalpythonCAPIBuildTask(mx.ProjectBuildTask):
         mx.ensure_dir_exists(cwd)
         rc = self.run(args, cwd=cwd)
         shutil.rmtree(cwd) # remove the temporary build files
+        # if we're just running style tests, this is allowed to fail
+        if os.environ.get("BUILD_NAME") == "python-style":
+            return 0
         return min(rc, 1)
 
     def src_dir(self):
@@ -1977,8 +1991,10 @@ def update_hpy_import_cmd(args):
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])
 
 
-def run_leak_launcher(args):
-    print("Leak test: " + " ".join(args))
+def run_leak_launcher(input_args, out=None):
+    print("mx python-leak-test " + " ".join(input_args))
+
+    args = input_args
     capi_home = _get_capi_home()
     args.insert(0, "--experimental-options")
     args.insert(0, "--python.CAPI=%s" % capi_home)
@@ -1992,10 +2008,24 @@ def run_leak_launcher(args):
     vm_args += mx.get_runtime_jvm_args(dists)
     jdk = mx.get_jdk(tag=None)
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
-    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False)
+    retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=out)
     if retval == 0:
         print("PASSED")
         return True
+    elif os.environ.get("CI") and "--keep-dump" not in input_args:
+        # rerun once with heap dumping enabled
+        out = mx.OutputCapture()
+        run_leak_launcher(["--keep-dump"] + input_args, out=out)
+        path = out.data.strip().split("Dump file:")[2].strip()
+        if path:
+            save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
+            try:
+                os.makedirs(save_path)
+            except OSError:
+                pass
+            dest = shutil.copy(path, save_path)
+            print("Heapdump file kept in " + dest)
+        return False
     else:
         print("FAILED")
         return False

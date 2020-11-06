@@ -54,7 +54,10 @@
 #define HPyAPI_RUNTIME_FUNC(restype) _HPy_HIDDEN restype
 
 typedef struct { PyObject *_o; } HPy;
+typedef struct { Py_ssize_t _lst; } HPyListBuilder;
+typedef struct { Py_ssize_t _tup; } HPyTupleBuilder;
 typedef Py_ssize_t HPy_ssize_t;
+typedef Py_hash_t HPy_hash_t;
 
 /* For internal usage only. These should be #undef at the end of this header.
    If you need to convert HPy to PyObject* and vice-versa, you should use the
@@ -63,14 +66,18 @@ typedef Py_ssize_t HPy_ssize_t;
 #define _h2py(x) (x._o)
 #define _py2h(o) ((HPy){o})
 
-#include "meth.h"
-
 typedef struct _HPyContext_s {
     HPy h_None;
     HPy h_True;
     HPy h_False;
     HPy h_ValueError;
     HPy h_TypeError;
+    HPy h_BaseObjectType;
+    HPy h_TypeType;
+    HPy h_LongType;
+    HPy h_UnicodeType;
+    HPy h_TupleType;
+    HPy h_ListType;
 } *HPyContext;
 
 /* XXX! should be defined only once, not once for every .c! */
@@ -97,6 +104,12 @@ _HPyGetContext(void) {
         ctx->h_False = _py2h(Py_False);
         ctx->h_ValueError = _py2h(PyExc_ValueError);
         ctx->h_TypeError = _py2h(PyExc_TypeError);
+        ctx->h_BaseObjectType = _py2h((PyObject *)&PyBaseObject_Type);
+        ctx->h_TypeType = _py2h((PyObject *)&PyType_Type);
+        ctx->h_LongType = _py2h((PyObject *)&PyLong_Type);
+        ctx->h_UnicodeType = _py2h((PyObject *)&PyUnicode_Type);
+        ctx->h_TupleType = _py2h((PyObject *)&PyTuple_Type);
+        ctx->h_ListType = _py2h((PyObject *)&PyList_Type);
     }
     return ctx;
 }
@@ -114,111 +127,6 @@ HPy_Close(HPyContext ctx, HPy handle)
 {
     Py_XDECREF(_h2py(handle));
 }
-
-/* object.h */
-
-HPyAPI_FUNC(HPy)
-HPy_GetAttr(HPyContext ctx, HPy obj, HPy name) {
-  return _py2h(PyObject_GetAttr(_h2py(obj), _h2py(name)));
-}
-
-HPyAPI_FUNC(HPy)
-HPy_GetAttr_s(HPyContext ctx, HPy obj, const char *name) {
-  return _py2h(PyObject_GetAttrString(_h2py(obj), name));
-}
-
-HPyAPI_FUNC(int)
-HPy_HasAttr(HPyContext ctx, HPy obj, HPy name) {
-  return PyObject_HasAttr(_h2py(obj), _h2py(name));
-}
-
-HPyAPI_FUNC(int)
-HPy_HasAttr_s(HPyContext ctx, HPy obj, const char *name) {
-  return PyObject_HasAttrString(_h2py(obj), name);
-}
-
-HPyAPI_FUNC(int)
-HPy_SetAttr(HPyContext ctx, HPy obj, HPy name, HPy value) {
-  return PyObject_SetAttr(_h2py(obj), _h2py(name), _h2py(value));
-}
-
-HPyAPI_FUNC(int)
-HPy_SetAttr_s(HPyContext ctx, HPy obj, const char *name, HPy value) {
-  return PyObject_SetAttrString(_h2py(obj), name, _h2py(value));
-}
-
-HPyAPI_FUNC(HPy)
-HPy_GetItem(HPyContext ctx, HPy obj, HPy key) {
-  return _py2h(PyObject_GetItem(_h2py(obj), _h2py(key)));
-}
-
-HPyAPI_FUNC(HPy)
-HPy_GetItem_i(HPyContext ctx, HPy obj, HPy_ssize_t idx) {
-  PyObject* key = PyLong_FromSsize_t(idx);
-  if (key == NULL)
-    return HPy_NULL;
-  HPy result = _py2h(PyObject_GetItem(_h2py(obj), key));
-  Py_DECREF(key);
-  return result;
-}
-
-HPyAPI_FUNC(HPy)
-HPy_GetItem_s(HPyContext ctx, HPy obj, const char *key) {
-  PyObject* key_o = PyUnicode_FromString(key);
-  if (key_o == NULL)
-    return HPy_NULL;
-  HPy result = _py2h(PyObject_GetItem(_h2py(obj), key_o));
-  Py_DECREF(key_o);
-  return result;
-}
-
-HPyAPI_FUNC(int)
-HPy_SetItem(HPyContext ctx, HPy obj, HPy key, HPy value) {
-  return PyObject_SetItem(_h2py(obj), _h2py(key), _h2py(value));
-}
-
-HPyAPI_FUNC(int)
-HPy_SetItem_i(HPyContext ctx, HPy obj, HPy_ssize_t idx, HPy value) {
-  PyObject* key = PyLong_FromSsize_t(idx);
-  if (key == NULL)
-    return -1;
-  int result = PyObject_SetItem(_h2py(obj), key, _h2py(value));
-  Py_DECREF(key);
-  return result;
-}
-
-HPyAPI_FUNC(int)
-HPy_SetItem_s(HPyContext ctx, HPy obj, const char *key, HPy value) {
-  PyObject* key_o = PyUnicode_FromString(key);
-  if (key_o == NULL)
-    return -1;
-  int result = PyObject_SetItem(_h2py(obj), key_o, _h2py(value));
-  Py_DECREF(key_o);
-  return result;
-}
-
-HPyAPI_FUNC(int)
-HPyErr_Occurred(HPyContext ctx) {
-  return PyErr_Occurred() ? 1 : 0;
-}
-
-/* moduleobject.h */
-typedef PyModuleDef HPyModuleDef;
-
-#define HPyModuleDef_HEAD_INIT PyModuleDef_HEAD_INIT
-
-HPyAPI_FUNC(HPy)
-HPyModule_Create(HPyContext ctx, HPyModuleDef *mdef) {
-    return _py2h(PyModule_Create(mdef));
-}
-
-#define HPy_MODINIT(modname)                                   \
-    static HPy init_##modname##_impl(HPyContext ctx);          \
-    PyMODINIT_FUNC                                             \
-    PyInit_##modname(void)                                     \
-    {                                                          \
-        return _h2py(init_##modname##_impl(_HPyGetContext())); \
-    }
 
 HPyAPI_FUNC(HPy)
 HPy_FromPyObject(HPyContext ctx, PyObject *obj)
@@ -240,10 +148,116 @@ HPy_AsPyObject(HPyContext ctx, HPy h)
  *
  */
 #define _HPy_IMPL_NAME(name) HPy##name
-#include "../common/autogen_impl.h"
+#define _HPy_IMPL_NAME_NOPREFIX(name) HPy_##name
+#include "../common/implementation.h"
+#undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME
 
-// include runtime functions
-#include "../common/runtime.h"
+#include "../common/cpy_types.h"
+
+#include "../common/macros.h"
+#include "../common/runtime/argparse.h"
+
+#include "../common/hpyfunc.h"
+#include "../common/hpydef.h"
+#include "../common/hpytype.h"
+#include "../common/hpymodule.h"
+#include "../common/runtime/ctx_module.h"
+#include "../common/runtime/ctx_type.h"
+#include "../common/runtime/ctx_listbuilder.h"
+#include "../common/runtime/ctx_tuple.h"
+#include "../common/runtime/ctx_tuplebuilder.h"
+
+HPyAPI_FUNC(HPy)
+HPyModule_Create(HPyContext ctx, HPyModuleDef *mdef)
+{
+    return ctx_Module_Create(ctx, mdef);
+}
+
+HPyAPI_FUNC(HPy)
+HPyType_FromSpec(HPyContext ctx, HPyType_Spec *spec, HPyType_SpecParam *params)
+{
+    return ctx_Type_FromSpec(ctx, spec, params);
+}
+
+HPyAPI_FUNC(HPy)
+_HPy_New(HPyContext ctx, HPy h, void **data)
+{
+    return ctx_New(ctx, h, data);
+}
+
+HPyAPI_FUNC(void) _Py_NO_RETURN
+HPy_FatalError(HPyContext ctx, const char *message)
+{
+    Py_FatalError(message);
+}
+
+HPyAPI_FUNC(HPy)
+HPyType_GenericNew(HPyContext ctx, HPy type, HPy *args, HPy_ssize_t nargs, HPy kw)
+{
+    return ctx_Type_GenericNew(ctx, type, args, nargs, kw);
+}
+
+HPyAPI_FUNC(void*)
+_HPy_Cast(HPyContext ctx, HPy h)
+{
+    return ctx_Cast(ctx, h);
+}
+
+HPyAPI_FUNC(HPyListBuilder)
+HPyListBuilder_New(HPyContext ctx, HPy_ssize_t initial_size)
+{
+    return ctx_ListBuilder_New(ctx, initial_size);
+}
+
+HPyAPI_FUNC(void)
+HPyListBuilder_Set(HPyContext ctx, HPyListBuilder builder,
+                   HPy_ssize_t index, HPy h_item)
+{
+    ctx_ListBuilder_Set(ctx, builder, index, h_item);
+}
+
+HPyAPI_FUNC(HPy)
+HPyListBuilder_Build(HPyContext ctx, HPyListBuilder builder)
+{
+    return ctx_ListBuilder_Build(ctx, builder);
+}
+
+HPyAPI_FUNC(void)
+HPyListBuilder_Cancel(HPyContext ctx, HPyListBuilder builder)
+{
+    ctx_ListBuilder_Cancel(ctx, builder);
+}
+
+HPyAPI_FUNC(HPyTupleBuilder)
+HPyTupleBuilder_New(HPyContext ctx, HPy_ssize_t initial_size)
+{
+    return ctx_TupleBuilder_New(ctx, initial_size);
+}
+
+HPyAPI_FUNC(void)
+HPyTupleBuilder_Set(HPyContext ctx, HPyTupleBuilder builder,
+                    HPy_ssize_t index, HPy h_item)
+{
+    ctx_TupleBuilder_Set(ctx, builder, index, h_item);
+}
+
+HPyAPI_FUNC(HPy)
+HPyTupleBuilder_Build(HPyContext ctx, HPyTupleBuilder builder)
+{
+    return ctx_TupleBuilder_Build(ctx, builder);
+}
+
+HPyAPI_FUNC(void)
+HPyTupleBuilder_Cancel(HPyContext ctx, HPyTupleBuilder builder)
+{
+    ctx_TupleBuilder_Cancel(ctx, builder);
+}
+
+HPyAPI_FUNC(HPy)
+HPyTuple_FromArray(HPyContext ctx, HPy items[], HPy_ssize_t n)
+{
+    return ctx_Tuple_FromArray(ctx, items, n);
+}
 
 #endif /* !HPy_CPYTHON_H */

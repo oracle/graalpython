@@ -29,6 +29,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -38,8 +39,12 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -54,21 +59,22 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(PythonCore core) {
+        builtinConstants.put("DEBUG_LEAK", 0);
+        super.initialize(core);
+    }
+
     @Builtin(name = "collect", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
         int collect(VirtualFrame frame, @SuppressWarnings("unused") Object level,
                         @Cached BranchProfile asyncProfile) {
-            doGc();
+            PythonUtils.forceFullGC();
             // collect some weak references now
             getContext().triggerAsyncActions(frame, asyncProfile);
             return 0;
-        }
-
-        @TruffleBoundary
-        private static void doGc() {
-            System.gc();
         }
     }
 
@@ -76,26 +82,47 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcIsEnabledNode extends PythonBuiltinNode {
         @Specialization
-        boolean isenabled() {
-            return true;
-        }
-    }
-
-    abstract static class StubNode extends PythonBuiltinNode {
-        @Specialization
-        PNone disable() {
-            return PNone.NONE;
+        boolean isenabled(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return ctx.isGcEnabled();
         }
     }
 
     @Builtin(name = "disable", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class DisableNode extends StubNode {
+    abstract static class DisableNode extends PythonBuiltinNode {
+        @Specialization
+        PNone disable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            ctx.setGcEnabled(false);
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = "enable", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class EnableNode extends StubNode {
+    abstract static class EnableNode extends PythonBuiltinNode {
+        @Specialization
+        PNone enable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            ctx.setGcEnabled(true);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "get_debug", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetDebugNode extends PythonBuiltinNode {
+        @Specialization
+        int getDebug() {
+            return 0;
+        }
+    }
+
+    @Builtin(name = "set_debug", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class SetDebugNode extends PythonBuiltinNode {
+        @Specialization
+        PNone setDebug(@SuppressWarnings("unused") Object ignored) {
+            return PNone.NONE;
+        }
     }
 
     @Builtin(name = "get_count", minNumOfPositionalArgs = 0)

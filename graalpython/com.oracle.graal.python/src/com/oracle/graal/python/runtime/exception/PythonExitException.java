@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,11 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
-import com.oracle.truffle.api.TruffleException;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -49,25 +53,34 @@ import com.oracle.truffle.api.nodes.Node;
  * and leaving the interpreter after the normal <code>SystemExit</code> has been handled.
  */
 @SuppressWarnings("serial")
-public final class PythonExitException extends RuntimeException implements TruffleException {
-
-    private final Node location;
+@ExportLibrary(InteropLibrary.class)
+public final class PythonExitException extends AbstractTruffleException {
     private final int status;
 
     public PythonExitException(Node location, int status) {
-        this.location = location;
+        super(location);
         this.status = status;
     }
 
-    public Node getLocation() {
-        return location;
-    }
-
-    public boolean isExit() {
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isException() {
         return true;
     }
 
-    public int getExitStatus() {
+    @ExportMessage
+    RuntimeException throwException() {
+        throw this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    ExceptionType getExceptionType() {
+        return ExceptionType.EXIT;
+    }
+
+    @ExportMessage
+    public int getExceptionExitStatus() {
         return status;
     }
 }

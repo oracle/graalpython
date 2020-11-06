@@ -164,56 +164,57 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static void doSelect(ChannelFD[] readFDs, ChannelFD[] writeFDs, ChannelFD[] xFDs, long timeoutMillis) throws IOException {
-            Selector selector = Selector.open();
+            try (Selector selector = Selector.open()) {
 
-            for (ChannelFD readFD : readFDs) {
-                readFD.channel.configureBlocking(false);
-                readFD.channel.register(selector, SelectionKey.OP_READ);
-            }
-
-            for (ChannelFD writeFD : writeFDs) {
-                writeFD.channel.configureBlocking(false);
-                writeFD.channel.register(selector, SelectionKey.OP_WRITE);
-            }
-
-            for (ChannelFD xFD : xFDs) {
-                // TODO(fa): not sure if these ops are representing
-                // "exceptional condition pending"
-                xFD.channel.configureBlocking(false);
-                xFD.channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
-            }
-
-            int selected = selector.select(timeoutMillis);
-
-            // remove non-selected channels from given lists
-            int deleted = 0;
-            for (int i = 0; i < readFDs.length; i++) {
-                ChannelFD readFD = readFDs[i];
-                SelectionKey selectionKey = readFD.channel.keyFor(selector);
-                if (!selectionKey.isReadable()) {
-                    readFDs[i] = null;
-                    deleted++;
+                for (ChannelFD readFD : readFDs) {
+                    readFD.channel.configureBlocking(false);
+                    readFD.channel.register(selector, SelectionKey.OP_READ);
                 }
-            }
 
-            for (int i = 0; i < writeFDs.length; i++) {
-                ChannelFD writeFD = writeFDs[i];
-                SelectionKey selectionKey = writeFD.channel.keyFor(selector);
-                if (!selectionKey.isWritable()) {
-                    writeFDs[i] = null;
-                    deleted++;
+                for (ChannelFD writeFD : writeFDs) {
+                    writeFD.channel.configureBlocking(false);
+                    writeFD.channel.register(selector, SelectionKey.OP_WRITE);
                 }
-            }
 
-            for (int i = 0; i < xFDs.length; i++) {
-                ChannelFD xFD = xFDs[i];
-                SelectionKey selectionKey = xFD.channel.keyFor(selector);
-                if (!(selectionKey.isAcceptable() || selectionKey.isConnectable())) {
-                    xFDs[i] = null;
-                    deleted++;
+                for (ChannelFD xFD : xFDs) {
+                    // TODO(fa): not sure if these ops are representing
+                    // "exceptional condition pending"
+                    xFD.channel.configureBlocking(false);
+                    xFD.channel.register(selector, SelectionKey.OP_ACCEPT | SelectionKey.OP_CONNECT);
                 }
+
+                int selected = selector.select(timeoutMillis);
+
+                // remove non-selected channels from given lists
+                int deleted = 0;
+                for (int i = 0; i < readFDs.length; i++) {
+                    ChannelFD readFD = readFDs[i];
+                    SelectionKey selectionKey = readFD.channel.keyFor(selector);
+                    if (!selectionKey.isReadable()) {
+                        readFDs[i] = null;
+                        deleted++;
+                    }
+                }
+
+                for (int i = 0; i < writeFDs.length; i++) {
+                    ChannelFD writeFD = writeFDs[i];
+                    SelectionKey selectionKey = writeFD.channel.keyFor(selector);
+                    if (!selectionKey.isWritable()) {
+                        writeFDs[i] = null;
+                        deleted++;
+                    }
+                }
+
+                for (int i = 0; i < xFDs.length; i++) {
+                    ChannelFD xFD = xFDs[i];
+                    SelectionKey selectionKey = xFD.channel.keyFor(selector);
+                    if (!(selectionKey.isAcceptable() || selectionKey.isConnectable())) {
+                        xFDs[i] = null;
+                        deleted++;
+                    }
+                }
+                assert selected == (readFDs.length + writeFDs.length + xFDs.length) - deleted;
             }
-            assert selected == (readFDs.length + writeFDs.length + xFDs.length) - deleted;
         }
 
         private ChannelFD[] seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,

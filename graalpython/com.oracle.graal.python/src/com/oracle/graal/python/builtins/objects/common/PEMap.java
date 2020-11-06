@@ -68,6 +68,13 @@ final class PEMap implements Iterable<DictKey> {
     private static final int INITIAL_CAPACITY = 4;
 
     /**
+     * Initial number of key/value pair entries that is allocated in the first entries array if the
+     * requested size is too large. Set to 2 MB
+     */
+    private static final int OBJ_ARRAY_SIZE_1_MB = 131072;
+    private static final int MAX_INITIAL_CAPACITY = OBJ_ARRAY_SIZE_1_MB * 2;
+
+    /**
      * Maximum number of entries that are moved linearly forward if a key is removed.
      */
     private static final int COMPRESS_IMMEDIATE_CAPACITY = 8;
@@ -147,7 +154,11 @@ final class PEMap implements Iterable<DictKey> {
 
     private void init(int size) {
         if (size > INITIAL_CAPACITY) {
-            entries = new Object[size << 1];
+            int cap = size << 1;
+            if (cap < 0 || cap > MAX_INITIAL_CAPACITY) {
+                cap = MAX_INITIAL_CAPACITY;
+            }
+            entries = new Object[cap];
         }
     }
 

@@ -5,11 +5,11 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.266.1",
+    "mxversion": "5.273.10",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "20.3.0",
+    "version": "21.0.0",
     "release": False,
     "groupId": "org.graalvm.graalpython",
     "url": "http://www.graalvm.org/",
@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
+                "version": "b9e9b3fbe03a922a778269d84a3545586b235d84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
+                "version": "b9e9b3fbe03a922a778269d84a3545586b235d84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "930d205ff03a359f51b877432ce5c6946df9cd1c",
+                "version": "b9e9b3fbe03a922a778269d84a3545586b235d84",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -174,14 +174,14 @@ suite = {
 
         "docs.user": {
             "type": "python",
-            "path": 'docs',
-            "source": ["user"],
+            "path": 'docs/user',
+            "source": [],
         },
 
         "docs.contributor": {
             "type": "python",
-            "path": 'docs',
-            "source": ["contributor"],
+            "path": 'docs/contributor',
+            "source": [],
         },
 
         "com.oracle.graal.python.cext": {
@@ -262,6 +262,7 @@ suite = {
                 "XZ-1.8",
                 "ICU4J-66.1",
                 "ICU4J-CHARSET-66.1",
+                "sdk:JLINE3",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "jacoco": "include",

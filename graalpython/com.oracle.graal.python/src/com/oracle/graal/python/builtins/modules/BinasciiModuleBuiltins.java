@@ -47,33 +47,29 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEr
 import java.util.List;
 import java.util.zip.CRC32;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.statement.RaiseNodeGen;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,11 +80,8 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 @CoreFunctions(defineModule = "binascii")
@@ -119,10 +112,14 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(b64decode(data));
         }
 
-        @Specialization
-        PBytes doBytesLike(VirtualFrame frame, PBytesLike data,
-                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
-            return factory().createBytes(b64decode(toBytesNode.execute(frame, data)));
+        @Specialization(guards = "bufferLib.isBuffer(data)", limit = "3")
+        PBytes doBuffer(Object data,
+                        @CachedLibrary("data") PythonObjectLibrary bufferLib) {
+            try {
+                return factory().createBytes(b64decode(bufferLib.getBufferBytes(data)));
+            } catch (UnsupportedMessageException e) {
+                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
         }
 
         @TruffleBoundary
@@ -241,111 +238,27 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, parameterNames = {"data", "newline"})
-    @TypeSystemReference(PythonArithmeticTypes.class)
+    @Builtin(name = "b2a_base64", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"data"}, keywordOnlyNames = {"newline"})
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "1", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class B2aBase64Node extends PythonBinaryBuiltinNode {
-
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArray;
-        @Child private B2aBase64Node recursiveNode;
-
-        private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
-            if (toByteArray == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArray = insert(ToByteArrayNodeGen.create());
-            }
-            return toByteArray;
-        }
-
-        private B2aBase64Node getRecursiveNode() {
-            if (recursiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                recursiveNode = insert(BinasciiModuleBuiltinsFactory.B2aBase64NodeFactory.create());
-            }
-            return recursiveNode;
-        }
-
+    abstract static class B2aBase64Node extends PythonBinaryClinicBuiltinNode {
         @TruffleBoundary
-        private PBytes b2a(byte[] data, boolean newline) {
+        private static byte[] b2a(byte[] data, int newline) {
             String encode = Base64.encode(data);
-            if (newline) {
-                return factory().createBytes((encode + "\n").getBytes());
+            if (newline != 0) {
+                return (encode + "\n").getBytes();
             }
-            return factory().createBytes((encode).getBytes());
+            return encode.getBytes();
         }
 
-        @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aBytesLike(PBytesLike data, @SuppressWarnings("unused") PNone newline) {
-            return b2aBytesLike(data, 1);
-        }
-
-        @Specialization
-        PBytes b2aBytesLike(PBytesLike data, long newline) {
-            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
-        }
-
-        @Specialization
-        PBytes b2aBytesLike(PBytesLike data, PInt newline) {
-            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
-        }
-
-        @Specialization(limit = "1")
-        PBytes b2aBytesLike(VirtualFrame frame, PBytesLike data, Object newline,
-                        @CachedLibrary("newline") PythonObjectLibrary lib) {
-            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
-        }
-
-        @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aArray(VirtualFrame frame, PArray data, @SuppressWarnings("unused") PNone newline,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return b2aArray(frame, data, 1, lib);
-        }
-
-        @Specialization
-        PBytes b2aArray(PArray data, long newline) {
-            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), newline != 0);
-        }
-
-        @Specialization
-        PBytes b2aArray(PArray data, PInt newline) {
-            return b2a(getToByteArrayNode().execute(data.getSequenceStorage()), !newline.isZero());
-        }
-
-        @Specialization(limit = "1")
-        PBytes b2aArray(VirtualFrame frame, PArray data, Object newline,
-                        @CachedLibrary("newline") PythonObjectLibrary lib) {
-            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
-        }
-
-        @Specialization(guards = "isNoValue(newline)")
-        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, @SuppressWarnings("unused") PNone newline,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            return b2aMemory(frame, data, 1, toBytesNode, isBytesProfile);
-        }
-
-        @Specialization
-        PBytes b2aMemory(VirtualFrame frame, PMemoryView data, long newline,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            Object bytesObj = toBytesNode.executeObject(frame, data);
-            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
-                return b2aBytesLike((PBytes) bytesObj, newline);
+        @Specialization(guards = "bufferLib.isBuffer(data)", limit = "3")
+        PBytes b2aBuffer(Object data, int newline,
+                        @CachedLibrary("data") PythonObjectLibrary bufferLib) {
+            try {
+                return factory().createBytes(b2a(bufferLib.getBufferBytes(data), newline));
+            } catch (UnsupportedMessageException e) {
+                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
-            throw raise(SystemError, ErrorMessages.COULD_NOT_GET_BYTES_OF_MEMORYVIEW);
-        }
-
-        @Specialization
-        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, PInt newline,
-                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode toBytesNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
-            return b2aMemory(frame, data, newline.isZero() ? 0 : 1, toBytesNode, isBytesProfile);
-        }
-
-        @Specialization(limit = "1")
-        PBytes b2aMmeory(VirtualFrame frame, PMemoryView data, Object newline,
-                        @CachedLibrary("newline") PythonObjectLibrary lib) {
-            return (PBytes) getRecursiveNode().execute(frame, data, asPInt(newline, lib));
         }
 
         @Fallback
@@ -353,11 +266,9 @@ public class BinasciiModuleBuiltins extends PythonBuiltins {
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, data);
         }
 
-        private Object asPInt(Object obj, PythonObjectLibrary lib) {
-            if (lib.canBePInt(obj)) {
-                return lib.asPInt(obj);
-            }
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BinasciiModuleBuiltinsClinicProviders.B2aBase64NodeClinicProviderGen.INSTANCE;
         }
     }
 

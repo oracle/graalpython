@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -47,19 +49,29 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
+@ExportLibrary(InteropLibrary.class)
 public final class PBaseException extends PythonObject {
     private static final ErrorMessageFormatter FORMATTER = new ErrorMessageFormatter();
 
@@ -183,6 +195,7 @@ public final class PBaseException extends PythonObject {
         return messageArgs.clone();
     }
 
+    @TruffleBoundary
     public String getFormattedMessage(PythonObjectLibrary lib) {
         final Object clazz;
         if (lib == null) {
@@ -222,26 +235,6 @@ public final class PBaseException extends PythonObject {
         return traceback;
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isException() {
-        return true;
-    }
-
-    @ExportMessage
-    RuntimeException throwException(@CachedLibrary("this") PythonObjectLibrary lib,
-                    @Cached PRaiseNode raiseNode) {
-        Object[] newArgs = messageArgs;
-        if (newArgs == null) {
-            newArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-        Object format = messageFormat;
-        if (format == null) {
-            format = PNone.NO_VALUE;
-        }
-        throw raiseNode.execute(lib.getLazyPythonClass(this), this, format, newArgs);
-    }
-
     /**
      * Prepare a {@link PException} for reraising this exception, as done by <code>raise</code>
      * without arguments.
@@ -270,5 +263,92 @@ public final class PBaseException extends PythonObject {
         PException newException = PException.fromObject(this, exception.getLocation(), false);
         newException.setHideLocation(true);
         return newException;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isException() {
+        return true;
+    }
+
+    @ExportMessage
+    RuntimeException throwException(
+                    @Cached PRaiseNode raiseNode,
+                    @CachedLanguage PythonLanguage language) {
+        throw raiseNode.raiseExceptionObject(this, language);
+    }
+
+    @ExportMessage
+    ExceptionType getExceptionType(
+                    @CachedLibrary("this") PythonObjectLibrary lib) {
+        Object clazz = lib.getLazyPythonClass(this);
+        if (clazz instanceof PythonBuiltinClass) {
+            clazz = ((PythonBuiltinClass) clazz).getType();
+        }
+        // these are the only ones we'll raise, we don't want to report user subtypes of
+        // SyntaxError as Truffle syntax errors
+        if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
+            return ExceptionType.PARSE_ERROR;
+        }
+        if (clazz == PythonBuiltinClassType.SystemExit) {
+            return ExceptionType.EXIT;
+        }
+        return ExceptionType.RUNTIME_ERROR;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isExceptionIncompleteSource() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasExceptionMessage() {
+        return true;
+    }
+
+    @ExportMessage
+    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib) {
+        return getFormattedMessage(lib);
+    }
+
+    @ExportMessage
+    int getExceptionExitStatus(
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Cached ReadAttributeFromDynamicObjectNode readNode,
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
+        if (getExceptionType(lib) == ExceptionType.EXIT) {
+            try {
+                // Avoiding getattr because this message shouldn't have side-effects
+                Object code = readNode.execute(this, "code");
+                if (code == PNone.NO_VALUE) {
+                    return 1;
+                }
+                return (int) lib.asJavaLong(code);
+            } catch (PException e) {
+                return 1;
+            }
+        }
+        unsupportedProfile.enter();
+        throw UnsupportedMessageException.create();
+    }
+
+    @ExportMessage
+    boolean hasExceptionCause() {
+        return cause != null || (!suppressContext && context != null);
+    }
+
+    @ExportMessage
+    Object getExceptionCause(
+                    @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
+        if (cause != null) {
+            return cause;
+        }
+        if (!suppressContext && context != null) {
+            return context;
+        }
+        unsupportedProfile.enter();
+        throw UnsupportedMessageException.create();
     }
 }

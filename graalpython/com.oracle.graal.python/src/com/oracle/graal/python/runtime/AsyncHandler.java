@@ -126,7 +126,7 @@ public class AsyncHandler {
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3, new ThreadFactory() {
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(4, new ThreadFactory() {
         public Thread newThread(Runnable r) {
             Thread t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);

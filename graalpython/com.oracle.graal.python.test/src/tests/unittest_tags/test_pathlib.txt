@@ -61,8 +61,11 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixFlavourTest.test_parse_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PosixFlavourTest.test_splitroot
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_anchor_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_as_bytes_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_as_posix_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_as_uri
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_as_uri_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_as_uri_non_ascii
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_constructor_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_div
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_div_common
@@ -80,6 +83,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PosixPathAsPureTest.test_relative_to_common
@@ -148,6 +152,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_unlink_missing_ok
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_with
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_anchor_common
+*graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_as_bytes_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_as_posix_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_as_uri_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_concrete_class
@@ -164,6 +169,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_relative_to_common
@@ -177,8 +183,11 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_with_name_common
 *graalpython.lib-python.3.test.test_pathlib.PurePathTest.test_with_suffix_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_anchor_common
+*graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_as_bytes_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_as_posix_common
+*graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_as_uri
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_as_uri_common
+*graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_as_uri_non_ascii
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_constructor_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_div
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_div_common
@@ -196,6 +205,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_name_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_ordering_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parent_common
+*graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_pickling_common
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_relative_to_common
@@ -211,6 +221,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PurePosixPathTest.test_with_suffix_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_anchor
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_anchor_common
+*graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_bytes_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_posix_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_uri
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_as_uri_common
@@ -234,6 +245,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parent
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parent_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parents
+*graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parents_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parts
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_parts_common
 *graalpython.lib-python.3.test.test_pathlib.PureWindowsPathTest.test_pickling_common

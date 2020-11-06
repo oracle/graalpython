@@ -12,6 +12,7 @@
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_non_ascii_identifiers
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_selector
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_shift
+*graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_string
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_tabs
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_unary
 *graalpython.lib-python.3.test.test_tokenize.GenerateTokensTest.test_underscore_literals

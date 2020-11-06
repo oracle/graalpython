@@ -89,6 +89,8 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMACompressor;
 import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -135,6 +137,7 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -204,7 +207,7 @@ public abstract class PythonObjectFactory extends Node {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
 
-    private final PythonLanguage getLanguage() {
+    private PythonLanguage getLanguage() {
         return executeGetLanguage(true, 0.0);
     }
 
@@ -409,8 +412,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
-    public PMemoryView createMemoryView(Object cls, Object value) {
-        return trace(new PMemoryView(cls, getShape(cls), value));
+    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+                    int len, boolean readonly, int itemsize, PMemoryView.BufferFormat format, String formatString, int ndim, Object bufPointer,
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
+        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
+                        ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+    }
+
+    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+                    int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
+                    int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
+        PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
+        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
+                        PMemoryView.BufferFormat.fromString(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {
@@ -475,6 +490,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PDecoratedMethod createClassmethodFromCallableObj(Object callable) {
         return trace(new PDecoratedMethod(PythonBuiltinClassType.PClassmethod, PythonBuiltinClassType.PClassmethod.getInstanceShape(getLanguage()), callable));
+    }
+
+    public PDecoratedMethod createBuiltinClassmethodFromCallableObj(Object callable) {
+        return trace(new PDecoratedMethod(PythonBuiltinClassType.PBuiltinClassMethod, PythonBuiltinClassType.PBuiltinClassMethod.getInstanceShape(getLanguage()), callable));
     }
 
     public PDecoratedMethod createStaticmethod(Object cls) {
@@ -563,6 +582,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PDict createDict(DynamicObject dynamicObject) {
         return createDict(new DynamicObjectStorage(dynamicObject));
+    }
+
+    public PDict createDictFixedStorage(PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
+        return createDict(new DynamicObjectStorage(pythonObject.getStorage(), mroSequenceStorage));
     }
 
     public PDict createDictFixedStorage(PythonObject pythonObject) {

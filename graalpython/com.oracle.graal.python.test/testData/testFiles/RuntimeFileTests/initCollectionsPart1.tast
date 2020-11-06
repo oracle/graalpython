@@ -248,12 +248,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               Identifier: DeprecationWarning
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             KeywordArgumentsNodeGen SourceSection: None
-                              KeywordLiteralNode SourceSection: None
-                                IntegerLiteralNode SourceSection: [2112,2113]`2`
-                                  Value: 2
-                              CompactKeywordsNodeGen SourceSection: None
-                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                EmptyNode SourceSection: None
+                              ExecuteKeywordArgumentsNode SourceSection: None
+                                KeywordLiteralNode SourceSection: None
+                                  IntegerLiteralNode SourceSection: [2112,2113]`2`
+                                    Value: 2
+                              EmptyNode SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
                               ReadLocalVariableNode SourceSection: [1864,1872]`warnings`
                                 Frame: [2,warnings,Illegal]
@@ -1069,11 +1068,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           ExecutePositionalStarargsNodeGen SourceSection: None
                                         KeywordArgumentsNodeGen SourceSection: None
-                                          CompactKeywordsNodeGen SourceSection: None
-                                          ExecuteKeywordStarargsNodeGen SourceSection: None
-                                            ReadLocalVariableNode SourceSection: [4568,4572]`kwds`
-                                              Frame: [1,kwds,Illegal]
-                                              ReadVariableFromFrameNodeGen SourceSection: None
+                                          ExecuteKeywordArgumentsNode SourceSection: None
+                                          ReadLocalVariableNode SourceSection: [4568,4572]`kwds`
+                                            Frame: [1,kwds,Illegal]
+                                            ReadVariableFromFrameNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNode SourceSection: [4545,4549]`self`
                                             Frame: [2,self,Illegal]
@@ -2470,6 +2468,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                           IntegerLiteralNode SourceSection: [8113,8114]`2`
                                             Value: 2
+                                        ObjectLiteralNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [8167,8202]`size += sizeof(self....`
                                       Identifier: size
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2500,6 +2499,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadLocalVariableNode SourceSection: [8201,8202]`n`
                                             Frame: [2,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     WriteLocalVariableNodeGen SourceSection: [8230,8261]`size += sizeof(self....`
                                       Identifier: size
                                       WriteLocalFrameSlotNodeGen SourceSection: None
@@ -2530,6 +2530,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           ReadLocalVariableNode SourceSection: [8260,8261]`n`
                                             Frame: [2,n,Illegal]
                                             ReadVariableFromFrameNodeGen SourceSection: None
+                                        ObjectLiteralNode SourceSection: None
                                     FrameReturnNode SourceSection: [8294,8305]`return size`
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
@@ -5217,13 +5218,12 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                   Frame: [26,itemgetter_object,Illegal]
                                   ReadVariableFromFrameNodeGen SourceSection: None
                                 KeywordArgumentsNodeGen SourceSection: None
-                                  KeywordLiteralNode SourceSection: None
-                                    ReadLocalVariableNode SourceSection: [16904,16907]`doc`
-                                      Frame: [27,doc,Illegal]
-                                      ReadVariableFromFrameNodeGen SourceSection: None
-                                  CompactKeywordsNodeGen SourceSection: None
-                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalVariableNode SourceSection: [16904,16907]`doc`
+                                        Frame: [27,doc,Illegal]
+                                        ReadVariableFromFrameNodeGen SourceSection: None
+                                  EmptyNode SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [16872,16880]`property`
                                   Identifier: property
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5645,11 +5645,10 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 ReadVariableFromFrameNodeGen SourceSection: None
                                               ExecutePositionalStarargsNodeGen SourceSection: None
                                             KeywordArgumentsNodeGen SourceSection: None
-                                              CompactKeywordsNodeGen SourceSection: None
-                                              ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                ReadLocalVariableNode SourceSection: [21050,21054]`kwds`
-                                                  Frame: [1,kwds,Illegal]
-                                                  ReadVariableFromFrameNodeGen SourceSection: None
+                                              ExecuteKeywordArgumentsNode SourceSection: None
+                                              ReadLocalVariableNode SourceSection: [21050,21054]`kwds`
+                                                Frame: [1,kwds,Illegal]
+                                                ReadVariableFromFrameNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNode SourceSection: [21029,21033]`self`
                                                 Frame: [2,self,Illegal]
@@ -5777,19 +5776,18 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [0,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                                 KeywordArgumentsNodeGen SourceSection: None
-                                                  KeywordLiteralNode SourceSection: None
-                                                    PythonCallUnary SourceSection: [21642,21656]`_itemgetter(1)`
-                                                      CallUnaryMethodNodeGen SourceSection: None
-                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [21642,21653]`_itemgetter`
-                                                        Identifier: _itemgetter
-                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      IntegerLiteralNode SourceSection: [21654,21655]`1`
-                                                        Value: 1
-                                                  KeywordLiteralNode SourceSection: None
-                                                    BooleanLiteralNode SourceSection: [21666,21670]`True`
-                                                  CompactKeywordsNodeGen SourceSection: None
-                                                  ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                    EmptyNode SourceSection: None
+                                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                                    KeywordLiteralNode SourceSection: None
+                                                      PythonCallUnary SourceSection: [21642,21656]`_itemgetter(1)`
+                                                        CallUnaryMethodNodeGen SourceSection: None
+                                                        ReadGlobalOrBuiltinNodeGen SourceSection: [21642,21653]`_itemgetter`
+                                                          Identifier: _itemgetter
+                                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                        IntegerLiteralNode SourceSection: [21654,21655]`1`
+                                                          Value: 1
+                                                    KeywordLiteralNode SourceSection: None
+                                                      BooleanLiteralNode SourceSection: [21666,21670]`True`
+                                                  EmptyNode SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [21617,21623]`sorted`
                                                   Identifier: sorted
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5811,17 +5809,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     Frame: [0,self,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
                                               KeywordArgumentsNodeGen SourceSection: None
-                                                KeywordLiteralNode SourceSection: None
-                                                  PythonCallUnary SourceSection: [21724,21738]`_itemgetter(1)`
-                                                    CallUnaryMethodNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [21724,21735]`_itemgetter`
-                                                      Identifier: _itemgetter
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    IntegerLiteralNode SourceSection: [21736,21737]`1`
-                                                      Value: 1
-                                                CompactKeywordsNodeGen SourceSection: None
-                                                ExecuteKeywordStarargsNodeGen SourceSection: None
-                                                  EmptyNode SourceSection: None
+                                                ExecuteKeywordArgumentsNode SourceSection: None
+                                                  KeywordLiteralNode SourceSection: None
+                                                    PythonCallUnary SourceSection: [21724,21738]`_itemgetter(1)`
+                                                      CallUnaryMethodNodeGen SourceSection: None
+                                                      ReadGlobalOrBuiltinNodeGen SourceSection: [21724,21735]`_itemgetter`
+                                                        Identifier: _itemgetter
+                                                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                      IntegerLiteralNode SourceSection: [21736,21737]`1`
+                                                        Value: 1
+                                                EmptyNode SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [21687,21693]`_heapq`
                                                   Identifier: _heapq
@@ -8354,6 +8351,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [30790,30795]`count`
                                                     Frame: [3,count,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ObjectLiteralNode SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [30749,30762]`other.items()`
                                               PythonCallNodeGen SourceSection: [30749,30762]`other.items()`
                                                 CallNodeGen SourceSection: None
@@ -8464,6 +8462,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   ReadLocalVariableNode SourceSection: [31142,31147]`count`
                                                     Frame: [3,count,Illegal]
                                                     ReadVariableFromFrameNodeGen SourceSection: None
+                                                  ObjectLiteralNode SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [31101,31114]`other.items()`
                                               PythonCallNodeGen SourceSection: [31101,31114]`other.items()`
                                                 CallNodeGen SourceSection: None

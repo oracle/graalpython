@@ -155,6 +155,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.LoopConditionProfile;
@@ -964,7 +965,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.execute(frame, table, original);
                 } catch (PException e) {
-                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getExceptionObject()), PythonBuiltinClassType.LookupError)) {
+                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }
@@ -2249,42 +2250,82 @@ public final class StringBuiltins extends PythonBuiltins {
 
     }
 
+    public abstract static class StrGetItemNodeWithSlice extends Node {
+
+        public abstract String execute(String value, SliceInfo info);
+
+        static boolean isEmptySlice(SliceInfo s) {
+            int step = s.step;
+            int start = s.start;
+            int stop = s.stop;
+            return (step >= 0 && stop <= start) || (step <= 0 && stop >= start);
+        }
+
+        static boolean isSimpleSlice(SliceInfo s) {
+            return s.step == 1 && s.stop > s.start;
+        }
+
+        @Specialization(guards = "isSimpleSlice(slice)")
+        static String doStepOneStopGtStart(String value, SliceInfo slice) {
+            return getSubString(value, slice.start, slice.stop);
+        }
+
+        @Specialization(guards = "isEmptySlice(slice)")
+        static String doEmptySlice(@SuppressWarnings("unused") String value, @SuppressWarnings("unused") SliceInfo slice) {
+            return "";
+        }
+
+        @Specialization(guards = {"step == slice.step", "!isSimpleSlice(slice)", "!isEmptySlice(slice)"}, limit = "1")
+        static String doGenericCachedStep(String value, SliceInfo slice,
+                        @Cached("slice.step") int step,
+                        @Shared("loop") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
+                        @Shared("len") @Cached LenOfRangeNode sliceLen) {
+            int len = sliceLen.len(slice);
+            int start = slice.start;
+            char[] newChars = new char[len];
+            int j = 0;
+            loopProfile.profileCounted(len);
+            for (int i = start; loopProfile.inject(j < len); i += step) {
+                newChars[j++] = value.charAt(i);
+            }
+            return PythonUtils.newString(newChars);
+        }
+
+        @Specialization(replaces = "doGenericCachedStep", guards = {"!isSimpleSlice(slice)", "!isEmptySlice(slice)"})
+        static String doGeneric(String value, SliceInfo slice,
+                        @Shared("loop") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
+                        @Shared("len") @Cached LenOfRangeNode sliceLen) {
+            return doGenericCachedStep(value, slice, slice.step, loopProfile, sliceLen);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static String getSubString(String origin, int start, int stop) {
+            return origin.substring(start, stop);
+        }
+    }
+
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        public String doString(String primary, PSlice slice,
+        @Specialization(guards = "isString(primary)")
+        public String doString(Object primary, PSlice slice,
+                        @Cached CastToJavaStringNode castToJavaString,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
-                        @Cached LenOfRangeNode sliceLen) {
-            SliceInfo info = compute.execute(sliceCast.execute(slice), primary.length());
-            final int sliceLength = sliceLen.len(info);
-            final int start = info.start;
-            int stop = info.stop;
-            int step = info.step;
-
-            if (step > 0 && stop < start) {
-                stop = start;
-            }
-            if (step == 1) {
-                return getSubString(primary, start, stop);
-            } else {
-                char[] newChars = new char[sliceLength];
-                int j = 0;
-                for (int i = start; j < sliceLength; i += step) {
-                    newChars[j++] = primary.charAt(i);
-                }
-
-                return PythonUtils.newString(newChars);
-            }
+                        @Cached StrGetItemNodeWithSlice getItemNodeWithSlice) {
+            String str = castToJavaString.execute(primary);
+            SliceInfo info = compute.execute(sliceCast.execute(slice), str.length());
+            return getItemNodeWithSlice.execute(str, info);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public String doString(VirtualFrame frame, String primary, Object idx,
+        @Specialization(guards = {"!isPSlice(idx)", "isString(primary)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        public String doString(VirtualFrame frame, Object primary, Object idx,
+                        @Cached CastToJavaStringNode castToJavaString,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("idx") PythonObjectLibrary lib) {
+            String str = castToJavaString.execute(primary);
             int index;
             if (hasFrame.profile(frame != null)) {
                 index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
@@ -2293,9 +2334,9 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             try {
                 if (index < 0) {
-                    index += primary.length();
+                    index += str.length();
                 }
-                return charAtToString(primary, index);
+                return charAtToString(str, index);
             } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
                 throw raise(IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
@@ -2308,16 +2349,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static String getSubString(String origin, int start, int stop) {
-            char[] chars = new char[stop - start];
-            origin.getChars(start, stop, chars, 0);
-            return new String(chars);
-        }
-
-        @TruffleBoundary
         private static String charAtToString(String primary, int index) {
-            char charactor = primary.charAt(index);
-            return new String(new char[]{charactor});
+            char character = primary.charAt(index);
+            return new String(new char[]{character});
         }
     }
 

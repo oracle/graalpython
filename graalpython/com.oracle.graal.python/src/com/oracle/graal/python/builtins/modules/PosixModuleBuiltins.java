@@ -388,7 +388,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             ProcessBuilder builder = new ProcessBuilder(cmd);
             Map<String, String> environment = builder.environment();
             environ.entries().forEach(entry -> {
-                environment.put(new String(toBytes.execute(null, entry.key)), new String(toBytes.execute(null, entry.value)));
+                environment.put(new String(toBytes.execute(entry.key)), new String(toBytes.execute(entry.value)));
             });
             Process pr = builder.start();
             BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
@@ -2029,13 +2029,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     int exitStatus = getResources().waitpid(pid);
                     return factory().createTuple(new Object[]{pid, exitStatus});
                 } else if (options == WNOHANG) {
-                    int exitStatus = getResources().exitStatus(pid);
-                    if (exitStatus == Integer.MIN_VALUE) {
-                        // not terminated, yet, we should return 0
-                        return factory().createTuple(new Object[]{0, 0});
-                    } else {
-                        return factory().createTuple(new Object[]{pid, exitStatus});
-                    }
+                    int[] res = getResources().exitStatus(pid);
+                    return factory().createTuple(new Object[]{res[0], res[1]});
                 } else {
                     throw raise(PythonBuiltinClassType.NotImplementedError, "Only 0 or WNOHANG are supported for waitpid");
                 }
@@ -2813,9 +2808,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PosixFileHandle doBytes(VirtualFrame frame, PBytesLike value,
+        PosixFileHandle doBytes(PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode) {
-            return new PosixPath(value, checkPath(toByteArrayNode.execute(frame, value)));
+            return new PosixPath(value, checkPath(toByteArrayNode.execute(value)));
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
@@ -2854,7 +2849,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
             if (pathObject instanceof PBytesLike) {
-                return doBytes(frame, (PBytesLike) pathObject, toByteArrayNode);
+                return doBytes((PBytesLike) pathObject, toByteArrayNode);
             }
             if (pathObject instanceof PString) {
                 return doUnicode((PString) pathObject, castToJavaStringNode);

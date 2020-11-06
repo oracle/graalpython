@@ -51,12 +51,11 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -71,7 +70,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -83,6 +81,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
@@ -133,7 +132,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-        @Child private BytesNodes.ToBytesNode toBytesNode;
 
         @Specialization
         Object run(PString str) {
@@ -156,9 +154,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return factory().createByteArray(bytes);
         }
 
-        @Specialization
-        Object run(VirtualFrame frame, PMemoryView memoryView) {
-            byte[] bytes = doBytes(getToBytesNode().execute(frame, memoryView));
+        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+        Object run(Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+            byte[] bytes;
+            try {
+                bytes = bufferLib.getBufferBytes(buffer);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             return factory().createByteArray(bytes);
         }
 
@@ -190,14 +194,6 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
             return toByteArrayNode;
         }
-
-        private BytesNodes.ToBytesNode getToBytesNode() {
-            if (toBytesNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toBytesNode = insert(BytesNodes.ToBytesNode.create());
-            }
-            return toBytesNode;
-        }
     }
 
     @Builtin(name = "tregex_call_compile", minNumOfPositionalArgs = 3)
@@ -211,6 +207,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached BranchProfile syntaxError,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop,
+                        @CachedLibrary(limit = "1") InteropLibrary exceptionLib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
@@ -219,20 +216,23 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } catch (RuntimeException e) {
-                return handleError(e, syntaxError, potentialSyntaxError);
+                return handleError(e, syntaxError, potentialSyntaxError, exceptionLib);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
-        @TruffleBoundary
-        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError) {
-            if (e instanceof TruffleException) {
-                potentialSyntaxError.enter(); // this guards the TruffleBoundary invoke
-                if (((TruffleException) e).isSyntaxError()) {
-                    syntaxError.enter();
-                    throw raise(ValueError, "%s", e);
+        private Object handleError(RuntimeException e, BranchProfile syntaxError, BranchProfile potentialSyntaxError, InteropLibrary exceptionLib) {
+            try {
+                if (exceptionLib.isException(e)) {
+                    potentialSyntaxError.enter();
+                    if (exceptionLib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
+                        syntaxError.enter();
+                        throw raise(ValueError, "%s", e);
+                    }
                 }
+            } catch (UnsupportedMessageException e1) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
             // just re-throw
             throw e;

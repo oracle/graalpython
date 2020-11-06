@@ -66,7 +66,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
     }
 
     @Specialization
-    public int toInt(long x) {
+    static int toInt(long x) {
         try {
             return PInt.intValueExact(x);
         } catch (OverflowException e) {
@@ -76,7 +76,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
     }
 
     @Specialization
-    public int toInt(PInt x) {
+    static int toInt(PInt x) {
         try {
             return x.intValueExact();
         } catch (OverflowException e) {

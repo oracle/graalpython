@@ -380,9 +380,16 @@ class TestCase(object):
             pass
         else:
             def do_run():
+                if hasattr(self, "setUp"):
+                    if not self.run_safely(self.setUp, print_immediately=True):
+                        self.failure(0)
+                        return
                 start = time.monotonic()
                 r = self.run_safely(func)
                 end = time.monotonic() - start
+                if hasattr(self, "tearDown"):
+                    if not self.run_safely(self.tearDown):
+                        self.failure(end)
                 with print_lock:
                     if r is _skipped_marker:
                         self.skipped()
@@ -528,8 +535,8 @@ class TestCase(object):
                 if typ is TestCase:
                     break
                 items += typ.__dict__.items()
-        if hasattr(instance, "setUp"):
-            if not instance.run_safely(instance.setUp, print_immediately=True):
+        if hasattr(instance, "setUpClass"):
+            if not instance.run_safely(instance.setUpClass, print_immediately=True):
                 return instance
         for k, v in items:
             if k.startswith("test"):
@@ -537,8 +544,8 @@ class TestCase(object):
                     if not any(p in k for p in patterns):
                         continue
                 instance.run_test(getattr(instance, k, v))
-        if hasattr(instance, "tearDown"):
-            instance.run_safely(instance.tearDown)
+        if hasattr(instance, "tearDownClass"):
+            instance.run_safely(instance.tearDownClass)
         return instance
 
     @staticmethod

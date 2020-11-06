@@ -50,9 +50,9 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
-import com.oracle.graal.python.nodes.util.ExactMath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -189,14 +189,14 @@ public abstract class RangeNodes {
     public abstract static class LenOfIntRangeNodeExact extends LenOfIntRangeBaseNode {
         @Specialization(guards = {"step > 0", "lo < hi"})
         static int mightBeBig1(int lo, int hi, int step) throws OverflowException {
-            long diff = ExactMath.subtractExact(ExactMath.subtractExact(hi, (long) lo), 1);
-            return ExactMath.toIntExact(ExactMath.addExact(diff / step, 1));
+            long diff = PythonUtils.subtractExact(PythonUtils.subtractExact(hi, (long) lo), 1);
+            return PythonUtils.toIntExact(PythonUtils.addExact(diff / step, 1));
         }
 
         @Specialization(guards = {"step < 0", "lo > hi"})
         static int mightBeBig2(int lo, int hi, int step) throws OverflowException {
-            long diff = ExactMath.subtractExact(ExactMath.subtractExact(lo, (long) hi), 1);
-            return ExactMath.toIntExact(ExactMath.addExact(diff / -(long) step, 1));
+            long diff = PythonUtils.subtractExact(PythonUtils.subtractExact(lo, (long) hi), 1);
+            return PythonUtils.toIntExact(PythonUtils.addExact(diff / -(long) step, 1));
         }
     }
 

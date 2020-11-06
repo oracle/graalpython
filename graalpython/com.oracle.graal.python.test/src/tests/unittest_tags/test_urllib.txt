@@ -5,6 +5,7 @@
 *graalpython.lib-python.3.test.test_urllib.PathName2URLTests.test_simple_compare
 *graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_basic
 *graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_ntpath
+*graalpython.lib-python.3.test.test_urllib.Pathname_Tests.test_quoting
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match
 *graalpython.lib-python.3.test.test_urllib.ProxyTests.test_proxy_bypass_environment_host_match
@@ -30,6 +31,12 @@
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_quoted_open
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_urlopener_retrieve_file
 *graalpython.lib-python.3.test.test_urllib.URLopener_Tests.test_urlopener_retrieve_remote
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquote_to_bytes
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquote_with_unicode
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_badpercent
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_mixed_case
+*graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_parts
 *graalpython.lib-python.3.test.test_urllib.UnquotingTests.test_unquoting_plus
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_doseq
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_empty_sequence
@@ -42,6 +49,14 @@
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_urlencode_encoding_safe_parameter
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_using_mapping
 *graalpython.lib-python.3.test.test_urllib.urlencode_Tests.test_using_sequence
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_geturl
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_info
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_interface
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_invalid_base64_data
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_missing_comma
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_read_image
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_read_text
+*graalpython.lib-python.3.test.test_urllib.urlopen_DataTests.test_read_text_base64
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_close
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_fileno
 *graalpython.lib-python.3.test.test_urllib.urlopen_FileTests.test_getcode
@@ -72,8 +87,11 @@
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_with_control_char_rejected
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_url_with_newline_header_injection_rejected
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_userpass_inurl
+*graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_userpass_inurl_w_spaces
 *graalpython.lib-python.3.test.test_urllib.urlopen_HttpTests.test_willclose
 *graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_basic
+*graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_copy
+*graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_reporthook
 *graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_reporthook_0_bytes
 *graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_reporthook_5_bytes
 *graalpython.lib-python.3.test.test_urllib.urlretrieve_FileTests.test_reporthook_8193_bytes

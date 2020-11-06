@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -56,11 +55,20 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ExceptionType;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * Serves both as a throwable carrier of the python exception object and as a represenation of the
@@ -68,17 +76,15 @@ import com.oracle.truffle.api.nodes.Node;
  * rethrown after the contained exception object has been exposed to the program, instead, a new
  * object must be created for each throw.
  */
-public final class PException extends RuntimeException implements TruffleException {
+@ExportLibrary(value = InteropLibrary.class, delegateTo = "pythonException")
+public final class PException extends AbstractTruffleException {
     private static final long serialVersionUID = -6437116280384996361L;
 
     /** A marker object indicating that there is for sure no exception. */
     public static final PException NO_EXCEPTION = new PException(null, (Node) null);
 
-    private Node location;
     private String message = null;
-    private boolean isIncompleteSource;
-    private boolean exit;
-    private final PBaseException pythonException;
+    protected final PBaseException pythonException;
     private boolean hideLocation = false;
     private CallTarget tracebackCutoffTarget;
     private PFrame.Reference frameInfo;
@@ -87,8 +93,13 @@ public final class PException extends RuntimeException implements TruffleExcepti
     private boolean reified = false;
 
     public PException(PBaseException actual, Node node) {
+        super(node);
         this.pythonException = actual;
-        this.location = node;
+    }
+
+    public PException(PBaseException actual, Node node, Throwable wrapped) {
+        super(null, wrapped, UNLIMITED_STACK_TRACE, node);
+        this.pythonException = actual;
     }
 
     public PException(PBaseException actual, LazyTraceback traceback) {
@@ -98,7 +109,11 @@ public final class PException extends RuntimeException implements TruffleExcepti
     }
 
     public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace) {
-        PException pException = new PException(actual, node);
+        return fromObject(actual, node, withJavaStacktrace, null);
+    }
+
+    public static PException fromObject(PBaseException actual, Node node, boolean withJavaStacktrace, Throwable cause) {
+        PException pException = new PException(actual, node, cause);
         actual.setException(pException);
         if (withJavaStacktrace) {
             pException = (PException) pException.forceFillInStackTrace();
@@ -145,23 +160,8 @@ public final class PException extends RuntimeException implements TruffleExcepti
         return getMessage();
     }
 
-    @SuppressWarnings("sync-override")
-    @Override
-    public Throwable fillInStackTrace() {
-        return null;
-    }
-
     public Throwable forceFillInStackTrace() {
         return super.fillInStackTrace();
-    }
-
-    @Override
-    public Node getLocation() {
-        return location;
-    }
-
-    public void setLocation(Node location) {
-        this.location = location;
     }
 
     public boolean shouldHideLocation() {
@@ -183,51 +183,8 @@ public final class PException extends RuntimeException implements TruffleExcepti
      * {@link PException#setCatchingFrameAndGetEscapedException(VirtualFrame, Node)
      * reifyAndGetPythonException}.
      */
-    @Override
-    public PBaseException getExceptionObject() {
+    public PBaseException getUnreifiedException() {
         return pythonException;
-    }
-
-    @Override
-    public boolean isInternalError() {
-        return false;
-    }
-
-    @Override
-    public int getStackTraceElementLimit() {
-        return -1;
-    }
-
-    @Override
-    public boolean isSyntaxError() {
-        if (pythonException == null) {
-            return false;
-        }
-        Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
-        if (clazz instanceof PythonBuiltinClass) {
-            clazz = ((PythonBuiltinClass) clazz).getType();
-        }
-        // these are the only ones we'll raise, we don't want to report user subtypes of SyntaxError
-        // as Truffle syntax errors
-        return clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError;
-    }
-
-    public void setIncompleteSource(boolean val) {
-        isIncompleteSource = val;
-    }
-
-    @Override
-    public boolean isIncompleteSource() {
-        return isSyntaxError() && isIncompleteSource;
-    }
-
-    public void setExit(boolean val) {
-        exit = val;
-    }
-
-    @Override
-    public boolean isExit() {
-        return exit;
     }
 
     public void expectIndexError(IsBuiltinClassProfile profile) {
@@ -245,7 +202,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
     public void expectStopIteration(IsBuiltinClassProfile profile, PRaiseNode raise, Object o) {
         if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(getExceptionObject());
+            Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(getUnreifiedException());
             if (IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.AttributeError)) {
                 throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, PythonObjectLibrary.getUncached().getLazyPythonClass(o));
             }
@@ -276,7 +233,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
         if (tracebackCutoffTarget == null) {
             tracebackCutoffTarget = Truffle.getRuntime().getCurrentFrame().getCallTarget();
         }
-        return TruffleStackTrace.getStackTrace(this);
+        // Cause may contain wrapped Java exception
+        if (getCause() != null) {
+            return TruffleStackTrace.getStackTrace(getCause());
+        } else {
+            return TruffleStackTrace.getStackTrace(this);
+        }
     }
 
     public boolean shouldCutOffTraceback(TruffleStackTraceElement element) {
@@ -379,4 +341,39 @@ public final class PException extends RuntimeException implements TruffleExcepti
         // a convenience methods for debugging
         ExceptionUtils.printPythonLikeStackTrace(this);
     }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isException() {
+        return true;
+    }
+
+    @ExportMessage
+    ExceptionType getExceptionType(
+                    @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.getExceptionType(pythonException);
+    }
+
+    @ExportMessage
+    RuntimeException throwException() {
+        throw getExceptionForReraise();
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasSourceLocation() {
+        return getLocation() != null && getLocation().getEncapsulatingSourceSection() != null;
+    }
+
+    @ExportMessage(name = "getSourceLocation")
+    SourceSection getExceptionSourceLocation(
+                    @Cached BranchProfile unsupportedProfile) throws UnsupportedMessageException {
+        if (hasSourceLocation()) {
+            return getLocation().getEncapsulatingSourceSection();
+        }
+        unsupportedProfile.enter();
+        throw UnsupportedMessageException.create();
+    }
+
+    // Note: remaining interop messages are forwarded to the contained PBaseException
 }

@@ -40,15 +40,20 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.util.Supplier;
-
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
@@ -102,11 +107,55 @@ public enum UnaryArithmetic {
         }
     }
 
+    /**
+     * A helper root node that dispatches to {@link LookupAndCallUnaryNode} to execute the provided
+     * unary operator. This node is mostly useful to use such operators from a location without a
+     * frame (e.g. from interop). Note: this is just a root node and won't do any signature
+     * checking.
+     */
+    static final class CallUnaryArithmeticRootNode extends CallArithmeticRootNode {
+        private static final Signature SIGNATURE_UNARY = new Signature(1, false, -1, false, new String[]{"$self"}, null);
+
+        @Child private LookupAndCallUnaryNode callUnaryNode;
+
+        private final UnaryArithmetic unaryOperator;
+
+        CallUnaryArithmeticRootNode(PythonLanguage language, UnaryArithmetic unaryOperator) {
+            super(language);
+            this.unaryOperator = unaryOperator;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE_UNARY;
+        }
+
+        @Override
+        protected Object doCall(VirtualFrame frame) {
+            if (callUnaryNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callUnaryNode = insert(unaryOperator.create());
+            }
+            return callUnaryNode.executeObject(frame, PArguments.getArgument(frame, 0));
+        }
+    }
+
     public ExpressionNode create(ExpressionNode receiver) {
         return new UnaryArithmeticExpression(LookupAndCallUnaryNode.create(methodName, noAttributeHandler), receiver);
     }
 
     public LookupAndCallUnaryNode create() {
         return LookupAndCallUnaryNode.create(methodName, noAttributeHandler);
+    }
+
+    /**
+     * Creates a call target with a specific root node for this unary operator such that the
+     * operator can be executed via a full call. This is in particular useful, if you want to
+     * execute an operator without a frame (e.g. from interop). It is not recommended to use this
+     * method directly. In order to enable AST sharing, you should use
+     * {@link PythonLanguage#getOrCreateUnaryArithmeticCallTarget(UnaryArithmetic)}.
+     */
+    public RootCallTarget createCallTarget(PythonLanguage language) {
+        return PythonUtils.getOrCreateCallTarget(new CallUnaryArithmeticRootNode(language, this));
     }
 }

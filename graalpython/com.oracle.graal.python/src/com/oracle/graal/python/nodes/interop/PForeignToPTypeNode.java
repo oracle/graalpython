@@ -43,7 +43,9 @@
  */
 package com.oracle.graal.python.nodes.interop;
 
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -85,6 +87,11 @@ public abstract class PForeignToPTypeNode extends Node {
     @Specialization
     protected static String fromChar(char value) {
         return String.valueOf(value);
+    }
+
+    @Specialization
+    protected static PBaseException fromPException(PException pe) {
+        return pe.getUnreifiedException();
     }
 
     @Fallback

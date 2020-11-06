@@ -57,5 +57,6 @@
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_split
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_umlaut_followed_by_dash
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_unix_options
+*graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_whitespace
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_wrap_short
 *graalpython.lib-python.3.test.test_textwrap.WrapTestCase.test_wrap_short_1line

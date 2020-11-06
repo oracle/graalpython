@@ -45,13 +45,12 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                         PythonCallNodeGen SourceSection: [14,36]`"in".format(name=nam...`
                           CallNodeGen SourceSection: None
                           KeywordArgumentsNodeGen SourceSection: None
-                            KeywordLiteralNode SourceSection: None
-                              ReadLocalVariableNode SourceSection: [31,35]`name`
-                                Frame: [0,name,Illegal]
-                                ReadVariableFromFrameNodeGen SourceSection: None
-                            CompactKeywordsNodeGen SourceSection: None
-                            ExecuteKeywordStarargsNodeGen SourceSection: None
-                              EmptyNode SourceSection: None
+                            ExecuteKeywordArgumentsNode SourceSection: None
+                              KeywordLiteralNode SourceSection: None
+                                ReadLocalVariableNode SourceSection: [31,35]`name`
+                                  Frame: [0,name,Illegal]
+                                  ReadVariableFromFrameNodeGen SourceSection: None
+                            EmptyNode SourceSection: None
                           GetCallAttributeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [14,18]`"in"`
                   Return Expresssion: ReadLocalVariableNode SourceSection: None

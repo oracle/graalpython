@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -406,6 +407,42 @@ public class ZipImporterBuiltins extends PythonBuiltins {
             return self.findModule(fullname) == null ? PNone.NONE : self;
         }
 
+    }
+
+    @Builtin(name = "find_loader", minNumOfPositionalArgs = 2, parameterNames = {"self", "fullname", "path"})
+    @ArgumentClinic(name = "fullname", conversion = ArgumentClinic.ClinicConversion.String)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class FindLoaderNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        public Object findLoader(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path) {
+            PZipImporter.ModuleInfo mi = self.getModuleInfo(fullname);
+            if (mi != ModuleInfo.NOT_FOUND) {
+                return makeTuple(self, makeList());
+            }
+
+            String modPath = self.makeFilename(fullname);
+            if (self.isDir(modPath)) {
+                return makeTuple(makeList(self.getModulePath(modPath)));
+            }
+            return makeTuple(makeList());
+        }
+
+        private PTuple makeTuple(Object second) {
+            return makeTuple(null, second);
+        }
+
+        private PTuple makeTuple(Object first, Object second) {
+            return factory().createTuple(new Object[]{first != null ? first : PNone.NONE, second});
+        }
+
+        private PList makeList() {
+            return factory().createList();
+        }
+
+        private PList makeList(Object first) {
+            return factory().createList(new Object[]{first});
+        }
     }
 
     @Builtin(name = "get_code", minNumOfPositionalArgs = 2)

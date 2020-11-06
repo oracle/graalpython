@@ -415,8 +415,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 instance.ensureReified();
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                PException pException = PException.fromObject(instance, null, PythonOptions.isPExceptionWithJavaStacktrace(language));
-                return resumeGeneratorNode.execute(frame, self, pException);
+                return resumeGeneratorNode.execute(frame, self, new ThrowData(instance, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             } else {
                 // Unstarted generator, we cannot pass the exception into the generator as there is
                 // nothing that would handle it.
@@ -477,9 +476,8 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
                 boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-                PException pException = PException.fromObject(pythonException, null, withJavaStacktrace);
                 try {
-                    resumeGeneratorNode.execute(frame, self, pException);
+                    resumeGeneratorNode.execute(frame, self, new ThrowData(pythonException, withJavaStacktrace));
                 } catch (PException pe) {
                     if (isGeneratorExit.profileException(pe, GeneratorExit, lib) || isStopIteration.profileException(pe, StopIteration, lib)) {
                         // This is the "success" path

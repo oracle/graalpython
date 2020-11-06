@@ -40,14 +40,17 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.util.Supplier;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -56,6 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChild("arg")
 @NodeChild("arg2")
+@NodeChild("arg3")
 public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
     public abstract static class NotImplementedHandler extends PNodeWithContext {
@@ -67,7 +71,10 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
     protected final String reverseBinaryOpName;
     protected final Supplier<NotImplementedHandler> handlerFactory;
 
-    @Child private CallBinaryMethodNode dispatchNode;
+    @Child private CallBinaryMethodNode callBinaryMethodNode;
+    @Child private CallTernaryMethodNode callTernaryMethodNode;
+    @Child private LookupAndCallBinaryNode lookupAndCallBinaryNode;
+    @Child private LookupAndCallTernaryNode lookupAndCallTernaryNode;
     @Child private NotImplementedHandler handler;
 
     LookupAndCallInplaceNode(String inplaceOpName, String binaryOpName, String reverseBinaryOpName, Supplier<NotImplementedHandler> handlerFactory) {
@@ -77,43 +84,82 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
         this.handlerFactory = handlerFactory;
     }
 
-    public static LookupAndCallInplaceNode create(String inplaceOpName) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, null, null, null, null, null);
+    public static LookupAndCallInplaceNode createWithBinary(String inplaceOpName, ExpressionNode left, ExpressionNode right, Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
+        String binaryOpName = inplaceOpName.replaceFirst("__i", "__");
+        String reverseBinaryOpName = inplaceOpName.replaceFirst("__i", "__r");
+        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, left, right, new ObjectLiteralNode(PNone.NO_VALUE));
     }
 
-    public static LookupAndCallInplaceNode createWithBinary(String inplaceOpName, ExpressionNode left, ExpressionNode right, Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, inplaceOpName.replaceFirst("__i", "__"), inplaceOpName.replaceFirst("__i", "__r"), handlerFactory, left, right);
+    public static LookupAndCallInplaceNode createWithTernary(String inplaceOpName, ExpressionNode x, ExpressionNode y, ExpressionNode z,
+                    Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
+        String binaryOpName = inplaceOpName.replaceFirst("__i", "__");
+        String reverseBinaryOpName = inplaceOpName.replaceFirst("__i", "__r");
+        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, x, y, z);
     }
 
     public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, null, null, null, null);
+        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, null, null, null, null, null);
     }
 
     public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName, String reverseBinaryOpName, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, null, null);
+        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, null, null, null);
     }
 
-    private CallBinaryMethodNode ensureDispatch() {
-        if (dispatchNode == null) {
+    private CallBinaryMethodNode ensureBinaryCallNode() {
+        if (callBinaryMethodNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            dispatchNode = insert(CallBinaryMethodNode.create());
+            callBinaryMethodNode = insert(CallBinaryMethodNode.create());
         }
-        return dispatchNode;
+        return callBinaryMethodNode;
     }
 
-    protected boolean hasBinaryVersion() {
+    private CallTernaryMethodNode ensureTernaryCallNode() {
+        if (callTernaryMethodNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            callTernaryMethodNode = insert(CallTernaryMethodNode.create());
+        }
+        return callTernaryMethodNode;
+    }
+
+    private LookupAndCallBinaryNode ensureLookupAndCallBinaryNode() {
+        if (lookupAndCallBinaryNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lookupAndCallBinaryNode = insert(LookupAndCallBinaryNode.create(binaryOpName, reverseBinaryOpName));
+        }
+        return lookupAndCallBinaryNode;
+    }
+
+    private LookupAndCallTernaryNode ensureLookupAndCallTernaryNode() {
+        if (lookupAndCallTernaryNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lookupAndCallTernaryNode = insert(LookupAndCallTernaryNode.createReversible(binaryOpName, null));
+        }
+        return lookupAndCallTernaryNode;
+    }
+
+    protected boolean hasNonInplaceOperator() {
         return binaryOpName != null;
     }
 
-    @Specialization(guards = "!hasBinaryVersion()")
-    Object callObject(VirtualFrame frame, Object left, Object right,
+    public final Object execute(VirtualFrame frame, Object left, Object right) {
+        return executeTernary(frame, left, right, PNone.NO_VALUE);
+    }
+
+    public abstract Object executeTernary(VirtualFrame frame, Object x, Object y, Object z);
+
+    @Specialization(guards = "!hasNonInplaceOperator()")
+    Object doInplaceOnly(VirtualFrame frame, Object left, Object right, Object z,
                     @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattr) {
         Object leftCallable = getattr.execute(left);
         Object result;
         if (leftCallable == PNone.NO_VALUE) {
             result = PNotImplemented.NOT_IMPLEMENTED;
         } else {
-            result = ensureDispatch().executeObject(frame, leftCallable, left, right);
+            if (z == PNone.NO_VALUE) {
+                result = ensureBinaryCallNode().executeObject(frame, leftCallable, left, right);
+            } else {
+                result = ensureTernaryCallNode().execute(frame, leftCallable, left, right, z);
+            }
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
             if (handler == null) {
@@ -125,25 +171,33 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
         return result;
     }
 
-    @Specialization(guards = "hasBinaryVersion()")
-    Object callObject(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace,
-                    @Cached("create(binaryOpName, reverseBinaryOpName)") LookupAndCallBinaryNode binaryNode) {
-        Object result = PNotImplemented.NOT_IMPLEMENTED;
+    @Specialization(guards = "hasNonInplaceOperator()")
+    Object doBinary(VirtualFrame frame, Object left, Object right, Object z,
+                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace) {
+        Object result;
         Object inplaceCallable = getattrInplace.execute(left);
         if (inplaceCallable != PNone.NO_VALUE) {
-            result = ensureDispatch().executeObject(frame, inplaceCallable, left, right);
+            // nb.: The only ternary in-place operator is '__ipow__' but according to 'typeobject.c:
+            // slot_nb_inplace_power', this is always called as binary.
+            result = ensureBinaryCallNode().executeObject(frame, inplaceCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
         }
-        if (binaryNode != null) {
-            result = binaryNode.executeObject(frame, left, right);
-            if (result != PNotImplemented.NOT_IMPLEMENTED) {
-                return result;
-            }
+
+        // try non-inplace variant
+        boolean isBinary = PGuards.isPNone(z);
+        if (isBinary) {
+            result = ensureLookupAndCallBinaryNode().executeObject(frame, left, right);
+        } else {
+            result = ensureLookupAndCallTernaryNode().execute(frame, left, right, z);
         }
-        if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
+        if (result != PNotImplemented.NOT_IMPLEMENTED) {
+            return result;
+        }
+
+        if (handlerFactory != null) {
+            assert result == PNotImplemented.NOT_IMPLEMENTED;
             if (handler == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 handler = insert(handlerFactory.get());

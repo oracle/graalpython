@@ -47,6 +47,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.PRootNodeWithFileName;
+import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -114,6 +116,12 @@ public abstract class CodeNodes {
 
             Supplier<CallTarget> createCode = () -> {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
+                if (rootNode instanceof BadOPCodeNode) {
+                    ((BadOPCodeNode) rootNode).setName(name);
+                }
+                if (rootNode instanceof PRootNodeWithFileName) {
+                    ((PRootNodeWithFileName) rootNode).setFileName(filename);
+                }
                 return PythonUtils.getOrCreateCallTarget(rootNode);
             };
 

@@ -45,8 +45,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -81,12 +79,12 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         this.exceptType = original.exceptType;
     }
 
-    public void executeExcept(VirtualFrame frame, TruffleException e) {
+    public void executeExcept(VirtualFrame frame, Throwable e) {
         if (exceptName != null) {
             if (e instanceof PException) {
                 exceptName.doWrite(frame, ((PException) e).getEscapedException());
             } else {
-                exceptName.doWrite(frame, getExceptionObject(e));
+                exceptName.doWrite(frame, e);
             }
         }
         body.executeVoid(frame);
@@ -96,12 +94,7 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
         throw ExceptionHandledException.INSTANCE;
     }
 
-    @TruffleBoundary
-    private static Object getExceptionObject(TruffleException e) {
-        return e.getExceptionObject();
-    }
-
-    public boolean matchesException(VirtualFrame frame, TruffleException e) {
+    public boolean matchesException(VirtualFrame frame, Throwable e) {
         if (exceptType == null) {
             return e instanceof PException; // foreign exceptions must be caught explicitly
         }
@@ -223,10 +216,10 @@ abstract class ExceptMatchNode extends Node implements EmulateJythonNode {
     boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
                     @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
                     @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary("e.getExceptionObject()") PythonObjectLibrary plib,
+                    @CachedLibrary("e.getUnreifiedException()") PythonObjectLibrary plib,
                     @Cached IsSubtypeNode isSubtype) {
         raiseIfNoException(frame, clause, isValidException);
-        return isSubtype.execute(frame, plib.getLazyPythonClass(e.getExceptionObject()), clause);
+        return isSubtype.execute(frame, plib.getLazyPythonClass(e.getUnreifiedException()), clause);
     }
 
     @Specialization(guards = {"emulateJython(language)", "context.getEnv().isHostException(e)", "context.getEnv().isHostObject(clause)"})

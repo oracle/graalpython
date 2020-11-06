@@ -73,8 +73,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -96,15 +96,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
         Object repr(GetSetDescriptor descr) {
-            return String.format("<attribute '%s' of '%s' objects>", descr.getName(), GetNameNode.doSlowPath(descr.getType()));
+            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getName(), GetNameNode.doSlowPath(descr.getType()));
         }
 
         @Specialization
-        @TruffleBoundary
         Object repr(HiddenKeyDescriptor descr) {
-            return String.format("<attribute '%s' of '%s' objects>", descr.getKey(), GetNameNode.doSlowPath(descr.getType()));
+            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getKey(), GetNameNode.doSlowPath(descr.getType()));
         }
     }
 
