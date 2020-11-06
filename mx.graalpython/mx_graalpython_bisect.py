@@ -209,6 +209,8 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             if fetched_enterprise[0]:
                 checkout_args.append('--no-fetch')
             mx.run_mx(checkout_args, out=mx.OutputCapture())
+            # Make sure vm is imported before vm-enterprise
+            get_suite('/vm')
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
             fetched_enterprise[0] = True
         suite.vc.update_to_branch(suite.vc_dir, commit)
