@@ -122,6 +122,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
             downstream_bad = get_commit(downstream_suite)
     subresults = {}
     if downstream_bad and downstream_good and downstream_bad != downstream_good:
+        suite.vc.update_to_branch(suite.vc_dir, commits[good_index])
         subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, threshold)
         subresults[bad_index] = subresult
     return BisectResult(suite, commits, values, good_index, bad_index, subresults)
@@ -210,8 +211,6 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             mx.run_mx(checkout_args, out=mx.OutputCapture())
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
             fetched_enterprise[0] = True
-        elif suite.name != 'vm':
-            mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
         print("debug: graalpython={} graal={} graal-enterprise={}"
