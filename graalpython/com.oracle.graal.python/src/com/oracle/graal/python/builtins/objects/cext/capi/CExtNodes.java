@@ -434,9 +434,9 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3")
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
+                        @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
@@ -690,7 +690,7 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3")
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
@@ -873,7 +873,7 @@ public abstract class CExtNodes {
             return ToNewRefNode.doSingleton(cextContext, object, contextRef);
         }
 
-        @Specialization(guards = "object == cachedObject", limit = "3")
+        @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
                         @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
