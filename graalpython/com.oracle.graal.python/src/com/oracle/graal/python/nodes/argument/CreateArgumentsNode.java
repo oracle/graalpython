@@ -510,7 +510,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(guards = "upfront >= co_argcount")
         @SuppressWarnings("unused")
         int doNothing(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
-            return upfront;
+            return 0;
         }
 
         protected static ApplyPositionalArguments create() {

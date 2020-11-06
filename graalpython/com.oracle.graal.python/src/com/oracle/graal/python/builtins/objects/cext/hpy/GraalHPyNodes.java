@@ -58,6 +58,7 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
@@ -444,8 +445,9 @@ public class GraalHPyNodes {
 
             // CPy-style methods
             // TODO(fa) support static and class methods
-            PRootNode rootNode = createWrapperRootNode(language, flags, methodName, mlMethObj);
-            PBuiltinFunction function = createWrapperFunction(factory, methodName, rootNode);
+            PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
+            PKeyword[] kwDefaults = {new PKeyword(ExternalFunctionNodes.KW_CALLABLE, mlMethObj)};
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.
@@ -467,20 +469,15 @@ public class GraalHPyNodes {
         }
 
         @TruffleBoundary
-        private static PBuiltinFunction createWrapperFunction(PythonObjectFactory factory, String name, PRootNode rootNode) {
-            return factory.createBuiltinFunction(name, null, 0, PythonUtils.getOrCreateCallTarget(rootNode));
-        }
-
-        @TruffleBoundary
-        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name, Object callable) {
+        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, callable, MethNoargsNode.METH_NOARGS_CONVERTER);
+                return new MethNoargsRoot(language, name, MethNoargsNode.METH_NOARGS_CONVERTER);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, callable, MethONode.METH_O_CONVERTER);
+                return new MethORoot(language, name, MethONode.METH_O_CONVERTER);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, callable, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
+                return new MethKeywordsRoot(language, name, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, callable, MethVarargsNode.METH_VARARGS_CONVERTER);
+                return new MethVarargsRoot(language, name, MethVarargsNode.METH_VARARGS_CONVERTER);
             }
             throw new IllegalStateException("illegal method flags");
         }

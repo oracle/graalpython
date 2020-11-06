@@ -463,6 +463,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, callTarget));
     }
 
+    public PBuiltinFunction createBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, callTarget));
+    }
+
     public GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type));
     }

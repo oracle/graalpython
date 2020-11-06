@@ -167,8 +167,15 @@ def f24(*args, a, b=5):
 def f25(*args, a, b=5, **kwds):
     pass
 
+
 def f26(**kw):
     return kw
+
+
+class F27:
+    def f27(*args, a=5):
+        return (args, a)
+
 
 def assert_parses(call_expr):
     raised = False
@@ -362,3 +369,11 @@ def test_runtime_args():
     kw = f26(b = mydict.pop('b', 22), **mydict)
     assert 'b' in kw
     assert kw['b'] == 2
+    
+    f27_object = F27()
+    assert f27_object.f27() == ((f27_object,), 5)
+    assert f27_object.f27(1,2,3) == ((f27_object,1,2,3), 5)
+    assert f27_object.f27(1,2,3,a=10) == ((f27_object,1,2,3), 10)
+    assert F27.f27() == (tuple(), 5)
+    assert F27.f27(1,2,3) == ((1,2,3), 5)
+    assert F27.f27(1,2,3,a=10) == ((1,2,3), 10)

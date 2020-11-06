@@ -393,6 +393,7 @@ class TestPyErr(CPyExtTestCase):
         }
         """,
         resultspec="O",
+        arguments=[],
         callfunction="wrap_PyErr_Fetch_tb_from_c",
         cmpfunc=compare_tracebacks,
     )
