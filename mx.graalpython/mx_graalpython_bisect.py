@@ -214,6 +214,8 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
+        print("debug: graalpython={} graal={} graal-enterprise={}"
+              .format(*(get_commit(get_suite(s)) for s in ('graalpython', '/vm', '/vm-enterprise'))))
         env = os.environ.copy()
         env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
