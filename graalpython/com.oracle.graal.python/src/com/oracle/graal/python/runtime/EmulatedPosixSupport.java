@@ -96,6 +96,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -776,10 +777,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, PosixPath path,
+    public void unlinkAt(int dirFd, PosixPath path, @SuppressWarnings("unused") boolean rmdir,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
                     @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+        // TODO handle rmdir parameter
         String pathname = pathToJavaStr.execute(path);
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
         try {
@@ -805,6 +807,42 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.fromException(e), target, link);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void mkdirAt(int dirFd, PosixPath pathname, int mode) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Buffer getcwdb() {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public String getcwd() {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void chdir(PosixPath path) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchdir(int fd, Object filename, boolean handleEintr) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean isatty(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     // ------------------

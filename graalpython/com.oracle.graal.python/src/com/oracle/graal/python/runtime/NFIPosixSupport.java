@@ -49,6 +49,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -84,8 +85,13 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fstatat("(sint32, [sint8], sint32, [sint64]):sint32"),
         call_fstat("(sint32, [sint64]):sint32"),
         call_uname("([sint8], [sint8], [sint8], [sint8], [sint8], sint32):sint32"),
-        call_unlinkat("(sint32, [sint8]):sint32"),
+        call_unlinkat("(sint32, [sint8], sint32):sint32"),
         call_symlinkat("([sint8], sint32, [sint8]):sint32"),
+        call_mkdirat("(sint32, [sint8], sint32):sint32"),
+        call_getcwd("([sint8], uint64):sint32"),
+        call_chdir("([sint8]):sint32"),
+        call_fchdir("(sint32):sint32"),
+        call_isatty("(sint32):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -390,9 +396,9 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, PosixPath pathname,
+    public void unlinkAt(int dirFd, PosixPath pathname, boolean rmdir,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname));
+        int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname), rmdir ? 1 : 0);
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
         }
@@ -405,6 +411,75 @@ public final class NFIPosixSupport extends PosixSupport {
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
         }
+    }
+
+    @ExportMessage
+    public void mkdirAt(int dirFd, PosixPath pathname, int mode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_mkdirat, dirFd, pathToCString(pathname), mode);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+        }
+    }
+
+    @ExportMessage
+    public Buffer getcwdb(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        for (int bufLen = 1024;; bufLen += 1024) {
+            Buffer buffer = Buffer.allocate(bufLen);
+            int n = invokeNode.callInt(lib, NativeFunctions.call_getcwd, wrap(buffer), bufLen);
+            if (n == 0) {
+                return buffer.withLength(findZero(buffer.data));
+            }
+            int errno = getErrno(invokeNode);
+            if (errno != OSErrorEnum.ERANGE.getNumber()) {
+                throw newPosixException(invokeNode, errno);
+            }
+        }
+    }
+
+    @ExportMessage
+    public String getcwd(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Buffer result = getcwdb(invokeNode);
+        if (result.length > Integer.MAX_VALUE) {
+            // sanity check that it is safe to cast result.length to int, to be removed once
+            // we support large arrays
+            throw CompilerDirectives.shouldNotReachHere("Posix getcwd() returned more than can fit to a Java array");
+        }
+        // TODO PyUnicode_DecodeFSDefault
+        return PythonUtils.newString(result.data, 0, (int) result.length);
+    }
+
+    @ExportMessage
+    public void chdir(PosixPath path,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_chdir, pathToCString(path));
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+        }
+    }
+
+    @ExportMessage
+    public void fchdir(int fd, Object filename, boolean handleEintr,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
+                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            if (invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd) == 0) {
+                return;
+            }
+            int errno = getErrno(invokeNode);
+            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
+                throw newPosixException(invokeNode, errno, filename);
+            }
+            context.triggerAsyncActions(null, asyncProfile);
+        }
+    }
+
+    @ExportMessage
+    public boolean isatty(int fd,
+                       @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(lib, NativeFunctions.call_isatty, fd) != 0;
     }
 
     private int getErrno(InvokeNativeFunction invokeNode) {
@@ -440,12 +515,16 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private static String cStringToJavaString(byte[] buf) {
+        return PythonUtils.newString(buf, 0, findZero(buf));
+    }
+
+    private static int findZero(byte[] buf) {
         for (int i = 0; i < buf.length; ++i) {
             if (buf[i] == 0) {
-                return PythonUtils.newString(buf, 0, i);
+                return i;
             }
         }
-        return PythonUtils.newString(buf);
+        return buf.length;
     }
 
     private Object pathToCString(PosixPath path) {

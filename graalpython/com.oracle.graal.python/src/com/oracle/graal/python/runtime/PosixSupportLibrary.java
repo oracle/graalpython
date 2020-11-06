@@ -116,9 +116,31 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
-    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname) throws PosixException;
+    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname, boolean rmdir) throws PosixException;
 
     public abstract void symlinkAt(Object receiver, PosixPath target, int linkpathDirFd, PosixPath linkpath) throws PosixException;
+
+    public abstract void mkdirAt(Object receiver, int dirFd, PosixPath pathname, int mode) throws PosixException;
+
+    public abstract Buffer getcwdb(Object receiver) throws PosixException;
+
+    public abstract String getcwd(Object receiver) throws PosixException;
+
+    public abstract void chdir(Object receiver, PosixPath path) throws PosixException;
+
+    /**
+     * Performs operation of fchdir(fd).
+     *
+     * @param receiver the receiver of the message
+     * @param fd the file descriptor
+     * @param filename filename for the error message, can be null
+     * @param handleEintr if {@code true}, EINTR causes the call to be repeated
+     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
+     *             {@code false}
+     */
+    public abstract void fchdir(Object receiver, int fd, Object filename, boolean handleEintr) throws PosixException;
+
+    public abstract boolean isatty(Object receiver, int fd);
 
     public static class PosixException extends Exception {
 
