@@ -207,7 +207,7 @@ public abstract class PythonObjectFactory extends Node {
         return contextRef.get().getEnv().lookup(AllocationReporter.class);
     }
 
-    private PythonLanguage getLanguage() {
+    public PythonLanguage getLanguage() {
         return executeGetLanguage(true, 0.0);
     }
 
