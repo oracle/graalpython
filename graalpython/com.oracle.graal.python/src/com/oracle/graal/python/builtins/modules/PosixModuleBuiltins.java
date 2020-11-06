@@ -131,7 +131,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -1036,7 +1036,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class NfiOpenNode extends PythonQuaternaryClinicBuiltinNode {
+    abstract static class NfiOpenNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1363,7 +1363,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "nfi_get_terminal_size", minNumOfPositionalArgs = 0, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int, defaultValue = "1")
     @GenerateNodeFactory
-    public abstract static class NfiGetTerminalSizeNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class NfiGetTerminalSizeNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1384,12 +1384,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nfi_stat", minNumOfPositionalArgs = 1, parameterNames = {"path", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "nfi_stat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
-    public abstract static class NfiStatNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class NfiStatNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1462,11 +1462,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path", "dir_fd"})
+    @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    public abstract static class NfiLStatNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiLStatNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1511,7 +1511,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "nfi_uname", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    public abstract static class NfiUnameNode extends PythonBuiltinNode {
+    abstract static class NfiUnameNode extends PythonBuiltinNode {
 
         @Specialization
         PTuple uname(VirtualFrame frame,
@@ -1528,7 +1528,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class NfiUnlinkNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class NfiUnlinkNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -1555,7 +1555,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "target_is_directory", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class NfiSymlinkNode extends PythonQuaternaryClinicBuiltinNode {
+    abstract static class NfiSymlinkNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
