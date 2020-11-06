@@ -62,6 +62,10 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OBJCLASS__;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -96,13 +100,59 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(GetSetDescriptor descr) {
-            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getName(), GetNameNode.doSlowPath(descr.getType()));
+        Object repr(GetSetDescriptor descr,
+                        @Cached GetNameNode getName) {
+            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getName(), getName.execute(descr.getType()));
         }
 
         @Specialization
-        Object repr(HiddenKeyDescriptor descr) {
-            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getKey(), GetNameNode.doSlowPath(descr.getType()));
+        Object repr(HiddenKeyDescriptor descr,
+                        @Cached GetNameNode getName) {
+            return PythonUtils.format("<attribute '%s' of '%s' objects>", descr.getKey(), getName.execute(descr.getType()));
+        }
+    }
+
+    @Builtin(name = __OBJCLASS__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class ObjclassNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object objclass(GetSetDescriptor self) {
+            return self;
+        }
+
+        @Specialization
+        Object objclass(HiddenKeyDescriptor self) {
+            return self;
+        }
+    }
+
+    @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class QualnameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object qualname(VirtualFrame frame, GetSetDescriptor self,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
+            return PythonUtils.format("%s.%s", readQualNameNode.executeObject(frame, self.getType()), self.getName());
+        }
+
+        @Specialization
+        Object qualname(VirtualFrame frame, HiddenKeyDescriptor self,
+                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
+            return PythonUtils.format("%s.%s", readQualNameNode.executeObject(frame, self.getType()), self.getKey().getName());
+        }
+    }
+
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class NameNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object qualname(GetSetDescriptor self) {
+            return self.getName();
+        }
+
+        @Specialization
+        Object qualname(HiddenKeyDescriptor self) {
+            return self.getKey().getName();
         }
     }
 
