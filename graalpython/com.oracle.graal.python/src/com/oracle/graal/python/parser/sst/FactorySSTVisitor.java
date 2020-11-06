@@ -57,11 +57,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NoValueNode;
@@ -92,23 +90,18 @@ import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
-import com.oracle.graal.python.nodes.generator.AbstractYieldNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
-import com.oracle.graal.python.nodes.literal.DictLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
-import com.oracle.graal.python.nodes.literal.FormatStringLiteralNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.LiteralNode;
 import com.oracle.graal.python.nodes.literal.LongLiteralNode;
-import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.PIntLiteralNode;
-import com.oracle.graal.python.nodes.literal.SetLiteralNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
@@ -309,7 +302,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         int numYields = getCurrentNumberOfYields();
         for (int i = 0; i < node.lhs.length; i++) {
             SSTNode sstLhs = node.lhs[i];
-            checkCannotAssignTo(sstLhs);
             lhs[i] = (ExpressionNode) sstLhs.accept(this);
         }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
@@ -334,52 +326,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(AugAssignmentSSTNode node) {
-        checkCannotAssignTo(node.lhs);
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
-        checkExpressionAssignable(lhs);
-        if (!(lhs instanceof ReadNode)) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT);
-        }
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
         ExpressionNode binOp = nodeFactory.createInplaceOperation(node.operation, lhs, rhs);
         PNode duplicate = nodeFactory.duplicate(lhs, PNode.class);
         PNode result = ((ReadNode) duplicate).makeWriteNode(binOp);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
-    }
-
-    private void checkCannotAssignTo(SSTNode lhs) throws RuntimeException {
-        if (lhs instanceof ForComprehensionSSTNode) {
-            PythonBuiltinClassType resultType = ((ForComprehensionSSTNode) lhs).resultType;
-            if (resultType == PythonBuiltinClassType.PGenerator) {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "generator expression");
-            }
-            String calleeName;
-            switch (resultType) {
-                case PList:
-                    calleeName = BuiltinNames.LIST;
-                    break;
-                case PSet:
-                    calleeName = BuiltinNames.SET;
-                    break;
-                case PDict:
-                    calleeName = BuiltinNames.DICT;
-                    break;
-                default:
-                    calleeName = null;
-            }
-            if (calleeName == null) {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "comprehension");
-            } else {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), ErrorMessages.CANNOT_ASSIGN_TO_COMPREHENSION, calleeName);
-            }
-        } else if (lhs instanceof CallSSTNode) {
-            throw errors.raiseInvalidSyntax(source, createSourceSection(lhs.startOffset, lhs.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, "function call");
-        } else if (lhs instanceof CollectionSSTNode) {
-            for (SSTNode n : ((CollectionSSTNode) lhs).getValues()) {
-                checkCannotAssignTo(n);
-            }
-        }
     }
 
     @Override
@@ -944,9 +897,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         PNode result;
         if (node.asNames == null) {
             // star import
-            if (!scopeEnvironment.atModuleLevel()) {
-                throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL);
-            }
             result = nodeFactory.createImportStar(from, level);
         } else {
             String[] fromList = new String[node.asNames.length];
@@ -1125,9 +1075,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(ReturnSSTNode node) {
-        if (!scopeEnvironment.isInFunctionScope()) {
-            errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.RETURN_OUTSIDE_FUNC);
-        }
         StatementNode result;
         if (node.value != null) {
             result = new ReturnNode.FrameReturnNode(createWriteLocal((ExpressionNode) node.value.accept(this), scopeEnvironment.getReturnSlot()));
@@ -1271,7 +1218,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     @Override
     public PNode visit(VarLookupSSTNode node) {
-        // ScopeInfo oldScope = scopeEnvironment.setCurrentScope(node.scope);
         PNode result = (PNode) scopeEnvironment.findVariable(node.name);
         if (result == null) {
             if (scopeEnvironment.isNonlocal(node.name)) {
@@ -1280,7 +1226,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             throw errors.raiseInvalidSyntax(source, createSourceSection(node.startOffset, node.endOffset), ErrorMessages.CANNOT_ASSIGN_TO, node.name);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-        // scopeEnvironment.setCurrentScope(oldScope);
         return result;
     }
 
@@ -1352,34 +1297,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         }
     }
 
-    private void checkExpressionAssignable(ExpressionNode lhs) {
-        if (lhs instanceof ObjectLiteralNode) {
-            if (((ObjectLiteralNode) lhs).getObject() == PEllipsis.INSTANCE) {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "Ellipsis");
-            } else {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "None");
-            }
-        } else if (lhs instanceof BooleanLiteralNode) {
-            if ((boolean) ((BooleanLiteralNode) lhs).getValue()) {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "True");
-            } else {
-                throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "False");
-            }
-        } else if (lhs instanceof SimpleLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "literal");
-        } else if (lhs instanceof DictLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "dict display");
-        } else if (lhs instanceof SetLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "set display");
-        } else if (lhs instanceof FormatStringLiteralNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "f-string expression");
-        } else if (lhs instanceof AbstractYieldNode) {
-            throw errors.raiseInvalidSyntax(source, lhs.getSourceSection(), ErrorMessages.CANNOT_ASSIGN_TO, "yield expression");
-        }
-    }
-
     private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
-        checkExpressionAssignable(lhs);
         if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {
