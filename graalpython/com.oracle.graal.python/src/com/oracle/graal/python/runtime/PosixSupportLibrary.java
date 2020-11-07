@@ -42,6 +42,8 @@ package com.oracle.graal.python.runtime;
 
 import java.nio.ByteBuffer;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -122,9 +124,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void mkdirAt(Object receiver, int dirFd, PosixPath pathname, int mode) throws PosixException;
 
-    public abstract Buffer getcwdb(Object receiver) throws PosixException;
-
-    public abstract String getcwd(Object receiver) throws PosixException;
+    public abstract Object getcwd(Object receiver) throws PosixException;
 
     public abstract void chdir(Object receiver, PosixPath path) throws PosixException;
 
@@ -165,6 +165,9 @@ public abstract class PosixSupportLibrary extends Library {
      *         characters
      */
     public abstract Object createPathFromBytes(Object receiver, byte[] path);
+
+    public abstract String getPathAsString(Object receiver, Object path);
+    public abstract PBytes getPathAsBytes(Object receiver, Object path, PythonObjectFactory factory);
 
     public static class PosixException extends Exception {
 

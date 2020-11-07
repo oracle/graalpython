@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NFIBackend;
@@ -48,6 +49,7 @@ import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -424,7 +426,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public Buffer getcwdb(
+    public Object getcwd(
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         for (int bufLen = 1024;; bufLen += 1024) {
             Buffer buffer = Buffer.allocate(bufLen);
@@ -437,19 +439,6 @@ public final class NFIPosixSupport extends PosixSupport {
                 throw newPosixException(invokeNode, errno);
             }
         }
-    }
-
-    @ExportMessage
-    public String getcwd(
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer result = getcwdb(invokeNode);
-        if (result.length > Integer.MAX_VALUE) {
-            // sanity check that it is safe to cast result.length to int, to be removed once
-            // we support large arrays
-            throw CompilerDirectives.shouldNotReachHere("Posix getcwd() returned more than can fit to a Java array");
-        }
-        // TODO PyUnicode_DecodeFSDefault
-        return PythonUtils.newString(result.data, 0, (int) result.length);
     }
 
     @ExportMessage
@@ -496,6 +485,31 @@ public final class NFIPosixSupport extends PosixSupport {
     @SuppressWarnings("static-method")
     public Object createPathFromBytes(byte[] path) {
         return checkPath(path);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String getPathAsString(Object path) {
+        Buffer result = (Buffer) path;
+        if (result.length > Integer.MAX_VALUE) {
+            // sanity check that it is safe to cast result.length to int, to be removed once
+            // we support large arrays
+            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
+        }
+        // TODO PyUnicode_DecodeFSDefault
+        return PythonUtils.newString(result.data, 0, (int) result.length);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public PBytes getPathAsBytes(Object path, PythonObjectFactory factory) {
+        Buffer result = (Buffer) path;
+        if (result.length > Integer.MAX_VALUE) {
+            // sanity check that it is safe to cast result.length to int, to be removed once
+            // we support large arrays
+            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
+        }
+        return factory.createBytes(result.data, 0, (int) result.length);
     }
 
     @TruffleBoundary

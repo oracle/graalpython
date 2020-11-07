@@ -1633,7 +1633,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         String getcwd(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return posixLib.getcwd(getPosixSupport());
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.getcwd(getPosixSupport()));
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1647,13 +1647,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PBytes getcwd(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                Buffer result = posixLib.getcwdb(getPosixSupport());
-                if (result.length > Integer.MAX_VALUE) {
-                    // sanity check that it is safe to cast result.length to int, to be removed once
-                    // we support large arrays
-                    throw CompilerDirectives.shouldNotReachHere("Posix getcwd() returned more than can fit to a Java array");
-                }
-                return factory().createBytes(result.data, 0, (int) result.length);
+                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.getcwd(getPosixSupport()), factory());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
