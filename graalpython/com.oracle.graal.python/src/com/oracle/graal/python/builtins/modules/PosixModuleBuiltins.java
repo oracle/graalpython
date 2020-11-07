@@ -167,6 +167,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2918,6 +2919,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final String argumentName;
         protected final boolean nullable;
         protected final boolean allowFd;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         public PathConversionNode(String functionName, String argumentName, boolean nullable, boolean allowFd) {
             this.functionNameWithColon = functionName != null ? functionName + ": " : "";
@@ -2953,31 +2955,35 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PosixFileHandle doUnicode(String value) {
-            return new PosixPath(value, value, checkPath(getStringBytes(value)));
+        PosixFileHandle doUnicode(String value,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)));
         }
 
         @Specialization
         PosixFileHandle doUnicode(PString value,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             String str = castToJavaStringNode.execute(value);
-            return new PosixPath(value, str, checkPath(getStringBytes(str)));
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)));
         }
 
         @Specialization
         PosixFileHandle doBytes(PBytesLike value,
-                        @Cached BytesNodes.ToBytesNode toByteArrayNode) {
-            return new PosixPath(value, checkPath(toByteArrayNode.execute(value)));
+                        @Cached BytesNodes.ToBytesNode toByteArrayNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))));
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
             warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                             ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
             try {
-                return new PosixPath(value, checkPath(lib.getBufferBytes(value)));
+                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), lib.getBufferBytes(value))));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
             }
@@ -2996,7 +3002,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             Object func = lib.lookupAttributeOnType(value, __FSPATH__);
             if (func == PNone.NO_VALUE) {
                 throw raise(TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
@@ -3006,13 +3013,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // 'pathObject' replaces 'value' as the PosixPath.originalObject for auditing purposes
             // by design
             if (pathObject instanceof PBytesLike) {
-                return doBytes((PBytesLike) pathObject, toByteArrayNode);
+                return doBytes((PBytesLike) pathObject, toByteArrayNode, posixLib);
             }
             if (pathObject instanceof PString) {
-                return doUnicode((PString) pathObject, castToJavaStringNode);
+                return doUnicode((PString) pathObject, castToJavaStringNode, posixLib);
             }
             if (pathObject instanceof String) {
-                return doUnicode((String) pathObject);
+                return doUnicode((String) pathObject, posixLib);
             }
             throw raise(TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, value, pathObject);
         }
@@ -3026,19 +3033,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             : allowFd ? "string, bytes, os.PathLike or integer" : nullable ? "string, bytes, os.PathLike or None" : "string, bytes or os.PathLike";
         }
 
-        private byte[] checkPath(byte[] path) {
-            for (byte b : path) {
-                if (b == 0) {
-                    throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
-                }
+        private Object checkPath(Object path) {
+            if (path == null) {
+                throw raise(ValueError, ErrorMessages.S_EMBEDDED_NULL_CHARACTER_IN_S, functionNameWithColon, argumentName);
             }
             return path;
         }
 
-        @TruffleBoundary
-        private static byte[] getStringBytes(String str) {
-            // TODO replace getBytes with PyUnicode_FSConverter equivalent
-            return str.getBytes();
+        private ContextReference<PythonContext> getContextRef() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = lookupContextReference(PythonLanguage.class);
+            }
+            return contextRef;
+        }
+
+        private PythonContext getContext() {
+            return getContextRef().get();
+        }
+
+        protected final Object getPosixSupport() {
+            return getContext().getPosixSupport();
         }
 
         @ClinicConverterFactory

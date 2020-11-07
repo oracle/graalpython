@@ -50,6 +50,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -482,6 +483,39 @@ public final class NFIPosixSupport extends PosixSupport {
         return invokeNode.callInt(lib, NativeFunctions.call_isatty, fd) != 0;
     }
 
+    // ------------------
+    // Path conversions
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object createPathFromString(String path) {
+        return checkPath(getStringBytes(path));
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object createPathFromBytes(byte[] path) {
+        return checkPath(path);
+    }
+
+    @TruffleBoundary
+    private static byte[] getStringBytes(String str) {
+        // TODO replace getBytes with PyUnicode_FSConverter equivalent
+        return str.getBytes();
+    }
+
+    private static byte[] checkPath(byte[] path) {
+        for (byte b : path) {
+            if (b == 0) {
+                return null;
+            }
+        }
+        return path;
+    }
+
+    // ------------------
+    // Helpers
+
     private int getErrno(InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(lib, NativeFunctions.get_errno);
     }
@@ -528,7 +562,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private Object pathToCString(PosixPath path) {
-        return wrap(nullTerminate(path.path));
+        return wrap(nullTerminate((byte[]) path.value));
     }
 
     private static byte[] nullTerminate(byte[] str) {

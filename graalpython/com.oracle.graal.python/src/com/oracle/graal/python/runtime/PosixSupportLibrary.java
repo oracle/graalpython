@@ -142,6 +142,30 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract boolean isatty(Object receiver, int fd);
 
+    /**
+     * Converts a {@code String} into the internal representation of paths used by the library
+     * implementation. The implementation should return {@code null} if the path after any necessary
+     * conversion contains embedded null characeters.
+     *
+     * @param receiver the receiver of the message
+     * @param path the path as a {@code String}
+     * @return an opaque object representing the path or {@code null} if the path contains null
+     *         characters
+     */
+    public abstract Object createPathFromString(Object receiver, String path);
+
+    /**
+     * Converts a {@code byte} array into the internal representation of paths used by the library
+     * implementation. The implementation should return {@code null} if the path after any necessary
+     * conversion contains embedded null characeters.
+     * 
+     * @param receiver the receiver of the message
+     * @param path the path as a a {@code byte[]} array
+     * @return an opaque object representing the path or {@code null} if the path contains null
+     *         characters
+     */
+    public abstract Object createPathFromBytes(Object receiver, byte[] path);
+
     public static class PosixException extends Exception {
 
         private static final long serialVersionUID = -115762483478883093L;
@@ -247,27 +271,18 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
-     * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
-     * null character).
+     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
+     * implementation
+     * 
+     * @see PosixSupportLibrary#createPathFromString(Object, String)
+     * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
      */
     public static class PosixPath extends PosixFileHandle {
-        public final byte[] path;
+        public final Object value;
 
-        /**
-         * Contains the materialized Java String if this {@link PosixPath} was constructed by
-         * encoding a string Python object.
-         */
-        public final String originalString;
-
-        public PosixPath(Object originalObject, String originalString, byte[] path) {
+        public PosixPath(Object originalObject, Object value) {
             super(originalObject);
-            assert path != null;
-            this.path = path;
-            this.originalString = originalString;
-        }
-
-        public PosixPath(Object originalObject, byte[] path) {
-            this(originalObject, null, path);
+            this.value = value;
         }
     }
 
