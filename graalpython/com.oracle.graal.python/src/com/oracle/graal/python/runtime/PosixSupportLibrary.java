@@ -68,7 +68,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getpid(Object receiver);
 
-    public abstract long umask(Object receiver, long mask);
+    public abstract int umask(Object receiver, int mask) throws PosixException;
 
     public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
 

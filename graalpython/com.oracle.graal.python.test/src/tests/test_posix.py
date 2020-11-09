@@ -180,6 +180,10 @@ class PosixTests(unittest.TestCase):
         finally:
             os.close(tmp_fd)
 
+    def test_umask(self):
+        orig = os.umask(0o22)
+        self.assertEqual(0o22, os.umask(orig))
+
 
 class WithCurdirFdTests(unittest.TestCase):
 

@@ -2477,16 +2477,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "umask", minNumOfPositionalArgs = 1)
+    @Builtin(name = "umask", minNumOfPositionalArgs = 1, parameterNames = {"mask"})
+    @ArgumentClinic(name = "mask", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class UmaskNode extends PythonBuiltinNode {
+    abstract static class UmaskNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.UmaskNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        long umask(long mask,   // TODO handle arg types properly (extend arg clinic to support
-                                // pid_t, fd etc.)
+        int umask(VirtualFrame frame, int mask,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return posixLib.umask(getPosixSupport(), mask);
+            try {
+                return posixLib.umask(getPosixSupport(), mask);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 

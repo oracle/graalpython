@@ -247,9 +247,9 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long umask(long umask) {
-        long prev = currentUmask;
-        currentUmask = (int) (umask & 00777);
+    public int umask(int umask) {
+        int prev = currentUmask;
+        currentUmask = umask & 00777;
         if (hasDefaultUmask) {
             compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
         }

@@ -68,9 +68,8 @@ int64_t call_getpid() {
     return getpid();
 }
 
-int64_t call_umask(int64_t mask) {
-  // TODO umask uses mode_t as argument/retval -> what Java type should we map it into? Using long for now.
-  return umask(mask);
+int32_t call_umask(int32_t mask) {
+    return umask(mask);
 }
 
 int32_t get_inheritable(int32_t fd) {

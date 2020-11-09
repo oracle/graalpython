@@ -74,7 +74,7 @@ public final class NFIPosixSupport extends PosixSupport {
         set_errno("(sint32):void"),
         call_strerror("(sint32, [sint8], sint32):void"),
         call_getpid("():sint64"),
-        call_umask("(sint64):sint64"),
+        call_umask("(sint32):sint32"),
         call_openat("(sint32, [sint8], sint32, sint32):sint32"),
         call_close("(sint32):sint32"),
         call_read("(sint32, [sint8], uint64):sint64"),
@@ -155,12 +155,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public long umask(long mask,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-        long result = invokeNode.callLong(lib, NativeFunctions.call_umask, mask);
+    public int umask(int mask,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_umask, mask);
         if (result < 0) {
-            // TODO call errno() and raise OS error
-            // create helper method for this (like CPython's posix_error)
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
         return result;
     }
