@@ -212,7 +212,7 @@ def punittest(ars):
                 # test leaks with shared engine Python code only
                 run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
                 # test leaks with shared engine when some C module code is involved
-                run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
+                # run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
 
