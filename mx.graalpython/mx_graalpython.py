@@ -213,7 +213,6 @@ def punittest(ars):
                 # test leaks with shared engine Python code only
                 run_leak_launcher(common_args + ["--shared-engine", "--code", "pass"]),
                 # test leaks with shared engine when some C module code is involved
-                # Not working due to GR-26175
                 # run_leak_launcher(common_args + ["--shared-engine", "--code", "import _testcapi, mmap, bz2; print(memoryview(b'').nbytes)"])
         ]):
             mx.abort(1)
@@ -2025,7 +2024,7 @@ def run_leak_launcher(input_args, out=None):
         # rerun once with heap dumping enabled
         out = mx.OutputCapture()
         run_leak_launcher(["--keep-dump"] + input_args, out=out)
-        path = out.data.strip().split("Dump file:")[2].strip()
+        path = out.data.strip().partition("Dump file:")[2].strip()
         if path:
             save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
             try:
