@@ -2015,7 +2015,7 @@ def run_leak_launcher(input_args, out=None):
         # rerun once with heap dumping enabled
         out = mx.OutputCapture()
         run_leak_launcher(["--keep-dump"] + input_args, out=out)
-        path = out.data.strip().split("Dump file:")[2].strip()
+        path = out.data.strip().partition("Dump file:")[2].strip()
         if path:
             save_path = os.path.join(SUITE.dir, "dumps", "leak_test")
             try:
