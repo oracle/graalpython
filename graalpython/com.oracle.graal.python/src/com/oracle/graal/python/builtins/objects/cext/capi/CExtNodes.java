@@ -437,7 +437,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
                         @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
-                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+                        @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
@@ -692,8 +692,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
-                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+                        @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
+                        @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
@@ -875,8 +875,8 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonClass(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonManagedClass object,
-                        @SuppressWarnings("unused") @Cached("object") PythonManagedClass cachedObject,
-                        @Cached("wrapNativeClass(object)") PythonClassNativeWrapper wrapper) {
+                        @SuppressWarnings("unused") @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
+                        @Cached(value = "wrapNativeClass(object)", weak = true) PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
