@@ -133,12 +133,12 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @param filename filename for the error message, can be null
+     * @param pathname pathname for the error message, can be null
      * @param handleEintr if {@code true}, EINTR causes the call to be repeated
      * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
      *             {@code false}
      */
-    public abstract void fchdir(Object receiver, int fd, Object filename, boolean handleEintr) throws PosixException;
+    public abstract void fchdir(Object receiver, int fd, Object pathname, boolean handleEintr) throws PosixException;
 
     public abstract boolean isatty(Object receiver, int fd);
 

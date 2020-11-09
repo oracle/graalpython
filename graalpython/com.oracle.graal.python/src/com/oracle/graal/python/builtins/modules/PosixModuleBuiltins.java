@@ -1045,7 +1045,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
+        int open(VirtualFrame frame, PosixPath path, int flags, int mode, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             int fixedFlags = flags | CLOEXEC;
@@ -1069,7 +1069,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object close(VirtualFrame frame, int fd,
+        PNone close(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 posixLib.close(getPosixSupport(), fd);
@@ -1092,7 +1092,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object read(VirtualFrame frame, int fd, int length,
+        PBytes read(VirtualFrame frame, int fd, int length,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             if (length < 0) {
                 int error = OSErrorEnum.EINVAL.getNumber();
@@ -1398,7 +1398,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
+        PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd, boolean followSymlinks,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
@@ -1411,18 +1411,18 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isDefault(dirFd)")
         @SuppressWarnings("unused")
-        Object doStatFdWithDirFd(PosixFd fd, int dirFd, boolean followSymlinks) {
+        PTuple doStatFdWithDirFd(PosixFd fd, int dirFd, boolean followSymlinks) {
             throw raise(ValueError, ErrorMessages.CANT_SPECIFY_DIRFD_WITHOUT_PATH, "stat");
         }
 
         @Specialization(guards = {"isDefault(dirFd)", "!followSymlinks"})
         @SuppressWarnings("unused")
-        Object doStatFdWithFollowSYmlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
+        PTuple doStatFdWithFollowSYmlinks(VirtualFrame frame, PosixFd fd, int dirFd, boolean followSymlinks) {
             throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "stat");
         }
 
         @Specialization(guards = {"isDefault(dirFd)", "followSymlinks"})
-        Object doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+        PTuple doStatFd(VirtualFrame frame, PosixFd fd, @SuppressWarnings("unused") int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached @Shared("positive") ConditionProfile positiveLongProfile) {
             try {
@@ -1437,7 +1437,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
         }
 
-        private static Object createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+        private static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
             Object[] res = new Object[16];
             for (int i = 0; i < 7; i++) {
                 res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
@@ -1475,7 +1475,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
+        PTuple doStatPath(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile positiveLongProfile) {
             try {
@@ -1498,7 +1498,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doStatFd(VirtualFrame frame, int fd,
+        PTuple doStatFd(VirtualFrame frame, int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached ConditionProfile positiveLongProfile) {
             try {
@@ -1644,7 +1644,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NfiGetcwdbNode extends PythonBuiltinNode {
         @Specialization
-        PBytes getcwd(VirtualFrame frame,
+        PBytes getcwdb(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 return posixLib.getPathAsBytes(getPosixSupport(), posixLib.getcwd(getPosixSupport()), factory());

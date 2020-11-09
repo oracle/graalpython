@@ -830,7 +830,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public void fchdir(int fd, Object filename, boolean handleEintr) {
+    public void fchdir(int fd, Object pathname, boolean handleEintr) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
