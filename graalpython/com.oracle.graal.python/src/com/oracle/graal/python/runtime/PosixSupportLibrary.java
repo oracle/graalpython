@@ -158,7 +158,7 @@ public abstract class PosixSupportLibrary extends Library {
      * Converts a {@code byte} array into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
      * conversion contains embedded null characeters.
-     * 
+     *
      * @param receiver the receiver of the message
      * @param path the path as a a {@code byte[]} array
      * @return an opaque object representing the path or {@code null} if the path contains null
@@ -167,6 +167,7 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract Object createPathFromBytes(Object receiver, byte[] path);
 
     public abstract String getPathAsString(Object receiver, Object path);
+
     public abstract PBytes getPathAsBytes(Object receiver, Object path, PythonObjectFactory factory);
 
     public static class PosixException extends Exception {
@@ -276,7 +277,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
      * implementation
-     * 
+     *
      * @see PosixSupportLibrary#createPathFromString(Object, String)
      * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
      */
