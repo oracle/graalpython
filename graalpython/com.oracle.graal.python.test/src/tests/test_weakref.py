@@ -41,7 +41,8 @@ MAX_WAIT_COUNT = 500
 
 import sys
 
-def test_weakref_finalizer():
+# TODO: re-enable test_weakref_finalizer once the transient issue associated with it is solved (see GR-27104).
+def _weakref_finalizer():
     import gc, weakref
     class A(): pass
     for i in range(2):
@@ -58,7 +59,7 @@ cleaned_up = False
 def cleanup(ref):
     global cleaned_up
     caller_code = sys._getframe(1).f_code
-    assert caller_code == test_weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (test_weakref_finalizer.__code__, caller_code)
+    assert caller_code == _weakref_finalizer.__code__, "expected: '%s' but was '%s'" % (_weakref_finalizer.__code__, caller_code)
     cleaned_up = True
 
 
