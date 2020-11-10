@@ -127,6 +127,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSocket("socket", "_socket"),
     PStaticmethod("staticmethod", BuiltinNames.BUILTINS),
     PClassmethod("classmethod", BuiltinNames.BUILTINS),
+    PNfiScandirIterator("nfi_ScandirIterator", false, "posix", false),
+    PNfiDirEntry("nfi_DirEntry", true, "posix", false),
     PScandirIterator("ScandirIterator", "posix", false),
     PDirEntry("DirEntry", "posix"),
     PLZMACompressor("LZMACompressor", "_lzma"),
@@ -225,15 +227,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // initialized in static constructor
     @CompilationFinal private PythonBuiltinClassType base;
 
-    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
+    PythonBuiltinClassType(String name, boolean isPublic, String module, boolean basetype) {
         this.name = name;
-        this.publicInModule = publicInModule;
-        if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
-            qualifiedName = publicInModule + "." + name;
+        this.publicInModule = isPublic ? module : null;
+        if (module != null && module != BuiltinNames.BUILTINS) {
+            qualifiedName = module + "." + name;
         } else {
             qualifiedName = name;
         }
         this.basetype = basetype;
+    }
+
+    PythonBuiltinClassType(String name, String publicInModule, boolean basetype) {
+        this(name, publicInModule != null, publicInModule, basetype);
     }
 
     PythonBuiltinClassType(String name, String publicInModule) {

@@ -100,6 +100,8 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
+import com.oracle.graal.python.builtins.objects.posix.PNfiDirEntry;
+import com.oracle.graal.python.builtins.objects.posix.PNfiScandirIterator;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
@@ -943,6 +945,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public PSemLock createSemLock(Object cls, String name, int kind, Semaphore sharedSemaphore) {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
+    }
+
+    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, boolean produceBytes) {
+        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, produceBytes));
+    }
+
+    public PNfiDirEntry createNfiDirEntry(Object dirEntryData, boolean produceBytes) {
+        return trace(new PNfiDirEntry(PythonBuiltinClassType.PNfiDirEntry, PythonBuiltinClassType.PNfiDirEntry.getInstanceShape(getLanguage()), dirEntryData, produceBytes));
     }
 
     public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next, boolean produceBytes) {

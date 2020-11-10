@@ -62,6 +62,7 @@ except:
 
 
 import unittest
+import array
 import sys
 import stat
 import tempfile
@@ -329,6 +330,79 @@ class ChdirTests(unittest.TestCase):
         try:
             os.fchdir(fd)
             self.assertEqual(os.fsencode(self.old_wd), os.getcwdb())
+        finally:
+            os.close(fd)
+
+
+class ScandirEmptyTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+
+    def tearDown(self):
+        os.rmdir(TEST_FULL_PATH1)
+
+    def test_scandir_empty(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(0, len([entry for entry in dir]))
+
+
+class ScandirTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+        os.close(os.open(os.path.join(TEST_FULL_PATH1, '.abc'), os.O_WRONLY | os.O_CREAT))
+
+    def tearDown(self):
+        os.unlink(os.path.join(TEST_FULL_PATH1, '.abc'))
+        os.rmdir(TEST_FULL_PATH1)
+
+    def test_scandir_explicit_close(self):
+        # __exit__ must deal with explicit close()
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            dir.close()
+
+        # __exit__ must deal with explicit close(), exhausted dir stream
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(1, len([x for x in dir]))
+            dir.close()
+
+        # close() must deal with __exit__
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            pass
+        dir.close()
+
+        # close() must deal with __exit__, exhausted dir stream
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(1, len([x for x in dir]))
+        dir.close()
+
+        # __next__ must deal with closed streams
+        self.assertRaises(StopIteration, next, dir)
+        # second close() is no-op
+        dir.close()
+
+    def test_scandir_fd_rewind(self):
+        fd = os.open(TEST_FULL_PATH1, 0)
+        try:
+            with os.scandir(fd) as dir:
+                self.assertEqual(1, len([x for x in dir]))
+            # ScandirIterator.__exit__() must rewind
+            # also, fd must still be valid (scandir should do dup)
+            dir = os.scandir(fd)
+            self.assertEqual(1, len([x for x in dir]))
+            dir.close()
+            # ScandirIterator.close() must rewind
+            self.assertEqual(1, len([x for x in os.scandir(fd)]))
+            # ScandirIterator.__next__ must rewind the dir when exhausted even if not closed explicitly
+            self.assertEqual(1, len([x for x in os.scandir(fd)]))
+            # two dir streams based on the same fd must influence each other
+            dir1 = os.scandir(fd)
+            dir2 = os.scandir(fd)
+            next(dir1)
+            dir1.close()
+            # ScandirIterator.close() must rewind
+            self.assertEqual(1, len([x for x in dir2]))
         finally:
             os.close(fd)
 

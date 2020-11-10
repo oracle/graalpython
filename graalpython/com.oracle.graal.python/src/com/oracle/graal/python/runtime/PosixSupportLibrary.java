@@ -143,6 +143,27 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract boolean isatty(Object receiver, int fd);
 
     /**
+     * @return an opaque directory stream object to be used in calls to {@code readdir} and {@code closedir}
+     */
+    public abstract Object opendir(Object receiver, PosixPath path) throws PosixException;
+
+    public abstract Object fdopendir(Object receiver, PosixFd fd) throws PosixException;
+
+    public abstract void closedir(Object receiver, Object dirStream);
+
+    /**
+     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods
+     */
+    public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
+
+    /**
+     * @return an opaque object representing the dir entry name
+     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsString(Object, Object)
+     */
+    public abstract Object dirEntryGetName(Object receiver, Object dirEntry) throws PosixException;
+
+    /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
      * conversion contains embedded null characters.
@@ -269,7 +290,6 @@ public abstract class PosixSupportLibrary extends Library {
         }
 
         protected PosixFileHandle(Object originalObject) {
-            assert originalObject != null;
             this.originalObject = originalObject;
         }
     }
@@ -283,10 +303,12 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public static class PosixPath extends PosixFileHandle {
         public final Object value;
+        public final boolean wasBufferLike;
 
-        public PosixPath(Object originalObject, Object value) {
+        public PosixPath(Object originalObject, Object value, boolean wasBufferLike) {
             super(originalObject);
             this.value = value;
+            this.wasBufferLike = wasBufferLike;
         }
     }
 

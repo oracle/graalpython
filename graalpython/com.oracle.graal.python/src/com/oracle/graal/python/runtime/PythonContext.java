@@ -474,7 +474,9 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
-        posixSupport = initalizePosixSupport();
+        if (!isPatching) {
+            posixSupport = initalizePosixSupport();
+        }
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 

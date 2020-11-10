@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,6 +58,7 @@ import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -87,6 +93,9 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "libposix";
 
     private static final int UNAME_BUF_LENGTH = 256;
+    private static final int DIRENT_NAME_BUF_LENGTH = 256;
+
+    private final ReferenceQueue<DirStream> dirStreamRefQueue = new ReferenceQueue<>();
 
     enum NativeFunctions implements NativeFunction {
         get_errno("():sint32"),
@@ -114,6 +123,10 @@ public final class NFIPosixSupport extends PosixSupport {
         call_chdir("([sint8]):sint32"),
         call_fchdir("(sint32):sint32"),
         call_isatty("(sint32):sint32"),
+        call_opendir("([sint8]):sint64"),
+        call_fdopendir("(sint32):sint64"),
+        call_closedir("(sint64, sint32):void"),
+        call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -536,6 +549,84 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
+    @ExportMessage
+    public Object opendir(PosixPath path,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("opendir", "'%s'", path);
+        long ptr = invokeNode.callLong(lib, NativeFunctions.call_opendir, pathToCString(path));
+        if (ptr == 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+        }
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, false);
+        logExit("opendir", "%s", dirStream);
+        return dirStream;
+    }
+
+    @ExportMessage
+    public Object fdopendir(PosixFd fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("fdopendir", "%d", fd.fd);
+        long ptr = invokeNode.callLong(lib, NativeFunctions.call_fdopendir, fd.fd);
+        if (ptr == 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+        }
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, true);
+        logExit("fdopendir", "%s", dirStream);
+        return dirStream;
+    }
+
+    @ExportMessage
+    public void closedir(Object dirStreamObj,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        logEnter("closedir", "%s", dirStreamObj);
+        DirStream dirStream = (DirStream) dirStreamObj;
+        synchronized (dirStream.ref.lock) {
+            if (!dirStream.ref.closed) {
+                dirStream.ref.closed = true;
+                invokeNode.call(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
+            }
+        }
+        DirStreamRef.removeFromSet(dirStream.ref);
+    }
+
+    @ExportMessage
+    public Object readdir(Object dirStreamObj,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("readdir", "%s", dirStreamObj);
+        DirStream dirStream = (DirStream) dirStreamObj;
+        Buffer name = Buffer.allocate(DIRENT_NAME_BUF_LENGTH);
+        long[] out = new long[2];
+        int result;
+        synchronized (dirStream.ref.lock) {
+            if (dirStream.ref.closed) {
+                logExit("readdir", "(closed)");
+                return null;
+            }
+            do {
+                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.ref.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, context.getEnv().asGuestValue(out));
+            } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
+        }
+        if (result != 0) {
+            DirEntry dirEntry = new DirEntry(name.withLength(findZero(name.data)), out[0], out[1]);
+            logExit("readdir", "%s", dirEntry);
+            return dirEntry;
+        }
+        int errno = getErrno(invokeNode);
+        if (errno == 0) {
+            logExit("readdir", "(no more entries)");
+            return null;
+        }
+        throw newPosixException(invokeNode, errno);
+    }
+
+    @ExportMessage
+    public Object dirEntryGetName(Object dirEntryObj) {
+        logEnter("dirEntryGetName", "%s", dirEntryObj);
+        DirEntry dirEntry = (DirEntry) dirEntryObj;
+        logExit("dirEntryGetName", "'%s'", dirEntry.name);
+        return dirEntry.name;
+    }
+
     // ------------------
     // Path conversions
 
@@ -589,6 +680,81 @@ public final class NFIPosixSupport extends PosixSupport {
             }
         }
         return path;
+    }
+
+    // ------------------
+    // Objects/handles/pointers
+
+    private static class DirStreamRef extends PhantomReference<DirStream> {
+
+        // all alive references are stored in this set in order to keep them reachable
+        private static final Set<DirStreamRef> dirStreamRefs = Collections.synchronizedSet(new HashSet<>());
+
+        final long nativePtr;
+        final boolean needsRewind;
+        final Object lock;
+        boolean closed;
+
+        DirStreamRef(DirStream referent, ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
+            super(referent, queue);
+            this.nativePtr = nativePtr;
+            this.needsRewind = needsRewind;
+            this.lock = new Object();
+            addToSet(this);
+        }
+
+        @TruffleBoundary
+        static void addToSet(DirStreamRef ref) {
+            dirStreamRefs.add(ref);
+        }
+
+        @TruffleBoundary
+        static void removeFromSet(DirStreamRef ref) {
+            dirStreamRefs.remove(ref);
+        }
+
+        @Override
+        public String toString() {
+            return "DirStreamStateRef{" +
+                            "nativePtr=" + nativePtr +
+                            ", needsRewind=" + needsRewind +
+                            ", closed=" + closed +
+                            '}';
+        }
+    }
+
+    private static class DirStream {
+        final DirStreamRef ref;
+
+        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
+            ref = new DirStreamRef(this, queue, nativePtr, needsRewind);
+        }
+
+        @Override
+        public String toString() {
+            return "DirStreamState -> " + ref;
+        }
+    }
+
+    private static class DirEntry {
+        final Buffer name;
+        final long ino;
+        final long type;
+
+        DirEntry(Buffer name, long ino, long type) {
+            this.name = name;
+            this.ino = ino;
+            this.type = type;
+        }
+
+        @Override
+        public String toString() {
+            return "DirEntry{" +
+                            "name='" + new String(name.data, 0, (int) name.length) + "'" +
+                            ", ino=" + ino +
+                            ", type=" + type +
+                            '}';
+        }
     }
 
     // ------------------
