@@ -190,7 +190,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public int openAt(int dirFd, PosixPath pathname, int flags, int mode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        logExit("openAt", "'%s', 0x%x, 0%o", pathname, flags, mode);
+        logEnter("openAt", "'%s', 0x%x, 0%o", pathname, flags, mode);
         while (true) {
             int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
             if (fd >= 0) {
@@ -208,7 +208,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void close(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logExit("close", "%d", fd);
+        logEnter("close", "%d", fd);
         if (invokeNode.callInt(lib, NativeFunctions.call_close, fd) < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -258,7 +258,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int dup(int fd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logExit("dup", "%d", fd);
+        logEnter("dup", "%d", fd);
         int newFd = invokeNode.callInt(lib, NativeFunctions.call_dup, fd);
         if (newFd < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -270,7 +270,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int dup2(int fd, int fd2, boolean inheritable,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logExit("dup2", "%d, %d", fd, fd2);
+        logEnter("dup2", "%d, %d", fd, fd2);
         int newFd = invokeNode.callInt(lib, NativeFunctions.call_dup2, fd, fd2, inheritable ? 1 : 0);
         if (newFd < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -303,7 +303,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public int[] pipe(
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logExit("pipe", "");
+        logEnter("pipe", "");
         int[] fds = new int[2];
         if (invokeNode.callInt(lib, NativeFunctions.call_pipe2, context.getEnv().asGuestValue(fds)) != 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -503,7 +503,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void chdir(PosixPath path,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logExit("chdir", "'%s'", path);
+        logEnter("chdir", "'%s'", path);
         int result = invokeNode.callInt(lib, NativeFunctions.call_chdir, pathToCString(path));
         if (result != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
@@ -514,7 +514,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public void fchdir(int fd, Object pathname, boolean handleEintr,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        logExit("fchdir", "%d, %s, %b", fd, pathname, handleEintr);
+        logEnter("fchdir", "%d, %s, %b", fd, pathname, handleEintr);
         while (true) {
             if (invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd) == 0) {
                 return;
