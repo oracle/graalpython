@@ -2039,8 +2039,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object utime(VirtualFrame frame, Object path, PTuple times, PNone ns, PNone dir_fd, PNone follow_symlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, times, 0, "times");
-            long mtime = getTime(frame, times, 1, "times");
+            long atime = getTime(frame, times, 0, "times", 1);
+            long mtime = getTime(frame, times, 1, "times", 1);
             TruffleFile file = getFile(frame, lib.asPath(path), true);
             setMtime(frame, file, mtime);
             setAtime(frame, file, atime);
@@ -2051,8 +2051,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, PNone follow_symlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, ns, 0, "ns") / 1000;
-            long mtime = getTime(frame, ns, 1, "ns") / 1000;
+            long atime = getTime(frame, ns, 0, "ns", 1000000000);
+            long mtime = getTime(frame, ns, 1, "ns", 1000000000);
             TruffleFile file = getFile(frame, lib.asPath(path), true);
             setMtime(frame, file, mtime);
             setAtime(frame, file, atime);
@@ -2063,8 +2063,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object utime(VirtualFrame frame, Object path, PNone times, PTuple ns, PNone dir_fd, boolean follow_symlinks,
                         @CachedLibrary("path") PythonObjectLibrary lib) {
-            long atime = getTime(frame, ns, 0, "ns") / 1000;
-            long mtime = getTime(frame, ns, 1, "ns") / 1000;
+            long atime = getTime(frame, ns, 0, "ns", 1000000000);
+            long mtime = getTime(frame, ns, 1, "ns", 1000000000);
             TruffleFile file = getFile(frame, lib.asPath(path), true);
             setMtime(frame, file, mtime);
             setAtime(frame, file, atime);
@@ -2095,7 +2095,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             throw raise(NotImplementedError, "utime");
         }
 
-        private long getTime(VirtualFrame frame, PTuple times, int index, String argname) {
+        private long getTime(VirtualFrame frame, PTuple times, int index, String argname, long divideBy) {
             if (getLength(times) <= index) {
                 throw tupleError(argname);
             }
@@ -2106,15 +2106,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             Object mtimeObj = getItemNode.execute(frame, times.getSequenceStorage(), index);
             long mtime;
             if (mtimeObj instanceof Integer) {
-                mtime = ((Integer) mtimeObj).longValue();
+                mtime = ((Integer) mtimeObj).longValue() / divideBy;
             } else if (mtimeObj instanceof Long) {
-                mtime = ((Long) mtimeObj).longValue();
+                mtime = ((Long) mtimeObj).longValue() / divideBy;
             } else if (mtimeObj instanceof PInt) {
-                mtime = ((PInt) mtimeObj).longValue();
+                mtime = divideAndConvert((PInt) mtimeObj, divideBy);
             } else if (mtimeObj instanceof Double) {
-                mtime = ((Double) mtimeObj).longValue();
+                mtime = ((Double) mtimeObj).longValue() / divideBy;
             } else if (mtimeObj instanceof PFloat) {
-                mtime = (long) ((PFloat) mtimeObj).getValue();
+                mtime = (long) ((PFloat) mtimeObj).getValue() / divideBy;
             } else {
                 throw tupleError(argname);
             }
@@ -2122,6 +2122,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raise(ValueError, ErrorMessages.CANNOT_BE_NEGATIVE, "time");
             }
             return mtime;
+        }
+
+        @TruffleBoundary
+        private static long divideAndConvert(PInt pint, long divideBy) {
+            return pint.getValue().divide(BigInteger.valueOf(divideBy)).longValue();
         }
 
         private PException tupleError(String argname) {
