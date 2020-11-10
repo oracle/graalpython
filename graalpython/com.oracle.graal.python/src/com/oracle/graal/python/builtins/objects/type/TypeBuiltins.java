@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -120,6 +122,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -152,10 +155,20 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenPythonKey TYPE_FREE = new HiddenPythonKey("__free__");
     public static final HiddenPythonKey TYPE_FLAGS = new HiddenPythonKey(__FLAGS__);
     public static final HiddenPythonKey TYPE_VECTORCALL_OFFSET = new HiddenPythonKey("__vectorcall_offset__");
+    private static final HiddenPythonKey TYPE_DOC = new HiddenPythonKey(__DOC__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(TYPE_DOC, //
+                        "type(object_or_name, bases, dict)\n" + //
+                                        "type(object) -> the object's type\n" + //
+                                        "type(name, bases, dict) -> a new type");
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
@@ -177,6 +190,73 @@ public class TypeBuiltins extends PythonBuiltins {
                 return String.format("<class '%s.%s'>", moduleName, qualName);
             }
             return String.format("<class '%s'>", qualName);
+        }
+    }
+
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
+    public abstract static class DocNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
+            return getDoc(getCore().lookupType(self), value);
+        }
+
+        @Specialization
+        static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
+            // see type.c#type_get_doc()
+            if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
+                return ((PythonObject) self).getAttribute(TYPE_DOC);
+            } else {
+                return ((PythonObject) self).getAttribute(__DOC__);
+            }
+        }
+
+        @Specialization(guards = "!isAnyBuiltinClass(self)")
+        Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+            // see type.c#type_get_doc()
+            Object res = self.getAttribute(__DOC__);
+            Object resClass = PythonObjectLibrary.getUncached().getLazyPythonClass(res);
+            Object get = LookupAttributeInMRONode.Dynamic.getUncached().execute(resClass, __GET__);
+            if (PGuards.isCallable(get)) {
+                return CallTernaryMethodNode.getUncached().execute(frame, get, res, PNone.NONE, self);
+            }
+            return res;
+        }
+
+        protected boolean isAnyBuiltinClass(PythonClass klass) {
+            return IsBuiltinClassProfile.getUncached().profileIsAnyBuiltinClass(klass);
+        }
+
+        @Specialization
+        static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
+            return ReadAttributeFromObjectNode.getUncached().execute(self, __DOC__);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object setDoc(PythonClass self, Object value) {
+            self.setAttribute(__DOC__, value);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "isBuiltin.profileIsAnyBuiltinClass(self)"})
+        Object doc(Object self, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached GetNameNode getName) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_S_S, getName.execute(self), __DOC__);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object doc(PythonClass self, Object value) {
+            self.setAttribute(__DOC__, value);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization
+        Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Cached GetNameNode getName) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getName.execute(self), __DOC__);
         }
     }
 

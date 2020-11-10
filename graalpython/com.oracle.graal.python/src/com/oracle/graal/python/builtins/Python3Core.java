@@ -668,10 +668,10 @@ public final class Python3Core implements PythonCore {
     }
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
-        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String constantName = entry.getKey();
-            obj.setAttribute(constantName, entry.getValue());
+        Map<Object, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
+        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
+            Object constant = entry.getKey();
+            obj.setAttribute(constant, entry.getValue());
         }
 
         Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();

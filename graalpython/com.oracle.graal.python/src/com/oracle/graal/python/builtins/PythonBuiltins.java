@@ -46,7 +46,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 public abstract class PythonBuiltins {
-    protected final Map<String, Object> builtinConstants = new HashMap<>();
+    protected final Map<Object, Object> builtinConstants = new HashMap<>();
     private final Map<String, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
     private final Map<PythonBuiltinClass, Map.Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = new HashMap<>();
 
@@ -161,7 +161,7 @@ public abstract class PythonBuiltins {
         return tmp;
     }
 
-    protected Map<String, Object> getBuiltinConstants() {
+    protected Map<Object, Object> getBuiltinConstants() {
         return builtinConstants;
     }
 }
