@@ -489,6 +489,8 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
             }
 
+        } catch (PosixException e) {
+            throw e;
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
