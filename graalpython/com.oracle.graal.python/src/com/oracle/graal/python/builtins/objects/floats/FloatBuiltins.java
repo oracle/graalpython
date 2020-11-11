@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.AsIntegerRatioClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -1511,20 +1513,19 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1)
-    abstract static class AsIntegerRatio extends PythonUnaryBuiltinNode {
+    @Builtin(name = "as_integer_ratio", parameterNames = "x")
+    @ArgumentClinic(name = "x", defaultValue = "0.0", conversion = ClinicConversion.Double)
+    abstract static class AsIntegerRatio extends PythonClinicBuiltinNode {
 
-        @Specialization
-        PTuple getPFloat(PFloat self,
-                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
-                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
-            return get(self.getValue(), nanProfile, infProfile);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return AsIntegerRatioClinicProviderGen.INSTANCE;
         }
 
         @Specialization
         PTuple get(double self,
-                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
-                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
+                        @Cached ConditionProfile nanProfile,
+                        @Cached ConditionProfile infProfile) {
             if (nanProfile.profile(Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }

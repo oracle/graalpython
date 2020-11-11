@@ -55,7 +55,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
 
     private final double defaultValue;
-    private final boolean useDefaultForNone;
+    final boolean useDefaultForNone;
 
     protected JavaDoubleConversionNode(double defaultValue, boolean useDefaultForNone) {
         this.defaultValue = defaultValue;
@@ -90,8 +90,7 @@ public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
     public static JavaDoubleConversionNode create(@DefaultValue double defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        //return JavaIntConversionNodeGen.create(defaultValue, useDefaultForNone);
-        return null;
+        return JavaDoubleConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 
     protected boolean isHandledPNone(Object value) {
