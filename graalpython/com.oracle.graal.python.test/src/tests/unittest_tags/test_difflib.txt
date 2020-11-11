@@ -1,5 +1,6 @@
 *graalpython.lib-python.3.test.test_difflib.TestAutojunk.test_one_insert_homogenous_sequence
 *graalpython.lib-python.3.test.test_difflib.TestBytes.test_byte_content
+*graalpython.lib-python.3.test.test_difflib.TestBytes.test_byte_filenames
 *graalpython.lib-python.3.test.test_difflib.TestBytes.test_mixed_types_content
 *graalpython.lib-python.3.test.test_difflib.TestBytes.test_mixed_types_dates
 *graalpython.lib-python.3.test.test_difflib.TestBytes.test_mixed_types_filenames
@@ -8,6 +9,7 @@
 *graalpython.lib-python.3.test.test_difflib.TestJunkAPIs.test_is_line_junk_REDOS
 *graalpython.lib-python.3.test.test_difflib.TestJunkAPIs.test_is_line_junk_false
 *graalpython.lib-python.3.test.test_difflib.TestJunkAPIs.test_is_line_junk_true
+*graalpython.lib-python.3.test.test_difflib.TestMain.test_main
 *graalpython.lib-python.3.test.test_difflib.TestOutputFormat.test_no_trailing_tab_on_empty_filedate
 *graalpython.lib-python.3.test.test_difflib.TestOutputFormat.test_range_format_context
 *graalpython.lib-python.3.test.test_difflib.TestOutputFormat.test_range_format_unified
@@ -21,6 +23,7 @@
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_html_diff
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_make_file_default_charset
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_make_file_iso88591_charset
+*graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_make_file_usascii_charset_with_nonascii_input
 *graalpython.lib-python.3.test.test_difflib.TestSFpatches.test_recursion_limit
 *graalpython.lib-python.3.test.test_difflib.TestWithAscii.test_bjunk
 *graalpython.lib-python.3.test.test_difflib.TestWithAscii.test_one_delete

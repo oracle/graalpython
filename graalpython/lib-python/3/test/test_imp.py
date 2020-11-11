@@ -443,6 +443,7 @@ class PEP3147Tests(unittest.TestCase):
 
 
 class NullImporterTests(unittest.TestCase):
+    @support.impl_detail("[GR-27024] [GR-23324] posix NFI support", graalvm=False)
     @unittest.skipIf(support.TESTFN_UNENCODABLE is None,
                      "Need an undecodeable filename")
     def test_unencodeable(self):
