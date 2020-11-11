@@ -66,7 +66,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @CompilationFinal private MroSequenceStorage methodResolutionOrder;
 
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
-    private final Shape instanceShape;
+    @CompilationFinal private Shape instanceShape;
     private String name;
     private String qualName;
 
@@ -351,6 +351,11 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         } else {
             return (PythonBuiltinClass) object;
         }
+    }
+
+    @TruffleBoundary
+    public void setHasSlotsButNoDictFlag() {
+        instanceShape = Shape.newBuilder(instanceShape).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();
     }
 
     @ExportMessage

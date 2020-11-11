@@ -57,6 +57,7 @@ import com.oracle.truffle.api.object.Shape;
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
     private static final byte CLASS_CHANGED_FLAG = 1;
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
 
     private final Object initialPythonClass;
 

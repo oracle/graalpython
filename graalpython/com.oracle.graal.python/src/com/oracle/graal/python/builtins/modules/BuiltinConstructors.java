@@ -2465,6 +2465,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } finally {
                     ensureForeignCallContext().exit(frame, context, state);
                 }
+                if (!addDict && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) {
+                    pythonClass.setHasSlotsButNoDictFlag();
+                }
             }
 
             return pythonClass;

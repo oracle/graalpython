@@ -157,7 +157,12 @@ class TestSlots(unittest.TestCase):
             class C(tuple): __slots__ = ['a']
         except TypeError:
             raised = True
-        assert raised        
-        
+        assert raised
+
+    def test_write_attr(self):
+        class C:
+            __slots__ = ('a', 'b')
+        self.assertRaises(AttributeError, setattr, C(), 'c', 42)
+
 if __name__ == "__main__":
     unittest.main()
