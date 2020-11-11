@@ -62,14 +62,13 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
@@ -2397,19 +2396,6 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization
         Object fromPBytes(Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
             return fromPBytes(cl, bytes, byteorder, false);
-        }
-
-        // from PArray
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, boolean signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return compute(cl, fromSequenceStorageNode.execute(frame, array.getSequenceStorage()), byteorder, signed);
-        }
-
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
         }
 
         // from buffer
