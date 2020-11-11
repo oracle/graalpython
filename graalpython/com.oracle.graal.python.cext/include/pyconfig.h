@@ -62,6 +62,13 @@
 #define SIZEOF_VOID_P __SIZEOF_POINTER__
 #define SIZEOF_WCHAR_T __SIZEOF_WCHAR_T__
 #define SIZEOF__BOOL 1
+
+/* Define if your compiler supports function prototype */
+#define HAVE_PROTOTYPES 1
+
+/* Define to 1 if you have the ANSI C header files. */
+#define STDC_HEADERS 1
+
 # ifndef UINT_MAX
 #define UINT_MAX __UINT32_MAX__
 #endif
