@@ -255,14 +255,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
-        // create snapshot, mro storage can change during lookup
-        Object[] mroArray = new Object[mroLength];
-        for (int i = 0; i < mroArray.length; i++) {
-            mroArray[i] = mro.getItemNormalized(i);
-        }
-
-        for (int i = 0; i < mroArray.length; i++) {
-            Object kls = mroArray[i];
+        for (int i = 0; i < mroLength; i++) {
+            Object kls = mro.getItemNormalized(i);
             if (skipPythonClasses && kls instanceof PythonClass) {
                 continue;
             }
@@ -294,21 +288,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     public static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
-	// create snapshot, mro storage could change during lookup
-	Object[] mroArray = new Object[mro.length()];
-	for (int i = 0; i < mroArray.length; i++) {
-	    mroArray[i] = mro.getItemNormalized(i);
-	}
-	for (int i = 0; i < mroArray.length; i++) {
-	    Object kls = mroArray[i];
-	    if (skipPythonClasses && kls instanceof PythonClass) {
-		continue;
-	    }
-	    Object value = readAttrNode.execute(kls, key);
-	    if (value != PNone.NO_VALUE) {
-		return value;
-	    }
-	}
+        for (int i = 0; i < mro.length(); i++) {
+            Object kls = mro.getItemNormalized(i);
+            if (skipPythonClasses && kls instanceof PythonClass) {
+                continue;
+            }
+            Object value = readAttrNode.execute(kls, key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
         return PNone.NO_VALUE;
     }
 
