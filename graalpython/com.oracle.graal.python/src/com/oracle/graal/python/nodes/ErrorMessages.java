@@ -274,7 +274,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
-    public static final String IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
+    public static final String IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
