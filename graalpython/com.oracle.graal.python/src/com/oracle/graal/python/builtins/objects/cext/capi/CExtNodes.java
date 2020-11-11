@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -113,6 +114,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -124,6 +126,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -138,7 +141,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -159,7 +161,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
@@ -2476,8 +2477,9 @@ public abstract class CExtNodes {
     // -----------------------------------------------------------------------------------------------------------------
     @Builtin(takesVarArgs = true)
     public static class MayRaiseNode extends PRootNode {
-        @Child private DirectCallNode callNode;
+        @Child private CallTargetInvokeNode callTargetInvokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
+        @Child private CalleeContext calleeContext;
 
         private final Signature signature;
         private final Object errorResult;
@@ -2485,18 +2487,30 @@ public abstract class CExtNodes {
         public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, Object errorResult) {
             super(lang);
             this.signature = sign;
-            this.callNode = Truffle.getRuntime().createDirectCallNode(ct);
+            this.callTargetInvokeNode = CallTargetInvokeNode.create(ct, false, false);
+            this.calleeContext = CalleeContext.create();
             this.errorResult = errorResult;
         }
 
         @Override
         public final Object execute(VirtualFrame frame) {
+            Object[] arguments = frame.getArguments();
+            int userArgumentLength = PArguments.getUserArgumentLength(arguments);
+            Object[] newArguments = PArguments.create(userArgumentLength);
+            // just copy user arguments, varargs and kwargs
+            System.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, newArguments, PArguments.USER_ARGUMENTS_OFFSET, userArgumentLength);
+            PArguments.setVariableArguments(newArguments, PArguments.getVariableArguments(arguments));
+            PArguments.setKeywordArguments(newArguments, PArguments.getKeywordArguments(arguments));
+
+            calleeContext.enter(frame);
             try {
-                return callNode.call(frame.getArguments());
+                return callTargetInvokeNode.execute(frame, null, PArguments.getGlobals(arguments), PArguments.getClosure(arguments), newArguments);
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 ensureTransformExceptionToNativeNode().execute(frame, e);
                 return errorResult;
+            } finally {
+                calleeContext.exit(frame, this);
             }
         }
 
