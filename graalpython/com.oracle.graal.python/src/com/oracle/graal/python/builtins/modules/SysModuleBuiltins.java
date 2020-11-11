@@ -52,6 +52,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.oracle.truffle.api.dsl.CachedContext;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -492,4 +493,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
         }
     }
+    
+    @Builtin(name = "is_finalizing")
+    @GenerateNodeFactory
+    public abstract static class IsFinalizingNode extends PythonBuiltinNode {
+        @Specialization
+        static boolean doGeneric(
+                @CachedContext(PythonLanguage.class) PythonContext context) {
+            return context.isFinalizing();
+        }
+    }
+
 }
