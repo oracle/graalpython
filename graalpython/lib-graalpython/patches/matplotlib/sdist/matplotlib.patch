@@ -1,0 +1,447 @@
+commit 959e43ded26fc39c0e148af0f64e7e6f31d5f547
+Author: Florian Angerer <florian.angerer@oracle.com>
+Date:   Wed Nov 11 14:13:13 2020 +0100
+
+    Replace kiwisolver by cassowary
+
+diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index 340eaeb..7d1dfa8 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -161,7 +161,7 @@ def _check_versions():
+     for modname, minver in [
+             ("cycler", "0.10"),
+             ("dateutil", "2.1"),
+-            ("kiwisolver", "1.0.1"),
++            ("cassowary", "0.5.2"),
+             ("numpy", "1.15"),
+             ("pyparsing", "2.0.1"),
+     ]:
+diff --git a/lib/matplotlib/_layoutbox.py b/lib/matplotlib/_layoutbox.py
+index 0afa2e4..ea81c7e 100644
+--- a/lib/matplotlib/_layoutbox.py
++++ b/lib/matplotlib/_layoutbox.py
+@@ -16,7 +16,8 @@ other constrains.
+ """
+ 
+ import itertools
+-import kiwisolver as kiwi
++import cassowary
++from cassowary import SimplexSolver, MEDIUM, STRONG
+ import logging
+ import numpy as np
+ 
+@@ -45,19 +46,19 @@ def get_renderer(fig):
+ 
+ class LayoutBox:
+     """
+-    Basic rectangle representation using kiwi solver variables
++    Basic rectangle representation using cassowary solver variables
+     """
+ 
+     def __init__(self, parent=None, name='', tightwidth=False,
+                  tightheight=False, artist=None,
+                  lower_left=(0, 0), upper_right=(1, 1), pos=False,
+                  subplot=False, h_pad=None, w_pad=None):
+-        Variable = kiwi.Variable
++        Variable = cassowary.Variable
+         self.parent = parent
+         self.name = name
+         sn = self.name + '_'
+         if parent is None:
+-            self.solver = kiwi.Solver()
++            self.solver = cassowary.SimplexSolver()
+             self.constrained_layout_called = 0
+         else:
+             self.solver = parent.solver
+@@ -126,37 +127,38 @@ class LayoutBox:
+ 
+         # left
+         if not sol.hasEditVariable(self.left_margin_min):
+-            sol.addEditVariable(self.left_margin_min, 'strong')
+-            sol.suggestValue(self.left_margin_min, 0.0001)
++            sol.add_edit_variable(self.left_margin_min)
++            with sol.edit():
++                sol.suggest_value(self.left_margin_min, 0.0001)
+         c = (self.left_margin == self.left - self.parent.left)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         c = (self.left_margin >= self.left_margin_min)
+-        self.solver.addConstraint(c | 'strong')
++        self.solver.add_constraint(c, strength=STRONG)
+ 
+         # right
+         if not sol.hasEditVariable(self.right_margin_min):
+-            sol.addEditVariable(self.right_margin_min, 'strong')
++            sol.addEditVariable(self.right_margin_min, STRONG)
+             sol.suggestValue(self.right_margin_min, 0.0001)
+         c = (self.right_margin == self.parent.right - self.right)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         c = (self.right_margin >= self.right_margin_min)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         # bottom
+         if not sol.hasEditVariable(self.bottom_margin_min):
+-            sol.addEditVariable(self.bottom_margin_min, 'strong')
++            sol.addEditVariable(self.bottom_margin_min, STRONG)
+             sol.suggestValue(self.bottom_margin_min, 0.0001)
+         c = (self.bottom_margin == self.bottom - self.parent.bottom)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         c = (self.bottom_margin >= self.bottom_margin_min)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         # top
+         if not sol.hasEditVariable(self.top_margin_min):
+-            sol.addEditVariable(self.top_margin_min, 'strong')
++            sol.addEditVariable(self.top_margin_min, STRONG)
+             sol.suggestValue(self.top_margin_min, 0.0001)
+         c = (self.top_margin == self.parent.top - self.top)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+         c = (self.top_margin >= self.top_margin_min)
+-        self.solver.addConstraint(c | 'required')
++        self.solver.add_constraint(c)
+ 
+     def add_child(self, child):
+         self.children += [child]
+@@ -171,8 +173,9 @@ class LayoutBox:
+         sol = self.solver
+         # never let width and height go negative.
+         for i in [self.min_width, self.min_height]:
+-            sol.addEditVariable(i, 1e9)
+-            sol.suggestValue(i, 0.0)
++            sol.add_edit_variable(i, 1e9)
++            with sol.edit():
++                sol.suggest_value(i, 0.0)
+         # define relation ships between things thing width and right and left
+         self.hard_constraints()
+         # self.soft_constraints()
+@@ -187,7 +190,7 @@ class LayoutBox:
+               self.top <= parent.top,
+               self.right <= parent.right]
+         for c in hc:
+-            self.solver.addConstraint(c | 'required')
++            self.solver.add_constraint(c)
+ 
+     def hard_constraints(self):
+         hc = [self.width == self.right - self.left,
+@@ -197,7 +200,7 @@ class LayoutBox:
+               self.width >= self.min_width,
+               self.height >= self.min_height]
+         for c in hc:
+-            self.solver.addConstraint(c | 'required')
++            self.solver.add_constraint(c)
+ 
+     def soft_constraints(self):
+         sol = self.solver
+@@ -207,35 +210,35 @@ class LayoutBox:
+             suggest = 20.
+         c = (self.pref_width == suggest)
+         for i in c:
+-            sol.addConstraint(i | 'required')
++            sol.add_constraint(i)
+         if self.tightheight:
+             suggest = 0.
+         else:
+             suggest = 20.
+         c = (self.pref_height == suggest)
+         for i in c:
+-            sol.addConstraint(i | 'required')
++            sol.add_constraint(i)
+ 
+         c = [(self.width >= suggest),
+              (self.height >= suggest)]
+         for i in c:
+-            sol.addConstraint(i | 150000)
++            sol.add_constraint(i, weight=150000)
+ 
+     def set_parent(self, parent):
+         """Replace the parent of this with the new parent."""
+         self.parent = parent
+         self.parent_constrain()
+ 
+-    def constrain_geometry(self, left, bottom, right, top, strength='strong'):
++    def constrain_geometry(self, left, bottom, right, top, strength=cassowary.STRONG):
+         hc = [self.left == left,
+               self.right == right,
+               self.bottom == bottom,
+               self.top == top]
+         for c in hc:
+-            self.solver.addConstraint(c | strength)
++            self.solver.add_constraint(c, strength=strength)
+         # self.solver.updateVariables()
+ 
+-    def constrain_same(self, other, strength='strong'):
++    def constrain_same(self, other, strength=STRONG):
+         """
+         Make the layoutbox have same position as other layoutbox
+         """
+@@ -244,32 +247,32 @@ class LayoutBox:
+               self.bottom == other.bottom,
+               self.top == other.top]
+         for c in hc:
+-            self.solver.addConstraint(c | strength)
++            self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_left_margin(self, margin, strength='strong'):
++    def constrain_left_margin(self, margin, strength=STRONG):
+         c = (self.left == self.parent.left + margin)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+     def edit_left_margin_min(self, margin):
+         self.solver.suggestValue(self.left_margin_min, margin)
+ 
+-    def constrain_right_margin(self, margin, strength='strong'):
++    def constrain_right_margin(self, margin, strength=STRONG):
+         c = (self.right == self.parent.right - margin)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+     def edit_right_margin_min(self, margin):
+         self.solver.suggestValue(self.right_margin_min, margin)
+ 
+-    def constrain_bottom_margin(self, margin, strength='strong'):
++    def constrain_bottom_margin(self, margin, strength=STRONG):
+         c = (self.bottom == self.parent.bottom + margin)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+     def edit_bottom_margin_min(self, margin):
+         self.solver.suggestValue(self.bottom_margin_min, margin)
+ 
+-    def constrain_top_margin(self, margin, strength='strong'):
++    def constrain_top_margin(self, margin, strength=STRONG):
+         c = (self.top == self.parent.top - margin)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+     def edit_top_margin_min(self, margin):
+         self.solver.suggestValue(self.top_margin_min, margin)
+@@ -285,7 +288,7 @@ class LayoutBox:
+         """
+         self.solver.updateVariables()
+ 
+-    def edit_height(self, height, strength='strong'):
++    def edit_height(self, height, strength=STRONG):
+         """
+         Set the height of the layout box.
+ 
+@@ -298,52 +301,52 @@ class LayoutBox:
+                 sol.addEditVariable(i, strength)
+         sol.suggestValue(self.height, height)
+ 
+-    def constrain_height(self, height, strength='strong'):
++    def constrain_height(self, height, strength=STRONG):
+         """
+         Constrain the height of the layout box.  height is
+         either a float or a layoutbox.height.
+         """
+         c = (self.height == height)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_height_min(self, height, strength='strong'):
++    def constrain_height_min(self, height, strength=STRONG):
+         c = (self.height >= height)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def edit_width(self, width, strength='strong'):
++    def edit_width(self, width, strength=STRONG):
+         sol = self.solver
+         for i in [self.width]:
+             if not sol.hasEditVariable(i):
+                 sol.addEditVariable(i, strength)
+         sol.suggestValue(self.width, width)
+ 
+-    def constrain_width(self, width, strength='strong'):
++    def constrain_width(self, width, strength=STRONG):
+         """
+         Constrain the width of the layout box.  *width* is
+         either a float or a layoutbox.width.
+         """
+         c = (self.width == width)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_width_min(self, width, strength='strong'):
++    def constrain_width_min(self, width, strength=STRONG):
+         c = (self.width >= width)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_left(self, left,  strength='strong'):
++    def constrain_left(self, left,  strength=STRONG):
+         c = (self.left == left)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_bottom(self, bottom, strength='strong'):
++    def constrain_bottom(self, bottom, strength=STRONG):
+         c = (self.bottom == bottom)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_right(self, right, strength='strong'):
++    def constrain_right(self, right, strength=STRONG):
+         c = (self.right == right)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+-    def constrain_top(self, top, strength='strong'):
++    def constrain_top(self, top, strength=STRONG):
+         c = (self.top == top)
+-        self.solver.addConstraint(c | strength)
++        self.solver.add_constraint(c, strength=strength)
+ 
+     def _is_subplotspec_layoutbox(self):
+         """
+@@ -451,7 +454,7 @@ class LayoutBox:
+               self.width == parent.width * width,
+               self.height == parent.height * height]
+         for c in cs:
+-            self.solver.addConstraint(c | 'required')
++            self.solver.add_constraint(c)
+ 
+         return lb
+ 
+@@ -464,7 +467,7 @@ class LayoutBox:
+ 
+ 
+ # Utility functions that act on layoutboxes...
+-def hstack(boxes, padding=0, strength='strong'):
++def hstack(boxes, padding=0, strength=STRONG):
+     """
+     Stack LayoutBox instances from left to right.
+     *padding* is in figure-relative units.
+@@ -472,34 +475,34 @@ def hstack(boxes, padding=0, strength='strong'):
+ 
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].right + padding <= boxes[i].left)
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+-def hpack(boxes, padding=0, strength='strong'):
++def hpack(boxes, padding=0, strength=STRONG):
+     """Stack LayoutBox instances from left to right."""
+ 
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].right + padding == boxes[i].left)
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+-def vstack(boxes, padding=0, strength='strong'):
++def vstack(boxes, padding=0, strength=STRONG):
+     """Stack LayoutBox instances from top to bottom."""
+ 
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].bottom - padding >= boxes[i].top)
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+-def vpack(boxes, padding=0, strength='strong'):
++def vpack(boxes, padding=0, strength=STRONG):
+     """Stack LayoutBox instances from top to bottom."""
+ 
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].bottom - padding >= boxes[i].top)
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+-def match_heights(boxes, height_ratios=None, strength='medium'):
++def match_heights(boxes, height_ratios=None, strength=MEDIUM):
+     """Stack LayoutBox instances from top to bottom."""
+ 
+     if height_ratios is None:
+@@ -507,10 +510,10 @@ def match_heights(boxes, height_ratios=None, strength='medium'):
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].height ==
+              boxes[i].height*height_ratios[i-1]/height_ratios[i])
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+-def match_widths(boxes, width_ratios=None, strength='medium'):
++def match_widths(boxes, width_ratios=None, strength=MEDIUM):
+     """Stack LayoutBox instances from top to bottom."""
+ 
+     if width_ratios is None:
+@@ -518,7 +521,7 @@ def match_widths(boxes, width_ratios=None, strength='medium'):
+     for i in range(1, len(boxes)):
+         c = (boxes[i-1].width ==
+              boxes[i].width*width_ratios[i-1]/width_ratios[i])
+-        boxes[i].solver.addConstraint(c | strength)
++        boxes[i].solver.add_constraint(c, strength=strength)
+ 
+ 
+ def vstackeq(boxes, padding=0, height_ratios=None):
+@@ -531,11 +534,11 @@ def hstackeq(boxes, padding=0, width_ratios=None):
+     match_widths(boxes, width_ratios=width_ratios)
+ 
+ 
+-def align(boxes, attr, strength='strong'):
++def align(boxes, attr, strength=STRONG):
+     cons = []
+     for box in boxes[1:]:
+         cons = (getattr(boxes[0], attr) == getattr(box, attr))
+-        boxes[0].solver.addConstraint(cons | strength)
++        boxes[0].solver.add_constraint(cons, strength=strength)
+ 
+ 
+ def match_top_margins(boxes, levels=1):
+@@ -548,7 +551,7 @@ def match_top_margins(boxes, levels=1):
+         for n in range(levels):
+             topb = topb.parent
+         c = (box0.top-top0.top == box.top-topb.top)
+-        box0.solver.addConstraint(c | 'strong')
++        box0.solver.add_constraint(c, STRONG)
+ 
+ 
+ def match_bottom_margins(boxes, levels=1):
+@@ -561,7 +564,7 @@ def match_bottom_margins(boxes, levels=1):
+         for n in range(levels):
+             topb = topb.parent
+         c = (box0.bottom-top0.bottom == box.bottom-topb.bottom)
+-        box0.solver.addConstraint(c | 'strong')
++        box0.solver.add_constraint(c, STRONG)
+ 
+ 
+ def match_left_margins(boxes, levels=1):
+@@ -574,7 +577,7 @@ def match_left_margins(boxes, levels=1):
+         for n in range(levels):
+             topb = topb.parent
+         c = (box0.left-top0.left == box.left-topb.left)
+-        box0.solver.addConstraint(c | 'strong')
++        box0.solver.add_constraint(c, STRONG)
+ 
+ 
+ def match_right_margins(boxes, levels=1):
+@@ -587,7 +590,7 @@ def match_right_margins(boxes, levels=1):
+         for n in range(levels):
+             topb = topb.parent
+         c = (box0.right-top0.right == box.right-topb.right)
+-        box0.solver.addConstraint(c | 'strong')
++        box0.solver.add_constraint(c, STRONG)
+ 
+ 
+ def match_width_margins(boxes, levels=1):
+diff --git a/setup.py b/setup.py
+index 81eae82..80ee5af 100644
+--- a/setup.py
++++ b/setup.py
+@@ -289,7 +289,7 @@ setup(  # Finally, pass this all along to distutils to do the heavy lifting.
+     install_requires=[
+         "certifi>=2020.06.20",
+         "cycler>=0.10",
+-        "kiwisolver>=1.0.1",
++        "cassowary>=0.5.2",
+         "numpy>=1.15",
+         "pillow>=6.2.0",
+         "pyparsing>=2.0.3,!=2.0.4,!=2.1.2,!=2.1.6",

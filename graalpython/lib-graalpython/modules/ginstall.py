@@ -364,6 +364,42 @@ def known_packages():
                 scipy_build_env[key] = os.environ[key]
         install_from_pypi("scipy==1.3.1", env=scipy_build_env, **kwargs)
 
+    @pip_package()
+    def cycler(**kwargs):
+        six(**kwargs)
+        install_from_pypi("cycler==0.10.0", **kwargs)
+
+    @pip_package()
+    def cppy(**kwargs):
+        install_from_pypi("cppy==1.1.0", **kwargs)
+
+    @pip_package()
+    def kiwisolver(**kwargs):
+        cppy(**kwargs)
+        install_from_pypi("kiwisolver==1.3.1", **kwargs)
+
+    @pip_package()
+    def cassowary(**kwargs):
+        install_from_pypi("cassowary==0.5.2", **kwargs)
+
+    @pip_package()
+    def Pillow(**kwargs):
+        setuptools(**kwargs)
+        build_env = {"MAX_CONCURRENCY": "0"}
+        install_from_pypi("Pillow==6.2.0", env=build_env, **kwargs)
+        
+    @pip_package()
+    def matplotlib(**kwargs):
+        setuptools(**kwargs)
+        certifi(**kwargs)
+        cycler(**kwargs)
+        kiwisolver(**kwargs)
+        pyparsing(**kwargs)
+        dateutil(**kwargs)
+        numpy(**kwargs)
+        Pillow(**kwargs)
+        install_from_pypi("matplotlib==3.3.2", **kwargs)
+
     return locals()
 
 
