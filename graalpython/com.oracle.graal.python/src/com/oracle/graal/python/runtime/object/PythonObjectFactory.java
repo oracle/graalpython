@@ -140,6 +140,7 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -404,7 +405,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
-                    int len, boolean readonly, int itemsize, PMemoryView.BufferFormat format, String formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
@@ -416,7 +417,7 @@ public abstract class PythonObjectFactory extends Node {
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
-                        PMemoryView.BufferFormat.fromString(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
+                        BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
     public final PMethod createMethod(Object cls, Object self, Object function) {

@@ -77,7 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.BufferFormat;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -614,8 +614,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (!self.isCContiguous()) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
             }
-            BufferFormat format = BufferFormat.fromString(formatString);
-            int itemsize = MemoryViewNodes.bytesize(format);
+            BufferFormat format = BufferFormat.forMemoryView(formatString);
+            int itemsize = format.bytesize;
             if (itemsize < 0) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DESTINATION_FORMAT_ERROR);
             }

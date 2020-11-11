@@ -249,6 +249,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -1626,7 +1627,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
-                                PMemoryView.BufferFormat.fromString(format),
+                                BufferFormat.forMemoryView(format),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);
             } catch (PException e) {
