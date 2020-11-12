@@ -360,7 +360,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      */
     @TruffleBoundary
     public void setHasSlotsButNoDictFlag() {
-        instanceShape = Shape.newBuilder(instanceShape).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();
+        instanceShape = PythonLanguage.getShapeForClassWithoutDict(this);
     }
 
     @ExportMessage
