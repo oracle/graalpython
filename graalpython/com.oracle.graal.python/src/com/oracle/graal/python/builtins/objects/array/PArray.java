@@ -25,48 +25,65 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.objects.common.IndexNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import java.util.Arrays;
+
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+// TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
-public final class PArray extends PSequence {
+public final class PArray extends PythonBuiltinObject {
+    private BufferFormat format;
+    private String formatStr;
+    private int lenght;
+    private byte[] buffer;
 
-    private SequenceStorage store;
-
-    public PArray(Object clazz, Shape instanceShape) {
+    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) {
         super(clazz, instanceShape);
+        this.formatStr = formatStr;
+        this.format = format;
+        this.lenght = length;
+        this.buffer = new byte[Math.max(32, length * format.bytesize)];
     }
 
-    public PArray(Object clazz, Shape instanceShape, SequenceStorage store) {
-        super(clazz, instanceShape);
-        this.store = store;
+    public BufferFormat getFormat() {
+        return format;
     }
 
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
+    public String getFormatStr() {
+        return formatStr;
     }
 
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        this.store = store;
+    public byte[] getBuffer() {
+        return buffer;
     }
 
-    public int len() {
-        return store.length();
+    public int getLength() {
+        return lenght;
+    }
+
+    public void setLenght(int lenght) {
+        this.lenght = lenght;
+    }
+
+    public void ensureCapacity(int newLenght) {
+        if (newLenght * format.bytesize > buffer.length) {
+            byte[] newBuffer = new byte[Math.max(32, Math.multiplyExact(newLenght * format.bytesize, 2))];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            buffer = newBuffer;
+        }
+    }
+
+    public void ensureCapacityNoCopy(int newLenght) {
+        if (newLenght * format.bytesize > buffer.length) {
+            buffer = new byte[Math.max(32, Math.multiplyExact(newLenght * format.bytesize, 2))];
+        }
     }
 
     @ExportMessage
@@ -75,72 +92,18 @@ public final class PArray extends PSequence {
     }
 
     @ExportMessage
-    byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-        // TODO Implement access to the actual bytes which represent the array in memory.
-        // This implementation only works for ByteSequenceStorage.
-        return toByteArrayNode.execute(store);
-    }
-
-    @ExportMessage
-    int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        // TODO This only works for ByteSequenceStorage since its itemsize is 1.
-        return lenNode.execute(store);
-    }
-
-    @ExportMessage
-    public boolean isArrayElementModifiable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+    byte[] getBufferBytes() {
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @ExportMessage
-    public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
-        final int len = lenNode.execute(store);
-        return index == len;
-    }
-
-    @ExportMessage
-    public boolean isArrayElementRemovable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
-        try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @ExportMessage
-    public void writeArrayElement(long index, Object value,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
-        try {
-            setItem.execute(store, PInt.intValueExact(index), value);
-        } catch (OverflowException e) {
+            return Arrays.copyOf(buffer, getBufferLength());
+        } catch (Throwable t) {
+            // Break exception edges
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            throw t;
         }
     }
 
     @ExportMessage
-    public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
-        try {
-            delItem.execute(store, PInt.intValueExact(index));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
-        }
+    int getBufferLength() {
+        return lenght * format.bytesize;
     }
 }

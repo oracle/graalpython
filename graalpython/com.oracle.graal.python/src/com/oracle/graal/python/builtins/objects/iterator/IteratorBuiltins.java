@@ -43,6 +43,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.MapNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -102,15 +104,14 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        Object next(VirtualFrame frame, PArrayIterator self,
+        Object next(PArrayIterator self,
                         @Cached("createClassProfile()") ValueProfile itemTypeProfile,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            SequenceStorage sequenceStorage = self.array.getSequenceStorage();
-            if (self.getIndex() < lenNode.execute(sequenceStorage)) {
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            PArray array = self.array;
+            if (self.getIndex() < array.getLength()) {
                 // TODO avoid boxing by getting the array's typecode and using primitive return
                 // types
-                return itemTypeProfile.profile(getItemNode.execute(frame, sequenceStorage, self.index++));
+                return itemTypeProfile.profile(getValueNode.execute(array, self.index++));
             }
             self.setExhausted();
             throw raise(StopIteration);
@@ -251,7 +252,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public static int lengthHint(PArrayIterator self) {
-            return self.array.len() - self.getIndex();
+            return self.array.getLength() - self.getIndex();
         }
 
         @Specialization(guards = "!self.isExhausted()", limit = "2")
