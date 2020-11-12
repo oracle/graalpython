@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
@@ -73,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextU
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -109,7 +108,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -118,6 +116,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -137,8 +136,6 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -159,7 +156,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.nodes.Node;
@@ -2473,30 +2469,47 @@ public abstract class CExtNodes {
         }
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(takesVarArgs = true)
-    public static class MayRaiseNode extends PRootNode {
-        @Child private DirectCallNode callNode;
+    /**
+     * Simple enum to abstract over common error indication values used in C extensions. We use this
+     * enum instead of concrete values to be able to safely share them between contexts.
+     */
+    public enum MayRaiseErrorResult {
+        NATIVE_NULL,
+        NONE,
+        INT,
+        FLOAT
+    }
+
+    /**
+     * A fake-expression node that wraps an expression node with a {@code try-catch} and any catched
+     * Python exception will be transformed to native and the pre-defined error result (specified
+     * with enum {@link MayRaiseErrorResult}) will be returned.
+     */
+    public static final class MayRaiseNode extends ExpressionNode {
+        @Child private ExpressionNode wrappedBody;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
 
-        private final Signature signature;
-        private final Object errorResult;
+        @Child private GetNativeNullNode getNativeNullNode;
 
-        public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, Object errorResult) {
-            super(lang);
-            this.signature = sign;
-            this.callNode = Truffle.getRuntime().createDirectCallNode(ct);
+        private final MayRaiseErrorResult errorResult;
+
+        MayRaiseNode(ExpressionNode wrappedBody, MayRaiseErrorResult errorResult) {
+            this.wrappedBody = wrappedBody;
             this.errorResult = errorResult;
         }
 
+        public static MayRaiseNode create(ExpressionNode nodeToWrap, MayRaiseErrorResult errorResult) {
+            return new MayRaiseNode(nodeToWrap, errorResult);
+        }
+
         @Override
-        public final Object execute(VirtualFrame frame) {
+        public Object execute(VirtualFrame frame) {
             try {
-                return callNode.call(frame.getArguments());
+                return wrappedBody.execute(frame);
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 ensureTransformExceptionToNativeNode().execute(frame, e);
-                return errorResult;
+                return getErrorResult();
             }
         }
 
@@ -2508,14 +2521,22 @@ public abstract class CExtNodes {
             return transformExceptionToNativeNode;
         }
 
-        @Override
-        public Signature getSignature() {
-            return signature;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
+        private Object getErrorResult() {
+            switch (errorResult) {
+                case INT:
+                    return -1;
+                case FLOAT:
+                    return -1.0;
+                case NONE:
+                    return PNone.NONE;
+                case NATIVE_NULL:
+                    if (getNativeNullNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getNativeNullNode = insert(GetNativeNullNodeGen.create());
+                    }
+                    return getNativeNullNode.execute();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
