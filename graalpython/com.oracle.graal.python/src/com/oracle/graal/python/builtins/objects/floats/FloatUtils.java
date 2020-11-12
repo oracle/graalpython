@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import java.math.BigDecimal;
+
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
@@ -217,9 +219,14 @@ public class FloatUtils {
             return null;
         }
         try {
-            return new StringToDoubleResult(Double.parseDouble(str.substring(start, i)), i);
+            String substr = str.substring(start, i);
+            double d = Double.parseDouble(substr);
+            if (!Double.isFinite(d)) {
+                d = new BigDecimal(substr).doubleValue();
+            }
+            return new StringToDoubleResult(d, i);
         } catch (NumberFormatException e) {
-            // Should not happen since the input to Double.parseDouble should be correct
+            // Should not happen since the input to Double.parseDouble() / BigDecimal(String) should be correct
             return null;
         }
     }
