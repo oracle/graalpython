@@ -461,7 +461,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         }
                         return true;
                     }
-                });
+                }, x -> x);
 
                 String name = func.getName();
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
