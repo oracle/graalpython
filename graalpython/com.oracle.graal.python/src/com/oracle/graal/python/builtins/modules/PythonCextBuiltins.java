@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgs
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseErrorResult;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MayRaiseNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -2424,10 +2425,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
         private static final WeakHashMap<RootCallTarget, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
 
-        private static final RootCallTarget createWrapperCt(PFunction func, Object errorResult) {
+        private static RootCallTarget createWrapperCt(PFunction func, MayRaiseErrorResult errorResult) {
             CompilerDirectives.transferToInterpreter();
-            assert errorResult instanceof Integer || errorResult instanceof Long || errorResult instanceof Double || errorResult == PNone.NONE ||
-                            InteropLibrary.getUncached().isNull(errorResult) : "invalid wrap";
             PythonLanguage lang = PythonLanguage.getCurrent();
             RootNode rootNode = new MayRaiseNode(lang, func.getSignature(), func.getCallTarget(), errorResult);
             return PythonUtils.getOrCreateCallTarget(rootNode);
@@ -2435,7 +2434,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResult) {
+        Object make(PFunction func, Object errorResultObj) {
+            MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
+            
             RootCallTarget wrappedCt = func.getCallTarget();
             WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(wrappedCt);
             RootCallTarget wrapperCt = null;
@@ -2456,6 +2457,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(),
                             wrapperCode, func.getGlobals(), func.getDefaults(), func.getKwDefaults(),
                             func.getClosure(), func.getCodeStableAssumption(), func.getDefaultsStableAssumption());
+        }
+        
+        private MayRaiseErrorResult convertToEnum(Object object) {
+            if (PGuards.isNone(object) ) {
+                return MayRaiseErrorResult.NONE;
+            } else if (object instanceof Integer) {
+                int i = (int) object;
+                if (i == -1) {
+                    return MayRaiseErrorResult.INT;
+                }
+            } else if (object instanceof Double) {
+                double i = (double) object;
+                if (i == -1.0) {
+                    return MayRaiseErrorResult.FLOAT;
+                }
+            } else if (object instanceof PythonNativeNull) {
+                return MayRaiseErrorResult.NATIVE_NULL;
+            }
+            throw raise(PythonErrorType.TypeError, "invalid error result value");
         }
     }
 

@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CextU
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.DirectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FastCallWithKeywordsArgsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeNullNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTypeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ObjectUpcallNodeGen;
@@ -139,6 +140,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -2473,6 +2475,10 @@ public abstract class CExtNodes {
             return CExtNodesFactory.PCallCapiFunctionNodeGen.getUncached();
         }
     }
+    
+    public enum MayRaiseErrorResult {
+        NATIVE_NULL, NONE, INT, FLOAT
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     @Builtin(takesVarArgs = true)
@@ -2480,11 +2486,13 @@ public abstract class CExtNodes {
         @Child private CallTargetInvokeNode callTargetInvokeNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @Child private CalleeContext calleeContext;
+        
+        @Child private GetNativeNullNode getNativeNullNode;
 
         private final Signature signature;
-        private final Object errorResult;
+        private final MayRaiseErrorResult errorResult;
 
-        public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, Object errorResult) {
+        public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, MayRaiseErrorResult errorResult) {
             super(lang);
             this.signature = sign;
             this.callTargetInvokeNode = CallTargetInvokeNode.create(ct, false, false);
@@ -2508,7 +2516,7 @@ public abstract class CExtNodes {
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 ensureTransformExceptionToNativeNode().execute(frame, e);
-                return errorResult;
+                return getErrorResult();
             } finally {
                 calleeContext.exit(frame, this);
             }
@@ -2520,6 +2528,24 @@ public abstract class CExtNodes {
                 transformExceptionToNativeNode = insert(TransformExceptionToNativeNodeGen.create());
             }
             return transformExceptionToNativeNode;
+        }
+        
+        private Object getErrorResult() {
+            switch(errorResult) {
+                case INT:
+                    return -1;
+                case FLOAT:
+                    return -1.0;
+                case NONE:
+                        return PNone.NONE;
+                case NATIVE_NULL:
+                    if (getNativeNullNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getNativeNullNode = insert(GetNativeNullNodeGen.create());
+                    }
+                    return getNativeNullNode.execute();
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Override
