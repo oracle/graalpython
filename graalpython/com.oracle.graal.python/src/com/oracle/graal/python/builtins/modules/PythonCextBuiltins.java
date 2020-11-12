@@ -221,6 +221,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -279,7 +280,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -2410,57 +2410,44 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    /*
-     * We are creating a special PFunction as a wrapper here - that PFunction has a reference to the
-     * wrapped function's CallTarget. Since the wrapped function is a PFunction anyway, we'll have
-     * to do the full call logic at some point. But instead of doing it when dispatching to the
-     * wrapped function, we copy all relevant bits (signature, mostly) and thus the caller of the
-     * wrapper will already do all that work. The root node embedded in the wrapper call target (a
-     * MayRaiseNode) then just does a direct call with the frame arguments, without doing anything
-     * else anymore. Thus, while there is an extra call, there are really only those Java frames in
-     * between that are caused by the Truffle machinery for calls.
+    /**
+     * Inserts a {@link MayRaiseNode} that wraps the body of the function. This will return a new
+     * function object with a rewritten AST. However, we use a cache for the call targets and thus
+     * the rewritten-ASTs will also be shared if appropriate.
      */
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
         private static final WeakHashMap<RootCallTarget, WeakReference<RootCallTarget>> weakCallTargetMap = new WeakHashMap<>();
 
-        private static RootCallTarget createWrapperCt(PFunction func, MayRaiseErrorResult errorResult) {
-            CompilerDirectives.transferToInterpreter();
-            PythonLanguage lang = PythonLanguage.getCurrent();
-            RootNode rootNode = new MayRaiseNode(lang, func.getSignature(), func.getCallTarget(), errorResult);
-            return PythonUtils.getOrCreateCallTarget(rootNode);
-        }
-
         @Specialization
         @TruffleBoundary
         Object make(PFunction func, Object errorResultObj) {
-            MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
-            
-            RootCallTarget wrappedCt = func.getCallTarget();
-            WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(wrappedCt);
-            RootCallTarget wrapperCt = null;
+            RootCallTarget originalCallTarget = func.getCallTarget();
+
+            WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(originalCallTarget);
+            RootCallTarget wrapperCallTarget = null;
             if (wrapperCtRef != null) {
-                wrapperCt = wrapperCtRef.get();
+                wrapperCallTarget = wrapperCtRef.get();
             }
-            if (wrapperCt == null) {
-                wrapperCt = createWrapperCt(func, errorResult);
-                weakCallTargetMap.put(wrappedCt, new WeakReference<>(wrapperCt));
+            if (wrapperCallTarget == null) {
+                final MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
+                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+
+                // Replace the first expression node with the MayRaiseNode
+                functionRootNode = functionRootNode.rewriteWithNewSignature(func.getSignature(), node -> false, body -> MayRaiseNode.create(body, errorResult));
+                wrapperCallTarget = PythonUtils.getOrCreateCallTarget(functionRootNode);
+                weakCallTargetMap.put(originalCallTarget, new WeakReference<>(wrapperCallTarget));
             }
-            PCode wrappedCode = func.getCode();
-            PCode wrapperCode = factory().createCode(PythonBuiltinClassType.PCode, wrapperCt, func.getSignature(),
-                            0, 0, 0,
-                            new byte[0], new Object[0], new Object[0],
-                            new Object[0], new Object[0], new Object[0],
-                            wrappedCode.getName(), wrappedCode.getName(), 0,
-                            new byte[0]);
-            return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(),
-                            wrapperCode, func.getGlobals(), func.getDefaults(), func.getKwDefaults(),
-                            func.getClosure(), func.getCodeStableAssumption(), func.getDefaultsStableAssumption());
+
+            // Although we could theoretically re-use the old function instance, we create a new one
+            // to be on the safe side.
+            return factory().createFunction(func.getName(), func.getQualname(), func.getEnclosingClassName(), factory().createCode(wrapperCallTarget), func.getGlobals(), func.getDefaults(),
+                            func.getKwDefaults(), func.getClosure(), func.getCodeStableAssumption(), func.getCodeStableAssumption());
         }
-        
+
         private MayRaiseErrorResult convertToEnum(Object object) {
-            if (PGuards.isNone(object) ) {
+            if (PGuards.isNone(object)) {
                 return MayRaiseErrorResult.NONE;
             } else if (object instanceof Integer) {
                 int i = (int) object;
@@ -2472,7 +2459,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 if (i == -1.0) {
                     return MayRaiseErrorResult.FLOAT;
                 }
-            } else if (object instanceof PythonNativeNull) {
+            } else if (object instanceof PythonNativeNull || PGuards.isNoValue(object)) {
                 return MayRaiseErrorResult.NATIVE_NULL;
             }
             throw raise(PythonErrorType.TypeError, "invalid error result value");

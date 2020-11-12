@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
@@ -93,9 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -111,23 +108,21 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -140,9 +135,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2475,50 +2468,48 @@ public abstract class CExtNodes {
             return CExtNodesFactory.PCallCapiFunctionNodeGen.getUncached();
         }
     }
-    
+
+    /**
+     * Simple enum to abstract over common error indication values used in C extensions. We use this
+     * enum instead of concrete values to be able to safely share them between contexts.
+     */
     public enum MayRaiseErrorResult {
-        NATIVE_NULL, NONE, INT, FLOAT
+        NATIVE_NULL,
+        NONE,
+        INT,
+        FLOAT
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    @Builtin(takesVarArgs = true)
-    public static class MayRaiseNode extends PRootNode {
-        @Child private CallTargetInvokeNode callTargetInvokeNode;
+    /**
+     * A fake-expression node that wraps an expression node with a {@code try-catch} and any catched
+     * Python exception will be transformed to native and the pre-defined error result (specified
+     * with enum {@link MayRaiseErrorResult}) will be returned.
+     */
+    public static final class MayRaiseNode extends ExpressionNode {
+        @Child private ExpressionNode wrappedBody;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
-        @Child private CalleeContext calleeContext;
-        
+
         @Child private GetNativeNullNode getNativeNullNode;
 
-        private final Signature signature;
         private final MayRaiseErrorResult errorResult;
 
-        public MayRaiseNode(PythonLanguage lang, Signature sign, RootCallTarget ct, MayRaiseErrorResult errorResult) {
-            super(lang);
-            this.signature = sign;
-            this.callTargetInvokeNode = CallTargetInvokeNode.create(ct, false, false);
-            this.calleeContext = CalleeContext.create();
+        MayRaiseNode(ExpressionNode wrappedBody, MayRaiseErrorResult errorResult) {
+            this.wrappedBody = wrappedBody;
             this.errorResult = errorResult;
         }
 
-        @Override
-        public final Object execute(VirtualFrame frame) {
-            Object[] arguments = frame.getArguments();
-            int userArgumentLength = PArguments.getUserArgumentLength(arguments);
-            Object[] newArguments = PArguments.create(userArgumentLength);
-            // just copy user arguments, varargs and kwargs
-            System.arraycopy(arguments, PArguments.USER_ARGUMENTS_OFFSET, newArguments, PArguments.USER_ARGUMENTS_OFFSET, userArgumentLength);
-            PArguments.setVariableArguments(newArguments, PArguments.getVariableArguments(arguments));
-            PArguments.setKeywordArguments(newArguments, PArguments.getKeywordArguments(arguments));
+        public static MayRaiseNode create(ExpressionNode nodeToWrap, MayRaiseErrorResult errorResult) {
+            return new MayRaiseNode(nodeToWrap, errorResult);
+        }
 
-            calleeContext.enter(frame);
+        @Override
+        public Object execute(VirtualFrame frame) {
             try {
-                return callTargetInvokeNode.execute(frame, null, PArguments.getGlobals(arguments), PArguments.getClosure(arguments), newArguments);
+                return wrappedBody.execute(frame);
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 ensureTransformExceptionToNativeNode().execute(frame, e);
                 return getErrorResult();
-            } finally {
-                calleeContext.exit(frame, this);
             }
         }
 
@@ -2529,15 +2520,15 @@ public abstract class CExtNodes {
             }
             return transformExceptionToNativeNode;
         }
-        
+
         private Object getErrorResult() {
-            switch(errorResult) {
+            switch (errorResult) {
                 case INT:
                     return -1;
                 case FLOAT:
                     return -1.0;
                 case NONE:
-                        return PNone.NONE;
+                    return PNone.NONE;
                 case NATIVE_NULL:
                     if (getNativeNullNode == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2546,16 +2537,6 @@ public abstract class CExtNodes {
                     return getNativeNullNode.execute();
             }
             throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Override
-        public Signature getSignature() {
-            return signature;
-        }
-
-        @Override
-        public boolean isPythonInternal() {
-            return true;
         }
     }
 
