@@ -353,6 +353,11 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
+    /**
+     * Sets the {@link PythonObject#HAS_SLOTS_BUT_NO_DICT_FLAG} shape flag in the
+     * {@code instanceShape}. This method must not be called after the type has been initialized and
+     * used.
+     */
     @TruffleBoundary
     public void setHasSlotsButNoDictFlag() {
         instanceShape = Shape.newBuilder(instanceShape).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();

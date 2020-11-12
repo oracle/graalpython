@@ -119,7 +119,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile isClassProfile,
-                    @CachedLibrary(limit = "1") @SuppressWarnings("unused") DynamicObjectLibrary dyLib,
+                    @CachedLibrary("object") @SuppressWarnings("unused") DynamicObjectLibrary dyLib,
                     @Exclusive @Cached @SuppressWarnings("unused") IsBuiltinClassProfile exactBuiltinInstanceProfile) {
         handlePythonClass(isClassProfile, object, key);
         return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
