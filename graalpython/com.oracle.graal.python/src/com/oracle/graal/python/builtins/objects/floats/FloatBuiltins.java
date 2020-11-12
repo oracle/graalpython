@@ -1512,12 +1512,19 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "as_integer_ratio", minNumOfPositionalArgs = 1)
-    abstract static class AsIntegerRatio extends PythonBuiltinNode {
+    abstract static class AsIntegerRatio extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PTuple getPFloat(PFloat self,
+                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
+                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
+            return get(self.getValue(), nanProfile, infProfile);
+        }
 
         @Specialization
         PTuple get(double self,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+                        @Shared("nanProfile") @Cached ConditionProfile nanProfile,
+                        @Shared("infProfile") @Cached ConditionProfile infProfile) {
             if (nanProfile.profile(Double.isNaN(self))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT_RATIO, "NaN");
             }
