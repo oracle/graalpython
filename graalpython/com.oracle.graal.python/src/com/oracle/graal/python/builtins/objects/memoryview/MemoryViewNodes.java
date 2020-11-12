@@ -52,12 +52,11 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -65,20 +64,17 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -133,230 +129,49 @@ public class MemoryViewNodes {
 
     @ImportStatic(BufferFormat.class)
     public abstract static class UnpackValueNode extends Node {
-        // bytes are expected to already have the appropriate length
+        @Child private PRaiseNode raiseNode;
+
         public abstract Object execute(BufferFormat format, String formatStr, byte[] bytes, int offset);
 
-        @Specialization(guards = "format == UINT_8")
-        static int unpackUnsignedByte(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return bytes[offset] & 0xFF;
+        @Specialization(guards = "format != OTHER")
+        static Object unpack(BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset,
+                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+            return unpackValueNode.execute(format, bytes, offset);
         }
 
-        @Specialization(guards = "format == INT_8")
-        static int unpackSignedByte(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return bytes[offset];
-        }
-
-        @Specialization(guards = "format == INT_16")
-        static int unpackSignedShort(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getShort(bytes, offset);
-        }
-
-        @Specialization(guards = "format == UINT_16")
-        static int unpackUnsignedShort(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getShort(bytes, offset) & 0xFFFF;
-        }
-
-        @Specialization(guards = "format == INT_32")
-        static int unpackSignedInt(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getInt(bytes, offset);
-        }
-
-        @Specialization(guards = "format == UINT_32")
-        static long unpackUnsignedInt(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getInt(bytes, offset) & 0xFFFFFFFFL;
-        }
-
-        @Specialization(guards = "format == INT_64")
-        static long unpackSignedLong(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return PythonUtils.arrayAccessor.getLong(bytes, offset);
-        }
-
-        @Specialization(guards = "format == UINT_64")
-        static Object unpackUnsignedLong(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset,
-                        @Cached ConditionProfile needsPIntProfile,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            long signedLong = PythonUtils.arrayAccessor.getLong(bytes, offset);
-            if (needsPIntProfile.profile(signedLong < 0)) {
-                return factory.createInt(PInt.longToUnsignedBigInteger(signedLong));
-            } else {
-                return signedLong;
-            }
-        }
-
-        @Specialization(guards = "format == FLOAT")
-        static double unpackFloat(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return Float.intBitsToFloat(PythonUtils.arrayAccessor.getInt(bytes, offset));
-        }
-
-        @Specialization(guards = "format == DOUBLE")
-        static double unpackDouble(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return Double.longBitsToDouble(PythonUtils.arrayAccessor.getLong(bytes, offset));
-        }
-
-        @Specialization(guards = "format == BOOLEAN")
-        static boolean unpackBoolean(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset) {
-            return bytes[offset] != 0;
-        }
-
-        @Specialization(guards = "format == CHAR")
-        static Object unpackChar(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, byte[] bytes, int offset,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createBytes(new byte[]{bytes[offset]});
-        }
-
-        @Specialization(guards = "format == OTHER")
+        @Fallback
         @SuppressWarnings("unused")
-        static Object notImplemented(BufferFormat format, String formatStr, byte[] bytes, int offset,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        Object notImplemented(BufferFormat format, String formatStr, byte[] bytes, int offset) {
+            throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
+        }
+
+        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            throw raiseNode.raise(type, message, args);
         }
     }
 
     @ImportStatic({BufferFormat.class, PGuards.class})
-    abstract static class PackValueNode extends Node {
+    public abstract static class PackValueNode extends Node {
         @Child private PRaiseNode raiseNode;
         @Child private IsBuiltinClassProfile isOverflowErrorProfile;
 
-        // Output goes to bytes, lenght not checked
         public abstract void execute(VirtualFrame frame, BufferFormat format, String formatStr, Object object, byte[] bytes, int offset);
 
-        @Specialization(guards = "format == UINT_8")
-        void packUnsignedByteInt(@SuppressWarnings("unused") BufferFormat format, String formatStr, int value, byte[] bytes, int offset) {
-            if (value < 0 || value > 0xFF) {
-                throw valueError(formatStr);
-            }
-            bytes[offset] = (byte) value;
-        }
-
-        @Specialization(guards = "format == UINT_8", replaces = "packUnsignedByteInt", limit = "2")
-        void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < 0 || value > 0xFF) {
-                throw valueError(formatStr);
-            }
-            bytes[offset] = (byte) value;
-        }
-
-        @Specialization(guards = "format == INT_8", replaces = "packUnsignedByteInt", limit = "2")
-        void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            bytes[offset] = (byte) value;
-        }
-
-        @Specialization(guards = "format == INT_16", limit = "2")
-        void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            PythonUtils.arrayAccessor.putShort(bytes, offset, (short) value);
-        }
-
-        @Specialization(guards = "format == UINT_16", limit = "2")
-        void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
-                throw valueError(formatStr);
-            }
-            PythonUtils.arrayAccessor.putShort(bytes, offset, (short) value);
-        }
-
-        @Specialization(guards = "format == INT_32")
-        static void packSignedIntInt(@SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, int value, byte[] bytes, int offset) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, value);
-        }
-
-        @Specialization(guards = "format == INT_32", replaces = "packSignedIntInt", limit = "2")
-        void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
-                throw valueError(formatStr);
-            }
-            PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
-        }
-
-        @Specialization(guards = "format == UINT_32", replaces = "packSignedIntInt", limit = "2")
-        void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = asJavaLong(frame, formatStr, object, lib);
-            if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
-                throw valueError(formatStr);
-            }
-            PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
-        }
-
-        @Specialization(guards = "format == INT_64", limit = "2")
-        void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, asJavaLong(frame, formatStr, object, lib));
-        }
-
-        @Specialization(guards = "format == UINT_64", limit = "2")
-        void packUnsignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @Cached CastToJavaUnsignedLongNode cast,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+        @Specialization(guards = "format != OTHER")
+        void pack(VirtualFrame frame, BufferFormat format, String formatStr, Object value, byte[] bytes, int offset,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
             try {
-                PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(lib.asIndexWithFrame(object, frame)));
+                packValueNode.execute(frame, format, value, bytes, offset);
             } catch (PException e) {
                 throw processException(e, formatStr);
             }
         }
 
-        @Specialization(guards = "format == FLOAT", limit = "2")
-        void packFloat(@SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) lib.asJavaDouble(object)));
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
-        }
-
-        @Specialization(guards = "format == DOUBLE", limit = "2")
-        void packDouble(@SuppressWarnings("unused") BufferFormat format, String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(lib.asJavaDouble(object)));
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
-        }
-
-        @Specialization(guards = "format == BOOLEAN", limit = "2")
-        static void packBoolean(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, @SuppressWarnings("unused") String formatStr, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            bytes[offset] = lib.isTrue(object, frame) ? (byte) 1 : (byte) 0;
-        }
-
-        @Specialization(guards = "format == CHAR", limit = "2")
-        void packChar(@SuppressWarnings("unused") BufferFormat format, String formatStr, PBytes object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                byte[] value = lib.getBufferBytes(object);
-                if (value.length != 1) {
-                    throw valueError(formatStr);
-                }
-                bytes[offset] = value[0];
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
-        @SuppressWarnings("unused")
-        void packChar(BufferFormat format, String formatStr, Object object, byte[] bytes, int offset) {
-            throw typeError(formatStr);
-        }
-
-        @Specialization(guards = "format == OTHER")
+        @Fallback
         @SuppressWarnings("unused")
         void notImplemented(BufferFormat format, String formatStr, Object object, byte[] bytes, int offset) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
@@ -366,21 +181,9 @@ public class MemoryViewNodes {
             throw raise(ValueError, ErrorMessages.MEMORYVIEW_INVALID_VALUE_FOR_FORMAT_S, formatStr);
         }
 
-        private PException typeError(String formatStr) {
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_INVALID_TYPE_FOR_FORMAT_S, formatStr);
-        }
-
         private PException processException(PException e, String formatStr) {
             e.expect(OverflowError, getIsOverflowErrorProfile());
             throw valueError(formatStr);
-        }
-
-        private long asJavaLong(VirtualFrame frame, String formatStr, Object object, PythonObjectLibrary lib) {
-            try {
-                return lib.asJavaLong(object, frame);
-            } catch (PException e) {
-                throw processException(e, formatStr);
-            }
         }
 
         private PException raise(PythonBuiltinClassType type, String message, Object... args) {
