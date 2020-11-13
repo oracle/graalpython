@@ -49,6 +49,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -191,6 +192,15 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0, // utf8_mode
         }));
+        Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
+        PList executableList = PythonObjectFactory.getUncached().createList(arr);
+        mod.setAttribute("executable_list", executableList);
+    }
+
+    private static Object[] convertToObjectArray(String[] arr) {
+        Object[] objectArr = new Object[arr.length];
+        System.arraycopy(arr, 0, objectArr, 0, arr.length);
+        return objectArr;
     }
 
     @Builtin(name = "cache_module_code", minNumOfPositionalArgs = 3)
