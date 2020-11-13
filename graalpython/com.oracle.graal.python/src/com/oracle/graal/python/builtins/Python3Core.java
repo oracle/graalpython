@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -796,29 +797,25 @@ public final class Python3Core implements PythonCore {
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        String msg;
-        if (section.getCharIndex() == source.getLength()) {
+        String msg = "invalid syntax";
+        if (type == PythonParser.ErrorType.Print) {
+            CharSequence line = source.getCharacters(section.getStartLine());
+            line = line.subSequence(line.toString().lastIndexOf(PRINT), line.length());
+            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(line);
+            if (matcher.matches()) {
+                String arg = matcher.group(2).trim();
+                String maybeEnd = "";
+                if (arg.endsWith(",")) {
+                    maybeEnd = " end=\" \"";
+                }
+                msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
+            }
+        } else if (type == PythonParser.ErrorType.Exec) {
+            msg = "Missing parentheses in call to 'exec'";
+        } else if (section.getCharIndex() == source.getLength()) {
             msg = "unexpected EOF while parsing";
         } else if (message != null) {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
-        } else {
-            msg = "invalid syntax";
-        }
-        if (section.isAvailable() && type == PythonParser.ErrorType.Generic) {
-            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(source.getCharacters(section.getStartLine()));
-            if (matcher.matches()) {
-                String fn = matcher.group(1);
-                if (fn.equals("print")) {
-                    String arg = matcher.group(2).trim();
-                    String maybeEnd = "";
-                    if (arg.endsWith(",")) {
-                        maybeEnd = " end=\" \"";
-                    }
-                    msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
-                } else {
-                    msg = "Missing parentheses in call to 'exec'";
-                }
-            }
         }
         instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
