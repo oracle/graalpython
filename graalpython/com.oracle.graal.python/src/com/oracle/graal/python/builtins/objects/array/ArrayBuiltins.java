@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
@@ -327,11 +328,11 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static boolean contains(PArray self, Object value,
+        static boolean contains(VirtualFrame frame, PArray self, Object value,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             for (int i = 0; i < self.getLength(); i++) {
-                if (lib.equals(getValueNode.execute(self, i), value, lib)) {
+                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
                     return true;
                 }
             }
@@ -390,7 +391,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             PArray newArray = factory().createArray(self.getFormatStr(), self.getFormat(), sliceInfo.sliceLength);
 
             if (simpleStepProfile.profile(sliceInfo.step == 1)) {
-                PythonUtils.arraycopy(self.getBuffer(), sliceInfo.start * itemsize, newArray.getBuffer(), 0, newArray.getBuffer().length);
+                PythonUtils.arraycopy(self.getBuffer(), sliceInfo.start * itemsize, newArray.getBuffer(), 0, sliceInfo.sliceLength * itemsize);
             } else {
                 for (int i = sliceInfo.start, j = 0; j < sliceInfo.sliceLength; i += sliceInfo.step, j++) {
                     PythonUtils.arraycopy(self.getBuffer(), i * itemsize, newArray.getBuffer(), j * itemsize, itemsize);
@@ -417,32 +418,28 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object setitem(PArray self, PSlice slice, PArray other,
                         @Cached ConditionProfile sameArrayProfile,
                         @Cached ConditionProfile simpleStepProfile,
+                        @Cached ConditionProfile complexDeleteProfile,
                         @Cached ConditionProfile differentLenghtProfile,
+                        @Cached ConditionProfile growProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
             int itemsize = self.getFormat().bytesize;
-            byte[] targetBuffer = self.getBuffer();
             byte[] sourceBuffer = other.getBuffer();
             int needed = other.getLength();
-            if (sameArrayProfile.profile(sourceBuffer == targetBuffer)) {
+            if (sameArrayProfile.profile(sourceBuffer == self.getBuffer())) {
                 sourceBuffer = new byte[needed * itemsize];
-                PythonUtils.arraycopy(targetBuffer, 0, sourceBuffer, 0, sourceBuffer.length);
+                PythonUtils.arraycopy(self.getBuffer(), 0, sourceBuffer, 0, sourceBuffer.length);
             }
             if (simpleStepProfile.profile(sliceInfo.step == 1)) {
-                int start = sliceInfo.start;
-                int stop = sliceInfo.stop;
                 if (differentLenghtProfile.profile(sliceInfo.sliceLength != needed)) {
-                    int newLength = self.getLength() - sliceInfo.sliceLength + needed;
-                    // TODO shrink when much smaller
-                    self.ensureCapacityNoCopy(newLength);
-                    byte[] newBuffer = self.getBuffer();
-                    PythonUtils.arraycopy(targetBuffer, 0, newBuffer, 0, start * itemsize);
-                    PythonUtils.arraycopy(targetBuffer, stop * itemsize, newBuffer, (start + needed) * itemsize, (self.getLength() - stop) * itemsize);
-                    self.setLenght(newLength);
-                    targetBuffer = newBuffer;
+                    if (growProfile.profile(sliceInfo.sliceLength < needed)) {
+                        self.shift(sliceInfo.stop, needed - sliceInfo.sliceLength);
+                    } else {
+                        self.delSlice(sliceInfo.start, sliceInfo.sliceLength - needed);
+                    }
                 }
-                PythonUtils.arraycopy(sourceBuffer, 0, targetBuffer, start * itemsize, needed * itemsize);
+                PythonUtils.arraycopy(sourceBuffer, 0, self.getBuffer(), sliceInfo.start * itemsize, needed * itemsize);
             } else {
                 // TODO allow empty other (delete)
                 throw raise(ValueError, "attempt to assign array of size %d to extended slice of size %d", needed, sliceInfo.sliceLength);
@@ -473,7 +470,17 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "itemsize", minNumOfPositionalArgs = 1)
+    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static int len(PArray self) {
+            return self.getLength();
+        }
+    }
+
+    @Builtin(name = "itemsize", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ItemSizeNode extends PythonUnaryBuiltinNode {
 
@@ -483,13 +490,13 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
+    @Builtin(name = "typecode", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    abstract static class TypeCodeNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int len(PArray self) {
-            return self.getLength();
+        static String getTypeCode(PArray self) {
+            return self.getFormatStr();
         }
     }
 
@@ -562,16 +569,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object insert(VirtualFrame frame, PArray self, int index, Object value,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
-            int itemsize = self.getFormat().bytesize;
-            int newLength = self.getLength() + 1;
-            byte[] oldBuffer = self.getBuffer();
-            self.ensureCapacityNoCopy(newLength);
-            byte[] newBuffer = self.getBuffer();
-            if (oldBuffer != newBuffer) {
-                PythonUtils.arraycopy(oldBuffer, 0, newBuffer, 0, index * itemsize);
-            }
-            PythonUtils.arraycopy(oldBuffer, index * itemsize, newBuffer, (index + 1) * itemsize, (newLength - index) * itemsize);
-            self.setLenght(newLength);
+            self.shift(index, 1);
             putValueNode.execute(frame, self, index, value);
             return PNone.NONE;
         }
@@ -579,6 +577,52 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ArrayBuiltinsClinicProviders.InsertNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "remove", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class RemoveNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object remove(VirtualFrame frame, PArray self, Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            for (int i = 0; i < self.getLength(); i++) {
+                Object item = getValueNode.execute(self, i);
+                if (lib.equalsWithFrame(item, value, lib, frame)) {
+                    self.delSlice(i, 1);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(ValueError, "array.remove(x): x not in array");
+        }
+    }
+
+    @Builtin(name = "pop", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "index"})
+    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "-1")
+    @GenerateNodeFactory
+    public abstract static class PopNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        Object pop(PArray self, int inputIndex,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            if (self.getLength() == 0) {
+                throw raise(IndexError, "pop from empty array");
+            }
+            int index = inputIndex;
+            if (index < 0) {
+                index += self.getLength();
+            }
+            if (index < 0 || index >= self.getLength()) {
+                throw raise(IndexError, "pop index out of range");
+            }
+            Object value = getValueNode.execute(self, index);
+            self.delSlice(index, 1);
+            return value;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.PopNodeClinicProviderGen.INSTANCE;
         }
     }
 }

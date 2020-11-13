@@ -73,18 +73,43 @@ public final class PArray extends PythonBuiltinObject {
         this.lenght = lenght;
     }
 
-    public void ensureCapacity(int newLenght) {
-        if (newLenght * format.bytesize > buffer.length) {
-            byte[] newBuffer = new byte[Math.max(32, Math.multiplyExact(newLenght * format.bytesize, 2))];
+    public void ensureCapacity(int newLength) {
+        // TODO overflow
+        // TODO better estimate
+        // TODO shrink?
+        if (newLength * format.bytesize > buffer.length) {
+            byte[] newBuffer = new byte[newLength * format.bytesize];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
             buffer = newBuffer;
         }
     }
 
-    public void ensureCapacityNoCopy(int newLenght) {
-        if (newLenght * format.bytesize > buffer.length) {
-            buffer = new byte[Math.max(32, Math.multiplyExact(newLenght * format.bytesize, 2))];
+    public void shift(int from, int by) {
+        assert from < lenght;
+        assert by >= 0;
+        // TODO overflow
+        int newLength = lenght + by;
+        // TODO better estimate
+        int itemsize = format.bytesize;
+        if (newLength * itemsize > buffer.length) {
+            byte[] newBuffer = new byte[newLength * itemsize];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
+            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (lenght - from) * itemsize);
+            buffer = newBuffer;
+        } else {
+            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (lenght - from) * itemsize);
         }
+        lenght = newLength;
+    }
+
+    public void delSlice(int at, int count) {
+        assert at + count <= lenght;
+        int newLength = lenght - count;
+        assert newLength >= 0;
+        // TODO shrink?
+        int itemsize = format.bytesize;
+        PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (lenght - at - count) * itemsize);
+        lenght = newLength;
     }
 
     @ExportMessage
