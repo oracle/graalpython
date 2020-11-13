@@ -2049,6 +2049,7 @@ mx.update_commands(SUITE, {
     'python-build-watch': [python_build_watch, ''],
     'python': [python, '[Python args|@VM options]'],
     'python3': [python, '[Python args|@VM options]'],
+    'python3.8': [python, '[Python args|@VM options]'],
     'deploy-binary-if-master': [deploy_binary_if_master, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
