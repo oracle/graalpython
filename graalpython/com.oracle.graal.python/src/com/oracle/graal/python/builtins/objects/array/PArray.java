@@ -69,6 +69,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public void setLenght(int lenght) {
+        assert lenght >= 0;
         this.lenght = lenght;
     }
 

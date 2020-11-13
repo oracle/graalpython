@@ -33,11 +33,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.List;
@@ -52,19 +56,24 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -100,9 +109,76 @@ public class ArrayBuiltins extends PythonBuiltins {
             throw raise(TypeError, "bad argument type for built-in operation");
         }
 
-        @Specialization
-        Object error(@SuppressWarnings("unused") PArray left, Object right) {
+        @Fallback
+        Object error(@SuppressWarnings("unused") Object left, Object right) {
             throw raise(TypeError, "can only append array (not \"%p\") to array", right);
+        }
+    }
+
+    @Builtin(name = __IADD__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IAddNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object concat(VirtualFrame frame, PArray left, PArray right,
+                        @Cached ExtendNode extendNode) {
+            extendNode.execute(frame, left, right);
+            return left;
+        }
+
+        @Fallback
+        Object error(@SuppressWarnings("unused") Object left, Object right) {
+            throw raise(TypeError, "can only extend array (not \"%p\") with array", right);
+        }
+    }
+
+    @Builtin(name = __MUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class MulNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        Object concat(PArray self, int value) {
+            // TODO check overflow
+            int newLength = Math.max(self.getLength() * value, 0);
+            int itemsize = self.getFormat().bytesize;
+            PArray newArray = factory().createArray(self.getFormatStr(), self.getFormat(), newLength);
+            int segmentLenght = self.getLength() * itemsize;
+            for (int i = 0; i < value; i++) {
+                PythonUtils.arraycopy(self.getBuffer(), 0, newArray.getBuffer(), segmentLenght * i, segmentLenght);
+            }
+            return newArray;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.MulNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = __RMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    abstract static class RMulNode extends MulNode {
+    }
+
+    @Builtin(name = __IMUL__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "value"})
+    @ArgumentClinic(name = "value", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class IMulNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static Object concat(PArray self, int value) {
+            // TODO check overflow
+            int newLength = Math.max(self.getLength() * value, 0);
+            int itemsize = self.getFormat().bytesize;
+            int segmentLenght = self.getLength() * itemsize;
+            self.ensureCapacity(newLength);
+            for (int i = 0; i < value; i++) {
+                PythonUtils.arraycopy(self.getBuffer(), 0, self.getBuffer(), segmentLenght * i, segmentLenght);
+            }
+            self.setLenght(newLength);
+            return self;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.IMulNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -269,20 +345,25 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static String repr(PArray self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached ConditionProfile isEmptyProfile,
                         @Cached CastToJavaStringNode cast,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             PythonUtils.append(sb, "array('");
             PythonUtils.append(sb, self.getFormatStr());
-            PythonUtils.append(sb, "', [");
-            for (int i = 0; i < self.getLength(); i++) {
-                if (i > 0) {
-                    PythonUtils.append(sb, ", ");
+            PythonUtils.append(sb, '\'');
+            if (isEmptyProfile.profile(self.getLength() != 0)) {
+                PythonUtils.append(sb, ", [");
+                for (int i = 0; i < self.getLength(); i++) {
+                    if (i > 0) {
+                        PythonUtils.append(sb, ", ");
+                    }
+                    Object value = getValueNode.execute(self, i);
+                    PythonUtils.append(sb, cast.execute(lib.asPString(value)));
                 }
-                Object value = getValueNode.execute(self, i);
-                PythonUtils.append(sb, cast.execute(lib.asPString(value)));
+                PythonUtils.append(sb, ']');
             }
-            PythonUtils.append(sb, "])");
+            PythonUtils.append(sb, ')');
             return PythonUtils.sbToString(sb);
         }
     }
@@ -414,7 +495,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ArrayAppendNode extends PythonBinaryBuiltinNode {
+    public abstract static class AppendNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object append(VirtualFrame frame, PArray self, Object value,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
@@ -427,10 +508,57 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "extend", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ExtendNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "self.getFormat() == value.getFormat()")
+        static Object extend(PArray self, PArray value) {
+            // TODO check overflow
+            int newLength = self.getLength() + value.getLength();
+            int itemsize = self.getFormat().bytesize;
+            self.ensureCapacity(newLength);
+            PythonUtils.arraycopy(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize);
+            self.setLenght(newLength);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "self.getFormat() != value.getFormat()")
+        @SuppressWarnings("unused")
+        Object error(PArray self, PArray value) {
+            // CPython allows extending an array with an arbitrary iterable. Except a differently
+            // formatted array. Weird
+            throw raise(TypeError, "can only extend with array of same kind");
+        }
+
+        @Specialization(guards = "!isArray(value)", limit = "3")
+        static Object extend(VirtualFrame frame, PArray self, Object value,
+                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached GetNextNode nextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            Object iter = lib.getIteratorWithFrame(value, frame);
+            int lenght = self.getLength();
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = nextNode.execute(frame, iter);
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                    break;
+                }
+                self.ensureCapacity(++lenght);
+                putValueNode.execute(frame, self, lenght - 1, nextValue);
+            }
+
+            self.setLenght(lenght);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "insert", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "index", "value"})
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
-    public abstract static class ArrayInsertNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         static Object insert(VirtualFrame frame, PArray self, int index, Object value,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
@@ -450,7 +578,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return ArrayBuiltinsClinicProviders.ArrayInsertNodeClinicProviderGen.INSTANCE;
+            return ArrayBuiltinsClinicProviders.InsertNodeClinicProviderGen.INSTANCE;
         }
     }
 }
