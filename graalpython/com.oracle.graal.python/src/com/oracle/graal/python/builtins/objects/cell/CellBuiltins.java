@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -280,10 +281,10 @@ public class CellBuiltins extends PythonBuiltins {
                         @Cached("create()") TypeNodes.GetNameNode getNameNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
-                return String.format("<cell at %s: empty>", self.hashCode());
+                return String.format("<cell at 0x%x: empty>", PythonAbstractObject.systemHashCode(self));
             }
             String typeName = getNameNode.execute(lib.getLazyPythonClass(ref));
-            return String.format("<cell at %s: %s object at %s>", self.hashCode(), typeName, ref.hashCode());
+            return String.format("<cell at 0x%x: %s object at 0x%x>", PythonAbstractObject.systemHashCode(self), typeName, PythonAbstractObject.systemHashCode(ref));
         }
 
         @Fallback

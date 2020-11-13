@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -63,11 +64,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -119,8 +121,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
                 return executeReprState(key, arg);
             }
 
-            protected String getReprString(Object obj, ReprState s, LookupAndCallUnaryDynamicNode reprNode, CastToJavaStringNode castStr, BranchProfile nullBranch, PRaiseNode raiseNode)
-                            throws PException {
+            protected static String getReprString(Object obj, ReprState s,
+                            LookupAndCallUnaryDynamicNode reprNode,
+                            CastToJavaStringNode castStr,
+                            BranchProfile nullBranch,
+                            PRaiseNode raiseNode) {
                 Object reprObj = s == null || obj != s.self ? reprNode.executeObject(obj, __REPR__) : "{...}";
                 try {
                     return castStr.execute(reprObj);
@@ -130,7 +135,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                 }
             }
 
-            protected static final void appendSeparator(ReprState s, ConditionProfile lengthCheck) {
+            protected static void appendSeparator(ReprState s, ConditionProfile lengthCheck) {
                 if (lengthCheck.profile(s.result.length() > s.initialLength)) {
                     PythonUtils.append(s.result, ", ");
                 }
@@ -226,13 +231,18 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization // use same limit as for EachRepr nodes library
         public Object repr(PDict dict,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
                         @Cached HashingCollectionNodes.GetDictStorageNode getDictStorage,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            if (!ctxt.reprEnter(dict)) {
+                return "{...}";
+            }
             StringBuilder sb = PythonUtils.newStringBuilder("{");
             HashingStorage dictStorage = getDictStorage.execute(dict);
             lib.forEach(dictStorage, consumerNode, new ReprState(dict, dictStorage, sb));
             PythonUtils.append(sb, "}");
+            ctxt.reprLeave(dict);
             return PythonUtils.sbToString(sb);
         }
 
