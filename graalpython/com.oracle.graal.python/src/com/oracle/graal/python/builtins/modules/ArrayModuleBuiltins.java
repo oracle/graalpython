@@ -30,6 +30,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -41,7 +42,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.BufferFormat;
@@ -62,9 +65,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PArray)
+    @Builtin(name = "array", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, constructsClass = PythonBuiltinClassType.PArray, parameterNames = {"$cls", "typeCode", "initializer"})
+    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class PythonArrayNode extends PythonBuiltinNode {
+    abstract static class ArrayNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization(guards = "isNoValue(initializer)")
         PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
@@ -131,6 +135,29 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
             }
             return format;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayModuleBuiltinsClinicProviders.ArrayNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
+    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object reconstruct(Object arrayType, String typeCode, int mformatCode, Object items) {
+            // TODO
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayModuleBuiltinsClinicProviders.ArrayReconstructorNodeClinicProviderGen.INSTANCE;
         }
     }
 }
