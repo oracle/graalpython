@@ -87,7 +87,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public void shift(int from, int by) {
-        assert from < lenght;
+        assert from >= 0 && from <= lenght;
         assert by >= 0;
         // TODO overflow
         int newLength = lenght + by;

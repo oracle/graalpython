@@ -59,7 +59,7 @@ public enum BufferFormat {
     FLOAT(4),
     DOUBLE(8),
     // Unicode is array-only and deprecated
-    UNICODE(2),
+    UNICODE(4),
     // The following are memoryview-only
     CHAR(1),
     BOOLEAN(1),
