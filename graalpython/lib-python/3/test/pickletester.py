@@ -2693,6 +2693,7 @@ class AbstractPickleTests(unittest.TestCase):
                                        shape=(4, 2), strides=(1, 4),
                                        flags=flags)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_in_band_buffers(self):
         # Test in-band buffers (PEP 574)
         for obj in self.buffer_like_objects():

@@ -100,7 +100,7 @@ def reduce_newobj(obj):
                 except AttributeError:
                     pass
                 else:
-                    slots[name] =  value
+                    slots[name] = value
             if slots:
                 state = state, slots
     else:
