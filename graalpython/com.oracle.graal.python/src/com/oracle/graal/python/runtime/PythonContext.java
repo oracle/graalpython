@@ -42,6 +42,7 @@ import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +58,10 @@ import org.graalvm.options.OptionKey;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -129,6 +130,9 @@ public final class PythonContext {
         /* corresponds to 'PyThreadState.exc_*' */
         PException caughtException;
 
+        /* set to emulate Py_ReprEnter/Leave */
+        HashSet<Object> reprObjectSet;
+
         PythonThreadState() {
             owners = new LinkedList<>();
         }
@@ -163,6 +167,19 @@ public final class PythonContext {
 
         List<WeakReference<Thread>> getOwners() {
             return owners;
+        }
+
+        @TruffleBoundary
+        boolean reprEnter(Object item) {
+            if (reprObjectSet == null) {
+                reprObjectSet = new HashSet<>();
+            }
+            return reprObjectSet.add(item);
+        }
+
+        @TruffleBoundary
+        void reprLeave(Object item) {
+            reprObjectSet.remove(item);
         }
     }
 
@@ -386,6 +403,14 @@ public final class PythonContext {
 
     public PFrame.Reference peekTopFrameInfo() {
         return getThreadState().topframeref;
+    }
+
+    public boolean reprEnter(Object item) {
+        return getThreadState().reprEnter(item);
+    }
+
+    public void reprLeave(Object item) {
+        getThreadState().reprLeave(item);
     }
 
     public boolean isInitialized() {
