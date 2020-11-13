@@ -513,7 +513,7 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class GetNewargsNode extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple doIt(PTuple self) {
-            return factory().createTuple(self.getSequenceStorage());
+            return factory().createTuple(new Object[]{factory().createTuple(self.getSequenceStorage())});
         }
     }
 }
