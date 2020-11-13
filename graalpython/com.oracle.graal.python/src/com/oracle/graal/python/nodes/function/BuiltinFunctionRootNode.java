@@ -185,8 +185,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                         builtin.varArgsMarker(), parameterNames, builtin.keywordOnlyNames());
     }
 
-    // Nodes optimized for specific arg count (eg. PythonUnaryBultinNode, PythonBinaryBultinNode)
-    // can only be used by functions with fixed number of positional arguments.
+    // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)
+    // can only be used by builtins with up to n positional arguments (without varargs/kwargs).
+    // (Note that this does not apply to PythonVarargsBuiltinNode which can be used with
+    // varargs/kwargs builtins.)
     private static boolean canUseSpecialBuiltinNode(Builtin builtin) {
         return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker() && builtin.keywordOnlyNames().length == 0;
     }
