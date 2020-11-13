@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -34,6 +35,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
@@ -131,5 +133,52 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     int getBufferLength() {
         return lenght * format.bytesize;
+    }
+
+    public enum MachineFormat {
+        UNKNOWN_FORMAT(-1, null, null),
+        UNSIGNED_INT8(0, BufferFormat.UINT_8, null),
+        SIGNED_INT8(1, BufferFormat.INT_8, null),
+        UNSIGNED_INT16_LE(2, BufferFormat.UINT_16, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT16_BE(3, BufferFormat.UINT_16, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT16_LE(4, BufferFormat.INT_16, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT16_BE(5, BufferFormat.INT_16, ByteOrder.BIG_ENDIAN),
+        UNSIGNED_INT32_LE(6, BufferFormat.UINT_32, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT32_BE(7, BufferFormat.UINT_32, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT32_LE(8, BufferFormat.INT_32, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT32_BE(9, BufferFormat.INT_32, ByteOrder.BIG_ENDIAN),
+        UNSIGNED_INT64_LE(10, BufferFormat.UINT_64, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT64_BE(11, BufferFormat.UINT_64, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT64_LE(12, BufferFormat.INT_64, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT64_BE(13, BufferFormat.INT_64, ByteOrder.BIG_ENDIAN),
+        IEEE_754_FLOAT_LE(14, BufferFormat.FLOAT, ByteOrder.LITTLE_ENDIAN),
+        IEEE_754_FLOAT_BE(15, BufferFormat.FLOAT, ByteOrder.BIG_ENDIAN),
+        IEEE_754_DOUBLE_LE(16, BufferFormat.DOUBLE, ByteOrder.LITTLE_ENDIAN),
+        IEEE_754_DOUBLE_BE(17, BufferFormat.DOUBLE, ByteOrder.BIG_ENDIAN),
+        // TODO
+        UTF16_LE(18, null, ByteOrder.LITTLE_ENDIAN),
+        UTF16_BE(19, null, ByteOrder.BIG_ENDIAN),
+        UTF32_LE(20, null, ByteOrder.LITTLE_ENDIAN),
+        UTF32_BE(21, null, ByteOrder.BIG_ENDIAN);
+
+        public final int code;
+        public final BufferFormat format;
+        public final ByteOrder order;
+
+        MachineFormat(int code, BufferFormat format, ByteOrder order) {
+            this.code = code;
+            this.format = format;
+            this.order = order;
+        }
+
+        @ExplodeLoop
+        public static MachineFormat forFormat(BufferFormat format) {
+            for (MachineFormat machineFormat : MachineFormat.values()) {
+                if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
+                    return machineFormat;
+                }
+            }
+            return null;
+        }
     }
 }
