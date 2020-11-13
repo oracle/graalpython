@@ -1080,6 +1080,7 @@ class BaseTest:
         a = array.array('B', b"")
         self.assertRaises(BufferError, getbuffer_with_null_view, a)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_free_after_iterating(self):
         support.check_free_after_iterating(self, iter, array.array,
                                            (self.typecode,))
