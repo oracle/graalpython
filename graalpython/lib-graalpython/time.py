@@ -105,3 +105,9 @@ def asctime(t=None):
     if not t:
         t = localtime()
     return strftime("%a %b %d %H:%M:%S %Y", t)
+
+@__graalpython__.builtin
+def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
+    from _strptime import _strptime_time
+    return _strptime_time(data_string, format)
+
