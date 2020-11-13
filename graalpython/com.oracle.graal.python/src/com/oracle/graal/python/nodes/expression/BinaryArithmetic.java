@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -87,7 +89,7 @@ public enum BinaryArithmetic {
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
             public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P, operator, arg, arg2);
+                throw PRaiseNode.getUncached().raise(TypeError, getErrorMessage(operator, arg), operator, arg, arg2);
             }
         };
     }
@@ -98,6 +100,14 @@ public enum BinaryArithmetic {
 
     public String getOperator() {
         return operator;
+    }
+
+    @CompilerDirectives.TruffleBoundary
+    private static String getErrorMessage(String operator, Object arg) {
+        if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equals(PRINT)) {
+            return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT;
+        }
+        return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;
     }
 
     /**

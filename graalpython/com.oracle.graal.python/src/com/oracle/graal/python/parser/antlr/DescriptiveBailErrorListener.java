@@ -42,6 +42,7 @@ package com.oracle.graal.python.parser.antlr;
 
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
@@ -192,13 +193,30 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
 
     public static class EmptyRecognitionException extends RecognitionException {
         private static final long serialVersionUID = 1L;
-        private Token offendingToken;
-        private ErrorType errorType;
+        private final Token offendingToken;
+        private final ErrorType errorType;
+        private final CommonTokenStream inputStream;
 
         public EmptyRecognitionException(ErrorType errorType, String message, Recognizer<?, ?> recognizer, Token offendingToken) {
             super(message, recognizer, offendingToken.getInputStream(), null);
             this.errorType = errorType;
             this.offendingToken = offendingToken;
+            if (recognizer.getInputStream() instanceof CommonTokenStream) {
+                this.inputStream = (CommonTokenStream) recognizer.getInputStream();
+            } else {
+                this.inputStream = null;
+            }
+        }
+
+        public String getPreviousToken() {
+            if (inputStream == null) {
+                return null;
+            }
+            int previousTokenIndex = offendingToken.getTokenIndex() - 1;
+            if (previousTokenIndex >= 0) {
+                return inputStream.get(offendingToken.getTokenIndex() - 1).getText();
+            }
+            return null;
         }
 
         @Override

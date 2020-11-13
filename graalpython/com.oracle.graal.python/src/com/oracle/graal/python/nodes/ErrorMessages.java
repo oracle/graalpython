@@ -570,6 +570,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_OBJ_IN = "unsupported object in '%s'";
     public static final String UNSUPPORTED_OPERAND_P = "unsupported operand '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = "unsupported operand type(s) for %s: '%p' and '%p'";
+    public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT = UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P + ". Did you mean \"print(<message>, file=<output_stream>)\"?";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P = "unsupported operand type(s) for %s(): '%p', '%p', '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P = "unsupported operand type(s) for %s or %s(): '%p' and '%p'";
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";

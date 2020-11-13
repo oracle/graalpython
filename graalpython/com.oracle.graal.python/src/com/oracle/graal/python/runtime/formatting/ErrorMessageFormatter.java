@@ -72,7 +72,7 @@ public class ErrorMessageFormatter {
     private static Pattern fsPattern = Pattern.compile(formatSpecifier);
 
     public String format(String format, Object... args) {
-        return format(null, format, args);
+        return format(PythonObjectLibrary.getUncached(), format, args);
     }
 
     @TruffleBoundary
@@ -128,10 +128,7 @@ public class ErrorMessageFormatter {
     }
 
     private static String getClassName(PythonObjectLibrary lib, Object obj) {
-        if (lib != null) {
-            return getClassNameOfClass(lib.getLazyPythonClass(obj));
-        }
-        return getClassNameOfClass(PythonObjectLibrary.getUncached().getLazyPythonClass(obj));
+        return getClassNameOfClass(lib.getLazyPythonClass(obj));
     }
 
     private static String getClassNameOfClass(Object obj) {
