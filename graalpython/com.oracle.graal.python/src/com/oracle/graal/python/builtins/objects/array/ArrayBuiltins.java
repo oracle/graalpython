@@ -28,10 +28,15 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
@@ -44,10 +49,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -100,8 +106,6 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO richcompare
-
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -147,6 +151,118 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        boolean cmp(VirtualFrame frame, PArray left, PArray right,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ArrayNodes.GetValueNode getLeft,
+                        @Cached ArrayNodes.GetValueNode getRight) {
+            int commonLength = Math.min(left.getLength(), right.getLength());
+            for (int i = 0; i < commonLength; i++) {
+                Object leftValue = getLeft.execute(left, i);
+                Object rightValue = getRight.execute(right, i);
+                if (!lib.equals(leftValue, rightValue, lib)) {
+                    return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, leftValue, rightValue));
+                }
+            }
+            return compareLengths(left.getLength(), right.getLength());
+        }
+
+        @Specialization(guards = "!isArray(right)")
+        @SuppressWarnings("unused")
+        static Object cmp(PArray left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @SuppressWarnings("unused")
+        protected boolean compareLengths(int a, int b) {
+            throw new AbstractMethodError("compareLengths");
+        }
+
+        protected BinaryComparisonNode createComparison() {
+            throw new AbstractMethodError("createComparison");
+        }
+    }
+
+    @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LtNode extends AbstractComparisonNode {
+
+        @Override
+        protected BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__LT__, __GT__, "<");
+        }
+
+        @Override
+        protected boolean compareLengths(int a, int b) {
+            return a < b;
+        }
+    }
+
+    @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends AbstractComparisonNode {
+
+        @Override
+        protected BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__GT__, __LT__, ">");
+        }
+
+        @Override
+        protected boolean compareLengths(int a, int b) {
+            return a > b;
+        }
+    }
+
+    @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends AbstractComparisonNode {
+
+        @Override
+        protected BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
+        }
+
+        @Override
+        protected boolean compareLengths(int a, int b) {
+            return a <= b;
+        }
+    }
+
+    @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends AbstractComparisonNode {
+
+        @Override
+        protected BinaryComparisonNode createComparison() {
+            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
+        }
+
+        @Override
+        protected boolean compareLengths(int a, int b) {
+            return a >= b;
+        }
+    }
+
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static boolean contains(PArray self, Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            for (int i = 0; i < self.getLength(); i++) {
+                if (lib.equals(getValueNode.execute(self, i), value, lib)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -154,8 +270,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         static String repr(PArray self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached CastToJavaStringNode cast,
-                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
-            int itemsize = self.getFormat().bytesize;
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             PythonUtils.append(sb, "array('");
             PythonUtils.append(sb, self.getFormatStr());
@@ -164,7 +279,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 if (i > 0) {
                     PythonUtils.append(sb, ", ");
                 }
-                Object value = unpackValueNode.execute(self.getFormat(), self.getBuffer(), i * itemsize);
+                Object value = getValueNode.execute(self, i);
                 PythonUtils.append(sb, cast.execute(lib.asPString(value)));
             }
             PythonUtils.append(sb, "])");
@@ -179,10 +294,9 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSlice(idx)")
         static Object getitem(PArray self, Object idx,
                         @Cached("forArray()") NormalizeIndexNode normalizeIndexNode,
-                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
             int index = normalizeIndexNode.execute(idx, self.getLength());
-            int itemsize = self.getFormat().bytesize;
-            return unpackValueNode.execute(self.getFormat(), self.getBuffer(), index * itemsize);
+            return getValueNode.execute(self, index);
         }
 
         @Specialization
@@ -212,10 +326,9 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPSlice(idx)")
         static Object setitem(VirtualFrame frame, PArray self, Object idx, Object value,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
-                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+                        @Cached ArrayNodes.PutValueNode putValueNode) {
             int index = normalizeIndexNode.execute(idx, self.getLength());
-            int itemsize = self.getFormat().bytesize;
-            packValueNode.execute(frame, self.getFormat(), value, self.getBuffer(), index * itemsize);
+            putValueNode.execute(frame, self, index, value);
             return PNone.NONE;
         }
 
