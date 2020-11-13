@@ -1868,7 +1868,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dirFd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
                     "\nReturn a string representing the path to which the symbolic link points.\n")
     @GenerateNodeFactory
-    abstract static class ReadlinkNode extends PythonBinaryBuiltinNode {
+    abstract static class ReadlinkNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         String readlink(VirtualFrame frame, Object str, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("str") PythonObjectLibrary lib) {
