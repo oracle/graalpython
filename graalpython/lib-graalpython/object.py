@@ -74,10 +74,9 @@ def reduce_newobj(obj):
     args, kwargs = _get_new_arguments(obj)
     import_copyreg()
 
-    hasargs = args is not None
     if kwargs is None or len(kwargs) == 0:
         newobj = copyreg.__newobj__
-        newargs = (cls, ) + args if args else tuple()
+        newargs = (cls, ) + (args if args else tuple())
     elif args is not None:
         newobj = copyreg.__newobj_ex__
         newargs = (cls, args, kwargs)
@@ -92,7 +91,7 @@ def reduce_newobj(obj):
         getstate = obj.__getstate__
     except AttributeError:
         state = getattr(obj, "__dict__", None)
-        names = slotnames(cls) # not checking for list
+        names = slotnames(cls)  # not checking for list
         if names is not None:
             slots = {}
             for name in names:
@@ -107,7 +106,7 @@ def reduce_newobj(obj):
     else:
         state = getstate()
     listitems = iter(obj) if isinstance(obj, list) else None
-    dictitems = obj.iteritems() if isinstance(obj, dict) else None
+    dictitems = iter(obj.items()) if isinstance(obj, dict) else None
 
     return newobj, newargs, state, listitems, dictitems
 
