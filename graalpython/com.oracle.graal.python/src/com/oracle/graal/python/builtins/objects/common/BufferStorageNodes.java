@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
@@ -55,6 +57,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -136,6 +139,19 @@ public abstract class BufferStorageNodes {
         static Object unpackChar(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createBytes(new byte[]{bytes[offset]});
+        }
+
+        @Specialization(guards = "format == UNICODE")
+        static Object unpackUnicode(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
+            int codePoint = PythonUtils.arrayAccessor.getInt(bytes, offset);
+            return codePointToString(codePoint);
+        }
+
+        @TruffleBoundary
+        private static String codePointToString(int codePoint) {
+            StringBuilder sb = new StringBuilder(2);
+            sb.appendCodePoint(codePoint);
+            return sb.toString();
         }
     }
 
@@ -267,6 +283,18 @@ public abstract class BufferStorageNodes {
         @SuppressWarnings("unused")
         void packChar(BufferFormat format, Object object, byte[] bytes, int offset) {
             throw raise(TypeError);
+        }
+
+        @Specialization(guards = "format == UNICODE")
+        void packDouble(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast) {
+            String str = cast.cast(object, "array item must be unicode character");
+            if (PString.codePointCount(str, 0, str.length()) == 1) {
+                int codePoint = PString.codePointAt(str, 0);
+                PythonUtils.arrayAccessor.putInt(bytes, offset, codePoint);
+            } else {
+                throw raise(TypeError);
+            }
         }
 
         private PException raise(PythonBuiltinClassType type) {

@@ -58,6 +58,8 @@ public enum BufferFormat {
     INT_64(8),
     FLOAT(4),
     DOUBLE(8),
+    // Unicode is array-only and deprecated
+    UNICODE(2),
     // The following are memoryview-only
     CHAR(1),
     BOOLEAN(1),
@@ -95,7 +97,11 @@ public enum BufferFormat {
 
     public static BufferFormat forArray(String formatString) {
         if (formatString.length() == 1) {
-            return fromCharCommon(formatString.charAt(0));
+            char fmtchar = formatString.charAt(0);
+            if (fmtchar == 'u') {
+                return UNICODE;
+            }
+            return fromCharCommon(fmtchar);
         }
         return null;
     }
