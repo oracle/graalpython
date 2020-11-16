@@ -40,25 +40,34 @@ import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "array")
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -77,89 +86,147 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, constructsClass = PythonBuiltinClassType.PArray, parameterNames = {"$cls", "typeCode", "initializer"})
-    @ArgumentClinic(name = "typeCode", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = "array", minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PArray, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class ArrayNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class ArrayNode extends PythonVarargsBuiltinNode {
+        @Child private SplitArgsNode splitArgsNode;
 
-        @Specialization(guards = "isNoValue(initializer)")
-        PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
-            BufferFormat format = getFormatChecked(typeCode);
-            return factory().createArray(cls, typeCode, format);
+        @Specialization(guards = "args.length == 1")
+        Object array2(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
+                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal) {
+            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), PNone.NO_VALUE);
         }
 
-        @Specialization
-        PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range,
-                        @Cached ArrayNodes.PutValueNode putValueNode) {
-            BufferFormat format = getFormatChecked(typeCode);
-            PArray array = factory().createArray(cls, typeCode, format, range.getIntLength());
-
-            int start = range.getIntStart();
-            int stop = range.getIntStop();
-            int step = range.getIntStep();
-
-            for (int index = 0, value = start; value < stop; index++, value += step) {
-                putValueNode.execute(null, array, index, value);
-            }
-
-            return array;
-        }
-
-        @Specialization
-        PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
-                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
-            PArray array = factory().createArray(cls, typeCode, getFormatChecked(typeCode));
-            fromBytesNode.execute(frame, array, bytes);
-            return array;
-        }
-
-        // TODO impl for PSequence and PArray or use lenght_hint
-
-        @Specialization(limit = "3")
-        PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
-                        @CachedLibrary("initializer") PythonObjectLibrary lib,
-                        @Cached ArrayNodes.PutValueNode putValueNode,
-                        @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile) {
-            Object iter = lib.getIteratorWithFrame(initializer, frame);
-
-            BufferFormat format = BufferFormat.forArray(typeCode);
-            PArray array = factory().createArray(cls, typeCode, format);
-
-            int lenght = 0;
-            while (true) {
-                Object nextValue;
-                try {
-                    nextValue = nextNode.execute(frame, iter);
-                } catch (PException e) {
-                    e.expectStopIteration(errorProfile);
-                    break;
-                }
-                array.ensureCapacity(++lenght);
-                putValueNode.execute(frame, array, lenght - 1, nextValue);
-            }
-
-            array.setLenght(lenght);
-            return array;
+        @Specialization(guards = "args.length == 2")
+        Object array3(VirtualFrame frame, Object cls, Object[] args, PKeyword[] kwargs,
+                        @Cached IsBuiltinClassProfile isNotSubtypeProfile,
+                        @Cached StringNodes.CastToJavaStringCheckedNode cast,
+                        @Cached ArrayNodeInternal arrayNodeInternal) {
+            checkKwargs(cls, kwargs, isNotSubtypeProfile);
+            return arrayNodeInternal.execute(frame, cls, cast.cast(args[0], "array() argument 1 must be a unicode character, not %p", args[0]), args[1]);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object error(Object cls, Object typeCode, Object initializer) {
-            throw raise(TypeError, "array() argument 1 must be a unicode character, not int");
+        Object error(Object cls, Object[] args, PKeyword[] kwargs) {
+            if (args.length < 2) {
+                throw raise(TypeError, "%s() takes at least %d arguments (%d given)", "array", 2, args.length);
+            } else {
+                throw raise(TypeError, "%s() takes at most %d arguments (%d given)", "array", 3, args.length);
+            }
         }
 
-        private BufferFormat getFormatChecked(String typeCode) {
-            BufferFormat format = BufferFormat.forArray(typeCode);
-            if (format == null) {
-                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+        private void checkKwargs(Object cls, PKeyword[] kwargs, IsBuiltinClassProfile isNotSubtypeProfile) {
+            if (isNotSubtypeProfile.profileClass(cls, PythonBuiltinClassType.PArray)) {
+                if (kwargs.length != 0) {
+                    throw raise(TypeError, "array.array() takes no keyword arguments");
+                }
             }
-            return format;
         }
 
         @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return ArrayModuleBuiltinsClinicProviders.ArrayNodeClinicProviderGen.INSTANCE;
+        public final Object varArgExecute(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (splitArgsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                splitArgsNode = insert(SplitArgsNode.create());
+            }
+            return execute(frame, arguments[0], splitArgsNode.execute(arguments), keywords);
+        }
+
+        @ImportStatic(PGuards.class)
+        abstract static class ArrayNodeInternal extends Node {
+            @Child private PRaiseNode raiseNode;
+            @Child private PythonObjectFactory factory;
+
+            public abstract PArray execute(VirtualFrame frame, Object cls, String typeCode, Object initializer);
+
+            @Specialization(guards = "isNoValue(initializer)")
+            PArray array(Object cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
+                BufferFormat format = getFormatChecked(typeCode);
+                return getFactory().createArray(cls, typeCode, format);
+            }
+
+            @Specialization
+            PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range,
+                            @Cached ArrayNodes.PutValueNode putValueNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                PArray array = getFactory().createArray(cls, typeCode, format, range.getIntLength());
+
+                int start = range.getIntStart();
+                int stop = range.getIntStop();
+                int step = range.getIntStep();
+
+                for (int index = 0, value = start; value < stop; index++, value += step) {
+                    putValueNode.execute(null, array, index, value);
+                }
+
+                return array;
+            }
+
+            @Specialization
+            PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
+                            @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
+                PArray array = getFactory().createArray(cls, typeCode, getFormatChecked(typeCode));
+                fromBytesNode.execute(frame, array, bytes);
+                return array;
+            }
+
+            // TODO impl for PSequence and PArray or use lenght_hint
+
+            @Specialization(limit = "3")
+            PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
+                            @CachedLibrary("initializer") PythonObjectLibrary lib,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached GetNextNode nextNode,
+                            @Cached IsBuiltinClassProfile errorProfile) {
+                Object iter = lib.getIteratorWithFrame(initializer, frame);
+
+                BufferFormat format = getFormatChecked(typeCode);
+                PArray array = getFactory().createArray(cls, typeCode, format);
+
+                int lenght = 0;
+                while (true) {
+                    Object nextValue;
+                    try {
+                        nextValue = nextNode.execute(frame, iter);
+                    } catch (PException e) {
+                        e.expectStopIteration(errorProfile);
+                        break;
+                    }
+                    array.ensureCapacity(++lenght);
+                    putValueNode.execute(frame, array, lenght - 1, nextValue);
+                }
+
+                array.setLenght(lenght);
+                return array;
+            }
+
+            private BufferFormat getFormatChecked(String typeCode) {
+                BufferFormat format = BufferFormat.forArray(typeCode);
+                if (format == null) {
+                    throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+                }
+                return format;
+            }
+
+            private PException raise(PythonBuiltinClassType type, String message, Object... args) {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(type, message, args);
+            }
+
+            private PythonObjectFactory getFactory() {
+                if (factory == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    factory = insert(PythonObjectFactory.create());
+                }
+                return factory;
+            }
         }
     }
 
