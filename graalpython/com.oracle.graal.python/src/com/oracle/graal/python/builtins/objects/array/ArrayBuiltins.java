@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -75,12 +76,14 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -171,11 +174,10 @@ public class ArrayBuiltins extends PythonBuiltins {
             int newLength = Math.max(self.getLength() * value, 0);
             int itemsize = self.getFormat().bytesize;
             int segmentLenght = self.getLength() * itemsize;
-            self.ensureCapacity(newLength);
+            self.resize(newLength);
             for (int i = 0; i < value; i++) {
                 PythonUtils.arraycopy(self.getBuffer(), 0, self.getBuffer(), segmentLenght * i, segmentLenght);
             }
-            self.setLenght(newLength);
             return self;
         }
 
@@ -373,7 +375,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!isPSlice(idx)", limit = "3")
         static Object getitem(PArray self, Object idx,
@@ -484,7 +486,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
+    abstract static class DelItemNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "!isPSlice(idx)", limit = "3")
         static Object delitem(PArray self, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary lib,
@@ -535,7 +537,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+    abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static int len(PArray self) {
@@ -565,14 +567,13 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class AppendNode extends PythonBinaryBuiltinNode {
+    abstract static class AppendNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object append(VirtualFrame frame, PArray self, Object value,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             int index = self.getLength();
             int newLength = index + 1;
-            self.ensureCapacity(newLength);
-            self.setLenght(newLength);
+            self.resize(newLength);
             putValueNode.execute(frame, self, index, value);
             return PNone.NONE;
         }
@@ -580,7 +581,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "extend", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ExtendNode extends PythonBinaryBuiltinNode {
+    abstract static class ExtendNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "self.getFormat() == value.getFormat()")
         static Object extend(PArray self, PArray value) {
             // TODO check overflow
@@ -616,11 +617,13 @@ public class ArrayBuiltins extends PythonBuiltins {
                     e.expectStopIteration(errorProfile);
                     break;
                 }
+                // The whole extend is not atomic, just individual inserts are. That's the same as
+                // in CPython
                 self.ensureCapacity(++lenght);
                 putValueNode.execute(frame, self, lenght - 1, nextValue);
+                self.setLenght(lenght);
             }
 
-            self.setLenght(lenght);
             return PNone.NONE;
         }
     }
@@ -628,7 +631,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "insert", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "index", "value"})
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
-    public abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
         static Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
                         @Cached("create(false)") NormalizeIndexNode normalizeIndexNode,
@@ -652,7 +655,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "remove", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RemoveNode extends PythonBinaryBuiltinNode {
+    abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object remove(VirtualFrame frame, PArray self, Object value,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
@@ -671,7 +674,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "index"})
     @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class PopNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class PopNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object pop(PArray self, int inputIndex,
                         @Cached("forPop()") NormalizeIndexNode normalizeIndexNode,
@@ -688,6 +691,34 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ArrayBuiltinsClinicProviders.PopNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "frombytes", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class FromBytesNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "3")
+        Object frombytes(PArray self, Object buffer,
+                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
+            if (lib.isBuffer(buffer)) {
+                int itemsize = self.getFormat().bytesize;
+                int oldSize = self.getLength();
+                try {
+                    int bufferLength = lib.getBufferLength(buffer);
+                    if (bufferLength % itemsize != 0) {
+                        throw raise(ValueError, "bytes length not a multiple of item size");
+                    }
+                    int newLenght = oldSize + bufferLength / itemsize;
+                    byte[] bufferBytes = lib.getBufferBytes(buffer);
+                    self.resize(newLenght);
+                    PythonUtils.arraycopy(bufferBytes, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+            }
+            return PNone.NONE;
         }
     }
 }

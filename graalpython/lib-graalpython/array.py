@@ -37,13 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def frombytes(self, bytesLike):
-    for b in bytesLike:
-        self.append(b)
-
-
+# TODO intrinsify and make it read in chunks
 def fromfile(self, f, n):
     self.frombytes(f.read(n))
 
-array.frombytes = __graalpython__.builtin_method(frombytes)
+
 array.fromfile = __graalpython__.builtin_method(fromfile)

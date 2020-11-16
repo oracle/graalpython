@@ -76,6 +76,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public void ensureCapacity(int newLength) {
+        assert newLength >= 0;
         // TODO overflow
         // TODO better estimate
         // TODO shrink?
@@ -84,6 +85,11 @@ public final class PArray extends PythonBuiltinObject {
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
             buffer = newBuffer;
         }
+    }
+
+    public void resize(int newLenght) {
+        ensureCapacity(newLenght);
+        lenght = newLenght;
     }
 
     public void shift(int from, int by) {

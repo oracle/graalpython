@@ -36,8 +36,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -90,6 +92,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 putValueNode.execute(null, array, index, value);
             }
 
+            return array;
+        }
+
+        @Specialization
+        PArray arrayWithBytesInitializer(VirtualFrame frame, Object cls, String typeCode, PBytesLike bytes,
+                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode) {
+            PArray array = factory().createArray(cls, typeCode, getFormatChecked(typeCode));
+            fromBytesNode.execute(frame, array, bytes);
             return array;
         }
 
