@@ -41,211 +41,218 @@ class CallableProxyType(object):
     pass
 
 
-# weak refs are used to allow circular data structures to be collected.
-# Java's GC has no problem with these, so we can make this a simple proxy.
+def _proxy_get(proxy):
+    attr = object.__getattribute__(proxy, "_weakref")()
+    if attr is None:
+        raise ReferenceError("weakly-referenced object no longer exists")
+    return attr
+
+
 class ProxyType(object):
     def __init__(self, other):
-        object.__setattr__(self, "value", other)
+        import weakref
+        object.__setattr__(self, "_weakref", weakref.ref(other))
 
     def __getattr__(self, key):
-        return getattr(object.__getattribute__(self, "value"), key)
+        return getattr(_proxy_get(self), key)
 
     def __setattr__(self, key, value):
-        setattr(object.__getattribute__(self, "value"), key, value)
+        setattr(_proxy_get(self), key, value)
 
     def __delattr__(self, key):
-        return delattr(object.__getattribute__(self, "value"), key)
+        return delattr(_proxy_get(self), key)
 
     def __getitem__(self, key):
-        return object.__getattribute__(self, "value")[key]
+        return _proxy_get(self)[key]
 
     def __setitem__(self, key, value):
-        object.__getattribute__(self, "value")[key] = value
+        _proxy_get(self)[key] = value
 
     def __delitem__(self, key):
-        del object.__getattribute__(self, "value")[key]
+        del _proxy_get(self)[key]
 
     def __repr__(self):
-        return f"<weakproxy at {id(self)} to {type(self).__name__} at {id(object.__getattribute__(self, 'value'))}>"
+        obj = object.__getattribute__(self, '_weakref')()
+        return f"<weakproxy at {id(self)} to {type(obj).__name__} at {id(obj)}>"
 
     def __str__(self):
-        return str(object.__getattribute__(self, "value"))
+        return str(_proxy_get(self))
 
     def __bytes__(self):
-        return object.__getattribute__(self, "value").__bytes__()
+        return _proxy_get(self).__bytes__()
 
     def __lt__(self, other):
-        return object.__getattribute__(self, "value") < other
+        return _proxy_get(self) < other
 
     def __le__(self, other):
-        return object.__getattribute__(self, "value") <= other
+        return _proxy_get(self) <= other
 
     def __eq__(self, other):
-        return object.__getattribute__(self, "value") == other
+        return _proxy_get(self) == other
 
     def __ne__(self, other):
-        return object.__getattribute__(self, "value") != other
+        return _proxy_get(self) != other
 
     def __gt__(self, other):
-        return object.__getattribute__(self, "value") > other
+        return _proxy_get(self) > other
 
     def __ge__(self, other):
-        return object.__getattribute__(self, "value") >= other
+        return _proxy_get(self) >= other
 
     def __hash__(self):
-        return hash(object.__getattribute__(self, "value"))
+        return hash(_proxy_get(self))
 
     def __bool__(self):
-        return bool(object.__getattribute__(self, "value"))
+        return bool(_proxy_get(self))
 
     def __call__(self, *args):
-        return object.__getattribute__(self, "value")(*args)
+        return _proxy_get(self)(*args)
 
     def __len__(self):
-        return len(object.__getattribute__(self, "value"))
+        return len(_proxy_get(self))
 
     def __iter__(self):
-        return iter(object.__getattribute__(self, "value"))
+        return iter(_proxy_get(self))
 
     def __next__(self):
-        return next(object.__getattribute__(self, "value"))
+        return next(_proxy_get(self))
 
     def __reversed__(self):
-        return object.__getattribute__(self, "value").__reversed__()
+        return _proxy_get(self).__reversed__()
 
     def __contains__(self, obj):
-        return obj in object.__getattribute__(self, "value")
+        return obj in _proxy_get(self)
 
     def __add__(self, other):
-        return object.__getattribute__(self, "value") + other
+        return _proxy_get(self) + other
 
     def __sub__(self, other):
-        return object.__getattribute__(self, "value") - other
+        return _proxy_get(self) - other
 
     def __mul__(self, other):
-        return object.__getattribute__(self, "value") * other
+        return _proxy_get(self) * other
 
     def __matmul__(self, other):
-        return object.__getattribute__(self, "value") @ other
+        return _proxy_get(self) @ other
 
     def __truediv__(self, other):
-        return object.__getattribute__(self, "value") / other
+        return _proxy_get(self) / other
 
     def __floordiv__(self, other):
-        return object.__getattribute__(self, "value") // other
+        return _proxy_get(self) // other
 
     def __mod__(self, other):
-        return object.__getattribute__(self, "value") % other
+        return _proxy_get(self) % other
 
     def __divmod__(self, other):
-        return divmod(object.__getattribute__(self, "value"), other)
+        return divmod(_proxy_get(self), other)
 
     def __pow__(self, exp, mod=None):
-        return pow(object.__getattribute__(self, "value"), exp, mod)
+        return pow(_proxy_get(self), exp, mod)
 
     def __lshift__(self, other):
-        return object.__getattribute__(self, "value") << other
+        return _proxy_get(self) << other
 
     def __rshift__(self, other):
-        return object.__getattribute__(self, "value") >> other
+        return _proxy_get(self) >> other
 
     def __and__(self, other):
-        return object.__getattribute__(self, "value") & other
+        return _proxy_get(self) & other
 
     def __xor__(self, other):
-        return object.__getattribute__(self, "value") ^ other
+        return _proxy_get(self) ^ other
 
     def __or__(self, other):
-        return object.__getattribute__(self, "value") | other
+        return _proxy_get(self) | other
 
     def __iadd__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value += other
         return value
 
     def __isub__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value -= other
         return value
 
     def __imul__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value *= other
         return value
 
     def __imatmul__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value @= other
         return value
 
     def __itruediv__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value /= other
         return value
 
     def __ifloordiv__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value //= other
         return value
 
     def __imod__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value %= other
         return value
 
     def __ipow__(self, exp):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value **= exp
         return value
 
     def __ilshift__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value <<= other
         return value
 
     def __irshift__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value >>= other
         return value
 
     def __iand__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value &= other
         return value
 
     def __ixor__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value ^= other
         return value
 
     def __ior__(self, other):
-        value = object.__getattribute__(self, "value")
+        value = _proxy_get(self)
         value |= other
         return value
 
     def __neg__(self):
-        return -object.__getattribute__(self, "value")
+        return -_proxy_get(self)
 
     def __pos__(self):
-        return +object.__getattribute__(self, "value")
+        return +_proxy_get(self)
 
     def __abs__(self):
-        return abs(object.__getattribute__(self, "value"))
+        return abs(_proxy_get(self))
 
     def __invert__(self):
-        return ~object.__getattribute__(self, "value")
+        return ~_proxy_get(self)
 
     def __int__(self):
-        return int(object.__getattribute__(self, "value"))
+        return int(_proxy_get(self))
 
     def __float__(self):
-        return float(object.__getattribute__(self, "value"))
+        return float(_proxy_get(self))
 
     def __round__(self):
-        return round(object.__getattribute__(self, "value"))
+        return round(_proxy_get(self))
 
     def __index__(self):
-        v = object.__getattribute__(self, "value")
+        v = _proxy_get(self)
         if not hasattr(v, "__index__"):
             raise TypeError("'%s' object cannot be interpreted as an integer" % type(v))
         result = v.__index__()
