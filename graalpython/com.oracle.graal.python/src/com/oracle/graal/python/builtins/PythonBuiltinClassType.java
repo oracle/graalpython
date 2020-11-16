@@ -219,7 +219,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     private final String name;
     private final String publicInModule;
-    private final String qualifiedName;
+    // This is the name qualified by module used for printing. But the actual __qualname__ is just
+    // plain name without module
+    private final String printName;
     private final boolean basetype;
 
     // initialized in static constructor
@@ -229,9 +231,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         this.name = name;
         this.publicInModule = publicInModule;
         if (publicInModule != null && publicInModule != BuiltinNames.BUILTINS) {
-            qualifiedName = publicInModule + "." + name;
+            printName = publicInModule + "." + name;
         } else {
-            qualifiedName = name;
+            printName = name;
         }
         this.basetype = basetype;
     }
@@ -256,8 +258,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return name;
     }
 
-    public String getQualifiedName() {
-        return qualifiedName;
+    public String getPrintName() {
+        return printName;
     }
 
     public PythonBuiltinClassType getBase() {
@@ -612,7 +614,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     @ExportMessage
     static String getMetaQualifiedName(PythonBuiltinClassType self) {
-        return self.getQualifiedName();
+        return self.getPrintName();
     }
 
     @ExplodeLoop
@@ -632,6 +634,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
      */
     @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return getQualifiedName();
+        return getPrintName();
     }
 }

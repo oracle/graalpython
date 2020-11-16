@@ -967,7 +967,7 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         static String getName(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getQualifiedName();
+            return cls.getName();
         }
 
         @Specialization(guards = "isNoValue(value)")
