@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -85,6 +87,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
@@ -719,6 +722,45 @@ public class ArrayBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "fromfile", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "file", "n"})
+    @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @GenerateNodeFactory
+    public abstract static class FromFileNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached ConditionProfile nNegativeProfile,
+                        @Cached BranchProfile notBytesProfile,
+                        @Cached BranchProfile notEnoughBytesProfile,
+                        @Cached FromBytesNode fromBytesNode) {
+            if (nNegativeProfile.profile(n < 0)) {
+                throw raise(ValueError, "negative count");
+            }
+            int itemsize = self.getFormat().bytesize;
+            int nbytes = n * itemsize;
+            Object readResult = lib.lookupAndCallRegularMethod(file, frame, "read", nbytes);
+            if (readResult instanceof PBytes) {
+                int readLenght = lib.length(readResult);
+                fromBytesNode.execute(frame, self, readResult);
+                // It would make more sense to check this before the frombytes call, but CPython
+                // does it this way
+                if (readLenght != nbytes) {
+                    notEnoughBytesProfile.enter();
+                    throw raise(EOFError, "read() didn't return enough bytes");
+                }
+            } else {
+                notBytesProfile.enter();
+                throw raise(TypeError, "read() didn't return bytes");
+            }
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.FromFileNodeClinicProviderGen.INSTANCE;
         }
     }
 }
