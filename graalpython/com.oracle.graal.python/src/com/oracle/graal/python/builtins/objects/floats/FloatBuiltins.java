@@ -80,8 +80,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.AsIntegerRatioClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
@@ -1649,5 +1649,19 @@ public final class FloatBuiltins extends PythonBuiltins {
             return isInteger(pValue.getValue());
         }
 
+    }
+
+    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doL(double self) {
+            return factory().createTuple(new Object[]{factory().createFloat(self)});
+        }
+
+        @Specialization
+        Object getPI(PFloat self) {
+            return factory().createTuple(new Object[]{factory().createFloat(self.getValue())});
+        }
     }
 }
