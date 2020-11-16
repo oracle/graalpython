@@ -122,8 +122,9 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     @Specialization
-    static Object[] doNone(@SuppressWarnings("unused") PNone none) {
-        return PythonUtils.EMPTY_OBJECT_ARRAY;
+    static Object[] doNone(PNone none,
+                   @Cached PRaiseNode raise) {
+        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_ITERABLE, none);
     }
 
     @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
@@ -196,8 +197,9 @@ public abstract class ExecutePositionalStarargsNode extends Node {
         }
 
         @Specialization
-        static Object[] starargs(@SuppressWarnings("unused") PNone none) {
-            return ExecutePositionalStarargsNode.doNone(none);
+        static Object[] starargs(PNone none,
+                        @Cached PRaiseNode raise) {
+            return ExecutePositionalStarargsNode.doNone(none, raise);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
