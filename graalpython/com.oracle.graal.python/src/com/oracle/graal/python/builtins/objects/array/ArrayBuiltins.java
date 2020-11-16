@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -95,6 +96,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -576,6 +578,17 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "buffer_info", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class BufferInfoNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object bufferinfo(PArray self) {
+            // TODO return the C pointer
+            return factory().createTuple(new Object[]{PythonAbstractObject.systemHashCode(self.getBuffer()), self.getLength()});
+        }
+    }
+
     @Builtin(name = "append", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AppendNode extends PythonBinaryBuiltinNode {
@@ -922,6 +935,100 @@ public class ArrayBuiltins extends PythonBuiltins {
                     lib.lookupAndCallRegularMethod(file, frame, "write", factory().createBytes(buffer));
                     remaining -= blocksize;
                 }
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "byteswap", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ByteSwapNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "self.getFormat().bytesize == 1")
+        static Object byteswap1(@SuppressWarnings("unused") PArray self) {
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 2"})
+        static Object byteswap2(PArray self,
+                        @Cached("self.getFormat().bytesize") int itemsize) {
+            doByteSwapExploded(self, itemsize, self.getBuffer());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 4"})
+        static Object byteswap4(PArray self,
+                        @Cached("self.getFormat().bytesize") int itemsize) {
+            doByteSwapExploded(self, itemsize, self.getBuffer());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 8"})
+        static Object byteswap8(PArray self,
+                        @Cached("self.getFormat().bytesize") int itemsize) {
+            doByteSwapExploded(self, itemsize, self.getBuffer());
+            return PNone.NONE;
+        }
+
+        @ExplodeLoop
+        private static void doByteSwapExploded(PArray self, int itemsize, byte[] buffer) {
+            for (int i = 0; i < self.getLength() * itemsize; i += itemsize) {
+                for (int j = 0; j < itemsize / 2; j++) {
+                    byte b = buffer[i + j];
+                    buffer[i + j] = buffer[i + itemsize - j - 1];
+                    buffer[i + itemsize - j - 1] = b;
+                }
+            }
+        }
+    }
+
+    @Builtin(name = "index", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class IndexNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        int index(VirtualFrame frame, PArray self, Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            for (int i = 0; i < self.getLength(); i++) {
+                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
+                    return i;
+                }
+            }
+            throw raise(ValueError, "array.index(x): x not in array");
+        }
+    }
+
+    @Builtin(name = "count", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class CountNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static int count(VirtualFrame frame, PArray self, Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            int count = 0;
+            for (int i = 0; i < self.getLength(); i++) {
+                if (lib.equalsWithFrame(getValueNode.execute(self, i), value, lib, frame)) {
+                    count++;
+                }
+            }
+            return count;
+        }
+    }
+
+    @Builtin(name = "reverse", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReverseNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static Object reverse(PArray self) {
+            int itemsize = self.getFormat().bytesize;
+            byte[] tmp = new byte[itemsize];
+            int length = self.getLength();
+            byte[] buffer = self.getBuffer();
+            for (int i = 0; i < length / 2; i++) {
+                PythonUtils.arraycopy(buffer, i * itemsize, tmp, 0, itemsize);
+                PythonUtils.arraycopy(buffer, (length - i - 1) * itemsize, buffer, i * itemsize, itemsize);
+                PythonUtils.arraycopy(tmp, 0, buffer, (length - i - 1) * itemsize, itemsize);
             }
             return PNone.NONE;
         }
