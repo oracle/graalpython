@@ -70,7 +70,7 @@ def _get_new_arguments(obj):
 
 
 def reduce_newobj(obj):
-    cls = type(obj)
+    cls = obj.__class__
     args, kwargs = _get_new_arguments(obj)
     import_copyreg()
 
