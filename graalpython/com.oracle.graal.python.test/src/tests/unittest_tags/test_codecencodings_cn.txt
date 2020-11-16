@@ -11,10 +11,12 @@
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_streamwriter
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_streamwriter_reset_no_pending
+*graalpython.lib-python.3.test.test_codecencodings_cn.Test_GB2312.test_xmlcharrefreplace
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_chunkcoding
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_errorhandle
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_incrementaldecoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_incrementalencoder
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_streamwriter
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_streamwriter_reset_no_pending
+*graalpython.lib-python.3.test.test_codecencodings_cn.Test_GBK.test_xmlcharrefreplace
 *graalpython.lib-python.3.test.test_codecencodings_cn.Test_HZ.test_streamwriter_reset_no_pending
