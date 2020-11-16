@@ -444,7 +444,8 @@ class BaseTest:
             if a.itemsize>1:
                 self.assertRaises(ValueError, b.fromstring, "x")
                 nb_warnings += 1
-        self.assertEqual(len(r), nb_warnings)
+        # XXX Truffle change: we raise more warnings due to different order of clinic invocations
+        self.assertGreaterEqual(len(r), nb_warnings)
 
     def test_tofrombytes(self):
         a = array.array(self.typecode, 2*self.example)

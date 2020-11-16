@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -54,13 +55,19 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -76,6 +83,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -761,6 +769,161 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ArrayBuiltinsClinicProviders.FromFileNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "fromlist", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class FromListNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object fromlist(VirtualFrame frame, PArray self, PList list,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Cached ArrayNodes.PutValueNode putValueNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(list);
+            int lenght = lenNode.execute(storage);
+            int newLength = self.getLength() + lenght;
+            self.ensureCapacity(newLength);
+            for (int i = 0; i < lenght; i++) {
+                putValueNode.execute(frame, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
+            }
+            self.setLenght(newLength);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object self, Object arg) {
+            throw raise(TypeError, "arg must be list");
+        }
+    }
+
+    @Builtin(name = "fromstring", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class FromStringNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object fromstring(VirtualFrame frame, PArray self, Object str,
+                        @CachedLibrary("str") PythonObjectLibrary lib,
+                        @Cached ConditionProfile bufferProfile,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached FromUnicodeNode fromUnicodeNode,
+                        @Cached FromBytesNode fromBytesNode) {
+            warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
+            if (bufferProfile.profile(lib.isBuffer(str))) {
+                return fromBytesNode.execute(frame, self, str);
+            } else {
+                return fromUnicodeNode.execute(frame, self, str);
+            }
+        }
+    }
+
+    @Builtin(name = "fromunicode", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "str"})
+    @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static Object fromunicode(VirtualFrame frame, PArray self, String str,
+                        @Cached ArrayNodes.PutValueNode putValueNode) {
+            int lenght = PString.codePointCount(str, 0, str.length());
+            int newLength = self.getLength() + lenght;
+            self.ensureCapacity(newLength);
+            for (int i = 0, index = 0; i < lenght; index++) {
+                int cpCount = PString.charCount(PString.codePointAt(str, i));
+                String value = PString.substring(str, i, i + cpCount);
+                putValueNode.execute(frame, self, self.getLength() + index, value);
+                i += cpCount;
+            }
+            self.setLenght(newLength);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object self, Object arg) {
+            throw raise(TypeError, "fromunicode() argument must be str, not %p", arg);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.FromUnicodeNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "tobytes", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ToBytesNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tobytes(PArray self) {
+            byte[] bytes = new byte[self.getLength() * self.getFormat().bytesize];
+            PythonUtils.arraycopy(self.getBuffer(), 0, bytes, 0, bytes.length);
+            return factory().createBytes(bytes);
+        }
+    }
+
+    @Builtin(name = "tolist", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ToListNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object tolist(PArray self,
+                        @Cached ListNodes.ConstructListNode constructListNode) {
+            return constructListNode.execute(self);
+        }
+    }
+
+    @Builtin(name = "tostring", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ToStringNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object tostring(VirtualFrame frame, PArray self,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached ToBytesNode toBytesNode) {
+            warnNode.warnEx(frame, DeprecationWarning, "tostring() is deprecated. Use tobytes() instead.", 1);
+            return toBytesNode.call(frame, self);
+        }
+    }
+
+    @Builtin(name = "tounicode", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ToUnicodeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object tounicode(PArray self,
+                        @Cached ConditionProfile formatProfile,
+                        @Cached ArrayNodes.GetValueNode getValueNode) {
+            if (formatProfile.profile(self.getFormat() != BufferFormat.UNICODE)) {
+                throw raise(ValueError, "tounicode() may only be called on unicode type arrays");
+            }
+            StringBuilder sb = PythonUtils.newStringBuilder(self.getLength());
+            for (int i = 0; i < self.getLength(); i++) {
+                PythonUtils.append(sb, (String) getValueNode.execute(self, i));
+            }
+            return PythonUtils.sbToString(sb);
+        }
+    }
+
+    @Builtin(name = "tofile", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ToFileNode extends PythonBinaryBuiltinNode {
+        @Specialization(limit = "2")
+        Object tofile(VirtualFrame frame, PArray self, Object file,
+                        @CachedLibrary("file") PythonObjectLibrary lib) {
+            if (self.getLength() > 0) {
+                int remaining = self.getLength() * self.getFormat().bytesize;
+                int blocksize = 64 * 1024;
+                int nblocks = (remaining + blocksize - 1) / blocksize;
+                byte[] buffer = null;
+                for (int i = 0; i < nblocks; i++) {
+                    if (remaining < blocksize) {
+                        buffer = new byte[remaining];
+                    } else if (buffer == null) {
+                        buffer = new byte[blocksize];
+                    }
+                    PythonUtils.arraycopy(self.getBuffer(), i * blocksize, buffer, 0, buffer.length);
+                    lib.lookupAndCallRegularMethod(file, frame, "write", factory().createBytes(buffer));
+                    remaining -= blocksize;
+                }
+            }
+            return PNone.NONE;
         }
     }
 }
