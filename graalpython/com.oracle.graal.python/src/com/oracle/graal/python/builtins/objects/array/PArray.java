@@ -164,8 +164,8 @@ public final class PArray extends PythonBuiltinObject {
         // TODO
         UTF16_LE(18, null, ByteOrder.LITTLE_ENDIAN),
         UTF16_BE(19, null, ByteOrder.BIG_ENDIAN),
-        UTF32_LE(20, null, ByteOrder.LITTLE_ENDIAN),
-        UTF32_BE(21, null, ByteOrder.BIG_ENDIAN);
+        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN),
+        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN);
 
         public final int code;
         public final BufferFormat format;

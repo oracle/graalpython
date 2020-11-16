@@ -30,6 +30,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -44,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -64,9 +66,11 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -555,6 +559,41 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static int len(PArray self) {
             return self.getLength();
+        }
+    }
+
+    @Builtin(name = __REDUCE_EX__, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protocol"})
+    @ArgumentClinic(name = "protocol", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class ReduceExNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "protocol < 3", limit = "2")
+        Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached ToListNode toListNode) {
+            Object cls = lib.getLazyPythonClass(self);
+            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            if (dict == PNone.NO_VALUE) {
+                dict = PNone.NONE;
+            }
+            PTuple args = factory().createTuple(new Object[]{self.getFormatStr(), toListNode.call(frame, self)});
+            return factory().createTuple(new Object[]{cls, args, dict});
+        }
+
+        @Specialization(guards = "protocol >= 3")
+        Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached ToBytesNode toBytesNode) {
+            PythonModule arrayModule = getCore().lookupBuiltinModule("array");
+            PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
+            assert mformat != null;
+            Object cls = lib.getLazyPythonClass(self);
+            Object dict = lib.lookupAttribute(self, frame, __DICT__);
+            if (dict == PNone.NO_VALUE) {
+                dict = PNone.NONE;
+            }
+            Object reconstructor = lib.lookupAttributeStrict(arrayModule, frame, "_array_reconstructor");
+            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatStr(), mformat.code, toBytesNode.call(frame, self)});
+            return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
     }
 

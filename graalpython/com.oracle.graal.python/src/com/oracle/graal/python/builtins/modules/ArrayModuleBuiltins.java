@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -47,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -236,10 +238,35 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
         @Specialization
+        Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
+                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode);
+            if (format == null) {
+                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+            }
+            if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
+                throw raise(TypeError, "%n is not a subtype of array", arrayType);
+            }
+            PArray.MachineFormat expectedFormat = PArray.MachineFormat.forFormat(format);
+            if (expectedFormat != null && expectedFormat.code == mformatCode) {
+                PArray array = factory().createArray(arrayType, typeCode, format);
+                fromBytesNode.execute(frame, array, bytes);
+                return array;
+            } else {
+                // TODO implement decoding for arrays pickled on a machine of different architecture
+                throw raise(PythonBuiltinClassType.NotImplementedError, "Cannot decode array format");
+            }
+        }
+
+        @Specialization(guards = "!isPBytes(value)")
         @SuppressWarnings("unused")
-        static Object reconstruct(Object arrayType, String typeCode, int mformatCode, Object items) {
-            // TODO
-            return PNone.NONE;
+        Object error(Object arrayType, String typeCode, int mformatCode, Object value) {
+            throw raise(TypeError, "fourth argument should be bytes, not %p", value);
+        }
+
+        protected static boolean isPBytes(Object obj) {
+            return obj instanceof PBytes;
         }
 
         @Override
