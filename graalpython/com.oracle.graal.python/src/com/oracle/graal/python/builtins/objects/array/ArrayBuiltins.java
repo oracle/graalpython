@@ -444,8 +444,10 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile complexDeleteProfile,
                         @Cached ConditionProfile differentLenghtProfile,
                         @Cached ConditionProfile growProfile,
+                        @Cached ConditionProfile stepAssignProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
-                        @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+                        @Cached SliceLiteralNode.AdjustIndices adjustIndices,
+                        @Cached DelItemNode delItemNode) {
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
             int start = sliceInfo.start;
             int stop = sliceInfo.stop;
@@ -471,16 +473,10 @@ public class ArrayBuiltins extends PythonBuiltins {
                 }
                 PythonUtils.arraycopy(sourceBuffer, 0, self.getBuffer(), start * itemsize, needed * itemsize);
             } else if (complexDeleteProfile.profile(needed == 0)) {
-                if ((step > 0 && stop < start) || (step < 0 && stop > start)) {
-                    stop = start;
-                }
-                if (step < 0) {
-                    stop = start + 1;
-                    start = stop + step * (sliceLength - 1) - 1;
-                    step = -step;
-                }
-                for (int i = start; i < stop; i += step - 1) {
-                    self.delSlice(i, 1);
+                delItemNode.executeSlice(self, slice);
+            } else if (stepAssignProfile.profile(needed == sliceLength)) {
+                for (int cur = start, i = 0; i < sliceLength; cur += step, i++) {
+                    PythonUtils.arraycopy(sourceBuffer, i * itemsize, self.getBuffer(), cur * itemsize, itemsize);
                 }
             } else {
                 throw raise(ValueError, "attempt to assign array of size %d to extended slice of size %d", needed, sliceLength);
@@ -504,6 +500,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __DELITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelItemNode extends PythonBinaryBuiltinNode {
+        public abstract Object executeSlice(PArray self, PSlice slice);
+
         @Specialization(guards = "!isPSlice(idx)", limit = "3")
         static Object delitem(PArray self, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary lib,
@@ -518,24 +516,26 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile simpleStepProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
-            PSlice.SliceInfo sliceInfo = adjustIndices.execute(self.getLength(), sliceUnpack.execute(slice));
+            int length = self.getLength();
+            PSlice.SliceInfo sliceInfo = adjustIndices.execute(length, sliceUnpack.execute(slice));
             int start = sliceInfo.start;
-            int stop = sliceInfo.stop;
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
+            int itemsize = self.getFormat().bytesize;
             if (simpleStepProfile.profile(step == 1)) {
                 self.delSlice(start, sliceLength);
             } else {
-                if ((step > 0 && stop < start) || (step < 0 && stop > start)) {
-                    stop = start;
-                }
                 if (step < 0) {
-                    stop = start + 1;
-                    start = stop + step * (sliceLength - 1) - 1;
+                    start += 1 + step * (sliceLength - 1) - 1;
                     step = -step;
                 }
-                for (int i = start; i < stop; i += step - 1) {
-                    self.delSlice(i, 1);
+                if (sliceLength > 0) {
+                    int cur, offset;
+                    for (cur = start, offset = 0; offset < sliceLength - 1; cur += step, offset++) {
+                        PythonUtils.arraycopy(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (step - 1) * itemsize);
+                    }
+                    PythonUtils.arraycopy(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (length - cur - 1) * itemsize);
+                    self.setLenght(length - sliceLength);
                 }
             }
             return PNone.NONE;
