@@ -31,6 +31,7 @@
 *graalpython.lib-python.3.test.test_array.ByteTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.ByteTest.test_insert
 *graalpython.lib-python.3.test.test_array.ByteTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.ByteTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.ByteTest.test_len
 *graalpython.lib-python.3.test.test_array.ByteTest.test_mul
 *graalpython.lib-python.3.test.test_array.ByteTest.test_obsolete_write_lock
@@ -87,6 +88,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_insert
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_len
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_mul
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_obsolete_write_lock
@@ -140,6 +142,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.FloatTest.test_insert
 *graalpython.lib-python.3.test.test_array.FloatTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.FloatTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.FloatTest.test_len
 *graalpython.lib-python.3.test.test_array.FloatTest.test_mul
 *graalpython.lib-python.3.test.test_array.FloatTest.test_obsolete_write_lock
@@ -193,6 +196,7 @@
 *graalpython.lib-python.3.test.test_array.IntTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.IntTest.test_insert
 *graalpython.lib-python.3.test.test_array.IntTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.IntTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.IntTest.test_len
 *graalpython.lib-python.3.test.test_array.IntTest.test_mul
 *graalpython.lib-python.3.test.test_array.IntTest.test_obsolete_write_lock
@@ -262,6 +266,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_insert
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_len
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_mul
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_obsolete_write_lock
@@ -316,6 +321,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.LongTest.test_insert
 *graalpython.lib-python.3.test.test_array.LongTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.LongTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.LongTest.test_len
 *graalpython.lib-python.3.test.test_array.LongTest.test_mul
 *graalpython.lib-python.3.test.test_array.LongTest.test_obsolete_write_lock
@@ -372,6 +378,7 @@
 *graalpython.lib-python.3.test.test_array.ShortTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.ShortTest.test_insert
 *graalpython.lib-python.3.test.test_array.ShortTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.ShortTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.ShortTest.test_len
 *graalpython.lib-python.3.test.test_array.ShortTest.test_mul
 *graalpython.lib-python.3.test.test_array.ShortTest.test_obsolete_write_lock
@@ -421,6 +428,7 @@
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_index
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_insert
+*graalpython.lib-python.3.test.test_array.UnicodeTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_len
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_obsolete_write_lock
@@ -475,6 +483,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_insert
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_len
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_obsolete_write_lock
@@ -532,6 +541,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_insert
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_len
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnsignedIntTest.test_obsolete_write_lock
@@ -588,6 +598,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_insert
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_len
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnsignedLongLongTest.test_obsolete_write_lock
@@ -644,6 +655,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_insert
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_len
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnsignedLongTest.test_obsolete_write_lock
@@ -700,6 +712,7 @@
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_initialize_with_unicode
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_insert
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_iterationcontains
+*graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_len
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_mul
 *graalpython.lib-python.3.test.test_array.UnsignedShortTest.test_obsolete_write_lock

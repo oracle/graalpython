@@ -334,8 +334,13 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization
         public Object reduce(VirtualFrame frame, PArrayIterator self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ConditionProfile exhaustedProfile,
                         @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            return reduceInternal(frame, self.array, self.getIndex(), context, pol);
+            if (!exhaustedProfile.profile(self.isExhausted())) {
+                return reduceInternal(frame, self.array, self.getIndex(), context, pol);
+            } else {
+                return reduceInternal(frame, factory().createEmptyTuple(), context, pol);
+            }
         }
 
         @Specialization
