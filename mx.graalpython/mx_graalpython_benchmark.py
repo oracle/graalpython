@@ -266,7 +266,7 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
     def interpreter(self):
         try:
             return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
-        except OSError as e:
+        except Exception as e:
             mx.log_error(e)
             mx.abort("`jython` is neither on the path, nor is {} set!\n".format(ENV_JYTHON_JAR))
 
