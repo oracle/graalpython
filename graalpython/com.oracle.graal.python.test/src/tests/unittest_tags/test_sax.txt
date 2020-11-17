@@ -18,6 +18,7 @@
 *graalpython.lib-python.3.test.test_sax.BytesXmlgenTest.test_xmlgen_ns
 *graalpython.lib-python.3.test.test_sax.BytesXmlgenTest.test_xmlgen_ns_empty
 *graalpython.lib-python.3.test.test_sax.BytesXmlgenTest.test_xmlgen_pi
+*graalpython.lib-python.3.test.test_sax.BytesXmlgenTest.test_xmlgen_unencodable
 *graalpython.lib-python.3.test.test_sax.ErrorReportingTest.test_sax_parse_exception_str
 *graalpython.lib-python.3.test.test_sax.MakeParserTest.test_make_parser2
 *graalpython.lib-python.3.test.test_sax.MakeParserTest.test_make_parser3
@@ -64,6 +65,7 @@
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_ns_empty
 *graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_pi
+*graalpython.lib-python.3.test.test_sax.StreamReaderWriterXmlgenTest.test_xmlgen_unencodable
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_1463026_1
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_1463026_1_empty
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_1463026_2
@@ -86,6 +88,7 @@
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_ns_empty
 *graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_pi
+*graalpython.lib-python.3.test.test_sax.StreamWriterXmlgenTest.test_xmlgen_unencodable
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_1463026_1
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_1463026_1_empty
 *graalpython.lib-python.3.test.test_sax.StringXmlgenTest.test_1463026_2
@@ -128,6 +131,7 @@
 *graalpython.lib-python.3.test.test_sax.WriterXmlgenTest.test_xmlgen_ns
 *graalpython.lib-python.3.test.test_sax.WriterXmlgenTest.test_xmlgen_ns_empty
 *graalpython.lib-python.3.test.test_sax.WriterXmlgenTest.test_xmlgen_pi
+*graalpython.lib-python.3.test.test_sax.WriterXmlgenTest.test_xmlgen_unencodable
 *graalpython.lib-python.3.test.test_sax.XMLFilterBaseTest.test_filter_basic
 *graalpython.lib-python.3.test.test_sax.XmlReaderTest.test_attrs_empty
 *graalpython.lib-python.3.test.test_sax.XmlReaderTest.test_attrs_wattr
