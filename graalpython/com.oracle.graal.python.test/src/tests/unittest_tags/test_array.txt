@@ -337,6 +337,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_tofromlist
 *graalpython.lib-python.3.test.test_array.LongTest.test_type_error
 *graalpython.lib-python.3.test.test_array.LongTest.test_weakref
+*graalpython.lib-python.3.test.test_array.MiscTest.test_bad_constructor
 *graalpython.lib-python.3.test.test_array.MiscTest.test_empty
 *graalpython.lib-python.3.test.test_array.ShortTest.test_add
 *graalpython.lib-python.3.test.test_array.ShortTest.test_assignment

@@ -207,6 +207,9 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
 
             private BufferFormat getFormatChecked(String typeCode) {
+                if (typeCode.length() != 1) {
+                    throw raise(TypeError, "array() argument 1 must be a unicode character, not str");
+                }
                 BufferFormat format = BufferFormat.forArray(typeCode);
                 if (format == null) {
                     throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
