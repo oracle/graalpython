@@ -854,19 +854,23 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "fromstring", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class FromStringNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "2")
+
+        @Specialization(guards = "isString(str)", limit = "2")
         static Object fromstring(VirtualFrame frame, PArray self, Object str,
                         @CachedLibrary("str") PythonObjectLibrary lib,
-                        @Cached ConditionProfile bufferProfile,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached FromUnicodeNode fromUnicodeNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            if (bufferProfile.profile(lib.isBuffer(str))) {
-                return fromBytesNode.execute(frame, self, str);
-            } else {
-                return fromUnicodeNode.execute(frame, self, str);
-            }
+            Object bytes = lib.lookupAndCallRegularMethod(str, frame, "encode", "utf-8");
+            return fromBytesNode.execute(frame, self, bytes);
+        }
+
+        @Specialization(guards = "!isString(str)")
+        static Object fromother(VirtualFrame frame, PArray self, Object str,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached FromBytesNode fromBytesNode) {
+            warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
+            return fromBytesNode.execute(frame, self, str);
         }
     }
 
