@@ -48,6 +48,7 @@ SUITE = mx.suite("graalpython")
 #
 # ----------------------------------------------------------------------------------------------------------------------
 ENV_PYPY_HOME = "PYPY_HOME"
+ENV_JYTHON_JAR = "JYTHON_JAR"
 VM_NAME_GRAALPYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
@@ -248,14 +249,18 @@ class PyPyVm(AbstractPythonIterationsControlVm):
         return VM_NAME_PYPY
 
 
-class JythonVm(AbstractPythonIterationsControlVm):
+class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
     JYTHON_INTERPRETER = "jython"
 
-    def __init__(self, config_name, options=None, env=None, iterations=None):
-        super(JythonVm, self).__init__(config_name, options=options, env=env, iterations=iterations)
+    def __init__(self, config_name, options=None, env=None, iterations=None, host_vm=None):
+        AbstractPythonIterationsControlVm.__init__(self, config_name, options=options, env=env, iterations=iterations)
+        GuestVm.__init__(self, host_vm=host_vm)
 
     def override_iterations(self, requested_iterations):
         return 2
+
+    def hosting_registry(self):
+        return java_vm_registry
 
     @property
     def interpreter(self):
@@ -263,7 +268,35 @@ class JythonVm(AbstractPythonIterationsControlVm):
             return subprocess.check_output("which %s" % JythonVm.JYTHON_INTERPRETER, shell=True).decode().strip()
         except OSError as e:
             mx.log_error(e)
-            mx.abort("Error when executing `which jython`!\n")
+            mx.abort("`jython` is neither on the path, nor is {} set!\n".format(ENV_JYTHON_JAR))
+
+    def run(self, cwd, args):
+        jar = mx.get_env(ENV_JYTHON_JAR)
+        if jar:
+            _check_vm_args(self.name(), args)
+            host_vm = self.host_vm()
+
+            vm_args = mx.get_runtime_jvm_args([])
+            vm_args += ["-jar", jar]
+            for a in args[:]:
+                if a.startswith("-D") or a.startswith("-XX"):
+                    vm_args.insert(0, a)
+                    args.remove(a)
+            cmd = vm_args + args
+
+            if not self._env:
+                self._env = dict()
+            with environ(self._env):
+                return host_vm.run(cwd, cmd)
+        else:
+            return AbstractPythonIterationsControlVm.run(self, cwd, args)
+
+    def config_name(self):
+        return self._config_name
+
+    def with_host_vm(self, host_vm):
+        return self.__class__(config_name=self._config_name, options=self._options, env=self._env,
+                              iterations=self._iterations, host_vm=host_vm)
 
     def name(self):
         return VM_NAME_JYTHON
@@ -657,4 +690,3 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
                 }
             ),
         ]
-
