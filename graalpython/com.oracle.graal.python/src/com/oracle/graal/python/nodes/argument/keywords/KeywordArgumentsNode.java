@@ -93,12 +93,17 @@ public abstract class KeywordArgumentsNode extends Node {
         return internalNode.execute(arguments, starArgs);
     }
 
-    @Specialization
+    protected boolean isNonMapping(PKeyword[] arguments, Object starargs) {
+        return (arguments.length == 0 && PGuards.isPNone(starargs)) ||
+                (!PGuards.isDict(starargs) && !PGuards.isPNone(starargs));
+    }
+
+    @Specialization(guards = "arguments.length > 0")
     PKeyword[] doNone(PKeyword[] arguments, @SuppressWarnings("unused") PNone starargs) {
         return arguments;
     }
 
-    @Specialization(guards = {"!isDict(starargs)", "!isPNone(starargs)"})
+    @Specialization(guards = "isNonMapping(arguments, starargs)")
     PKeyword[] doGeneral(@SuppressWarnings("unused") PKeyword[] arguments, Object starargs) {
         throw new NonMappingException(starargs);
     }
