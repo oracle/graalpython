@@ -642,6 +642,18 @@ public abstract class ErrorMessages {
     public static final String INCOMPLETE_OR_TRUNCATED_STREAM = "incomplete or truncated stream";
     public static final String S_MUST_BE_GREATER_THAN_ZERO = "%s must be greater than zero";
 
+    // io errors
+    public static final String IO_S_INVALID_LENGTH = "raw %s returned invalid length %d (should have been between 0 and %d)";
+    public static final String IO_S_SHOULD_RETURN_BYTES = "%s should return bytes";
+    public static final String CANNOT_FIT_P_IN_OFFSET_SIZE = "cannot fit '%p' into an offset-sized integer";
+    public static final String IO_STREAM_INVALID_POS = "Raw stream returned invalid position %d";
+    public static final String IO_STREAM_DETACHED = "raw stream has been detached";
+    public static final String IO_UNINIT = "I/O operation on uninitialized object";
+    public static final String UNSUPPORTED_WHENCE = "whence value %d unsupported";
+    public static final String IO_CLOSED = "I/O operation on closed file.";
+    public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
+    public static final String BUF_SIZE_POS = "buffer size must be strictly positive";
+
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";

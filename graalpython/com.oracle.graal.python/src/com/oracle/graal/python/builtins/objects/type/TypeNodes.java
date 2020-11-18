@@ -1616,6 +1616,7 @@ public abstract class TypeNodes {
                 case PLZMADecompressor:
                 case ZlibCompress:
                 case ZlibDecompress:
+                case PBufferedReader:
                 case LsprofProfiler:
                 case PStruct:
                 case PBaseException:

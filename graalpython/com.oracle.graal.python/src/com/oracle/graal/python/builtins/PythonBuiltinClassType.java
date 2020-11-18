@@ -140,6 +140,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PStruct("Struct", "_struct"),
     ZlibCompress("Compress", "zlib"),
     ZlibDecompress("Decompress", "zlib"),
+    PBufferedReader("BufferedReader", "_io"),
 
     // Errors and exceptions:
 

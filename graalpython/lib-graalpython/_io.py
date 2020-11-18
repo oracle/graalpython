@@ -29,8 +29,6 @@ SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
-DEFAULT_BUFFER_SIZE = 8192
-
 
 class BlockingIOError(OSError):
     pass
@@ -582,10 +580,6 @@ class _TextIOBase(_IOBase):
 
 
 class StringIO(_TextIOBase):
-    pass
-
-
-class BufferedReader(_BufferedIOBase):
     pass
 
 

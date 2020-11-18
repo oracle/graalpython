@@ -37,6 +37,7 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.io.PBuffered;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -952,5 +953,17 @@ public abstract class PythonObjectFactory extends Node {
 
     public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
         return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    }
+
+    public PBuffered createBufferedReader(Object clazz) {
+        return trace(PBuffered.createBufferedReader(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferWriter(Object clazz) {
+        return trace(PBuffered.createBufferedWriter(clazz, getShape(clazz)));
+    }
+
+    public PBuffered createBufferRandom(Object clazz) {
+        return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
     }
 }
