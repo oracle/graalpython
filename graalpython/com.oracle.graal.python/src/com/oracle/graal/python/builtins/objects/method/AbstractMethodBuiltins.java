@@ -35,8 +35,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
@@ -235,14 +235,22 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+            try {
+                return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+            } catch (CannotCastException cce) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         @Specialization
         Object getName(VirtualFrame frame, PMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+            try {
+                return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+            } catch (CannotCastException cce) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 
@@ -292,7 +300,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
             try {
                 String typeQualName = toJavaStringNode.execute(pol.lookupAttributeStrict(type, frame, __QUALNAME__));
-                return composeQualName(typeQualName, getName(frame, func, toJavaStringNode, pol));
+                return PythonUtils.format("%s.%s", typeQualName, getName(frame, func, toJavaStringNode, pol));
             } catch (CannotCastException cce) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
             }
@@ -300,11 +308,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         private String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
             return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
-        }
-
-        @CompilerDirectives.TruffleBoundary
-        private static Object composeQualName(String typeQualName, String name) {
-            return String.format("%s.%s", typeQualName, name);
         }
     }
 
