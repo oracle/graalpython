@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -60,7 +61,10 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -70,6 +74,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "array")
 public final class ArrayModuleBuiltins extends PythonBuiltins {
@@ -142,6 +147,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         abstract static class ArrayNodeInternal extends Node {
             @Child private PRaiseNode raiseNode;
             @Child private PythonObjectFactory factory;
+            @CompilationFinal private ValueProfile formatProfile = ValueProfile.createIdentityProfile();
 
             public abstract PArray execute(VirtualFrame frame, Object cls, String typeCode, Object initializer);
 
@@ -155,7 +161,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             PArray arrayWithRangeInitializer(Object cls, String typeCode, PIntRange range,
                             @Cached ArrayNodes.PutValueNode putValueNode) {
                 BufferFormat format = getFormatChecked(typeCode);
-                PArray array = getFactory().createArray(cls, typeCode, format, range.getIntLength());
+                PArray array;
+                try {
+                    array = getFactory().createArray(cls, typeCode, format, range.getIntLength());
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
+                }
 
                 int start = range.getIntStart();
                 int stop = range.getIntStop();
@@ -178,7 +190,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
             // TODO impl for PSequence and PArray or use lenght_hint
 
-            @Specialization(limit = "3")
+            @Specialization(guards = "!isBytes(initializer)", limit = "3")
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
                             @CachedLibrary("initializer") PythonObjectLibrary lib,
                             @Cached ArrayNodes.PutValueNode putValueNode,
@@ -189,7 +201,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 BufferFormat format = getFormatChecked(typeCode);
                 PArray array = getFactory().createArray(cls, typeCode, format);
 
-                int lenght = 0;
+                int length = 0;
                 while (true) {
                     Object nextValue;
                     try {
@@ -198,11 +210,17 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         e.expectStopIteration(errorProfile);
                         break;
                     }
-                    array.ensureCapacity(++lenght);
-                    putValueNode.execute(frame, array, lenght - 1, nextValue);
+                    try {
+                        length = PythonUtils.addExact(length, 1);
+                        array.ensureCapacity(length);
+                    } catch (OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raise(MemoryError);
+                    }
+                    putValueNode.execute(frame, array, length - 1, nextValue);
                 }
 
-                array.setLenght(lenght);
+                array.setLenght(length);
                 return array;
             }
 
@@ -214,7 +232,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 if (format == null) {
                     throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
                 }
-                return format;
+                return formatProfile.profile(format);
             }
 
             private PException raise(PythonBuiltinClassType type, String message, Object... args) {
@@ -223,6 +241,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     raiseNode = insert(PRaiseNode.create());
                 }
                 throw raiseNode.raise(type, message, args);
+            }
+
+            private PException raise(PythonBuiltinClassType type) {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                throw raiseNode.raise(type);
             }
 
             private PythonObjectFactory getFactory() {

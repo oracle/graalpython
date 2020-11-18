@@ -56,6 +56,7 @@
 *graalpython.lib-python.3.test.test_array.ByteTest.test_type_error
 *graalpython.lib-python.3.test.test_array.ByteTest.test_weakref
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_add
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_alloc_overflow
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_assignment
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_buffer_info
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_bug_782369
@@ -273,6 +274,7 @@
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_len
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_mul
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_obsolete_write_lock
+*graalpython.lib-python.3.test.test_array.LongLongTest.test_overflow
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_pickle
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_pickle_for_empty_array
 *graalpython.lib-python.3.test.test_array.LongLongTest.test_pop
@@ -329,6 +331,7 @@
 *graalpython.lib-python.3.test.test_array.LongTest.test_len
 *graalpython.lib-python.3.test.test_array.LongTest.test_mul
 *graalpython.lib-python.3.test.test_array.LongTest.test_obsolete_write_lock
+*graalpython.lib-python.3.test.test_array.LongTest.test_overflow
 *graalpython.lib-python.3.test.test_array.LongTest.test_pickle
 *graalpython.lib-python.3.test.test_array.LongTest.test_pickle_for_empty_array
 *graalpython.lib-python.3.test.test_array.LongTest.test_pop

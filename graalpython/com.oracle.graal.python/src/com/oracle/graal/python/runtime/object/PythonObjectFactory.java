@@ -139,6 +139,7 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.RootCallTarget;
@@ -682,14 +683,15 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PArray createArray(Object cls, String formatString, BufferFormat format) {
-        return createArray(cls, formatString, format, 0);
+        assert format != null;
+        return trace(new PArray(cls, getShape(cls), formatString, format));
     }
 
-    public PArray createArray(String formatString, BufferFormat format, int length) {
+    public PArray createArray(String formatString, BufferFormat format, int length) throws OverflowException {
         return createArray(PythonBuiltinClassType.PArray, formatString, format, length);
     }
 
-    public PArray createArray(Object cls, String formatString, BufferFormat format, int length) {
+    public PArray createArray(Object cls, String formatString, BufferFormat format, int length) throws OverflowException {
         assert format != null;
         return trace(new PArray(cls, getShape(cls), formatString, format, length));
     }

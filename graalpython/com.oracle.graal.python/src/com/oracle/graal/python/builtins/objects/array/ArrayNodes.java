@@ -61,9 +61,19 @@ public abstract class ArrayNodes {
         public abstract void execute(VirtualFrame frame, PArray array, int index, Object value);
 
         @Specialization
-        static void get(VirtualFrame frame, PArray array, int index, Object value,
+        static void put(VirtualFrame frame, PArray array, int index, Object value,
                         @Cached BufferStorageNodes.PackValueNode packValueNode) {
             packValueNode.execute(frame, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
+        }
+    }
+
+    public abstract static class CheckValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, PArray array, Object value);
+
+        @Specialization
+        static void check(VirtualFrame frame, PArray array, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, array.getFormat(), value, new byte[8], 0);
         }
     }
 }

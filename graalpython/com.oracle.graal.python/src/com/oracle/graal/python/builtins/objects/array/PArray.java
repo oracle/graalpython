@@ -31,6 +31,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -46,12 +47,20 @@ public final class PArray extends PythonBuiltinObject {
     private int lenght;
     private byte[] buffer;
 
-    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) {
+    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
+        super(clazz, instanceShape);
+        this.formatStr = formatStr;
+        this.format = format;
+        this.lenght = 0;
+        this.buffer = new byte[32];
+    }
+
+    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
         this.formatStr = formatStr;
         this.format = format;
         this.lenght = length;
-        this.buffer = new byte[Math.max(32, length * format.bytesize)];
+        this.buffer = new byte[Math.max(32, PythonUtils.multiplyExact(length, format.bytesize))];
     }
 
     public BufferFormat getFormat() {
@@ -75,32 +84,31 @@ public final class PArray extends PythonBuiltinObject {
         this.lenght = lenght;
     }
 
-    public void ensureCapacity(int newLength) {
+    public void ensureCapacity(int newLength) throws OverflowException {
         assert newLength >= 0;
-        // TODO overflow
         // TODO better estimate
-        // TODO shrink?
-        if (newLength * format.bytesize > buffer.length) {
-            byte[] newBuffer = new byte[newLength * format.bytesize];
+        int newSize = PythonUtils.multiplyExact(newLength, format.bytesize);
+        if (newSize > buffer.length) {
+            byte[] newBuffer = new byte[newSize];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
             buffer = newBuffer;
         }
     }
 
-    public void resize(int newLenght) {
+    public void resize(int newLenght) throws OverflowException {
         ensureCapacity(newLenght);
         lenght = newLenght;
     }
 
-    public void shift(int from, int by) {
+    public void shift(int from, int by) throws OverflowException {
         assert from >= 0 && from <= lenght;
         assert by >= 0;
-        // TODO overflow
-        int newLength = lenght + by;
+        int newLength = PythonUtils.addExact(lenght, by);
         // TODO better estimate
         int itemsize = format.bytesize;
-        if (newLength * itemsize > buffer.length) {
-            byte[] newBuffer = new byte[newLength * itemsize];
+        int newSize = PythonUtils.multiplyExact(newLength, itemsize);
+        if (newSize > buffer.length) {
+            byte[] newBuffer = new byte[newSize];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
             PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (lenght - from) * itemsize);
             buffer = newBuffer;
@@ -111,6 +119,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public void delSlice(int at, int count) {
+        assert count > 0;
         assert at + count <= lenght;
         int newLength = lenght - count;
         assert newLength >= 0;
