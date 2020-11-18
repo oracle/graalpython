@@ -2014,7 +2014,7 @@ def run_leak_launcher(input_args, out=None):
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
-    jdk = mx.get_jdk(tag=None)
+    jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advance.LeakTest")
     retval = mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, nonZeroIsFatal=False, out=out)
     if retval == 0:
