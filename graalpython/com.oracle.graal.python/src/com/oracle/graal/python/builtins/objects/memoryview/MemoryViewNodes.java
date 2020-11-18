@@ -237,24 +237,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < cachedLen; i++) {
-                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
-            }
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
+            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < len; i++) {
-                dest[destOffset + i] = (byte) getItemNode.executeInt(storage, offset + i);
-            }
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
+            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, len);
         }
     }
 
@@ -292,24 +282,14 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("len") int cachedLen,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < cachedLen; i++) {
-                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
-            }
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes byte storage
-            SequenceStorage storage = getStorageNode.execute(self.getOwner());
-            for (int i = 0; i < len; i++) {
-                setItemNode.execute(storage, offset + i, src[srcOffset + i]);
-            }
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, len);
         }
     }
 
@@ -353,28 +333,20 @@ public class MemoryViewNodes {
         @ExplodeLoop
         static Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
                         @Cached UnpackValueNode unpackValueNode) {
-            // TODO assumes byte storage
             byte[] bytes = new byte[cachedItemSize];
-            for (int i = 0; i < cachedItemSize; i++) {
-                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
-            }
+            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, cachedItemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
                         @Cached UnpackValueNode unpackValueNode) {
-            // TODO assumes byte storage
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
-            for (int i = 0; i < itemSize; i++) {
-                bytes[i] = (byte) getItemNode.executeInt(getStorageNode.execute(self.getOwner()), offset + i);
-            }
+            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, itemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
     }
@@ -420,28 +392,20 @@ public class MemoryViewNodes {
         static void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached("self.getItemSize()") int cachedItemSize,
                         @Cached PackValueNode packValueNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes bytes storage
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
             byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            for (int i = 0; i < cachedItemSize; i++) {
-                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
-            }
+            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, cachedItemSize);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached")
         static void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @Cached PackValueNode packValueNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorageNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            // TODO assumes bytes storage
+                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            for (int i = 0; i < itemSize; i++) {
-                setItemNode.execute(getStorageNode.execute(self.getOwner()), offset + i, bytes[i]);
-            }
+            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, itemSize);
         }
     }
 

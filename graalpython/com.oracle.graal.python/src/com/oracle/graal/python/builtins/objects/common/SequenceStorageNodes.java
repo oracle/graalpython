@@ -2166,6 +2166,48 @@ public abstract class SequenceStorageNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class CopyBytesFromByteStorage extends PNodeWithContext {
+
+        public abstract void execute(SequenceStorage src, int srcPos, byte[] dest, int destPos, int lenght);
+
+        @Specialization
+        static void doByteSequenceStorage(ByteSequenceStorage src, int srcPos, byte[] dest, int destPos, int lenght) {
+            PythonUtils.arraycopy(src.getInternalByteArray(), srcPos, dest, destPos, lenght);
+        }
+
+        @Specialization(guards = "isByteStorage(src)")
+        static void doNativeByte(NativeSequenceStorage src, int srcPos, byte[] dest, int destPos, int lenght,
+                        @Cached GetItemScalarNode getItemNode) {
+            for (int i = 0; i < lenght; i++) {
+                int elem = getItemNode.executeInt(src, srcPos + i);
+                assert elem >= 0 && elem < 256;
+                dest[destPos + i] = (byte) elem;
+            }
+        }
+    }
+
+    @GenerateUncached
+    @ImportStatic(SequenceStorageBaseNode.class)
+    public abstract static class CopyBytesToByteStorage extends PNodeWithContext {
+
+        public abstract void execute(byte[] src, int srcPos, SequenceStorage dest, int destPos, int lenght);
+
+        @Specialization
+        static void doByteSequenceStorage(byte[] src, int srcPos, ByteSequenceStorage dest, int destPos, int lenght) {
+            PythonUtils.arraycopy(src, srcPos, dest.getInternalByteArray(), destPos, lenght);
+        }
+
+        @Specialization(guards = "isByteStorage(dest)")
+        static void doNativeByte(byte[] src, int srcPos, NativeSequenceStorage dest, int destPos, int lenght,
+                                 @Cached SetItemScalarNode setItemNode) {
+            for (int i = 0; i < lenght; i++) {
+                setItemNode.execute(dest, destPos + i, src[srcPos + i]);
+            }
+        }
+    }
+
+    @GenerateUncached
     public abstract static class ToByteArrayNode extends Node {
 
         public abstract byte[] execute(SequenceStorage s);
