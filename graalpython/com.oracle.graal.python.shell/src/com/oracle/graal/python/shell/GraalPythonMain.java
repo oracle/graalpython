@@ -757,18 +757,48 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                             if (e.isIncompleteSource()) {
                                 // read more input until we get an empty line
                                 consoleHandler.setPrompt(continuePrompt);
-                                String additionalInput = consoleHandler.readLine();
-                                while (additionalInput != null && !additionalInput.isEmpty()) {
-                                    sb.append(additionalInput).append('\n');
-                                    consoleHandler.setPrompt(continuePrompt);
+                                String additionalInput;
+                                boolean isIncompleteCode = false; // this for cases like empty lines
+                                                                  // in tripplecode, where the
+                                                                  // additional input can be empty,
+                                                                  // but we should still continue
+                                do {
                                     additionalInput = consoleHandler.readLine();
-                                }
+                                    sb.append(additionalInput).append('\n');
+                                    try {
+                                        // We try to parse every time, when an additional input is
+                                        // added to find out if there is continuation exception or
+                                        // other error. If there is other error, we have to stop
+                                        // to ask for additional input.
+                                        context.parse(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
+                                        e = null;   // the parsing was ok -> try to eval
+                                                    // the code in outer while loop
+                                        isIncompleteCode = false;
+                                    } catch (PolyglotException pe) {
+                                        if (!pe.isIncompleteSource()) {
+                                            e = pe;
+                                            break;
+                                        } else {
+                                            isIncompleteCode = true;
+                                        }
+                                    }
+                                } while (additionalInput != null && (!additionalInput.isEmpty() || isIncompleteCode));
+                                // Here we can be in these cases:
+                                // The parsing of the code with additional code was ok
+                                // The parsing of the code with additional code thrown an error,
+                                // which is not IncompleteSourceException
                                 if (additionalInput == null) {
                                     throw new EOFException();
                                 }
-                                // The only continuation in the while loop
-                                continue;
-                            } else if (e.isExit()) {
+                                if (e == null) {
+                                    // the last source (with additional input) was parsed correctly,
+                                    // so we can execute it.
+                                    continue;
+                                }
+                            }
+                            // process the exception from eval or from the last parsing of the input
+                            // + additional source
+                            if (e.isExit()) {
                                 // usually from quit
                                 throw new ExitException(e.getExitStatus());
                             } else if (e.isHostException()) {

@@ -359,7 +359,7 @@ import java.util.Arrays;
         this.parserMode = parserMode;
     }
 
-    private static class PythonRecognitionException extends RecognitionException{
+    protected static class PythonRecognitionException extends RecognitionException{
         static final long serialVersionUID = 1L;
             
         public PythonRecognitionException(String message, Recognizer<?, ?> recognizer, IntStream input, ParserRuleContext ctx, Token offendingToken) {

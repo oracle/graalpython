@@ -160,7 +160,7 @@ public class ParserTestBase {
         assertTrue("Expected SyntaxError was not thrown.", thrown);
     }
 
-    private static boolean isSyntaxError(PException e) throws UnsupportedMessageException {
+    protected static boolean isSyntaxError(PException e) throws UnsupportedMessageException {
         return InteropLibrary.getUncached().getExceptionType(e) == ExceptionType.PARSE_ERROR;
     }
 
