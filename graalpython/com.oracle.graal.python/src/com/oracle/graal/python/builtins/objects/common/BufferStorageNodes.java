@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
@@ -142,8 +144,12 @@ public abstract class BufferStorageNodes {
         }
 
         @Specialization(guards = "format == UNICODE")
-        static Object unpackUnicode(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset) {
+        static Object unpackUnicode(@SuppressWarnings("unused") BufferFormat format, byte[] bytes, int offset,
+                        @Cached PRaiseNode raiseNode) {
             int codePoint = PythonUtils.arrayAccessor.getInt(bytes, offset);
+            if (!Character.isValidCodePoint(codePoint)) {
+                throw raiseNode.raise(ValueError, ErrorMessages.UNMAPPABLE_CHARACTER);
+            }
             return codePointToString(codePoint);
         }
 

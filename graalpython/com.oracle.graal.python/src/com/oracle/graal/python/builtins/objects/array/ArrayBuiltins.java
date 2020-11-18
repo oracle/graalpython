@@ -554,14 +554,14 @@ public class ArrayBuiltins extends PythonBuiltins {
             int step = sliceInfo.step;
             int sliceLength = sliceInfo.sliceLength;
             int itemsize = self.getFormat().bytesize;
-            if (simpleStepProfile.profile(step == 1)) {
-                self.delSlice(start, sliceLength);
-            } else {
-                if (step < 0) {
-                    start += 1 + step * (sliceLength - 1) - 1;
-                    step = -step;
-                }
-                if (sliceLength > 0) {
+            if (sliceLength > 0) {
+                if (simpleStepProfile.profile(step == 1)) {
+                    self.delSlice(start, sliceLength);
+                } else {
+                    if (step < 0) {
+                        start += 1 + step * (sliceLength - 1) - 1;
+                        step = -step;
+                    }
                     int cur, offset;
                     for (cur = start, offset = 0; offset < sliceLength - 1; cur += step, offset++) {
                         PythonUtils.arraycopy(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (step - 1) * itemsize);

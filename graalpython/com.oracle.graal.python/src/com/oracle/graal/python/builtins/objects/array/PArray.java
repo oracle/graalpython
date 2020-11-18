@@ -119,7 +119,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public void delSlice(int at, int count) {
-        assert count > 0;
+        assert count >= 0;
         assert at + count <= lenght;
         int newLength = lenght - count;
         assert newLength >= 0;
