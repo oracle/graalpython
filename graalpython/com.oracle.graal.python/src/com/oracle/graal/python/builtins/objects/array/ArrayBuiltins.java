@@ -222,8 +222,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "canCompareBytes(left, right)")
-        static boolean eqFastPath(PArray left, PArray right) {
+        @Specialization(guards = "shouldCompareBytes(left, right)")
+        static boolean eqBytes(PArray left, PArray right) {
             if (left.getLength() != right.getLength()) {
                 return false;
             }
@@ -236,8 +236,8 @@ public class ArrayBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @Specialization(replaces = "eqFastPath")
-        static boolean eq(PArray left, PArray right,
+        @Specialization(guards = "!shouldCompareBytes(left, right)")
+        static boolean eqItems(PArray left, PArray right,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached ArrayNodes.GetValueNode getLeft,
                         @Cached ArrayNodes.GetValueNode getRight) {
@@ -258,7 +258,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        protected static boolean canCompareBytes(PArray left, PArray right) {
+        protected static boolean shouldCompareBytes(PArray left, PArray right) {
             return left.getFormat() == right.getFormat() && left.getFormat() != BufferFormat.DOUBLE && left.getFormat() != BufferFormat.FLOAT;
         }
     }
