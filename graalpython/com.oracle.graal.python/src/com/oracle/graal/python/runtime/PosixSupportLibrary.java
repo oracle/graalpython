@@ -145,7 +145,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
-     * conversion contains embedded null characeters.
+     * conversion contains embedded null characters.
      *
      * @param receiver the receiver of the message
      * @param path the path as a {@code String}
@@ -157,7 +157,7 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Converts a {@code byte} array into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
-     * conversion contains embedded null characeters.
+     * conversion contains embedded null characters.
      *
      * @param receiver the receiver of the message
      * @param path the path as a a {@code byte[]} array

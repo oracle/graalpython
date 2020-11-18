@@ -1540,7 +1540,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone unlink(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            auditNode.audit("os.remove", path.originalObject, dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd);
+            auditNode.audit("os.remove", path.originalObject, dirFdForAudit(dirFd));
             try {
                 posixLib.unlinkAt(getPosixSupport(), dirFd, path, false);
             } catch (PosixException e) {
@@ -1591,7 +1591,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone mkdir(VirtualFrame frame, PosixPath path, int mode, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            auditNode.audit("os.mkdir", path.originalObject, mode, dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd);
+            auditNode.audit("os.mkdir", path.originalObject, mode, dirFdForAudit(dirFd));
             try {
                 posixLib.mkdirAt(getPosixSupport(), dirFd, path, mode);
             } catch (PosixException e) {
@@ -1616,7 +1616,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PNone rmdir(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            auditNode.audit("os.rmdir", path.originalObject, dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd);
+            auditNode.audit("os.rmdir", path.originalObject, dirFdForAudit(dirFd));
             try {
                 posixLib.unlinkAt(getPosixSupport(), dirFd, path, true);
             } catch (PosixException e) {
@@ -2854,6 +2854,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return channel.isBlocking();
         }
     }
+
+    // ------------------
+    // Helpers
+
+    static int dirFdForAudit(int dirFd) {
+        return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd;
+    }
+
+    // ------------------
+    // Converters
 
     /**
      * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the

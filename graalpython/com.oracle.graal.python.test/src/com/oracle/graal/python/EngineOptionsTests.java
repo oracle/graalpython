@@ -42,9 +42,6 @@ package com.oracle.graal.python;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.junit.Test;
@@ -61,17 +58,12 @@ public class EngineOptionsTests {
     }
 
     private static String doit(Engine engine, String backend) {
-        Map<String, String> options = new HashMap<>();
-        String[] args = new String[]{};
+        Context.Builder builder = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true);
         if (backend != null) {
-            options.put("python.PosixModuleBackend", backend);
+            builder.option("python.PosixModuleBackend", backend);
         }
-        Context context = Context.newBuilder().engine(engine).allowExperimentalOptions(true).allowAllAccess(true).options(options).arguments("python", args).build();
-        context.initialize("python");
-        context.enter();
-        String result = context.eval("python", "__graalpython__.posix_module_backend()").asString();
-        context.leave();
-        context.close();
-        return result;
+        try (Context context = builder.build()) {
+            return context.eval("python", "__graalpython__.posix_module_backend()").asString();
+        }
     }
 }

@@ -72,8 +72,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
 import static com.oracle.graal.python.PythonLanguage.getContext;
 
@@ -91,9 +90,7 @@ public class PathConversionNodeTests {
 
     @Before
     public void setUp() {
-        Map<String, String> options = new HashMap<>();
-        options.put("python.PosixModuleBackend", backendName);
-        PythonTests.enterContext(options, new String[0]);
+        PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
         pathToString = backendName.equals("java") ? p -> (String) p.value : p -> new String((byte[]) p.value);
     }
 
