@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
@@ -697,12 +698,43 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "self.getFormat() != value.getFormat()")
-        @SuppressWarnings("unused")
-        Object error(PArray self, PArray value) {
-            // CPython allows extending an array with an arbitrary iterable. Except a differently
-            // formatted array. Weird
-            throw raise(TypeError, "can only extend with array of same kind");
+        @Specialization
+        Object extend(VirtualFrame frame, PArray self, PSequence value,
+                        @Cached ArrayNodes.PutValueNode putValueNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            SequenceStorage storage = getSequenceStorageNode.execute(value);
+            int storageLenght = lenNode.execute(storage);
+            boolean capacityEnsured = false;
+            try {
+                self.ensureCapacity(PythonUtils.addExact(self.getLength(), storageLenght));
+                capacityEnsured = true;
+            } catch (OverflowException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // Let it fail later, so that it fails in the same state as the generic
+                // specialization
+            }
+            int lenght = self.getLength();
+            for (int i = 0; i < storageLenght; i++) {
+                // The whole extend is not atomic, just individual inserts are. That's the same as
+                // in CPython
+                if (capacityEnsured) {
+                    lenght++;
+                } else {
+                    try {
+                        lenght = PythonUtils.addExact(lenght, 1);
+                        self.ensureCapacity(lenght);
+                    } catch (OverflowException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raise(MemoryError);
+                    }
+                }
+                putValueNode.execute(frame, self, lenght - 1, getItemNode.execute(storage, i));
+                self.setLenght(lenght);
+            }
+
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!isArray(value)", limit = "3")
@@ -735,6 +767,14 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
 
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "self.getFormat() != value.getFormat()")
+        @SuppressWarnings("unused")
+        Object error(PArray self, PArray value) {
+            // CPython allows extending an array with an arbitrary iterable. Except a differently
+            // formatted array. Weird
+            throw raise(TypeError, "can only extend with array of same kind");
         }
     }
 

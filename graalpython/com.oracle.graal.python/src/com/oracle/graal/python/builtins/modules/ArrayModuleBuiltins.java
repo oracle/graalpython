@@ -42,6 +42,8 @@ import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -60,6 +62,8 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -188,7 +192,43 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 return array;
             }
 
-            // TODO impl for PSequence and PArray or use lenght_hint
+            @Specialization
+            PArray arrayArrayInitializer(VirtualFrame frame, Object cls, String typeCode, PArray initializer,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached ArrayNodes.GetValueNode getValueNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                try {
+                    PArray array = getFactory().createArray(cls, typeCode, format, initializer.getLength());
+                    for (int i = 0; i < initializer.getLength(); i++) {
+                        putValueNode.execute(frame, array, i, getValueNode.execute(initializer, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
+                }
+            }
+
+            @Specialization
+            PArray arraySequenceInitializer(VirtualFrame frame, Object cls, String typeCode, PSequence initializer,
+                            @Cached ArrayNodes.PutValueNode putValueNode,
+                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached SequenceStorageNodes.LenNode lenNode,
+                            @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                SequenceStorage storage = getSequenceStorageNode.execute(initializer);
+                int lenght = lenNode.execute(storage);
+                try {
+                    PArray array = getFactory().createArray(cls, typeCode, format, lenght);
+                    for (int i = 0; i < lenght; i++) {
+                        putValueNode.execute(frame, array, i, getItemNode.execute(storage, i));
+                    }
+                    return array;
+                } catch (OverflowException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raise(MemoryError);
+                }
+            }
 
             @Specialization(guards = "!isBytes(initializer)", limit = "3")
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
