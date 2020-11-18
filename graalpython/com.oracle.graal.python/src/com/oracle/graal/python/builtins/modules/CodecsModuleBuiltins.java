@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
+import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
 import static com.oracle.graal.python.nodes.ErrorMessages.BYTESLIKE_OBJ_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_ERROR_WITH_CODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ESCAPE_AT;
@@ -64,6 +66,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -80,7 +83,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -636,25 +638,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsEscapeDecodeNode extends EncodeBaseNode {
-        private static final int[] _PyLong_DigitValue = {
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 37, 37, 37, 37, 37, 37,
-                        37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-                        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
-                        37, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-                        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-                        37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,
-        };
-
         enum Errors {
             ERR_STRICT,
             ERR_IGNORE,
@@ -761,8 +744,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                             break;
                         case 'x':
                             if (i + 2 < bytes.length) {
-                                int digit1 = _PyLong_DigitValue[bytes[i + 1] & 0xff];
-                                int digit2 = _PyLong_DigitValue[bytes[i + 2] & 0xff];
+                                int digit1 = digitValue(bytes[i + 1]);
+                                int digit2 = digitValue(bytes[i + 2]);
                                 if (digit1 < 16 && digit2 < 16) {
                                     buffer.append((digit1 << 4) + digit2);
                                     i += 2;
@@ -810,8 +793,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
-        private static final String Py_hexdigits = "0123456789abcdef";
-
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         Object encode(PBytes data, @SuppressWarnings("unused") PNone errors,
                         @CachedLibrary(value = "data") PythonObjectLibrary pol) {
@@ -844,8 +825,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     } else if (c < ' ' || c >= 0x7f) {
                         buffer.append('\\');
                         buffer.append('x');
-                        buffer.append(Py_hexdigits.charAt((c & 0xf0) >> 4));
-                        buffer.append(Py_hexdigits.charAt(c & 0xf));
+                        buffer.append(HEXDIGITS[(c & 0xf0) >> 4]);
+                        buffer.append(HEXDIGITS[c & 0xf]);
                     } else {
                         buffer.append(c);
                     }
