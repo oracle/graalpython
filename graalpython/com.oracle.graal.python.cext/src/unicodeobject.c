@@ -230,146 +230,17 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
     return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
-MUST_INLINE PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va) {
-    va_list vacpy;
-    size_t fmt_size = strlen(fmt) + 1;
-    char* fmtcpy = strdup(fmt);
-    char* c = fmtcpy;
-
-    int remaining_space = 2047;
-    char* buffer = (char*)calloc(sizeof(char), remaining_space + 1);
-    char* full_buffer = buffer;
-
-    void *variable = NULL;
-    PyObject *tmp = NULL;
-    char *allocated = NULL; // points to the same as variable, if it has to be free'd
-
-    va_copy(vacpy, va);
-
-    while (c[0]) {
-        if (c[0] == '%') {
-            // we've reached the next directive, write until here
-            c[0] = '\0';
-            int bytes_written;
-            if (variable != NULL) {
-                bytes_written = snprintf(buffer, remaining_space, fmtcpy, variable);
-                if (allocated != NULL) {
-                    free(allocated);
-                    allocated = NULL;
-                }
-                variable = NULL;
-            } else {
-                bytes_written = vsnprintf(buffer, remaining_space, fmtcpy, vacpy);
-            }
-            remaining_space -= bytes_written;
-            buffer += bytes_written;
-            fmtcpy = c;
-            c[0] = '%';
-
-            // now decide if we need to do something special with this directive
-            PyObject* (*converter)(PyObject*) = NULL;
-            switch (c[1]) {
-            case 'A':
-                // The conversion cases, these all use a function to convert the
-                // PyObject* to a char* and they fall through
-                converter = PyObject_ASCII;
-            case 'U':
-                if (converter == NULL) converter = PyObject_Str;
-            case 'S':
-                if (converter == NULL) converter = PyObject_Str;
-            case 'R':
-                if (converter == NULL) converter = PyObject_Repr;
-                c[1] = 's';
-                tmp = va_arg(va, PyObject*);
-                // just advance cursor on 'vacpy'
-                va_arg(vacpy, PyObject*);
-                allocated = variable = as_char_pointer(converter(tmp));
-                break;
-            case 'c':
-                // This case should just treat it's argument as an integer
-                c[1] = 'd';
-                // intentionally fall-through
-            case 'd':
-            case 'i':
-            case 'x':
-                // just advance cursor on 'va'
-                va_arg(va, int);
-                break;
-            case 'u':
-                // just advance cursor on 'va'
-                va_arg(va, unsigned int);
-                break;
-            case 'l':
-                // 'c[2]' is guaranteed to be a correct memory access since 
-                // it will in the worst case be '\0'.
-                switch (c[2]) {
-                    // %ld, %li
-                    case 'd':
-                    case 'i':
-                        // just advance cursor on 'va'
-                        va_arg(va, long);
-                        break;
-                    // %lu
-                    case 'u':
-                        // just advance cursor on 'va'
-                        va_arg(va, unsigned long);
-                    // %ll?
-                    case 'l':
-                        // just advance cursor on 'va'
-                        va_arg(va, long long);
-                }
-                break;
-            case 'z':
-                // just advance cursor on 'va'
-                va_arg(va, Py_ssize_t);
-                break;
-            case 's':
-                // just advance cursor on 'va'
-                va_arg(va, char*);
-                break;
-            case 'p':
-                // just advance cursor on 'va'
-                va_arg(va, void*);
-                break;
-            case '%':
-                // literal %
-                break;
-            default:
-                variable = va_arg(va, PyObject*);
-                // just advance cursor on 'vacpy'
-                va_arg(vacpy, PyObject*);
-            }
-            // skip over next char, we checked it
-            c += 1;
-        }
-        c += 1;
-    }
-
-    // write the remaining buffer
-    if (variable != NULL) {
-        snprintf(buffer, remaining_space, fmtcpy, variable);
-        if (allocated) {
-            free(allocated);
-        }
-    } else {
-        vsnprintf(buffer, remaining_space, fmtcpy, vacpy);
-    }
-
-    PyObject* result = PyUnicode_FromString(full_buffer);
-    free(full_buffer);
-    va_end(vacpy);
-    return result;
-}
-
+typedef PyObject* (*unicode_fromformat_fun_t)(void* jstr, va_list va);
+UPCALL_TYPED_ID(PyTruffle_Unicode_FromFormat, unicode_fromformat_fun_t);
 PyObject* PyUnicode_FromFormatV(const char* format, va_list va) {
-    return PyTruffle_Unicode_FromFormat(format, va);
+    return _jls_PyTruffle_Unicode_FromFormat(polyglot_from_string(format, "ascii"), va);
 }
 
 NO_INLINE
 PyObject* PyUnicode_FromFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    PyObject* result = PyTruffle_Unicode_FromFormat(format, args);
+    PyObject* result = _jls_PyTruffle_Unicode_FromFormat(polyglot_from_string(format, "ascii"), args);
     va_end(args);
     return result;
 }

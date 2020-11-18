@@ -382,9 +382,6 @@ extern PyObject* wrapped_null;
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* STR */
-__attribute__((always_inline)) PyObject* PyTruffle_Unicode_FromFormat(const char *fmt, va_list va);
-
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);

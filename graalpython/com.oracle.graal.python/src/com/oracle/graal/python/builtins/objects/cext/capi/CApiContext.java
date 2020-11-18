@@ -732,6 +732,8 @@ public final class CApiContext extends CExtContext {
      * 'capi.c'.
      */
     public enum LLVMType {
+        int_t,
+        uint_t,
         int8_t,
         int16_t,
         int32_t,
@@ -740,12 +742,18 @@ public final class CApiContext extends CExtContext {
         uint16_t,
         uint32_t,
         uint64_t,
+        long_t,
+        ulong_t,
+        longlong_t,
+        ulonglong_t,
         float_t,
         double_t,
+        size_t,
         Py_ssize_t,
         Py_complex,
         PyObject_ptr_t,
         char_ptr_t,
+        void_ptr_t,
         int8_ptr_t,
         int16_ptr_t,
         int32_ptr_t,

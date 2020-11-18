@@ -96,10 +96,24 @@ static void init_upcall_PyTruffle_Arg_ParseTupleAndKeyword(void) {
     }
 
 /* just a renaming to avoid name clash with Java types */
-typedef char       char_t;
-typedef float      float_t;
-typedef double     double_t;
+typedef void*              void_ptr_t;
+typedef char               char_t;
+typedef float              float_t;
+typedef double             double_t;
+typedef int                int_t;
+typedef unsigned int       uint_t;
+typedef long               long_t;
+typedef unsigned long      ulong_t;
+typedef long long          longlong_t;
+typedef unsigned long long ulonglong_t;
 
+REGISTER_BASIC_TYPE(void_ptr_t);
+REGISTER_BASIC_TYPE(int_t);
+REGISTER_BASIC_TYPE(uint_t);
+REGISTER_BASIC_TYPE(long_t);
+REGISTER_BASIC_TYPE(ulong_t);
+REGISTER_BASIC_TYPE(longlong_t);
+REGISTER_BASIC_TYPE(ulonglong_t);
 REGISTER_BASIC_TYPE(int64_t);
 REGISTER_BASIC_TYPE(int32_t);
 REGISTER_BASIC_TYPE(int16_t);
@@ -114,6 +128,7 @@ REGISTER_BASIC_TYPE(PyObject);
 REGISTER_BASIC_TYPE(float_t);
 REGISTER_BASIC_TYPE(double_t);
 REGISTER_BASIC_TYPE(Py_ssize_t);
+REGISTER_BASIC_TYPE(size_t);
 
 /* For pointers, make them look like an array of size 1 such that it is
    possible to dereference the pointer by accessing element 0. */
