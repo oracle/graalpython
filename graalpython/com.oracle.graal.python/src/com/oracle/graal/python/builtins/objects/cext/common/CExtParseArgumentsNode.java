@@ -1279,56 +1279,6 @@ public abstract class CExtParseArgumentsNode {
         }
     }
 
-    /**
-     * Gets the pointer to the outVar at the given index. This is basically an access to the varargs
-     * like {@code va_arg(*valist, void *)}
-     */
-    @GenerateUncached
-    @ImportStatic(LLVMType.class)
-    abstract static class GetVaArgsNode extends Node {
-
-        public final Object getInt8Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int8_ptr_t);
-        }
-
-        public final Object getInt16Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int16_ptr_t);
-        }
-
-        public final Object getInt32Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int32_ptr_t);
-        }
-
-        public final Object getInt63Ptr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.int64_ptr_t);
-        }
-
-        public final Object getPyObjectPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.PyObject_ptr_t);
-        }
-
-        public final Object getCharPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.char_ptr_t);
-        }
-
-        public final Object getPyComplexPtr(Object valist, int index) throws InteropException {
-            return execute(valist, index, LLVMType.Py_complex_ptr_t);
-        }
-
-        public abstract Object execute(Object valist, int index, LLVMType llvmType) throws InteropException;
-
-        @Specialization(limit = "1")
-        static Object doGeneric(Object valist, int index, LLVMType llvmType,
-                        @CachedLibrary("valist") InteropLibrary valistLib,
-                        @Cached GetLLVMType getLLVMType) throws InteropException {
-            try {
-                return valistLib.invokeMember(valist, "get", index, getLLVMType.execute(llvmType));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-    }
-
     static final class ParseArgumentsException extends ControlFlowException {
         private static final long serialVersionUID = 1L;
 
