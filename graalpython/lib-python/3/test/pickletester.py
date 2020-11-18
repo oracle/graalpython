@@ -2244,6 +2244,7 @@ class AbstractPickleTests(unittest.TestCase):
                 loaded = self.loads(dumped)
                 self.assert_is_copy(obj, loaded)
 
+    @support.impl_detail("GR-27557: attribute name interning not yet supported", graalvm=False)
     def test_attribute_name_interning(self):
         # Test that attribute names of pickled objects are interned when
         # unpickling.
