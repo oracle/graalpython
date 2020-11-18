@@ -455,6 +455,7 @@
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_tofromfile
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_tofromlist
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_tofromstring
+*graalpython.lib-python.3.test.test_array.UnicodeTest.test_unicode
 *graalpython.lib-python.3.test.test_array.UnicodeTest.test_weakref
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_add
 *graalpython.lib-python.3.test.test_array.UnsignedByteTest.test_assignment

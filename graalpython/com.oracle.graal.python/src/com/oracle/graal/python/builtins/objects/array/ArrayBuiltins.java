@@ -368,22 +368,29 @@ public class ArrayBuiltins extends PythonBuiltins {
         static String repr(VirtualFrame frame, PArray self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
                         @Cached ConditionProfile isEmptyProfile,
+                        @Cached ConditionProfile isUnicodeProfile,
                         @Cached CastToJavaStringNode cast,
+                        @Cached ToUnicodeNode toUnicodeNode,
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             PythonUtils.append(sb, "array('");
             PythonUtils.append(sb, self.getFormatStr());
             PythonUtils.append(sb, '\'');
             if (isEmptyProfile.profile(self.getLength() != 0)) {
-                PythonUtils.append(sb, ", [");
-                for (int i = 0; i < self.getLength(); i++) {
-                    if (i > 0) {
-                        PythonUtils.append(sb, ", ");
+                if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
+                    PythonUtils.append(sb, ", ");
+                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, toUnicodeNode.call(frame, self))));
+                } else {
+                    PythonUtils.append(sb, ", [");
+                    for (int i = 0; i < self.getLength(); i++) {
+                        if (i > 0) {
+                            PythonUtils.append(sb, ", ");
+                        }
+                        Object value = getValueNode.execute(self, i);
+                        PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, value)));
                     }
-                    Object value = getValueNode.execute(self, i);
-                    PythonUtils.append(sb, cast.execute(reprNode.executeObject(frame, value)));
+                    PythonUtils.append(sb, ']');
                 }
-                PythonUtils.append(sb, ']');
             }
             PythonUtils.append(sb, ')');
             return PythonUtils.sbToString(sb);
