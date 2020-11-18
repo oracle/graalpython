@@ -129,12 +129,6 @@ public abstract class SequenceLiteralNode extends LiteralNode {
                         storage = new ByteSequenceStorage(elements, values.length);
                         break;
                     }
-                    case Char: {
-                        // we don't support this directly, throw and continue
-                        // generically
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw new UnexpectedResultException(values[0].execute(frame));
-                    }
                     case Int: {
                         int[] elements = new int[getCapacityEstimate()];
                         array = elements;

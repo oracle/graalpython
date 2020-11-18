@@ -43,7 +43,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Boolean;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Byte;
-import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Char;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Double;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Empty;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Int;
@@ -133,7 +132,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -178,13 +176,13 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceStorageNodes {
 
-    public static interface GenNodeSupplier {
+    public interface GenNodeSupplier {
         GeneralizationNode create();
 
         GeneralizationNode getUncached();
     }
 
-    public static interface ContainerFactory {
+    public interface ContainerFactory {
 
         Object apply(SequenceStorage s, PythonObjectFactory factory);
     }
@@ -212,8 +210,6 @@ public abstract class SequenceStorageNodes {
                     return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
                     return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
-                case Char:
-                    return rhsType == Char || rhsType == Uninitialized || rhsType == Empty;
                 case Tuple:
                     return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
                 case List:
@@ -257,8 +253,6 @@ public abstract class SequenceStorageNodes {
                     return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
                     return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
-                case Char:
-                    return rhsType == Char || rhsType == Uninitialized || rhsType == Empty;
                 case Tuple:
                     return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
                 case List:
@@ -287,7 +281,7 @@ public abstract class SequenceStorageNodes {
 
         protected static final int DEFAULT_CAPACITY = 8;
 
-        protected static final int MAX_SEQUENCE_STORAGES = 13;
+        protected static final int MAX_SEQUENCE_STORAGES = 11;
         protected static final int MAX_ARRAY_STORAGES = 9;
 
         protected static boolean isByteStorage(NativeSequenceStorage store) {
@@ -303,8 +297,6 @@ public abstract class SequenceStorageNodes {
                     return left instanceof BoolSequenceStorage;
                 case Byte:
                     return left instanceof ByteSequenceStorage;
-                case Char:
-                    return left instanceof CharSequenceStorage;
                 case Int:
                     return left instanceof IntSequenceStorage;
                 case Long:
@@ -336,10 +328,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isByteLike(GetElementType getElementTypeNode, SequenceStorage s) {
             return isByte(getElementTypeNode, s) || isInt(getElementTypeNode, s) || isLong(getElementTypeNode, s);
-        }
-
-        protected static boolean isChar(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Char;
         }
 
         protected static boolean isInt(GetElementType getElementTypeNode, SequenceStorage s) {
@@ -376,10 +364,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isByteLike(ListStorageType et) {
             return isByte(et) || isInt(et) || isLong(et);
-        }
-
-        protected static boolean isChar(ListStorageType et) {
-            return et == ListStorageType.Char;
         }
 
         protected static boolean isInt(ListStorageType et) {
@@ -706,11 +690,6 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static int doByte(ByteSequenceStorage storage, int idx) {
             return storage.getIntItemNormalized(idx);
-        }
-
-        @Specialization
-        protected static char doChar(CharSequenceStorage storage, int idx) {
-            return storage.getCharItemNormalized(idx);
         }
 
         @Specialization
@@ -1222,11 +1201,6 @@ public abstract class SequenceStorageNodes {
                         @Shared("castToByteNode") @Cached CastToByteNode castToByteNode) {
             // TODO: clean this up, we really might need a frame
             storage.setByteItemNormalized(idx, castToByteNode.execute(null, value));
-        }
-
-        @Specialization
-        protected static void doChar(CharSequenceStorage storage, int idx, char value) {
-            storage.setCharItemNormalized(idx, value);
         }
 
         @Specialization
@@ -1970,20 +1944,6 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        boolean doCharStorage(CharSequenceStorage left, CharSequenceStorage right) {
-            int llen = left.length();
-            int rlen = right.length();
-            for (int i = 0; i < Math.min(llen, rlen); i++) {
-                char litem = left.getCharItemNormalized(i);
-                char ritem = right.getCharItemNormalized(i);
-                if (litem != ritem) {
-                    return cmpOp.cmp(litem, ritem);
-                }
-            }
-            return cmpOp.cmp(llen, rlen);
-        }
-
-        @Specialization
         boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
             int llen = left.length();
             int rlen = right.length();
@@ -2200,7 +2160,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "isByteStorage(dest)")
         static void doNativeByte(byte[] src, int srcPos, NativeSequenceStorage dest, int destPos, int lenght,
-                                 @Cached SetItemScalarNode setItemNode) {
+                        @Cached SetItemScalarNode setItemNode) {
             for (int i = 0; i < lenght; i++) {
                 setItemNode.execute(dest, destPos + i, src[srcPos + i]);
             }
@@ -2620,24 +2580,6 @@ public abstract class SequenceStorageNodes {
                 byte[] repeated = new byte[PythonUtils.multiplyExact(s.length(), times)];
                 Arrays.fill(repeated, s.getByteItemNormalized(0));
                 return new ByteSequenceStorage(repeated);
-            } catch (OutOfMemoryError e) {
-                outOfMemProfile.enter();
-                throw raiseNode.raise(MemoryError);
-            } catch (OverflowException e) {
-                outOfMemProfile.enter();
-                throw raiseNode.raise(errorForOverflow);
-            }
-        }
-
-        /* special but common case: something like '["0"] * n' */
-        @Specialization(guards = {"s.length() == 1", "times > 0"})
-        CharSequenceStorage doCharSingleElement(CharSequenceStorage s, int times,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached BranchProfile outOfMemProfile) {
-            try {
-                char[] repeated = new char[PythonUtils.multiplyExact(s.length(), times)];
-                Arrays.fill(repeated, s.getCharItemNormalized(0));
-                return new CharSequenceStorage(repeated);
             } catch (OutOfMemoryError e) {
                 outOfMemProfile.enter();
                 throw raiseNode.raise(MemoryError);
@@ -3262,10 +3204,6 @@ public abstract class SequenceStorageNodes {
             return isByte(s) || isInt(s) || isLong(s);
         }
 
-        protected boolean isChar(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Char;
-        }
-
         protected boolean isDouble(SequenceStorage s) {
             return getElementType(s) == ListStorageType.Double;
         }
@@ -3295,16 +3233,6 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isByte(s)")
         static ByteSequenceStorage doByte(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
             ByteSequenceStorage ss = new ByteSequenceStorage(cap);
-            if (len != -1) {
-                ss.ensureCapacity(len);
-                ss.setNewLength(len);
-            }
-            return ss;
-        }
-
-        @Specialization(guards = "isChar(s)")
-        static CharSequenceStorage doChar(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
-            CharSequenceStorage ss = new CharSequenceStorage(cap);
             if (len != -1) {
                 ss.ensureCapacity(len);
                 ss.setNewLength(len);
@@ -3893,17 +3821,6 @@ public abstract class SequenceStorageNodes {
                         @Cached @SuppressWarnings("unused") GetElementType getElementType) {
             for (int i = start; i < getLength(s, end); i++) {
                 if (getItemScalarNode().executeByte(s, i) == item) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        @Specialization(guards = "isChar(getElementType, s)")
-        int doChar(SequenceStorage s, char item, int start, int end,
-                        @Cached @SuppressWarnings("unused") GetElementType getElementType) {
-            for (int i = start; i < getLength(s, end); i++) {
-                if (getItemScalarNode().executeChar(s, i) == item) {
                     return i;
                 }
             }
