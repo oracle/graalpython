@@ -53,28 +53,50 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.math.BigInteger;
+import java.util.Collections;
 
 import static com.oracle.graal.python.PythonLanguage.getContext;
 
+@RunWith(Parameterized.class)
 public class PathConversionNodeTests {
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
+    @Parameter(0) public String backendName;
+    private Function<PosixPath, String> pathToString;
+
+    @Parameters(name = "{0}")
+    public static String[] params() {
+        return new String[]{"java", "native"};
+    }
+
     @Before
     public void setUp() {
-        PythonTests.enterContext();
+        PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
+        pathToString = backendName.equals("java") ? p -> (String) p.value : p -> new String((byte[]) p.value);
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
     }
 
     @Test
@@ -345,19 +367,19 @@ public class PathConversionNodeTests {
         return callTarget.call();
     }
 
-    private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
+    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
         Object result = call(nullable, allowFd, arg);
         Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
         PosixPath path = (PosixPath) result;
         Assert.assertSame(orig, path.originalObject);
-        return new String(path.path);
+        return pathToString.apply(path);
     }
 
-    private static String callAndExpectPath(boolean nullable, boolean allowFd, Object arg) {
+    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg) {
         return callAndExpectPath(nullable, allowFd, arg, arg);
     }
 
-    private static String callAndExpectPathEx(String script) {
+    private String callAndExpectPathEx(String script) {
         PTuple o = (PTuple) evalValue(script);
         Object arg = o.getSequenceStorage().getItemNormalized(0);
         Object orig = o.getSequenceStorage().getItemNormalized(1);

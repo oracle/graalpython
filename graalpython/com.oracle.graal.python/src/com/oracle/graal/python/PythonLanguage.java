@@ -247,9 +247,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         OptionValues options = this.engineOptions;
         if (options == null) {
-            this.engineOptions = options = PythonOptions.createEngineOptions(env);
+            this.engineOptions = PythonOptions.createEngineOptions(env);
         } else {
-            assert options.equals(PythonOptions.createEngineOptions(env)) : "invalid engine options";
+            assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
         return context;
     }

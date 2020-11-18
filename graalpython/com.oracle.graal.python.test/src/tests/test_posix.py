@@ -160,6 +160,30 @@ class PosixTests(unittest.TestCase):
             os.close(fd1)
             os.close(fd2)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_mkdir_rmdir(self):
+        os.mkdir(TEST_FULL_PATH1)
+        try:
+            self.assertTrue(stat.S_ISDIR(os.stat(TEST_FULL_PATH1).st_mode))
+        finally:
+            os.rmdir(TEST_FULL_PATH1)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_mkdir_rmdir_dirfd(self):
+        tmp_fd = os.open(TEMP_DIR, 0)
+        try:
+            os.mkdir(TEST_FILENAME1, dir_fd=tmp_fd)
+            try:
+                self.assertTrue(stat.S_ISDIR(os.stat(TEST_FULL_PATH1).st_mode))
+            finally:
+                os.rmdir(TEST_FILENAME1, dir_fd=tmp_fd)
+        finally:
+            os.close(tmp_fd)
+
+    def test_umask(self):
+        orig = os.umask(0o22)
+        self.assertEqual(0o22, os.umask(orig))
+
 
 class WithCurdirFdTests(unittest.TestCase):
 
@@ -209,6 +233,10 @@ class WithCurdirFdTests(unittest.TestCase):
         self.assertTrue(os.get_blocking(self.fd))
         os.set_blocking(self.fd, False)
         self.assertFalse(os.get_blocking(self.fd))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_atty(self):
+        self.assertFalse(os.isatty(self.fd))
 
 
 class WithTempFilesTests(unittest.TestCase):
@@ -273,6 +301,42 @@ class WithTempFilesTests(unittest.TestCase):
             self.assertEqual(inode, os.fstat(fd1).st_ino)
         finally:
             os.close(fd1)
+
+
+class ChdirTests(unittest.TestCase):
+
+    def setUp(self):
+        self.old_wd = os.getcwd()
+
+    def tearDown(self):
+        os.chdir(self.old_wd)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_chdir(self):
+        os.chdir(TEMP_DIR)
+        os.chdir(self.old_wd)
+        self.assertEqual(os.fsencode(self.old_wd), os.getcwdb())
+        os.chdir(os.fsencode(self.old_wd))
+        self.assertEqual(self.old_wd, os.getcwd())
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_chdir_fd(self):
+        os.chdir(TEMP_DIR)
+        fd = os.open(self.old_wd, 0)
+        try:
+            os.chdir(fd)
+            self.assertEqual(self.old_wd, os.getcwd())
+        finally:
+            os.close(fd)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_fchdir(self):
+        fd = os.open(self.old_wd, 0)
+        try:
+            os.fchdir(fd)
+            self.assertEqual(os.fsencode(self.old_wd), os.getcwdb())
+        finally:
+            os.close(fd)
 
 
 if __name__ == '__main__':

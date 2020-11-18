@@ -68,9 +68,8 @@ int64_t call_getpid() {
     return getpid();
 }
 
-int64_t call_umask(int64_t mask) {
-  // TODO umask uses mode_t as argument/retval -> what Java type should we map it into? Using long for now.
-  return umask(mask);
+int32_t call_umask(int32_t mask) {
+    return umask(mask);
 }
 
 int32_t get_inheritable(int32_t fd) {
@@ -263,12 +262,32 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
     return result;
 }
 
-int32_t call_unlinkat(int32_t dirFd, const char *pathname) {
-    return unlinkat(fixDirFd(dirFd), pathname, 0);
+int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
+    return unlinkat(fixDirFd(dirFd), pathname, rmdir ? AT_REMOVEDIR : 0);
 }
 
 int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
     return symlinkat(target, fixDirFd(dirFd), linkpath);
+}
+
+int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
+    return mkdirat(dirFd, pathname, mode);
+}
+
+int32_t call_getcwd(char *buf, uint64_t size) {
+    return getcwd(buf, size) == NULL ? -1 : 0;
+}
+
+int32_t call_chdir(const char *path) {
+    return chdir(path);
+}
+
+int32_t call_fchdir(int32_t fd) {
+    return fchdir(fd);
+}
+
+int32_t call_isatty(int32_t fd) {
+    return isatty(fd);
 }
 
 int32_t get_errno() {

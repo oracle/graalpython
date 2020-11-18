@@ -42,6 +42,8 @@ package com.oracle.graal.python.runtime;
 
 import java.nio.ByteBuffer;
 
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -66,7 +68,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getpid(Object receiver);
 
-    public abstract long umask(Object receiver, long mask);
+    public abstract int umask(Object receiver, int mask) throws PosixException;
 
     public abstract int openAt(Object receiver, int dirFd, PosixPath pathname, int flags, int mode) throws PosixException;
 
@@ -116,9 +118,57 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
-    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname) throws PosixException;
+    public abstract void unlinkAt(Object receiver, int dirFd, PosixPath pathname, boolean rmdir) throws PosixException;
 
     public abstract void symlinkAt(Object receiver, PosixPath target, int linkpathDirFd, PosixPath linkpath) throws PosixException;
+
+    public abstract void mkdirAt(Object receiver, int dirFd, PosixPath pathname, int mode) throws PosixException;
+
+    public abstract Object getcwd(Object receiver) throws PosixException;
+
+    public abstract void chdir(Object receiver, PosixPath path) throws PosixException;
+
+    /**
+     * Performs operation of fchdir(fd).
+     *
+     * @param receiver the receiver of the message
+     * @param fd the file descriptor
+     * @param pathname pathname for the error message, can be null
+     * @param handleEintr if {@code true}, EINTR causes the call to be repeated
+     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
+     *             {@code false}
+     */
+    public abstract void fchdir(Object receiver, int fd, Object pathname, boolean handleEintr) throws PosixException;
+
+    public abstract boolean isatty(Object receiver, int fd);
+
+    /**
+     * Converts a {@code String} into the internal representation of paths used by the library
+     * implementation. The implementation should return {@code null} if the path after any necessary
+     * conversion contains embedded null characters.
+     *
+     * @param receiver the receiver of the message
+     * @param path the path as a {@code String}
+     * @return an opaque object representing the path or {@code null} if the path contains null
+     *         characters
+     */
+    public abstract Object createPathFromString(Object receiver, String path);
+
+    /**
+     * Converts a {@code byte} array into the internal representation of paths used by the library
+     * implementation. The implementation should return {@code null} if the path after any necessary
+     * conversion contains embedded null characters.
+     *
+     * @param receiver the receiver of the message
+     * @param path the path as a a {@code byte[]} array
+     * @return an opaque object representing the path or {@code null} if the path contains null
+     *         characters
+     */
+    public abstract Object createPathFromBytes(Object receiver, byte[] path);
+
+    public abstract String getPathAsString(Object receiver, Object path);
+
+    public abstract PBytes getPathAsBytes(Object receiver, Object path, PythonObjectFactory factory);
 
     public static class PosixException extends Exception {
 
@@ -225,27 +275,18 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
-     * Contains the path as a sequence of bytes (already fs-encoded, but without the terminating
-     * null character).
+     * Contains the path converted to the representation used by the {@code PosixSupportLibrary}
+     * implementation
+     *
+     * @see PosixSupportLibrary#createPathFromString(Object, String)
+     * @see PosixSupportLibrary#createPathFromBytes(Object, byte[])
      */
     public static class PosixPath extends PosixFileHandle {
-        public final byte[] path;
+        public final Object value;
 
-        /**
-         * Contains the materialized Java String if this {@link PosixPath} was constructed by
-         * encoding a string Python object.
-         */
-        public final String originalString;
-
-        public PosixPath(Object originalObject, String originalString, byte[] path) {
+        public PosixPath(Object originalObject, Object value) {
             super(originalObject);
-            assert path != null;
-            this.path = path;
-            this.originalString = originalString;
-        }
-
-        public PosixPath(Object originalObject, byte[] path) {
-            this(originalObject, null, path);
+            this.value = value;
         }
     }
 

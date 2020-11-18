@@ -85,6 +85,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -93,9 +94,11 @@ import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -103,14 +106,11 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -244,9 +244,9 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long umask(long umask) {
-        long prev = currentUmask;
-        currentUmask = (int) (umask & 00777);
+    public int umask(int umask) {
+        int prev = currentUmask;
+        currentUmask = umask & 00777;
         if (hasDefaultUmask) {
             compatibilityInfo("Returning default umask '%o' (ignoring the real umask value set in the OS)", prev);
         }
@@ -283,9 +283,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings({"unused", "static-method"})
     public int openAt(int dirFd, PosixPath path, int flags, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
-                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
-        String pathname = pathToJavaStr.execute(path);
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathname = pathToJavaStr(path);
         TruffleFile file = resolvePath(dirFd, pathname, defaultDirFdPofile);
         Set<StandardOpenOption> options = flagsToOptions(flags);
         FileAttribute<Set<PosixFilePermission>> attributes = modeToAttributes(mode & ~currentUmask);
@@ -487,6 +486,8 @@ public final class EmulatedPosixSupport extends PosixResources {
                 throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
             }
 
+        } catch (PosixException e) {
+            throw e;
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
@@ -511,9 +512,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public long[] fstatAt(int dirFd, PosixPath path, boolean followSymlinks,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
-                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
-        String pathname = pathToJavaStr.execute(path);
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String pathname = pathToJavaStr(path);
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
         LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
         try {
@@ -530,8 +530,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Exclusive @Cached BranchProfile nullPathProfile,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
-                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String path = getFilePath(fd);
         if (path == null) {
             nullPathProfile.enter();
@@ -776,11 +775,11 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void unlinkAt(int dirFd, PosixPath path,
+    public void unlinkAt(int dirFd, PosixPath path, @SuppressWarnings("unused") boolean rmdir,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
-                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
-        String pathname = pathToJavaStr.execute(path);
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        // TODO handle rmdir parameter
+        String pathname = pathToJavaStr(path);
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
         try {
             f.delete();
@@ -793,11 +792,10 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public void symlinkAt(PosixPath target, int linkDirFd, PosixPath link,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
-                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile,
-                    @Shared("pathToStr") @Cached PathToJavaStr pathToJavaStr) throws PosixException {
-        String linkPath = pathToJavaStr.execute(link);
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String linkPath = pathToJavaStr(link);
         TruffleFile linkFile = resolvePath(linkDirFd, linkPath, defaultDirFdPofile);
-        String targetPath = pathToJavaStr.execute(target);
+        String targetPath = pathToJavaStr(target);
         TruffleFile targetFile = context.getEnv().getPublicTruffleFile(targetPath);
         try {
             linkFile.createSymbolicLink(targetFile);
@@ -805,6 +803,78 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.fromException(e), target, link);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void mkdirAt(int dirFd, PosixPath pathname, int mode) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object getcwd() {
+        // dummy implementation needed for setUp/tearDown in test_posix.py
+        return "<dummy>";
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void chdir(PosixPath path) {
+        // dummy implementation needed for setUp/tearDown in test_posix.py
+        if (!"<dummy>".equals(path.value)) {
+            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchdir(int fd, Object pathname, boolean handleEintr) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean isatty(int fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    // ------------------
+    // Path conversions
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object createPathFromString(String path) {
+        return checkEmbeddedNulls(path);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public Object createPathFromBytes(byte[] path) {
+        return checkEmbeddedNulls(new String(path, StandardCharsets.UTF_8));
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public String getPathAsString(Object path) {
+        return (String) path;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    @TruffleBoundary
+    public PBytes getPathAsBytes(Object path, PythonObjectFactory factory) {
+        return factory.createBytes(((String) path).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String checkEmbeddedNulls(String s) {
+        for (int i = 0; i < s.length(); ++i) {
+            if (s.charAt(i) == 0) {
+                return null;
+            }
+        }
+        return s;
     }
 
     // ------------------
@@ -857,20 +927,8 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @GenerateUncached
-    abstract static class PathToJavaStr extends Node {
-        public abstract String execute(PosixPath path);
-
-        @Specialization(guards = "path.originalString != null")
-        String doString(PosixPath path) {
-            return path.originalString;
-        }
-
-        @Fallback
-        @TruffleBoundary
-        String doBytes(PosixPath path) {
-            return new String(path.path, StandardCharsets.UTF_8);
-        }
+    private static String pathToJavaStr(PosixPath path) {
+        return (String) path.value;
     }
 
     @TruffleBoundary(allowInlining = true)
