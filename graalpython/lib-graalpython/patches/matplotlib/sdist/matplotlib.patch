@@ -445,3 +445,133 @@ index 81eae82..80ee5af 100644
          "numpy>=1.15",
          "pillow>=6.2.0",
          "pyparsing>=2.0.3,!=2.0.4,!=2.1.2,!=2.1.6",
+diff --git a/src/_path_wrapper.cpp b/src/_path_wrapper.cpp
+index 708d7d3..f4484ac 100644
+--- a/src/_path_wrapper.cpp
++++ b/src/_path_wrapper.cpp
+@@ -30,7 +30,7 @@ PyObject *convert_polygon_vector(std::vector<Polygon> &polygons)
+ 
+ const char *Py_point_in_path__doc__ = "point_in_path(x, y, radius, path, trans)";
+ 
+-static PyObject *Py_point_in_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_point_in_path(PyObject *self, PyObject *args)
+ {
+     double x, y, r;
+     py::PathIterator path;
+@@ -60,7 +60,7 @@ static PyObject *Py_point_in_path(PyObject *self, PyObject *args, PyObject *kwds
+ 
+ const char *Py_points_in_path__doc__ = "points_in_path(points, radius, path, trans)";
+ 
+-static PyObject *Py_points_in_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_points_in_path(PyObject *self, PyObject *args)
+ {
+     numpy::array_view<const double, 2> points;
+     double r;
+@@ -89,7 +89,7 @@ static PyObject *Py_points_in_path(PyObject *self, PyObject *args, PyObject *kwd
+ 
+ const char *Py_point_on_path__doc__ = "point_on_path(x, y, radius, path, trans)";
+ 
+-static PyObject *Py_point_on_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_point_on_path(PyObject *self, PyObject *args)
+ {
+     double x, y, r;
+     py::PathIterator path;
+@@ -119,7 +119,7 @@ static PyObject *Py_point_on_path(PyObject *self, PyObject *args, PyObject *kwds
+ 
+ const char *Py_points_on_path__doc__ = "points_on_path(points, radius, path, trans)";
+ 
+-static PyObject *Py_points_on_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_points_on_path(PyObject *self, PyObject *args)
+ {
+     numpy::array_view<const double, 2> points;
+     double r;
+@@ -148,7 +148,7 @@ static PyObject *Py_points_on_path(PyObject *self, PyObject *args, PyObject *kwd
+ 
+ const char *Py_get_path_extents__doc__ = "get_path_extents(path, trans)";
+ 
+-static PyObject *Py_get_path_extents(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_get_path_extents(PyObject *self, PyObject *args)
+ {
+     py::PathIterator path;
+     agg::trans_affine trans;
+@@ -176,7 +176,7 @@ static PyObject *Py_get_path_extents(PyObject *self, PyObject *args, PyObject *k
+ const char *Py_update_path_extents__doc__ =
+     "update_path_extents(path, trans, rect, minpos, ignore)";
+ 
+-static PyObject *Py_update_path_extents(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_update_path_extents(PyObject *self, PyObject *args)
+ {
+     py::PathIterator path;
+     agg::trans_affine trans;
+@@ -252,7 +252,7 @@ static PyObject *Py_update_path_extents(PyObject *self, PyObject *args, PyObject
+ 
+ const char *Py_get_path_collection_extents__doc__ = "get_path_collection_extents(";
+ 
+-static PyObject *Py_get_path_collection_extents(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_get_path_collection_extents(PyObject *self, PyObject *args)
+ {
+     agg::trans_affine master_transform;
+     PyObject *pathsobj;
+@@ -302,7 +302,7 @@ const char *Py_point_in_path_collection__doc__ =
+     "point_in_path_collection(x, y, radius, master_transform, paths, transforms, offsets, "
+     "offset_trans, filled, offset_position)";
+ 
+-static PyObject *Py_point_in_path_collection(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_point_in_path_collection(PyObject *self, PyObject *args)
+ {
+     double x, y, radius;
+     agg::trans_affine master_transform;
+@@ -367,7 +367,7 @@ static PyObject *Py_point_in_path_collection(PyObject *self, PyObject *args, PyO
+ 
+ const char *Py_path_in_path__doc__ = "path_in_path(path_a, trans_a, path_b, trans_b)";
+ 
+-static PyObject *Py_path_in_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_path_in_path(PyObject *self, PyObject *args)
+ {
+     py::PathIterator a;
+     agg::trans_affine atrans;
+@@ -399,7 +399,7 @@ static PyObject *Py_path_in_path(PyObject *self, PyObject *args, PyObject *kwds)
+ 
+ const char *Py_clip_path_to_rect__doc__ = "clip_path_to_rect(path, rect, inside)";
+ 
+-static PyObject *Py_clip_path_to_rect(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_clip_path_to_rect(PyObject *self, PyObject *args)
+ {
+     py::PathIterator path;
+     agg::rect_d rect;
+@@ -424,7 +424,7 @@ static PyObject *Py_clip_path_to_rect(PyObject *self, PyObject *args, PyObject *
+ 
+ const char *Py_affine_transform__doc__ = "affine_transform(points, trans)";
+ 
+-static PyObject *Py_affine_transform(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_affine_transform(PyObject *self, PyObject *args)
+ {
+     PyObject *vertices_obj;
+     agg::trans_affine trans;
+@@ -461,7 +461,7 @@ static PyObject *Py_affine_transform(PyObject *self, PyObject *args, PyObject *k
+ 
+ const char *Py_count_bboxes_overlapping_bbox__doc__ = "count_bboxes_overlapping_bbox(bbox, bboxes)";
+ 
+-static PyObject *Py_count_bboxes_overlapping_bbox(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_count_bboxes_overlapping_bbox(PyObject *self, PyObject *args)
+ {
+     agg::rect_d bbox;
+     numpy::array_view<const double, 3> bboxes;
+@@ -595,7 +595,7 @@ const char *Py_cleanup_path__doc__ =
+     "cleanup_path(path, trans, remove_nans, clip_rect, snap_mode, stroke_width, simplify, "
+     "return_curves, sketch)";
+ 
+-static PyObject *Py_cleanup_path(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_cleanup_path(PyObject *self, PyObject *args)
+ {
+     py::PathIterator path;
+     agg::trans_affine trans;
+@@ -675,7 +675,7 @@ static PyObject *Py_cleanup_path(PyObject *self, PyObject *args, PyObject *kwds)
+ const char *Py_convert_to_string__doc__ = "convert_to_string(path, trans, "
+     "clip_rect, simplify, sketch, precision, codes, postfix)";
+ 
+-static PyObject *Py_convert_to_string(PyObject *self, PyObject *args, PyObject *kwds)
++static PyObject *Py_convert_to_string(PyObject *self, PyObject *args)
+ {
+     py::PathIterator path;
+     agg::trans_affine trans;
