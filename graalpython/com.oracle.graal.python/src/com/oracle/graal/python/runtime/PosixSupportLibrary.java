@@ -143,7 +143,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract boolean isatty(Object receiver, int fd);
 
     /**
-     * @return an opaque directory stream object to be used in calls to {@code readdir} and {@code closedir}
+     * @return an opaque directory stream object to be used in calls to {@code readdir} and
+     *         {@code closedir}
      */
     public abstract Object opendir(Object receiver, PosixPath path) throws PosixException;
 
@@ -162,6 +163,17 @@ public abstract class PosixSupportLibrary extends Library {
      * @see #getPathAsString(Object, Object)
      */
     public abstract Object dirEntryGetName(Object receiver, Object dirEntry) throws PosixException;
+
+    /**
+     * Returns the dir entry path, which is the name of the dir entry joined with the path passed to
+     * {@link #opendir(Object, PosixPath)}. If {@link #fdopendir(Object, PosixFd)} was used, dir
+     * entry path is the same as its name.
+     * 
+     * @return an opaque object representing the dir entry path
+     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsString(Object, Object)
+     */
+    public abstract Object dirEntryGetPath(Object receiver, Object dirEntry) throws PosixException;
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library

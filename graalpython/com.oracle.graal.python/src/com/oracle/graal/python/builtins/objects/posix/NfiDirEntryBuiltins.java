@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
@@ -103,6 +104,40 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
                         @Cached CastToJavaStringNode castToStringNode) {
             return "<DirEntry " + castToStringNode.execute(reprNode.executeObject(frame, nameNode.call(frame, self))) + ">";
+        }
+    }
+
+    @Builtin(name = "path", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class PathNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.produceBytes")
+        Object pathAsBytes(VirtualFrame frame, PNfiDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.dirEntryGetPath(getPosixSupport(), self.dirEntryData), factory());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization(guards = "!self.produceBytes")
+        Object pathAsString(VirtualFrame frame, PNfiDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.dirEntryGetPath(getPosixSupport(), self.dirEntryData));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = __FSPATH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class FspathNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object fspath(VirtualFrame frame, PNfiDirEntry self,
+                        @Cached PathNode pathNode) {
+            return pathNode.call(frame, self);
         }
     }
 }

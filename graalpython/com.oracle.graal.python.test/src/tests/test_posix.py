@@ -351,10 +351,11 @@ class ScandirTests(unittest.TestCase):
 
     def setUp(self):
         os.mkdir(TEST_FULL_PATH1)
-        os.close(os.open(os.path.join(TEST_FULL_PATH1, '.abc'), os.O_WRONLY | os.O_CREAT))
+        self.abc_path = os.path.join(TEST_FULL_PATH1, '.abc')
+        os.close(os.open(self.abc_path, os.O_WRONLY | os.O_CREAT))
 
     def tearDown(self):
-        os.unlink(os.path.join(TEST_FULL_PATH1, '.abc'))
+        os.unlink(self.abc_path)
         os.rmdir(TEST_FULL_PATH1)
 
     def test_scandir_explicit_close(self):
@@ -403,6 +404,55 @@ class ScandirTests(unittest.TestCase):
             dir1.close()
             # ScandirIterator.close() must rewind
             self.assertEqual(1, len([x for x in dir2]))
+        finally:
+            os.close(fd)
+
+    def test_scandir_default_arg(self):
+        with os.scandir() as dir:
+            self.assertEqual('./', next(dir).path[:2])
+
+    def test_scandir_entry_path_str(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry '.abc'>", repr(entry))
+        self.assertEqual('.abc', entry.name)
+        self.assertEqual(self.abc_path, entry.path)
+        self.assertEqual(self.abc_path, os.fspath(entry))
+
+        # trailing slash
+        with os.scandir(TEST_FULL_PATH1 + '/') as dir:
+            self.assertEqual(self.abc_path, next(dir).path)
+
+    def test_scandir_entry_path_bytes(self):
+        with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry b'.abc'>", repr(entry))
+        self.assertEqual(b'.abc', entry.name)
+        self.assertEqual(os.fsencode(self.abc_path), entry.path)
+        self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
+
+        # trailing slash
+        with os.scandir(os.fsencode(TEST_FULL_PATH1 + '/')) as dir:
+            self.assertEqual(os.fsencode(self.abc_path), next(dir).path)
+
+    def test_scandir_entry_path_bufferlike(self):
+        with os.scandir(array.array('B', os.fsencode(TEST_FULL_PATH1))) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry b'.abc'>", repr(entry))
+        self.assertEqual(b'.abc', entry.name)
+        self.assertEqual(os.fsencode(self.abc_path), entry.path)
+        self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
+
+    def test_scandir_entry_path_fd(self):
+        fd = os.open(TEST_FULL_PATH1, 0)
+        try:
+            with os.scandir(fd) as dir:
+                entry = next(dir)
+            # using fd instead of path returns strings and path is the same as name
+            self.assertEqual("<DirEntry '.abc'>", repr(entry))
+            self.assertEqual('.abc', entry.name)
+            self.assertEqual('.abc', entry.path)
+            self.assertEqual('.abc', os.fspath(entry))
         finally:
             os.close(fd)
 

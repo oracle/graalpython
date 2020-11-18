@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -557,7 +559,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, false);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, (byte []) path.value);
         logExit("opendir", "%s", dirStream);
         return dirStream;
     }
@@ -570,7 +572,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, true);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, null);
         logExit("fdopendir", "%s", dirStream);
         return dirStream;
     }
@@ -607,7 +609,7 @@ public final class NFIPosixSupport extends PosixSupport {
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
-            DirEntry dirEntry = new DirEntry(name.withLength(findZero(name.data)), out[0], out[1]);
+            DirEntry dirEntry = new DirEntry(dirStream.path, name.withLength(findZero(name.data)), out[0], out[1]);
             logExit("readdir", "%s", dirEntry);
             return dirEntry;
         }
@@ -625,6 +627,48 @@ public final class NFIPosixSupport extends PosixSupport {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         logExit("dirEntryGetName", "'%s'", dirEntry.name);
         return dirEntry.name;
+    }
+
+    //TODO should we cache the result?
+    @ExportMessage
+    public static class DirEntryGetPath {
+        @Specialization(guards = "dirEntry.dirPath == null")
+        static Buffer noPath(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
+            logEnter("dirEntryGetPath", "%s", dirEntry);
+            logExit("dirEntryGetPath", "'%s'", dirEntry.name);
+            return dirEntry.name;
+        }
+
+        @Specialization(guards = {"dirEntry.dirPath != null", "endsWithSlash(dirEntry)"})
+        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
+            logEnter("dirEntryGetPath", "%s", dirEntry);
+            int pathLen = dirEntry.dirPath.length;
+            int nameLen = (int) dirEntry.name.length;
+            byte[] buf = new byte[pathLen + nameLen];
+            PythonUtils.arraycopy(dirEntry.dirPath, 0, buf, 0, pathLen);
+            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen, nameLen);
+            Buffer path = Buffer.wrap(buf);
+            logExit("dirEntryGetPath", "'%s'", path);
+            return path;
+        }
+
+        @Specialization(guards = {"dirEntry.dirPath != null", "!endsWithSlash(dirEntry)"})
+        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
+            logEnter("dirEntryGetPath", "%s", dirEntry);
+            int pathLen = dirEntry.dirPath.length;
+            int nameLen = (int) dirEntry.name.length;
+            byte[] buf = new byte[pathLen + 1 + nameLen];
+            PythonUtils.arraycopy(dirEntry.dirPath, 0, buf, 0, pathLen);
+            buf[pathLen] = '/';
+            PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
+            Buffer path = Buffer.wrap(buf);
+            logExit("dirEntryGetPath", "'%s'", path);
+            return path;
+        }
+
+        protected static boolean endsWithSlash(DirEntry dirEntry) {
+            return dirEntry.dirPath[dirEntry.dirPath.length - 1] == '/';
+        }
     }
 
     // ------------------
@@ -725,23 +769,28 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static class DirStream {
         final DirStreamRef ref;
+        final byte[] path;
 
-        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
-            ref = new DirStreamRef(this, queue, nativePtr, needsRewind);
+        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, byte[] path) {
+            ref = new DirStreamRef(this, queue, nativePtr, path == null);
+            this.path = path;
         }
 
         @Override
         public String toString() {
-            return "DirStreamState -> " + ref;
+            CompilerAsserts.neverPartOfCompilation();
+            return "DirStreamState -> " + ref + ", path=" + (path == null ? "null" : new String(path));
         }
     }
 
-    private static class DirEntry {
+    protected static class DirEntry {
+        final byte[] dirPath;
         final Buffer name;
         final long ino;
         final long type;
 
-        DirEntry(Buffer name, long ino, long type) {
+        DirEntry(byte[] dirPath, Buffer name, long ino, long type) {
+            this.dirPath = dirPath;
             this.name = name;
             this.ino = ino;
             this.type = type;
@@ -753,6 +802,7 @@ public final class NFIPosixSupport extends PosixSupport {
                             "name='" + new String(name.data, 0, (int) name.length) + "'" +
                             ", ino=" + ino +
                             ", type=" + type +
+                            ", dirPath=" + (dirPath == null ? "null" : new String(dirPath)) +
                             '}';
         }
     }

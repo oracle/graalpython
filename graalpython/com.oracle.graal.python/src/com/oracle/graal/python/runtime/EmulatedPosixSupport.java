@@ -907,6 +907,12 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object dirEntryGetPath(Object dirEntry) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
     // ------------------
     // Path conversions
 
