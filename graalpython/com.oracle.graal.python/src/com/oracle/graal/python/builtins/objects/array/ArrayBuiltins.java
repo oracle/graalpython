@@ -706,32 +706,18 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(value);
             int storageLength = lenNode.execute(storage);
-            boolean capacityEnsured = false;
             try {
                 self.resizeStorage(PythonUtils.addExact(self.getLength(), storageLength));
-                capacityEnsured = true;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // Let it fail later, so that it fails in the same state as the generic
-                // specialization
+                throw raise(MemoryError);
             }
             int length = self.getLength();
             for (int i = 0; i < storageLength; i++) {
                 // The whole extend is not atomic, just individual inserts are. That's the same as
                 // in CPython
-                if (capacityEnsured) {
-                    length++;
-                } else {
-                    try {
-                        length = PythonUtils.addExact(length, 1);
-                        self.resizeStorage(length);
-                    } catch (OverflowException e) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw raise(MemoryError);
-                    }
-                }
-                putValueNode.execute(frame, self, length - 1, getItemNode.execute(storage, i));
-                self.setLength(length);
+                putValueNode.execute(frame, self, length, getItemNode.execute(storage, i));
+                self.setLength(++length);
             }
 
             return PNone.NONE;
@@ -1101,24 +1087,21 @@ public class ArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 2"})
-        static Object byteswap2(PArray self,
-                        @Cached("self.getFormat().bytesize") int itemsize) {
-            doByteSwapExploded(self, itemsize, self.getBuffer());
+        @Specialization(guards = "self.getFormat().bytesize == 2")
+        static Object byteswap2(PArray self) {
+            doByteSwapExploded(self, 2, self.getBuffer());
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 4"})
-        static Object byteswap4(PArray self,
-                        @Cached("self.getFormat().bytesize") int itemsize) {
-            doByteSwapExploded(self, itemsize, self.getBuffer());
+        @Specialization(guards = "self.getFormat().bytesize == 4")
+        static Object byteswap4(PArray self) {
+            doByteSwapExploded(self, 4, self.getBuffer());
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getFormat().bytesize == itemsize", "itemsize == 8"})
-        static Object byteswap8(PArray self,
-                        @Cached("self.getFormat().bytesize") int itemsize) {
-            doByteSwapExploded(self, itemsize, self.getBuffer());
+        @Specialization(guards = "self.getFormat().bytesize == 8")
+        static Object byteswap8(PArray self) {
+            doByteSwapExploded(self, 8, self.getBuffer());
             return PNone.NONE;
         }
 
