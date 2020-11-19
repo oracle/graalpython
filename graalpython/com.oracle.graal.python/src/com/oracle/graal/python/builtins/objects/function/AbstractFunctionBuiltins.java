@@ -180,14 +180,14 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetItemNode getItem,
-                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+                        @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
             Object module = readObject.execute(self, __MODULE__);
             if (module == PNone.NO_VALUE) {
                 CompilerDirectives.transferToInterpreter();
@@ -202,9 +202,16 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
             return module;
         }
 
-        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)"})
-        Object getModule(PFunction self, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeObject) {
+        @Specialization(guards = {"!isBuiltinFunction(self)", "isDeleteMarker(value)"})
+        Object delModule(PFunction self, @SuppressWarnings("unused") Object value,
+                        @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
+            writeObject.execute(self, __MODULE__, PNone.NONE);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object setModule(PFunction self, Object value,
+                        @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __MODULE__, value);
             return PNone.NONE;
         }

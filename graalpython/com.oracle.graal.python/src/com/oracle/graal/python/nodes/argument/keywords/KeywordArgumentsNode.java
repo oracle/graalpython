@@ -95,7 +95,7 @@ public abstract class KeywordArgumentsNode extends Node {
 
     protected boolean isNonMapping(PKeyword[] arguments, Object starargs) {
         return (arguments.length == 0 && PGuards.isPNone(starargs)) ||
-                (!PGuards.isDict(starargs) && !PGuards.isPNone(starargs));
+                        (!PGuards.isDict(starargs) && !PGuards.isPNone(starargs));
     }
 
     @Specialization(guards = "arguments.length > 0")
