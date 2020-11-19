@@ -52,7 +52,7 @@ public final class PArray extends PythonBuiltinObject {
         this.formatStr = formatStr;
         this.format = format;
         this.lenght = 0;
-        this.buffer = new byte[32];
+        this.buffer = new byte[0];
     }
 
     public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) throws OverflowException {
@@ -60,7 +60,7 @@ public final class PArray extends PythonBuiltinObject {
         this.formatStr = formatStr;
         this.format = format;
         this.lenght = length;
-        this.buffer = new byte[Math.max(32, PythonUtils.multiplyExact(length, format.bytesize))];
+        this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
     }
 
     public BufferFormat getFormat() {
@@ -84,12 +84,20 @@ public final class PArray extends PythonBuiltinObject {
         this.lenght = lenght;
     }
 
+    private int computeNewSize(int newLength, int itemsize) throws OverflowException {
+        // Overallocation using the same formula as CPython
+        int newSize = ((newLength >> 4) + (lenght < 8 ? 3 : 7) + newLength) * itemsize;
+        if (newSize / itemsize < newLength) {
+            throw OverflowException.INSTANCE;
+        }
+        return newSize;
+    }
+
     public void ensureCapacity(int newLength) throws OverflowException {
         assert newLength >= 0;
-        // TODO better estimate
-        int newSize = PythonUtils.multiplyExact(newLength, format.bytesize);
-        if (newSize > buffer.length) {
-            byte[] newBuffer = new byte[newSize];
+        int itemsize = format.bytesize;
+        if (buffer.length / itemsize < newLength) {
+            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
             buffer = newBuffer;
         }
@@ -104,11 +112,9 @@ public final class PArray extends PythonBuiltinObject {
         assert from >= 0 && from <= lenght;
         assert by >= 0;
         int newLength = PythonUtils.addExact(lenght, by);
-        // TODO better estimate
         int itemsize = format.bytesize;
-        int newSize = PythonUtils.multiplyExact(newLength, itemsize);
-        if (newSize > buffer.length) {
-            byte[] newBuffer = new byte[newSize];
+        if (buffer.length / itemsize < newLength) {
+            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
             PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (lenght - from) * itemsize);
             buffer = newBuffer;
