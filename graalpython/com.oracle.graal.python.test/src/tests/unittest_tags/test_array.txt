@@ -92,6 +92,7 @@
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_len
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_mul
+*graalpython.lib-python.3.test.test_array.DoubleTest.test_nan
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_obsolete_write_lock
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_pickle
 *graalpython.lib-python.3.test.test_array.DoubleTest.test_pickle_for_empty_array
@@ -147,6 +148,7 @@
 *graalpython.lib-python.3.test.test_array.FloatTest.test_iterator_pickle
 *graalpython.lib-python.3.test.test_array.FloatTest.test_len
 *graalpython.lib-python.3.test.test_array.FloatTest.test_mul
+*graalpython.lib-python.3.test.test_array.FloatTest.test_nan
 *graalpython.lib-python.3.test.test_array.FloatTest.test_obsolete_write_lock
 *graalpython.lib-python.3.test.test_array.FloatTest.test_pickle
 *graalpython.lib-python.3.test.test_array.FloatTest.test_pickle_for_empty_array

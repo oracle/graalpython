@@ -135,4 +135,8 @@ public enum BufferFormat {
         return null;
     }
 
+    public static boolean isFloatingPoint(BufferFormat format) {
+        return format == FLOAT || format == DOUBLE;
+    }
+
 }

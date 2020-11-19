@@ -98,6 +98,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -221,9 +222,10 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(BufferFormat.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "shouldCompareBytes(left, right)")
+        @Specialization(guards = {"left.getFormat() == right.getFormat()", "!isFloatingPoint(left.getFormat())"})
         static boolean eqBytes(PArray left, PArray right) {
             if (left.getLength() != right.getLength()) {
                 return false;
@@ -237,7 +239,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             return true;
         }
 
-        @Specialization(guards = "!shouldCompareBytes(left, right)")
+        @Specialization(guards = "left.getFormat() != right.getFormat()")
         static boolean eqItems(PArray left, PArray right,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached ArrayNodes.GetValueNode getLeft,
@@ -253,10 +255,32 @@ public class ArrayBuiltins extends PythonBuiltins {
             return true;
         }
 
+        // Separate specialization for float/double is needed because of NaN comparisons
+        @Specialization(guards = {"left.getFormat() == right.getFormat()", "isFloatingPoint(left.getFormat())"})
+        static boolean eqDoubles(PArray left, PArray right,
+                        @Cached ArrayNodes.GetValueNode getLeft,
+                        @Cached ArrayNodes.GetValueNode getRight) {
+            if (left.getLength() != right.getLength()) {
+                return false;
+            }
+            for (int i = 0; i < left.getLength(); i++) {
+                double leftValue = (Double) getLeft.execute(left, i);
+                double rightValue = (Double) getRight.execute(right, i);
+                if (leftValue != rightValue) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         @Specialization(guards = "!isArray(right)")
         @SuppressWarnings("unused")
         static Object eq(PArray left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        protected static boolean shouldCompareDouble(PArray left, PArray right) {
+            return left.getFormat() == right.getFormat() && (left.getFormat() == BufferFormat.DOUBLE || left.getFormat() == BufferFormat.FLOAT);
         }
 
         protected static boolean shouldCompareBytes(PArray left, PArray right) {
@@ -264,10 +288,11 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @ImportStatic(BufferFormat.class)
     abstract static class AbstractComparisonNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        boolean cmp(VirtualFrame frame, PArray left, PArray right,
+        @Specialization(guards = "!isFloatingPoint(left.getFormat()) || (left.getFormat() != right.getFormat())")
+        boolean cmpItems(VirtualFrame frame, PArray left, PArray right,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached("createComparison()") BinaryComparisonNode compareNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
@@ -278,6 +303,24 @@ public class ArrayBuiltins extends PythonBuiltins {
                 Object leftValue = getLeft.execute(left, i);
                 Object rightValue = getRight.execute(right, i);
                 if (!lib.equals(leftValue, rightValue, lib)) {
+                    return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, leftValue, rightValue));
+                }
+            }
+            return compareLengths(left.getLength(), right.getLength());
+        }
+
+        // Separate specialization for float/double is needed because of NaN comparisons
+        @Specialization(guards = {"isFloatingPoint(left.getFormat())", "left.getFormat() == right.getFormat()"})
+        boolean cmpDoubles(VirtualFrame frame, PArray left, PArray right,
+                        @Cached("createComparison()") BinaryComparisonNode compareNode,
+                        @Cached("createIfTrueNode()") CoerceToBooleanNode coerceToBooleanNode,
+                        @Cached ArrayNodes.GetValueNode getLeft,
+                        @Cached ArrayNodes.GetValueNode getRight) {
+            int commonLength = Math.min(left.getLength(), right.getLength());
+            for (int i = 0; i < commonLength; i++) {
+                double leftValue = (Double) getLeft.execute(left, i);
+                double rightValue = (Double) getRight.execute(right, i);
+                if (leftValue != rightValue) {
                     return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, leftValue, rightValue));
                 }
             }
