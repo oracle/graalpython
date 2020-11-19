@@ -40,18 +40,14 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -69,9 +65,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
-public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements IndirectCallNode {
+public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements IndirectCallNode {
     @Child private PythonObjectFactory objectFactory;
-    @Child private PRaiseNode raiseNode;
     @Child private PConstructAndRaiseNode constructAndRaiseNode;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
@@ -97,18 +92,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
             }
         }
         return objectFactory;
-    }
-
-    protected final PRaiseNode getRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (isAdoptable()) {
-                raiseNode = insert(PRaiseNode.create());
-            } else {
-                raiseNode = PRaiseNode.getUncached();
-            }
-        }
-        return raiseNode;
     }
 
     private PConstructAndRaiseNode getConstructAndRaiseNode() {
@@ -141,34 +124,6 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
 
     public final PythonContext getContext() {
         return getContextRef().get();
-    }
-
-    public PException raise(PythonBuiltinClassType type, String string) {
-        return getRaiseNode().raise(type, string);
-    }
-
-    public PException raise(Object exceptionType) {
-        return getRaiseNode().raise(exceptionType);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
-        return getRaiseNode().raise(type, cause, format, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
-        return getRaiseNode().raise(type, format, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
-        return getRaiseNode().raise(type, arguments);
-    }
-
-    public final PException raise(PythonBuiltinClassType type, Exception e) {
-        return getRaiseNode().raise(type, e);
-    }
-
-    public final PException raiseOverflow() {
-        return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 
     public final PException raiseOSError(VirtualFrame frame, OSErrorEnum num) {

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -221,7 +221,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         owner = null;
     }
 
-    public void checkReleased(PythonBuiltinBaseNode node) {
+    public void checkReleased(PNodeWithRaise node) {
         if (isReleased()) {
             throw node.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
         }
