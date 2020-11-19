@@ -98,7 +98,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -778,9 +777,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void unlinkAt(int dirFd, PosixPath path, @SuppressWarnings("unused") boolean rmdir,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
-        // TODO handle rmdir parameter
         String pathname = pathToJavaStr(path);
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
+        if (f.isDirectory() != rmdir) {
+            errorBranch.enter();
+            throw posixException(f.isDirectory() ? OSErrorEnum.ENOTDIR : OSErrorEnum.EISDIR);
+        }
         try {
             f.delete();
         } catch (Exception e) {
@@ -806,37 +808,69 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void mkdirAt(int dirFd, PosixPath pathname, int mode) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public Object getcwd() {
-        // dummy implementation needed for setUp/tearDown in test_posix.py
-        return "<dummy>";
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void chdir(PosixPath path) {
-        // dummy implementation needed for setUp/tearDown in test_posix.py
-        if (!"<dummy>".equals(path.value)) {
-            throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public void mkdirAt(int dirFd, PosixPath path, int mode,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
+        String linkPath = pathToJavaStr(path);
+        TruffleFile linkFile = resolvePath(dirFd, linkPath, defaultDirFdPofile);
+        try {
+            linkFile.createDirectory();
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e), path);
         }
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public void fchdir(int fd, Object pathname, boolean handleEintr) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    public Object getcwd() {
+        return context.getEnv().getCurrentWorkingDirectory().toString();
     }
 
     @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
+    public void chdir(PosixPath path,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch) throws PosixException {
+        String pathStr = pathToJavaStr(path);
+        try {
+            chdirStr(pathStr);
+        } catch (Exception e) {
+            errorBranch.enter();
+            throw posixException(OSErrorEnum.fromException(e), path);
+        }
+    }
+
+    @ExportMessage
+    public void fchdir(int fd, Object originalPath, boolean handleEintr,
+                    @Shared("errorBranch") @Cached BranchProfile errorBranch,
+                    @Exclusive @Cached BranchProfile asyncProfile) throws PosixException {
+        while (true) {
+            try {
+                String path = getFilePath(fd);
+                chdirStr(path);
+                return;
+            } catch (Exception e) {
+                errorBranch.enter();
+                ErrorAndMessagePair errorAndMessage = OSErrorEnum.fromException(e);
+                if (handleEintr && errorAndMessage.oserror == OSErrorEnum.EINTR) {
+                    context.triggerAsyncActions(null, asyncProfile);
+                    continue;
+                }
+                throw posixException(errorAndMessage);
+            }
+        }
+    }
+
+    private void chdirStr(String pathStr) {
+        TruffleFile truffleFile = context.getPublicTruffleFileRelaxed(pathStr, PythonLanguage.DEFAULT_PYTHON_EXTENSIONS);
+        context.getEnv().setCurrentWorkingDirectory(truffleFile);
+    }
+
+    @ExportMessage
     public boolean isatty(int fd) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+        if (fd >= 0 && fd <= 2) {
+            return context.getOption(PythonOptions.TerminalIsInteractive);
+        } else {
+            return false;
+        }
     }
 
     // ------------------
