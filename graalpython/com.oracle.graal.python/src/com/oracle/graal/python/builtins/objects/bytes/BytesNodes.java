@@ -598,6 +598,16 @@ public abstract class BytesNodes {
             return BytesUtils.fromSize(getCore(), cap);
         }
 
+        @Specialization(guards = {"lib.isBuffer(source)", "!lib.canBeIndex(source)"}, limit = "3")
+        static byte[] fromBuffer(Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @CachedLibrary("source") PythonObjectLibrary lib) {
+            try {
+                return lib.getBufferBytes(source);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)", "!lib.canBeIndex(source)", "!lib.isBuffer(source)"}, limit = "3")
         static byte[] fromIterable(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached IteratorNodes.GetLength lenNode,
