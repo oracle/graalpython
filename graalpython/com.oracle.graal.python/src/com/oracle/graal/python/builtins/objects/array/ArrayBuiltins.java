@@ -688,7 +688,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), value.getLength());
                 int itemsize = self.getFormat().bytesize;
-                self.ensureCapacity(newLength);
+                self.resizeStorage(newLength);
                 PythonUtils.arraycopy(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize);
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -708,7 +708,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             int storageLength = lenNode.execute(storage);
             boolean capacityEnsured = false;
             try {
-                self.ensureCapacity(PythonUtils.addExact(self.getLength(), storageLength));
+                self.resizeStorage(PythonUtils.addExact(self.getLength(), storageLength));
                 capacityEnsured = true;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -724,7 +724,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 } else {
                     try {
                         length = PythonUtils.addExact(length, 1);
-                        self.ensureCapacity(length);
+                        self.resizeStorage(length);
                     } catch (OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raise(MemoryError);
@@ -757,7 +757,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 // in CPython
                 try {
                     length = PythonUtils.addExact(length, 1);
-                    self.ensureCapacity(length);
+                    self.resizeStorage(length);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raise(MemoryError);
@@ -936,7 +936,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 SequenceStorage storage = getSequenceStorageNode.execute(list);
                 int length = lenNode.execute(storage);
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.ensureCapacity(newLength);
+                self.resizeStorage(newLength);
                 for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
                 }
@@ -988,7 +988,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int length = PString.codePointCount(str, 0, str.length());
                 int newLength = PythonUtils.addExact(self.getLength(), length);
-                self.ensureCapacity(newLength);
+                self.resizeStorage(newLength);
                 for (int i = 0, index = 0; i < length; index++) {
                     int cpCount = PString.charCount(PString.codePointAt(str, i));
                     String value = PString.substring(str, i, i + cpCount);

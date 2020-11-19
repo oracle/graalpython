@@ -252,7 +252,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     }
                     try {
                         length = PythonUtils.addExact(length, 1);
-                        array.ensureCapacity(length);
+                        array.resizeStorage(length);
                     } catch (OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raise(MemoryError);

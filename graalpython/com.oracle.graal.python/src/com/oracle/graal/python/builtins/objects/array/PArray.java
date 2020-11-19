@@ -85,26 +85,33 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     private int computeNewSize(int newLength, int itemsize) throws OverflowException {
-        // Overallocation using the same formula as CPython
-        int newSize = ((newLength >> 4) + (length < 8 ? 3 : 7) + newLength) * itemsize;
+        int newSize = computeNewSizeNoOverflowCheck(newLength, itemsize);
         if (newSize / itemsize < newLength) {
             throw OverflowException.INSTANCE;
         }
         return newSize;
     }
 
-    public void ensureCapacity(int newLength) throws OverflowException {
+    private int computeNewSizeNoOverflowCheck(int newLength, int itemsize) {
+        if (newLength == 0) {
+            return 0;
+        }
+        // Overallocation using the same formula as CPython
+        return ((newLength >> 4) + (length < 8 ? 3 : 7) + newLength) * itemsize;
+    }
+
+    public void resizeStorage(int newLength) throws OverflowException {
         assert newLength >= 0;
         int itemsize = format.bytesize;
-        if (buffer.length / itemsize < newLength) {
+        if (buffer.length / itemsize < newLength || length + 16 >= newLength) {
             byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
-            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, Math.min(buffer.length, newBuffer.length));
             buffer = newBuffer;
         }
     }
 
     public void resize(int newLength) throws OverflowException {
-        ensureCapacity(newLength);
+        resizeStorage(newLength);
         length = newLength;
     }
 
@@ -129,9 +136,15 @@ public final class PArray extends PythonBuiltinObject {
         assert at + count <= length;
         int newLength = length - count;
         assert newLength >= 0;
-        // TODO shrink?
         int itemsize = format.bytesize;
-        PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
+        if (length + 16 >= newLength) {
+            byte[] newBuffer = new byte[computeNewSizeNoOverflowCheck(newLength, itemsize)];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, at * itemsize);
+            PythonUtils.arraycopy(buffer, (at + count) * itemsize, newBuffer, at * itemsize, (length - at - count) * itemsize);
+            buffer = newBuffer;
+        } else {
+            PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
+        }
         length = newLength;
     }
 
