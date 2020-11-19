@@ -50,7 +50,7 @@ import java.nio.charset.StandardCharsets;
 import com.oracle.graal.python.parser.sst.StringUtils;
 
 public class PythonUnicodeEscapeCharsetDecoder extends CharsetDecoder {
-    // Decoding octals is annoying, because they are variable lenght and we don't
+    // Decoding octals is annoying, because they are variable length and we don't
     // have variable lookahead. We have to incrementally remember the current code
     // point and emit it only when we know the octal has really ended
     private int octalCodePoint;

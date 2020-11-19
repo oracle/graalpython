@@ -44,14 +44,14 @@ import com.oracle.truffle.api.object.Shape;
 public final class PArray extends PythonBuiltinObject {
     private BufferFormat format;
     private String formatStr;
-    private int lenght;
+    private int length;
     private byte[] buffer;
 
     public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
         super(clazz, instanceShape);
         this.formatStr = formatStr;
         this.format = format;
-        this.lenght = 0;
+        this.length = 0;
         this.buffer = new byte[0];
     }
 
@@ -59,7 +59,7 @@ public final class PArray extends PythonBuiltinObject {
         super(clazz, instanceShape);
         this.formatStr = formatStr;
         this.format = format;
-        this.lenght = length;
+        this.length = length;
         this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
     }
 
@@ -76,17 +76,17 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public int getLength() {
-        return lenght;
+        return length;
     }
 
-    public void setLenght(int lenght) {
-        assert lenght >= 0;
-        this.lenght = lenght;
+    public void setLength(int length) {
+        assert length >= 0;
+        this.length = length;
     }
 
     private int computeNewSize(int newLength, int itemsize) throws OverflowException {
         // Overallocation using the same formula as CPython
-        int newSize = ((newLength >> 4) + (lenght < 8 ? 3 : 7) + newLength) * itemsize;
+        int newSize = ((newLength >> 4) + (length < 8 ? 3 : 7) + newLength) * itemsize;
         if (newSize / itemsize < newLength) {
             throw OverflowException.INSTANCE;
         }
@@ -103,36 +103,36 @@ public final class PArray extends PythonBuiltinObject {
         }
     }
 
-    public void resize(int newLenght) throws OverflowException {
-        ensureCapacity(newLenght);
-        lenght = newLenght;
+    public void resize(int newLength) throws OverflowException {
+        ensureCapacity(newLength);
+        length = newLength;
     }
 
     public void shift(int from, int by) throws OverflowException {
-        assert from >= 0 && from <= lenght;
+        assert from >= 0 && from <= length;
         assert by >= 0;
-        int newLength = PythonUtils.addExact(lenght, by);
+        int newLength = PythonUtils.addExact(length, by);
         int itemsize = format.bytesize;
         if (buffer.length / itemsize < newLength) {
             byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
             PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
-            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (lenght - from) * itemsize);
+            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (length - from) * itemsize);
             buffer = newBuffer;
         } else {
-            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (lenght - from) * itemsize);
+            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (length - from) * itemsize);
         }
-        lenght = newLength;
+        length = newLength;
     }
 
     public void delSlice(int at, int count) {
         assert count >= 0;
-        assert at + count <= lenght;
-        int newLength = lenght - count;
+        assert at + count <= length;
+        int newLength = length - count;
         assert newLength >= 0;
         // TODO shrink?
         int itemsize = format.bytesize;
-        PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (lenght - at - count) * itemsize);
-        lenght = newLength;
+        PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
+        length = newLength;
     }
 
     @ExportMessage
@@ -153,7 +153,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     int getBufferLength() {
-        return lenght * format.bytesize;
+        return length * format.bytesize;
     }
 
     public enum MachineFormat {

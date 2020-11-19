@@ -217,10 +217,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
                 BufferFormat format = getFormatChecked(typeCode);
                 SequenceStorage storage = getSequenceStorageNode.execute(initializer);
-                int lenght = lenNode.execute(storage);
+                int length = lenNode.execute(storage);
                 try {
-                    PArray array = getFactory().createArray(cls, typeCode, format, lenght);
-                    for (int i = 0; i < lenght; i++) {
+                    PArray array = getFactory().createArray(cls, typeCode, format, length);
+                    for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, array, i, getItemNode.execute(storage, i));
                     }
                     return array;
@@ -260,7 +260,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     putValueNode.execute(frame, array, length - 1, nextValue);
                 }
 
-                array.setLenght(length);
+                array.setLength(length);
                 return array;
             }
 

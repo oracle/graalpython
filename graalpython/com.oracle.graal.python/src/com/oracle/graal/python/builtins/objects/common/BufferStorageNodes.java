@@ -316,7 +316,7 @@ public abstract class BufferStorageNodes {
     }
 
     @GenerateUncached
-    public abstract static class GetByteLenght extends Node {
+    public abstract static class GetByteLength extends Node {
         public abstract int execute(Object buffer);
 
         @Specialization
@@ -334,35 +334,35 @@ public abstract class BufferStorageNodes {
 
     @GenerateUncached
     public abstract static class CopyBytesFromBuffer extends Node {
-        public abstract void execute(Object buffer, int srcPos, byte[] dest, int destPos, int lenght);
+        public abstract void execute(Object buffer, int srcPos, byte[] dest, int destPos, int length);
 
         @Specialization
-        static void doBytes(PBytesLike src, int srcPos, byte[] dest, int destPos, int lenght,
+        static void doBytes(PBytesLike src, int srcPos, byte[] dest, int destPos, int length,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyBytesFromByteStorage copyFrom) {
-            copyFrom.execute(getSequenceStorageNode.execute(src), srcPos, dest, destPos, lenght);
+            copyFrom.execute(getSequenceStorageNode.execute(src), srcPos, dest, destPos, length);
         }
 
         @Specialization
-        static void doArray(PArray src, int srcPos, byte[] dest, int destPos, int lenght) {
-            PythonUtils.arraycopy(src.getBuffer(), srcPos, dest, destPos, lenght);
+        static void doArray(PArray src, int srcPos, byte[] dest, int destPos, int length) {
+            PythonUtils.arraycopy(src.getBuffer(), srcPos, dest, destPos, length);
         }
     }
 
     @GenerateUncached
     public abstract static class CopyBytesToBuffer extends Node {
-        public abstract void execute(byte[] src, int srcPos, Object dest, int destPos, int lenght);
+        public abstract void execute(byte[] src, int srcPos, Object dest, int destPos, int length);
 
         @Specialization
-        static void doBytes(byte[] src, int srcPos, PBytesLike dest, int destPos, int lenght,
+        static void doBytes(byte[] src, int srcPos, PBytesLike dest, int destPos, int length,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
-            copyTo.execute(src, srcPos, getSequenceStorageNode.execute(dest), destPos, lenght);
+            copyTo.execute(src, srcPos, getSequenceStorageNode.execute(dest), destPos, length);
         }
 
         @Specialization
-        static void doArray(byte[] src, int srcPos, PArray dest, int destPos, int lenght) {
-            PythonUtils.arraycopy(src, srcPos, dest.getBuffer(), destPos, lenght);
+        static void doArray(byte[] src, int srcPos, PArray dest, int destPos, int length) {
+            PythonUtils.arraycopy(src, srcPos, dest.getBuffer(), destPos, length);
         }
     }
 }

@@ -74,7 +74,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     tokens.offer(t);
   }
 
-  int codePointDelta = 0; // keeps the lenght of code points that have more chars that one. 
+  int codePointDelta = 0; // keeps the length of code points that have more chars that one.
 
   @Override
   public Token nextToken() {
@@ -115,7 +115,7 @@ tokens { INDENT, DEDENT, INDENT_ERROR, TAB_ERROR,
     // `a = '𝔘𝔫𝔦𝔠𝔬𝔡𝔢'`
     // then the range of the string literal (from CodePoiintStream) is [4, 13],
     // but the java string substring(4,13)  returns `'𝔘𝔫𝔦𝔠`, because every
-    // the letter is represented with code point of lenght 2. The problem is 
+    // the letter is represented with code point of length 2. The problem is
     // that we don't work in python implementation with code point stream, 
     // but just with the strings. So the lexer converts the ranges of tokens 
     // to the "string" representation. 

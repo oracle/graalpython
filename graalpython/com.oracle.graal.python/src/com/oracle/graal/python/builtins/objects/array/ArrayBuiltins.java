@@ -171,9 +171,9 @@ public class ArrayBuiltins extends PythonBuiltins {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 int itemsize = self.getFormat().bytesize;
                 PArray newArray = factory().createArray(self.getFormatStr(), self.getFormat(), newLength);
-                int segmentLenght = self.getLength() * itemsize;
+                int segmentLength = self.getLength() * itemsize;
                 for (int i = 0; i < value; i++) {
-                    PythonUtils.arraycopy(self.getBuffer(), 0, newArray.getBuffer(), segmentLenght * i, segmentLenght);
+                    PythonUtils.arraycopy(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength);
                 }
                 return newArray;
             } catch (OverflowException e) {
@@ -201,10 +201,10 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 int itemsize = self.getFormat().bytesize;
-                int segmentLenght = self.getLength() * itemsize;
+                int segmentLength = self.getLength() * itemsize;
                 self.resize(newLength);
                 for (int i = 0; i < value; i++) {
-                    PythonUtils.arraycopy(self.getBuffer(), 0, self.getBuffer(), segmentLenght * i, segmentLenght);
+                    PythonUtils.arraycopy(self.getBuffer(), 0, self.getBuffer(), segmentLength * i, segmentLength);
                 }
                 return self;
             } catch (OverflowException e) {
@@ -470,7 +470,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile sameArrayProfile,
                         @Cached ConditionProfile simpleStepProfile,
                         @Cached ConditionProfile complexDeleteProfile,
-                        @Cached ConditionProfile differentLenghtProfile,
+                        @Cached ConditionProfile differentLengthProfile,
                         @Cached ConditionProfile growProfile,
                         @Cached ConditionProfile stepAssignProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
@@ -489,7 +489,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 PythonUtils.arraycopy(other.getBuffer(), 0, sourceBuffer, 0, sourceBuffer.length);
             }
             if (simpleStepProfile.profile(step == 1)) {
-                if (differentLenghtProfile.profile(sliceLength != needed)) {
+                if (differentLengthProfile.profile(sliceLength != needed)) {
                     if (growProfile.profile(sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
@@ -568,7 +568,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         PythonUtils.arraycopy(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (step - 1) * itemsize);
                     }
                     PythonUtils.arraycopy(self.getBuffer(), (cur + 1) * itemsize, self.getBuffer(), (cur - offset) * itemsize, (length - cur - 1) * itemsize);
-                    self.setLenght(length - sliceLength);
+                    self.setLength(length - sliceLength);
                 }
             }
             return PNone.NONE;
@@ -690,7 +690,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 int itemsize = self.getFormat().bytesize;
                 self.ensureCapacity(newLength);
                 PythonUtils.arraycopy(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize);
-                self.setLenght(newLength);
+                self.setLength(newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -705,33 +705,33 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(value);
-            int storageLenght = lenNode.execute(storage);
+            int storageLength = lenNode.execute(storage);
             boolean capacityEnsured = false;
             try {
-                self.ensureCapacity(PythonUtils.addExact(self.getLength(), storageLenght));
+                self.ensureCapacity(PythonUtils.addExact(self.getLength(), storageLength));
                 capacityEnsured = true;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // Let it fail later, so that it fails in the same state as the generic
                 // specialization
             }
-            int lenght = self.getLength();
-            for (int i = 0; i < storageLenght; i++) {
+            int length = self.getLength();
+            for (int i = 0; i < storageLength; i++) {
                 // The whole extend is not atomic, just individual inserts are. That's the same as
                 // in CPython
                 if (capacityEnsured) {
-                    lenght++;
+                    length++;
                 } else {
                     try {
-                        lenght = PythonUtils.addExact(lenght, 1);
-                        self.ensureCapacity(lenght);
+                        length = PythonUtils.addExact(length, 1);
+                        self.ensureCapacity(length);
                     } catch (OverflowException e) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raise(MemoryError);
                     }
                 }
-                putValueNode.execute(frame, self, lenght - 1, getItemNode.execute(storage, i));
-                self.setLenght(lenght);
+                putValueNode.execute(frame, self, length - 1, getItemNode.execute(storage, i));
+                self.setLength(length);
             }
 
             return PNone.NONE;
@@ -744,7 +744,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             Object iter = lib.getIteratorWithFrame(value, frame);
-            int lenght = self.getLength();
+            int length = self.getLength();
             while (true) {
                 Object nextValue;
                 try {
@@ -756,14 +756,14 @@ public class ArrayBuiltins extends PythonBuiltins {
                 // The whole extend is not atomic, just individual inserts are. That's the same as
                 // in CPython
                 try {
-                    lenght = PythonUtils.addExact(lenght, 1);
-                    self.ensureCapacity(lenght);
+                    length = PythonUtils.addExact(length, 1);
+                    self.ensureCapacity(length);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raise(MemoryError);
                 }
-                putValueNode.execute(frame, self, lenght - 1, nextValue);
-                self.setLenght(lenght);
+                putValueNode.execute(frame, self, length - 1, nextValue);
+                self.setLength(length);
             }
 
             return PNone.NONE;
@@ -867,9 +867,9 @@ public class ArrayBuiltins extends PythonBuiltins {
                     if (bufferLength % itemsize != 0) {
                         throw raise(ValueError, "bytes length not a multiple of item size");
                     }
-                    int newLenght = PythonUtils.addExact(oldSize, bufferLength / itemsize);
+                    int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
                     byte[] bufferBytes = lib.getBufferBytes(buffer);
-                    self.resize(newLenght);
+                    self.resize(newLength);
                     PythonUtils.arraycopy(bufferBytes, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -902,11 +902,11 @@ public class ArrayBuiltins extends PythonBuiltins {
             int nbytes = n * itemsize;
             Object readResult = lib.lookupAndCallRegularMethod(file, frame, "read", nbytes);
             if (readResult instanceof PBytes) {
-                int readLenght = lib.length(readResult);
+                int readLength = lib.length(readResult);
                 fromBytesNode.execute(frame, self, readResult);
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way
-                if (readLenght != nbytes) {
+                if (readLength != nbytes) {
                     notEnoughBytesProfile.enter();
                     throw raise(EOFError, "read() didn't return enough bytes");
                 }
@@ -934,13 +934,13 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             try {
                 SequenceStorage storage = getSequenceStorageNode.execute(list);
-                int lenght = lenNode.execute(storage);
-                int newLength = PythonUtils.addExact(self.getLength(), lenght);
+                int length = lenNode.execute(storage);
+                int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.ensureCapacity(newLength);
-                for (int i = 0; i < lenght; i++) {
+                for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
                 }
-                self.setLenght(newLength);
+                self.setLength(newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -986,16 +986,16 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object fromunicode(VirtualFrame frame, PArray self, String str,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
             try {
-                int lenght = PString.codePointCount(str, 0, str.length());
-                int newLength = PythonUtils.addExact(self.getLength(), lenght);
+                int length = PString.codePointCount(str, 0, str.length());
+                int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.ensureCapacity(newLength);
-                for (int i = 0, index = 0; i < lenght; index++) {
+                for (int i = 0, index = 0; i < length; index++) {
                     int cpCount = PString.charCount(PString.codePointAt(str, i));
                     String value = PString.substring(str, i, i + cpCount);
                     putValueNode.execute(frame, self, self.getLength() + index, value);
                     i += cpCount;
                 }
-                self.setLenght(newLength);
+                self.setLength(newLength);
                 return PNone.NONE;
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();

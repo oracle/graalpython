@@ -882,11 +882,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public void replace(int skipInput, char[] chars, int offset, int lenght) {
+        public void replace(int skipInput, char[] chars, int offset, int length) {
             while (outputBuffer.remaining() < chars.length) {
                 grow();
             }
-            outputBuffer.put(chars, offset, lenght);
+            outputBuffer.put(chars, offset, length);
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 

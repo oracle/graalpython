@@ -222,9 +222,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             newShape[0] = sliceInfo.sliceLength;
             PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
             int[] suboffsets = self.getBufferSuboffsets();
-            int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
+            int length = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), lenght, self.isReadOnly(),
+            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), length, self.isReadOnly(),
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
@@ -654,11 +654,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     if (ndim > PMemoryView.MAX_DIM) {
                         throw raise(ValueError, ErrorMessages.MEMORYVIEW_NUMBER_OF_DIMENSIONS_MUST_NOT_EXCEED_D, ndim);
                     }
-                    int newLenght = itemsize;
+                    int newLength = itemsize;
                     for (int i = 0; i < ndim; i++) {
-                        newLenght *= shape[i];
+                        newLength *= shape[i];
                     }
-                    if (newLenght != self.getLength()) {
+                    if (newLength != self.getLength()) {
                         throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_WRONG_LENGTH);
                     }
                     newShape = shape;
