@@ -175,6 +175,23 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract Object dirEntryGetPath(Object receiver, Object dirEntry) throws PosixException;
 
+    public abstract long dirEntryGetInode(Object receiver, Object dirEntry) throws PosixException;
+
+    /**
+     * The result should be cached in the {@code dirEntry} object (separate cache for each value of
+     * {@code followSymlinks}).
+     * 
+     * @return stat of the entry in the same format as
+     *         {@link #fstatAt(Object, int, PosixPath, boolean)}
+     */
+    public abstract long[] dirEntryStat(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException;
+
+    public abstract boolean dirEntryIsSymlink(Object receiver, Object dirEntry) throws PosixException;
+
+    public abstract boolean dirEntryIsFile(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException;
+
+    public abstract boolean dirEntryIsDir(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

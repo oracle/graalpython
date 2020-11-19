@@ -72,6 +72,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -96,6 +97,16 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
+
+    private static final int DT_UNKNOWN = 0;
+    private static final int DT_DIR = 4;
+    private static final int DT_REG = 8;
+    private static final int DT_LNK = 10;
+
+    private static final int S_IFMT = 0170000;
+    private static final int S_IFDIR = 0040000;
+    private static final int S_IFREG = 0100000;
+    private static final int S_IFLNK = 0120000;
 
     private final ReferenceQueue<DirStream> dirStreamRefQueue = new ReferenceQueue<>();
 
@@ -156,6 +167,7 @@ public final class NFIPosixSupport extends PosixSupport {
                         "You can switch to pure Java emulated POSIX support, " +
                                         "which does not require native access privilege, by passing option " +
                                         "'--python.PosixModuleBackend=java'.");
+        // TODO registerAsyncAction - use SharedFinalizer from PR #1316
     }
 
     public static NFIPosixSupport createNative(PythonContext context) {
@@ -559,7 +571,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, (byte []) path.value);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, (byte[]) path.value, PosixSupportLibrary.DEFAULT_DIR_FD);
         logExit("opendir", "%s", dirStream);
         return dirStream;
     }
@@ -572,7 +584,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, null);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, null, fd.fd);
         logExit("fdopendir", "%s", dirStream);
         return dirStream;
     }
@@ -609,7 +621,7 @@ public final class NFIPosixSupport extends PosixSupport {
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
-            DirEntry dirEntry = new DirEntry(dirStream.path, name.withLength(findZero(name.data)), out[0], out[1]);
+            DirEntry dirEntry = new DirEntry(dirStream.path, dirStream.dirFd, name.withLength(findZero(name.data)), out[0], out[1]);
             logExit("readdir", "%s", dirEntry);
             return dirEntry;
         }
@@ -629,7 +641,7 @@ public final class NFIPosixSupport extends PosixSupport {
         return dirEntry.name;
     }
 
-    //TODO should we cache the result?
+    // TODO should we cache the result?
     @ExportMessage
     public static class DirEntryGetPath {
         @Specialization(guards = "dirEntry.dirPath == null")
@@ -669,6 +681,135 @@ public final class NFIPosixSupport extends PosixSupport {
         protected static boolean endsWithSlash(DirEntry dirEntry) {
             return dirEntry.dirPath[dirEntry.dirPath.length - 1] == '/';
         }
+    }
+
+    @ExportMessage
+    public long dirEntryGetInode(Object dirEntry) {
+        logEnter("dirEntryGetInode", "%s", dirEntry);
+        DirEntry entry = (DirEntry) dirEntry;
+        logExit("dirEntryGetInode", "%d", entry.ino);
+        return entry.ino;
+    }
+
+    @ExportMessage
+    public long[] dirEntryStat(Object dirEntryObj, boolean followSymlinks,
+                    @CachedLibrary("this") PosixSupportLibrary posixLib,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
+        DirEntry dirEntry = (DirEntry) dirEntryObj;
+        long[] res = dirEntry.getStatCache(followSymlinks);
+        if (res == null) {
+            if (!followSymlinks || posixLib.dirEntryIsSymlink(this, dirEntry)) {
+                res = fetchStat(dirEntry, followSymlinks, posixLib, invokeNode);
+            } else {
+                res = dirEntryStat(dirEntry, false, posixLib, invokeNode);
+            }
+            dirEntry.setStatCache(followSymlinks, res);
+        }
+        logExit("dirEntryStat", "%s", res);
+        return res;
+    }
+
+    private long[] fetchStat(DirEntry dirEntry, boolean followSymlinks, PosixSupportLibrary posixLib, InvokeNativeFunction invokeNode) throws PosixException {
+        Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
+        long[] out = new long[13];
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
+        if (res != 0) {
+            // TODO the path should use receiver.getPathAsBytes() depending on the type of argument
+            // to scandir. Once that is solved, consider factoring out the common code with
+            // NFIPosixSupport#fstatAt() and then this can be inlined in its only caller
+            throw newPosixException(invokeNode, getErrno(invokeNode), getPathAsString(path));
+        }
+        return out;
+    }
+
+    @ExportMessage
+    abstract static class DirEntryIsSymlink {
+        @Specialization(guards = "isTypeKnown(dirEntry)")
+        static boolean known(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
+            logEnter("dirEntryIsSymlink", "%s", dirEntry);
+            boolean result = dirEntry.type == DT_LNK;
+            logExit("dirEntryIsSymlink", "%b", result);
+            return result;
+        }
+
+        @Specialization(guards = "!isTypeKnown(dirEntry)")
+        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry,
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+            logEnter("dirEntryIsSymlink", "%s", dirEntry);
+            boolean result = receiver.dirEntryTestMode(dirEntry, false, S_IFLNK, posixLib);
+            logExit("dirEntryIsSymlink", "%b", result);
+            return result;
+        }
+
+        static boolean isTypeKnown(DirEntry dirEntry) {
+            return dirEntry.type != DT_UNKNOWN;
+        }
+    }
+
+    @ExportMessage
+    abstract static class DirEntryIsFile {
+        @Specialization(guards = "isTypeKnown(dirEntry, followSymlinks)")
+        @SuppressWarnings("unused")
+        static boolean known(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks) {
+            logEnter("dirEntryIsFile", "%s", dirEntry);
+            boolean result = dirEntry.type == DT_REG;
+            logExit("dirEntryIsFile", "%b", result);
+            return result;
+        }
+
+        @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
+        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+            logEnter("dirEntryIsFile", "%s", dirEntry);
+            boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFREG, posixLib);
+            logExit("dirEntryIsFile", "%b", result);
+            return result;
+        }
+
+        static boolean isTypeKnown(DirEntry dirEntry, boolean followSymlinks) {
+            return dirEntry.type != DT_UNKNOWN && (dirEntry.type != DT_LNK || !followSymlinks);
+        }
+    }
+
+    @ExportMessage
+    abstract static class DirEntryIsDir {
+        @Specialization(guards = "isTypeKnown(dirEntry, followSymlinks)")
+        @SuppressWarnings("unused")
+        static boolean known(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks) {
+            logEnter("dirEntryIsDir", "%s", dirEntry);
+            boolean result = dirEntry.type == DT_DIR;
+            logExit("dirEntryIsDir", "%b", result);
+            return result;
+        }
+
+        @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
+        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+            logEnter("dirEntryIsDir", "%s", dirEntry);
+            boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFDIR, posixLib);
+            logExit("dirEntryIsDir", "%b", result);
+            return result;
+        }
+
+        static boolean isTypeKnown(DirEntry dirEntry, boolean followSymlinks) {
+            return dirEntry.type != DT_UNKNOWN && (dirEntry.type != DT_LNK || !followSymlinks);
+        }
+    }
+
+    private boolean dirEntryTestMode(DirEntry dirEntry, boolean followSymlinks, int modeBits, PosixSupportLibrary posixLib) throws PosixException {
+        assert dirEntry.type == DT_UNKNOWN || (dirEntry.type == DT_LNK && followSymlinks);
+        long[] stat;
+        try {
+            stat = posixLib.dirEntryStat(this, dirEntry, followSymlinks);
+        } catch (PosixException e) {
+            if (e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
+                return false;
+            }
+            throw e;
+        }
+        long mode = stat[0];        // TODO constant sync with native code
+        return (mode & S_IFMT) == modeBits;
     }
 
     // ------------------
@@ -770,30 +911,49 @@ public final class NFIPosixSupport extends PosixSupport {
     private static class DirStream {
         final DirStreamRef ref;
         final byte[] path;
+        final int dirFd;
 
-        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, byte[] path) {
+        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, byte[] path, int dirFd) {
             ref = new DirStreamRef(this, queue, nativePtr, path == null);
             this.path = path;
+            this.dirFd = dirFd;
         }
 
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
-            return "DirStreamState -> " + ref + ", path=" + (path == null ? "null" : new String(path));
+            return "DirStreamState -> " + ref + ", path=" + (path == null ? "null" : new String(path)) + ", dirFd=" + dirFd;
         }
     }
 
     protected static class DirEntry {
         final byte[] dirPath;
+        final int dirFd;
         final Buffer name;
         final long ino;
         final long type;
+        long[] lstatCache;
+        long[] statCache;
 
-        DirEntry(byte[] dirPath, Buffer name, long ino, long type) {
+        DirEntry(byte[] dirPath, int dirFd, Buffer name, long ino, long type) {
             this.dirPath = dirPath;
+            this.dirFd = dirFd;
             this.name = name;
             this.ino = ino;
             this.type = type;
+        }
+
+        long[] getStatCache(boolean followSymlinks) {
+            return followSymlinks ? statCache : lstatCache;
+        }
+
+        long[] setStatCache(boolean followSymlinks, long[] value) {
+            if (followSymlinks) {
+                statCache = value;
+            } else {
+                lstatCache = value;
+            }
+            return value;
         }
 
         @Override
@@ -803,6 +963,7 @@ public final class NFIPosixSupport extends PosixSupport {
                             ", ino=" + ino +
                             ", type=" + type +
                             ", dirPath=" + (dirPath == null ? "null" : new String(dirPath)) +
+                            ", dirFd=" + dirFd +
                             '}';
         }
     }
@@ -861,9 +1022,17 @@ public final class NFIPosixSupport extends PosixSupport {
         return wrap(nullTerminate((byte[]) path.value));
     }
 
+    private Object bufferToCString(Buffer path) {
+        return wrap(nullTerminate(path.data, (int) path.length));
+    }
+
     private static byte[] nullTerminate(byte[] str) {
-        byte[] terminated = new byte[str.length + 1];
-        PythonUtils.arraycopy(str, 0, terminated, 0, str.length);
+        return nullTerminate(str, str.length);
+    }
+
+    private static byte[] nullTerminate(byte[] str, int length) {
+        byte[] terminated = new byte[length + 1];
+        PythonUtils.arraycopy(str, 0, terminated, 0, length);
         return terminated;
     }
 

@@ -45,14 +45,19 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -62,6 +67,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PNfiDirEntry)
 public class NfiDirEntryBuiltins extends PythonBuiltins {
@@ -138,6 +144,99 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         Object fspath(VirtualFrame frame, PNfiDirEntry self,
                         @Cached PathNode pathNode) {
             return pathNode.call(frame, self);
+        }
+    }
+
+    @Builtin(name = "inode", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class InodeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long inode(VirtualFrame frame, PNfiDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryGetInode(getPosixSupport(), self.dirEntryData);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {
+                    "follow_symlinks"}, doc = "return stat_result object for the entry; cached per entry")
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class StatNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NfiDirEntryBuiltinsClinicProviders.StatNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object stat(VirtualFrame frame, PNfiDirEntry self, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile positiveLongProfile) {
+            try {
+                return PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, posixLib.dirEntryStat(getPosixSupport(), self.dirEntryData, followSymlinks));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "is_symlink", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsSymlinkNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isSymlink(VirtualFrame frame, PNfiDirEntry self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryIsSymlink(getPosixSupport(), self.dirEntryData);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "is_file", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class IsFileNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NfiDirEntryBuiltinsClinicProviders.IsFileNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean isFile(VirtualFrame frame, PNfiDirEntry self, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryIsFile(getPosixSupport(), self.dirEntryData, followSymlinks);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @Builtin(name = "is_dir", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, varArgsMarker = true, keywordOnlyNames = {"follow_symlinks"})
+    @ArgumentClinic(name = "follow_symlinks", conversion = ClinicConversion.Boolean, defaultValue = "true")
+    @GenerateNodeFactory
+    abstract static class IsDirNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return NfiDirEntryBuiltinsClinicProviders.IsDirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean isDir(VirtualFrame frame, PNfiDirEntry self, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.dirEntryIsDir(getPosixSupport(), self.dirEntryData, followSymlinks);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 }

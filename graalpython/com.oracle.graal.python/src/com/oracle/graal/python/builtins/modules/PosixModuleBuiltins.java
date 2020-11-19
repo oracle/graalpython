@@ -1437,31 +1437,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         protected static boolean isDefault(int dirFd) {
             return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
         }
-
-        private static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
-            Object[] res = new Object[16];
-            for (int i = 0; i < 7; i++) {
-                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
-            }
-            res[6] = out[6];
-            for (int i = 7; i < 10; i++) {
-                long seconds = out[i];
-                long nsFraction = out[i + 3];
-                res[i] = seconds;
-                res[i + 3] = seconds + nsFraction * 1.0e-9;
-                res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
-            }
-            // TODO intrinsify the os.stat_result named tuple and create the instance directly
-            return factory.createTuple(res);
-        }
-
-        @TruffleBoundary
-        private static BigInteger convertToNanoseconds(long sec, long ns) {
-            // TODO it may be possible to do this in long without overflow
-            BigInteger r = BigInteger.valueOf(sec);
-            r = r.multiply(BigInteger.valueOf(1000000000));
-            return r.add(BigInteger.valueOf(ns));
-        }
     }
 
     @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
@@ -1481,7 +1456,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, false);
-                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1504,7 +1479,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd, null, true);
-                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -2931,6 +2906,31 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     static int dirFdForAudit(int dirFd) {
         return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd;
+    }
+
+    public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+        Object[] res = new Object[16];
+        for (int i = 0; i < 7; i++) {
+            res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+        }
+        res[6] = out[6];
+        for (int i = 7; i < 10; i++) {
+            long seconds = out[i];
+            long nsFraction = out[i + 3];
+            res[i] = seconds;
+            res[i + 3] = seconds + nsFraction * 1.0e-9;
+            res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
+        }
+        // TODO intrinsify the os.stat_result named tuple and create the instance directly
+        return factory.createTuple(res);
+    }
+
+    @TruffleBoundary
+    private static BigInteger convertToNanoseconds(long sec, long ns) {
+        // TODO it may be possible to do this in long without overflow
+        BigInteger r = BigInteger.valueOf(sec);
+        r = r.multiply(BigInteger.valueOf(1000000000));
+        return r.add(BigInteger.valueOf(ns));
     }
 
     // ------------------
