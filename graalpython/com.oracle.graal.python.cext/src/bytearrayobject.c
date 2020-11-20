@@ -54,5 +54,10 @@ int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
     ptr = (void *) PyByteArray_AS_STRING(obj);
     /* cannot fail if view != NULL and readonly == 0 */
     (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
+    obj->ob_exports++;
     return 0;
+}
+
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view) {
+    obj->ob_exports--;
 }
