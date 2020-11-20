@@ -43,6 +43,12 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -64,7 +70,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
@@ -113,6 +118,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
     @Child private GetMroStorageNode getMroNode;
+
+    protected static final int MAX_DICT_TYPES = ReadAttributeFromObjectNode.MAX_DICT_TYPES;
 
     protected PythonCore getCore() {
         if (contextRef == null) {
@@ -204,6 +211,22 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
+        // - avoid cases when attributes are stored in a dict containing elements
+        // with a potential MRO sideeffect on access.
+        // Also note that attr should not be read more than once.
+        // - assuming that keys/elements can't be added or replaced in a class dict.
+        // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
+        // possibly do so, but for now leaving it as it is.
+        PDict dict;
+        if (klass instanceof PythonAbstractNativeObject) {
+            Object nativedict = CExtNodes.GetTypeMemberNode.getUncached().execute(klass, NativeMember.TP_DICT);
+            dict = nativedict == PNone.NO_VALUE ? null : (PDict) nativedict;
+        } else {
+            dict = PythonObjectLibrary.getUncached().getDict(klass);
+        }
+        if (dict != null && HashingStorageLibrary.getUncached().hasSideEffect(GetDictStorageNode.getUncached().execute(dict))) {
+            return null;
+        }
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length(); i++) {
@@ -223,16 +246,11 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    /**
-     * NOTE: Guard for case when attributes stored in a dict. Calling __eq__ or __hash__ on such
-     * could have mro related sideeffects.
-     */
-    @Specialization(guards = {"!lib.hasDict(klass)", "isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = {"cachedAttrInMROInfo.assumption", "singleContextAssumption()"})
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
     }

@@ -95,7 +95,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     public abstract Object execute(Object object, Object key);
 
-    protected static final int MAX_DICT_TYPES = 2;
+    static final int MAX_DICT_TYPES = 2;
 
     // read from the DynamicObject store
     @Specialization(guards = {
