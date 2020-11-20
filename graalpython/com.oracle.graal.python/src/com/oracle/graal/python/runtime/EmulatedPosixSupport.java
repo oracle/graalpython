@@ -872,7 +872,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } else {
             // These two files are explicitly specified by POSIX
             String path = getFilePath(fd);
-            return path != null && path.equals("/dev/tty") || path.equals("/dev/console");
+            return path != null && (path.equals("/dev/tty") || path.equals("/dev/console"));
         }
     }
 
