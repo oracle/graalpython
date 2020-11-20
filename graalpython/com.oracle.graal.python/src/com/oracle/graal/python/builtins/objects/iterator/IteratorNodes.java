@@ -101,7 +101,7 @@ public abstract class IteratorNodes {
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile hasLenProfile,
-                        @Cached ConditionProfile hasLenghtHintProfile,
+                        @Cached ConditionProfile hasLengthHintProfile,
                         @Cached PRaiseNode raiseNode) {
             Object clazz = plib.getLazyPythonClass(iterable);
             Object attrLenObj = lenNode.execute(clazz);
@@ -125,7 +125,7 @@ public abstract class IteratorNodes {
                 }
             }
             Object attrLenHintObj = lenHintNode.execute(frame, clazz, iterable);
-            if (hasLenghtHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
+            if (hasLengthHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
                     len = dispatchGetattribute.executeObject(frame, attrLenHintObj, iterable);

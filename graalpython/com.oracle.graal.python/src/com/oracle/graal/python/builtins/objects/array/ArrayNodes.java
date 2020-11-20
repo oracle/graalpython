@@ -38,45 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.builtins.objects.array;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Casts a Python integer to a Java long without coercion. <b>ATTENTION:</b> If the cast isn't
- * possible, the node will throw a {@link CannotCastException}.
- */
-@GenerateUncached
-public abstract class CastToJavaLongExactNode extends CastToJavaLongNode {
+public abstract class ArrayNodes {
+    public abstract static class GetValueNode extends Node {
+        public abstract Object execute(PArray array, int index);
 
-    public static CastToJavaLongExactNode create() {
-        return CastToJavaLongExactNodeGen.create();
+        @Specialization
+        static Object get(PArray array, int index,
+                        @Cached BufferStorageNodes.UnpackValueNode unpackValueNode) {
+            return unpackValueNode.execute(array.getFormat(), array.getBuffer(), index * array.getFormat().bytesize);
+        }
     }
 
-    public static CastToJavaLongExactNode getUncached() {
-        return CastToJavaLongExactNodeGen.getUncached();
+    public abstract static class PutValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, PArray array, int index, Object value);
+
+        @Specialization
+        static void put(VirtualFrame frame, PArray array, int index, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, array.getFormat(), value, array.getBuffer(), index * array.getFormat().bytesize);
+        }
     }
 
-    @Specialization(rewriteOn = OverflowException.class)
-    protected static long toLongNoOverflow(PInt x) throws OverflowException {
-        return x.longValueExact();
-    }
+    public abstract static class CheckValueNode extends Node {
+        public abstract void execute(VirtualFrame frame, PArray array, Object value);
 
-    @Specialization(replaces = "toLongNoOverflow")
-    protected static long toLong(PInt x,
-                    @Cached PRaiseNode raiseNode) {
-        try {
-            return x.longValueExact();
-        } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+        @Specialization
+        static void check(VirtualFrame frame, PArray array, Object value,
+                        @Cached BufferStorageNodes.PackValueNode packValueNode) {
+            packValueNode.execute(frame, array.getFormat(), value, new byte[8], 0);
         }
     }
 }

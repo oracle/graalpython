@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import java.lang.management.ManagementFactory;
+import java.nio.ByteOrder;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -49,19 +50,29 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonUtils {
 
     public static final PCell[] NO_CLOSURE = new PCell[0];
+    public static final ByteArraySupport arrayAccessor;
+
+    static {
+        if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
+            arrayAccessor = ByteArraySupport.bigEndian();
+        } else {
+            arrayAccessor = ByteArraySupport.littleEndian();
+        }
+    }
 
     private PythonUtils() {
         // no instances

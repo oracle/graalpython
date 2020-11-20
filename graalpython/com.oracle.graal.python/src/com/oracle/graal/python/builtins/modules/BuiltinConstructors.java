@@ -77,6 +77,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
@@ -86,6 +87,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -111,6 +113,7 @@ import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRef
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -189,8 +192,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -3371,8 +3372,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, PythonBuiltinClassType.PMemoryView, object);
         }
 
-        // TODO arrays should support buffer protocol too, but their implementation would be
-        // complex, because they don't have an underlying byte array
         @Specialization
         PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
@@ -3389,6 +3388,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
             return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
+        }
+
+        @Specialization
+        PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object,
+                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+            int itemsize = object.getFormat().bytesize;
+            return fromManaged(object, itemsize, object.getLength(), false, object.getFormatStr(), true, getQueue.execute());
         }
 
         @Specialization

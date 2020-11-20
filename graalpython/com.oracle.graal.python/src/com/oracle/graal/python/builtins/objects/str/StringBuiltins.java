@@ -575,7 +575,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         boolean doStringPrefixStartEnd(String self, String substr, int start, int end) {
             int len = self.length();
-            return doIt(self, substr, adjustStart(start, len), adjustStart(end, len));
+            return doIt(self, substr, adjustStart(start, len), adjustEnd(end, len));
         }
 
         @Specialization
@@ -592,7 +592,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         boolean doTuplePrefixStartEnd(String self, PTuple substrs, int start, int end) {
             int len = self.length();
-            return doIt(self, substrs, adjustStart(start, len), adjustStart(end, len));
+            return doIt(self, substrs, adjustStart(start, len), adjustEnd(end, len));
         }
 
         @Specialization
@@ -912,11 +912,11 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (strKey.isEmpty()) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     int codePoint = PString.codePointAt(strKey, 0);
                     if (strKey.length() != PString.charCount(codePoint)) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     destStorage = hlib.setItem(destStorage, codePoint, entry.value);
                 }

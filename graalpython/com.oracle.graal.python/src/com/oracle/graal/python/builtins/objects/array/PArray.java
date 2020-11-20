@@ -25,48 +25,127 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.objects.common.IndexNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
+// TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
-public final class PArray extends PSequence {
+public final class PArray extends PythonBuiltinObject {
+    private BufferFormat format;
+    private String formatStr;
+    private int length;
+    private byte[] buffer;
 
-    private SequenceStorage store;
-
-    public PArray(Object clazz, Shape instanceShape) {
+    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
         super(clazz, instanceShape);
+        this.formatStr = formatStr;
+        this.format = format;
+        this.length = 0;
+        this.buffer = new byte[0];
     }
 
-    public PArray(Object clazz, Shape instanceShape, SequenceStorage store) {
+    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
-        this.store = store;
+        this.formatStr = formatStr;
+        this.format = format;
+        this.length = length;
+        this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
     }
 
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
+    public BufferFormat getFormat() {
+        return format;
     }
 
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        this.store = store;
+    public String getFormatStr() {
+        return formatStr;
     }
 
-    public int len() {
-        return store.length();
+    public byte[] getBuffer() {
+        return buffer;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        assert length >= 0;
+        this.length = length;
+    }
+
+    private int computeNewSize(int newLength, int itemsize) throws OverflowException {
+        int newSize = computeNewSizeNoOverflowCheck(newLength, itemsize);
+        if (newSize / itemsize < newLength) {
+            throw OverflowException.INSTANCE;
+        }
+        return newSize;
+    }
+
+    private int computeNewSizeNoOverflowCheck(int newLength, int itemsize) {
+        if (newLength == 0) {
+            return 0;
+        }
+        // Overallocation using the same formula as CPython
+        return ((newLength >> 4) + (length < 8 ? 3 : 7) + newLength) * itemsize;
+    }
+
+    public void resizeStorage(int newLength) throws OverflowException {
+        assert newLength >= 0;
+        int itemsize = format.bytesize;
+        if (buffer.length / itemsize < newLength || length + 16 >= newLength) {
+            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, Math.min(buffer.length, newBuffer.length));
+            buffer = newBuffer;
+        }
+    }
+
+    public void resize(int newLength) throws OverflowException {
+        resizeStorage(newLength);
+        length = newLength;
+    }
+
+    public void shift(int from, int by) throws OverflowException {
+        assert from >= 0 && from <= length;
+        assert by >= 0;
+        int newLength = PythonUtils.addExact(length, by);
+        int itemsize = format.bytesize;
+        if (buffer.length / itemsize < newLength) {
+            byte[] newBuffer = new byte[computeNewSize(newLength, itemsize)];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, from * itemsize);
+            PythonUtils.arraycopy(buffer, from * itemsize, newBuffer, (from + by) * itemsize, (length - from) * itemsize);
+            buffer = newBuffer;
+        } else {
+            PythonUtils.arraycopy(buffer, from * itemsize, buffer, (from + by) * itemsize, (length - from) * itemsize);
+        }
+        length = newLength;
+    }
+
+    public void delSlice(int at, int count) {
+        assert count >= 0;
+        assert at + count <= length;
+        int newLength = length - count;
+        assert newLength >= 0;
+        int itemsize = format.bytesize;
+        if (length + 16 >= newLength) {
+            byte[] newBuffer = new byte[computeNewSizeNoOverflowCheck(newLength, itemsize)];
+            PythonUtils.arraycopy(buffer, 0, newBuffer, 0, at * itemsize);
+            PythonUtils.arraycopy(buffer, (at + count) * itemsize, newBuffer, at * itemsize, (length - at - count) * itemsize);
+            buffer = newBuffer;
+        } else {
+            PythonUtils.arraycopy(buffer, (at + count) * itemsize, buffer, at * itemsize, (length - at - count) * itemsize);
+        }
+        length = newLength;
     }
 
     @ExportMessage
@@ -75,72 +154,65 @@ public final class PArray extends PSequence {
     }
 
     @ExportMessage
-    byte[] getBufferBytes(
-                    @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-        // TODO Implement access to the actual bytes which represent the array in memory.
-        // This implementation only works for ByteSequenceStorage.
-        return toByteArrayNode.execute(store);
-    }
-
-    @ExportMessage
-    int getBufferLength(
-                    @Cached SequenceStorageNodes.LenNode lenNode) {
-        // TODO This only works for ByteSequenceStorage since its itemsize is 1.
-        return lenNode.execute(store);
-    }
-
-    @ExportMessage
-    public boolean isArrayElementModifiable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
+    byte[] getBufferBytes() {
         try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @ExportMessage
-    public boolean isArrayElementInsertable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode) {
-        final int len = lenNode.execute(store);
-        return index == len;
-    }
-
-    @ExportMessage
-    public boolean isArrayElementRemovable(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.LenNode lenNode,
-                    @Cached.Exclusive @Cached IndexNodes.NormalizeIndexCustomMessageNode normalize) {
-        final int len = lenNode.execute(store);
-        try {
-            normalize.execute(index, len, ErrorMessages.INDEX_OUT_OF_RANGE);
-        } catch (PException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @ExportMessage
-    public void writeArrayElement(long index, Object value,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
-        try {
-            setItem.execute(store, PInt.intValueExact(index), value);
-        } catch (OverflowException e) {
+            return Arrays.copyOf(buffer, getBufferLength());
+        } catch (Throwable t) {
+            // Break exception edges
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+            throw t;
         }
     }
 
     @ExportMessage
-    public void removeArrayElement(long index,
-                    @Cached.Exclusive @Cached SequenceStorageNodes.DeleteItemNode delItem) throws InvalidArrayIndexException {
-        try {
-            delItem.execute(store, PInt.intValueExact(index));
-        } catch (OverflowException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw InvalidArrayIndexException.create(index);
+    int getBufferLength() {
+        return length * format.bytesize;
+    }
+
+    public enum MachineFormat {
+        UNKNOWN_FORMAT(-1, null, null),
+        UNSIGNED_INT8(0, BufferFormat.UINT_8, null),
+        SIGNED_INT8(1, BufferFormat.INT_8, null),
+        UNSIGNED_INT16_LE(2, BufferFormat.UINT_16, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT16_BE(3, BufferFormat.UINT_16, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT16_LE(4, BufferFormat.INT_16, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT16_BE(5, BufferFormat.INT_16, ByteOrder.BIG_ENDIAN),
+        UNSIGNED_INT32_LE(6, BufferFormat.UINT_32, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT32_BE(7, BufferFormat.UINT_32, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT32_LE(8, BufferFormat.INT_32, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT32_BE(9, BufferFormat.INT_32, ByteOrder.BIG_ENDIAN),
+        UNSIGNED_INT64_LE(10, BufferFormat.UINT_64, ByteOrder.LITTLE_ENDIAN),
+        UNSIGNED_INT64_BE(11, BufferFormat.UINT_64, ByteOrder.BIG_ENDIAN),
+        SIGNED_INT64_LE(12, BufferFormat.INT_64, ByteOrder.LITTLE_ENDIAN),
+        SIGNED_INT64_BE(13, BufferFormat.INT_64, ByteOrder.BIG_ENDIAN),
+        IEEE_754_FLOAT_LE(14, BufferFormat.FLOAT, ByteOrder.LITTLE_ENDIAN),
+        IEEE_754_FLOAT_BE(15, BufferFormat.FLOAT, ByteOrder.BIG_ENDIAN),
+        IEEE_754_DOUBLE_LE(16, BufferFormat.DOUBLE, ByteOrder.LITTLE_ENDIAN),
+        IEEE_754_DOUBLE_BE(17, BufferFormat.DOUBLE, ByteOrder.BIG_ENDIAN),
+        // TODO
+        UTF16_LE(18, null, ByteOrder.LITTLE_ENDIAN),
+        UTF16_BE(19, null, ByteOrder.BIG_ENDIAN),
+        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN),
+        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN);
+
+        public final int code;
+        public final BufferFormat format;
+        public final ByteOrder order;
+
+        MachineFormat(int code, BufferFormat format, ByteOrder order) {
+            this.code = code;
+            this.format = format;
+            this.order = order;
+        }
+
+        @ExplodeLoop
+        public static MachineFormat forFormat(BufferFormat format) {
+            for (MachineFormat machineFormat : MachineFormat.values()) {
+                if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
+                    return machineFormat;
+                }
+            }
+            return null;
         }
     }
 }

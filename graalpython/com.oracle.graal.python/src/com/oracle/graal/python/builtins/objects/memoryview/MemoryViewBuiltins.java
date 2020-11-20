@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -77,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.BufferFormat;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -97,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -110,6 +111,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
@@ -176,7 +178,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         // It's a weakref, it may go away and in that case we don't have to do
                         // anything
                         if (owner != null) {
-                            releaseBufferOfManagedObject(owner, ConditionProfile.getUncached());
+                            releaseBufferOfManagedObject(owner);
                         }
                         return null;
                     }
@@ -220,9 +222,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             newShape[0] = sliceInfo.sliceLength;
             PythonUtils.arraycopy(shape, 1, newShape, 1, shape.length - 1);
             int[] suboffsets = self.getBufferSuboffsets();
-            int lenght = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
+            int length = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), lenght, self.isReadOnly(),
+            return factory().createMemoryView(getQueue.execute(), self.getManagedBuffer(), self.getOwner(), length, self.isReadOnly(),
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
@@ -614,8 +616,8 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (!self.isCContiguous()) {
                 throw raise(TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
             }
-            BufferFormat format = BufferFormat.fromString(formatString);
-            int itemsize = MemoryViewNodes.bytesize(format);
+            BufferFormat format = BufferFormat.forMemoryView(formatString);
+            int itemsize = format.bytesize;
             if (itemsize < 0) {
                 throw raise(ValueError, ErrorMessages.MEMORYVIEW_DESTINATION_FORMAT_ERROR);
             }
@@ -652,11 +654,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     if (ndim > PMemoryView.MAX_DIM) {
                         throw raise(ValueError, ErrorMessages.MEMORYVIEW_NUMBER_OF_DIMENSIONS_MUST_NOT_EXCEED_D, ndim);
                     }
-                    int newLenght = itemsize;
+                    int newLength = itemsize;
                     for (int i = 0; i < ndim; i++) {
-                        newLenght *= shape[i];
+                        newLength *= shape[i];
                     }
-                    if (newLenght != self.getLength()) {
+                    if (newLength != self.getLength()) {
                         throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_WRONG_LENGTH);
                     }
                     newShape = shape;
@@ -763,10 +765,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null", "!self.getManagedBuffer().isForNative()"})
         Object releaseManaged(PMemoryView self,
-                        @Cached ConditionProfile isByteArrayProfile) {
+                        @Cached("createClassProfile()") ValueProfile bufferClassProfile) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                releaseBufferOfManagedObject(self.getOwner(), isByteArrayProfile);
+                releaseBufferOfManagedObject(bufferClassProfile.profile(self.getOwner()));
             }
             self.setReleased();
             return PNone.NONE;
@@ -949,8 +951,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
     }
 
-    private static void releaseBufferOfManagedObject(Object object, ConditionProfile isByteArrayProfile) {
-        if (isByteArrayProfile.profile(object instanceof PByteArray)) {
+    private static void releaseBufferOfManagedObject(Object object) {
+        if (object instanceof PByteArray) {
+            // TODO GR-26945
+        } else if (object instanceof PArray) {
             // TODO GR-26945
         }
     }

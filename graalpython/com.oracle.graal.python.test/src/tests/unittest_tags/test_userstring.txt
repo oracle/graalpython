@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_count
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_encode_default_args
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_encode_explicit_none_args
+*graalpython.lib-python.3.test.test_userstring.UserStringTest.test_endswith
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_expandtabs
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_extended_getslice
 *graalpython.lib-python.3.test.test_userstring.UserStringTest.test_find

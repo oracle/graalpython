@@ -2104,28 +2104,39 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
      * {@code tp_iter} for every user class.
      */
     @ExportMessage
-    public Object getIteratorWithState(ThreadState state,
-                    @Cached("createIdentityProfile()") ValueProfile iterMethodProfile,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
-                    @Cached PythonObjectFactory factory,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        Object v = plib.getDelegatedValue(this);
-        Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(this, __ITER__));
-        if (iterMethod != PNone.NONE) {
-            if (iterMethod != PNone.NO_VALUE) {
-                Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
-                if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
-                    return iterObj;
-                }
+    public static class GetIteratorWithState {
+        public static final ValueProfile createIterMethodProfile() {
+            if (singleContextAssumption().isValid()) {
+                return ValueProfile.createIdentityProfile();
             } else {
-                Object getItemAttrObj = plib.lookupAttributeOnType(this, __GETITEM__);
-                if (getItemAttrObj != PNone.NO_VALUE) {
-                    return factory.createSequenceIterator(v);
-                }
+                return ValueProfile.createClassProfile();
             }
         }
-        throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+
+        @Specialization
+        public static Object getIteratorWithState(PythonAbstractObject self, ThreadState state,
+                        @Cached("createIterMethodProfile()") ValueProfile iterMethodProfile,
+                        @CachedLibrary("self") PythonObjectLibrary plib,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                        @Cached IteratorNodes.IsIteratorObjectNode isIteratorObjectNode,
+                        @Cached PythonObjectFactory factory,
+                        @Shared("raise") @Cached PRaiseNode raise) {
+            Object v = plib.getDelegatedValue(self);
+            Object iterMethod = iterMethodProfile.profile(plib.lookupAttributeOnType(self, __ITER__));
+            if (iterMethod != PNone.NONE) {
+                if (iterMethod != PNone.NO_VALUE) {
+                    Object iterObj = methodLib.callUnboundMethodIgnoreGetExceptionWithState(iterMethod, state, v);
+                    if (iterObj != PNone.NO_VALUE && isIteratorObjectNode.execute(iterObj)) {
+                        return iterObj;
+                    }
+                } else {
+                    Object getItemAttrObj = plib.lookupAttributeOnType(self, __GETITEM__);
+                    if (getItemAttrObj != PNone.NO_VALUE) {
+                        return factory.createSequenceIterator(v);
+                    }
+                }
+            }
+            throw raise.raise(PythonErrorType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, self);
+        }
     }
 }
