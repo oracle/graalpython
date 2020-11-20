@@ -652,6 +652,13 @@ public abstract class HashingStorage {
         return lib.hashWithState(key, state);
     }
 
+    protected static boolean keysEqualWithState(Object selfKey, Object otherKey, PythonObjectLibrary selfLib, PythonObjectLibrary otherLib, ThreadState state, ConditionProfile gotState) {
+        if (gotState.profile(state == null)) {
+            return selfLib.equals(selfKey, otherKey, otherLib);
+        }
+        return selfLib.equalsWithState(selfKey, otherKey, otherLib, state);
+    }
+
     /**
      * Adds all items from the given mapping object to storage. It is the caller responsibility to
      * ensure, that mapping has the 'keys' attribute.

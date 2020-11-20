@@ -139,3 +139,27 @@ def test_and():
             assert k1 not in res
             assert k2 not in res
             assert len(res) == 0
+
+
+def test_find_custom_key():
+    class MyWeirdKey(str):
+        def __init__(self):
+            self.log = []
+        def __eq__(self, other):
+            self.log.append('called __eq__ with %r' % other)
+            return True
+        def __hash__(self):
+            return 'a'.__hash__()
+    for f in FACTORIES:
+        # Set with any value that has the same hash contains the weird key
+        s = f()
+        s.add('b')
+        s.add('a')
+        key = MyWeirdKey()
+        assert key in s
+        assert key.log == ["called __eq__ with 'a'"]
+        # But empty set does not contain the weird key
+        s = f()
+        key = MyWeirdKey()
+        assert key not in s
+        assert key.log == []

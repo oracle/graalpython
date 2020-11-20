@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -103,6 +104,56 @@ public class HashMapStorage extends HashingStorage {
         return PGuards.isBuiltinString(obj, isBuiltinClassProfile);
     }
 
+    private static final class CustomKey {
+        private final Object value;
+        private final int hash;
+        private PythonObjectLibrary lib;
+        private final ThreadState state;
+
+        private CustomKey(Object value, int hash, ThreadState state) {
+            this.value = value;
+            this.hash = hash;
+            this.state = state;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null) {
+                return false;
+            }
+            Object otherValue = other;
+            PythonObjectLibrary otherLib = PythonObjectLibrary.getUncached();
+            if (other instanceof CustomKey) {
+                otherValue = ((CustomKey) other).value;
+                otherLib = ((CustomKey) other).getPythonObjLib();
+                if (hash != ((CustomKey) other).hash) {
+                    return false;
+                }
+            } else if (hash != other.hashCode()) {
+                return false;
+            }
+            // Hopefully it will be uncommon that the object we search for will have the same hash
+            // as some of the items in the storage (it may even equal to some of those items), so
+            // the uncached equals call does not hurt that much here
+            return getPythonObjLib().equalsWithState(value, otherValue, otherLib, state);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        PythonObjectLibrary getPythonObjLib() {
+            if (lib == null) {
+                lib = PythonObjectLibrary.getFactory().getUncached(value);
+            }
+            return lib;
+        }
+    }
+
     @Override
     @ExportMessage
     public int length() {
@@ -138,8 +189,15 @@ public class HashMapStorage extends HashingStorage {
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-            // must call __hash__ for potential side-effect
-            getHashWithState(key, lib, state, gotState);
+            // we must still search the map for items that may have the same hash and that may
+            // return true from key.__eq__, we use artificial object with overridden Java level
+            // equals and hashCode methods to perform this search
+            long hash = getHashWithState(key, lib, state, gotState);
+            if (PInt.isIntRange(hash)) {
+                CustomKey keyObj = new CustomKey(key, (int) hash, state);
+                return get(self.values, keyObj);
+            }
+            // else the hashes cannot possibly match
             return null;
         }
     }
@@ -198,9 +256,20 @@ public class HashMapStorage extends HashingStorage {
             values.remove(key);
         }
 
-        @Specialization(guards = "!isSupportedKey(key, profile)")
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
         static HashingStorage delItemNonSupportedKey(HashMapStorage self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile) {
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @CachedLibrary("key") PythonObjectLibrary lib,
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            // we must still search the map for items that may have the same hash and that may
+            // return true from key.__eq__, we use artificial object with overridden Java level
+            // equals and hashCode methods to perform this search
+            long hash = getHashWithState(key, lib, state, gotState);
+            if (PInt.isIntRange(hash)) {
+                CustomKey keyObj = new CustomKey(key, (int) hash, state);
+                remove(self.values, keyObj);
+            }
+            // else the hashes cannot possibly match
             return self;
         }
     }
