@@ -82,6 +82,11 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE = "PyTruffle_LongArrayToNative";
     public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
     public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
+    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC = "PyTruffle_ByteArrayRealloc";
+    public static final String FUN_PY_TRUFFLE_INT_ARRAY_REALLOC = "PyTruffle_IntArrayRealloc";
+    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_REALLOC = "PyTruffle_LongArrayRealloc";
+    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC = "PyTruffle_DoubleArrayRealloc";
+    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC = "PyTruffle_ObjectArrayRealloc";
     public static final String FUN_PY_OBJECT_GENERIC_GET_DICT = "_PyObject_GenericGetDict";
     public static final String FUN_PY_OBJECT_NEW = "PyTruffle_Object_New";
     public static final String FUN_GET_THREAD_STATE_TYPE_ID = "get_thread_state_typeid";
