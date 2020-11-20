@@ -62,12 +62,7 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 
 public class GraalPythonMain extends AbstractLanguageLauncher {
     public static void main(String[] args) {
-        if (GraalPythonMain.startupNanoTime == -1) {
-            GraalPythonMain.startupNanoTime = System.nanoTime();
-        }
-        if (GraalPythonMain.startupWallClockTime == -1) {
-            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
-        }
+        GraalPythonMain.setStartupTime();
         new GraalPythonMain().launch(args);
     }
 
@@ -102,6 +97,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean dontWriteBytecode = false;
     private String warnOptions = null;
     private String checkHashPycsMode = "default";
+    
+    protected static void setStartupTime() {
+        if (GraalPythonMain.startupNanoTime == -1) {
+            GraalPythonMain.startupNanoTime = System.nanoTime();
+        }
+        if (GraalPythonMain.startupWallClockTime == -1) {
+            GraalPythonMain.startupWallClockTime = System.currentTimeMillis();
+        }
+    }
 
     @Override
     protected List<String> preprocessArguments(List<String> givenArgs, Map<String, String> polyglotOptions) {
