@@ -315,7 +315,7 @@ class GraalPythonVm(GuestVm):
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG')
+            dists.append('SULONG_NATIVE')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 
@@ -584,7 +584,7 @@ class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=t
         if mx.suite("tools", fatalIfMissing=False):
             dists.extend(('CHROMEINSPECTOR', 'TRUFFLE_PROFILER'))
         if mx.suite("sulong", fatalIfMissing=False):
-            dists.append('SULONG')
+            dists.append('SULONG_NATIVE')
             if mx.suite("sulong-managed", fatalIfMissing=False):
                 dists.append('SULONG_MANAGED')
 

@@ -145,7 +145,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
         elif check_vm_env == '0':
             check_vm()
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
@@ -1402,9 +1402,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     standalone_dir_name='graalpython-<version>-<graalvm_os>-<arch>',
     license_files=[],
     third_party_license_files=[],
-    dependencies=['pynl', 'Truffle', 'Sulong', 'LLVM.org toolchain', 'TRegex'],
+    dependencies=['pynl', 'Truffle', 'LLVM Runtime Native', 'LLVM.org toolchain', 'TRegex'],
     standalone_dependencies={
-        'Sulong': ('lib/sulong', ['bin/<exe:lli>']),
+        'LLVM Runtime Core': ('lib/sulong', []),
+        'LLVM Runtime Native': ('lib/sulong', []),
         'LLVM.org toolchain': ('lib/llvm-toolchain', []),
         'Graal.Python license files': ('', []),
     },
@@ -2010,7 +2011,7 @@ def run_leak_launcher(input_args, out=None):
     env = os.environ.copy()
     env.setdefault("GRAAL_PYTHONHOME", _dev_pythonhome())
 
-    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG', 'GRAALPYTHON_UNIT_TESTS']
+    dists = ['GRAALPYTHON', 'TRUFFLE_NFI', 'SULONG_NATIVE', 'GRAALPYTHON_UNIT_TESTS']
 
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)

@@ -44,7 +44,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "f55feab7550b6ba1933ddbe54c69f2fd264a781f",
+                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -52,7 +52,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "f55feab7550b6ba1933ddbe54c69f2fd264a781f",
+                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -60,7 +60,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "f55feab7550b6ba1933ddbe54c69f2fd264a781f",
+                "version": "1b1cbe7cf67fedcb1dcfd8b409408e4f4c9ec0d9",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -412,7 +412,8 @@ suite = {
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
                 "truffle:ANTLR4",
-                "sulong:SULONG",
+                "sulong:SULONG_API",
+                "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
