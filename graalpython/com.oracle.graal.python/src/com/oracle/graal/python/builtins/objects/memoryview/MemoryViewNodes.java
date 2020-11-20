@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -546,7 +547,9 @@ public class MemoryViewNodes {
         byte[] tobytesCached(PMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
@@ -559,7 +562,9 @@ public class MemoryViewNodes {
         @Specialization(replaces = "tobytesCached")
         byte[] tobytesGeneric(PMemoryView self,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
