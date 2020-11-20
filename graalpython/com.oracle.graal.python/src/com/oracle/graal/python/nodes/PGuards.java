@@ -177,10 +177,6 @@ public abstract class PGuards {
         return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isEmptyStorage(PArray array) {
-        return array.getSequenceStorage() instanceof EmptySequenceStorage;
-    }
-
     public static boolean isBasicStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof BasicSequenceStorage;
     }
@@ -417,6 +413,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytesLike;
+    }
+
+    public static boolean isArray(Object obj) {
+        return obj instanceof PArray;
     }
 
     public static boolean isAnySet(Object obj) {

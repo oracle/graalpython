@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -115,67 +116,6 @@ public final class PMemoryView extends PythonBuiltinObject {
     private void createReference(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer) {
         this.reference = new BufferReference(this, managedBuffer, references.queue);
         references.set.add(this.reference);
-    }
-
-    public enum BufferFormat {
-        UNSIGNED_BYTE,
-        SIGNED_BYTE,
-        UNSIGNED_SHORT,
-        SIGNED_SHORT,
-        UNSIGNED_INT,
-        SIGNED_INT,
-        UNSIGNED_LONG,
-        SIGNED_LONG,
-        BOOLEAN,
-        CHAR,
-        FLOAT,
-        DOUBLE,
-        OTHER;
-
-        public static BufferFormat fromString(String format) {
-            if (format == null) {
-                return UNSIGNED_BYTE;
-            }
-            if (!format.isEmpty()) {
-                char fmtchar = format.charAt(0);
-                if (fmtchar == '@' && format.length() >= 2) {
-                    fmtchar = format.charAt(1);
-                }
-                switch (fmtchar) {
-                    case 'B':
-                        return UNSIGNED_BYTE;
-                    case 'b':
-                        return SIGNED_BYTE;
-                    case 'H':
-                        return UNSIGNED_SHORT;
-                    case 'h':
-                        return SIGNED_SHORT;
-                    case 'I':
-                        return UNSIGNED_INT;
-                    case 'i':
-                        return SIGNED_INT;
-                    case 'L':
-                    case 'Q':
-                    case 'N':
-                    case 'P':
-                        return UNSIGNED_LONG;
-                    case 'l':
-                    case 'q':
-                    case 'n':
-                        return SIGNED_LONG;
-                    case 'f':
-                        return FLOAT;
-                    case 'd':
-                        return DOUBLE;
-                    case '?':
-                        return BOOLEAN;
-                    case 'c':
-                        return CHAR;
-                }
-            }
-            return OTHER;
-        }
-
     }
 
     // From CPython init_strides_from_shape

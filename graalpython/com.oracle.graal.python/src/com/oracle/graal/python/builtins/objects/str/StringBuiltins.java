@@ -912,11 +912,11 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     String strKey = cast.cast(entry.key, ErrorMessages.KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS);
                     if (strKey.isEmpty()) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     int codePoint = PString.codePointAt(strKey, 0);
                     if (strKey.length() != PString.charCount(codePoint)) {
-                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGHT_1);
+                        throw raise(ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
                     destStorage = hlib.setItem(destStorage, codePoint, entry.value);
                 }
