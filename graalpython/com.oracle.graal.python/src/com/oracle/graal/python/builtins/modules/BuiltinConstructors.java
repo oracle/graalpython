@@ -3404,6 +3404,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
+            object.incrementExports();
             SequenceStorage storage = getSequenceStorageNode.execute(object);
             return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
         }
@@ -3412,6 +3413,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object,
                         @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             int itemsize = object.getFormat().bytesize;
+            object.incrementExports();
             return fromManaged(object, itemsize, object.getLength(), false, object.getFormatStr(), true, getQueue.execute());
         }
 
@@ -3451,7 +3453,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         MemoryViewNodes.BufferReferences refQueue) {
             ManagedBuffer managedBuffer = null;
             if (needsRelease) {
-                // TODO We should lock the underlying storage for resizing
                 managedBuffer = ManagedBuffer.createForManaged(object);
             }
             return factory().createMemoryView(refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,

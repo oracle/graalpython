@@ -25,11 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -46,6 +50,7 @@ public final class PArray extends PythonBuiltinObject {
     private String formatStr;
     private int length;
     private byte[] buffer;
+    private volatile int exports;
 
     public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
         super(clazz, instanceShape);
@@ -82,6 +87,28 @@ public final class PArray extends PythonBuiltinObject {
     public void setLength(int length) {
         assert length >= 0;
         this.length = length;
+    }
+
+    public int getExports() {
+        return exports;
+    }
+
+    public void setExports(int exports) {
+        this.exports = exports;
+    }
+
+    public synchronized void incrementExports() {
+        exports++;
+    }
+
+    public synchronized void decrementExports() {
+        exports--;
+    }
+
+    public void checkCanResize(PythonBuiltinBaseNode node) {
+        if (exports != 0) {
+            throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);
+        }
     }
 
     private int computeNewSize(int newLength, int itemsize) throws OverflowException {

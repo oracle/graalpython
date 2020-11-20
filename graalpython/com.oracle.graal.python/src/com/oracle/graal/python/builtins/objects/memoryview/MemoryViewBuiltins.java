@@ -953,9 +953,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
     private static void releaseBufferOfManagedObject(Object object) {
         if (object instanceof PByteArray) {
-            // TODO GR-26945
+            ((PByteArray) object).decrementExports();
         } else if (object instanceof PArray) {
-            // TODO GR-26945
+            ((PArray) object).decrementExports();
         }
     }
 }
