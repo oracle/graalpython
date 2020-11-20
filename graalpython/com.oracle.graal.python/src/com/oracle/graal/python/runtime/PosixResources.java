@@ -153,18 +153,24 @@ public class PosixResources extends PosixSupport {
         Channel channel;
         int cnt;
         FileLock lock;
-
-        ChannelWrapper() {
-            this(null, 0);
-        }
+        boolean isStandardStream;
 
         ChannelWrapper(Channel channel) {
             this(channel, 1);
         }
 
         ChannelWrapper(Channel channel, int cnt) {
+            this(channel, cnt, false);
+        }
+
+        ChannelWrapper(Channel channel, int cnt, boolean isStandardStream) {
             this.channel = channel;
             this.cnt = cnt;
+            this.isStandardStream = isStandardStream;
+        }
+
+        static ChannelWrapper createForStandardStream() {
+            return new ChannelWrapper(null, 0, true);
         }
 
         void setNewChannel(InputStream inputStream) {
@@ -184,9 +190,9 @@ public class PosixResources extends PosixSupport {
         children = Collections.synchronizedList(new ArrayList<>());
         String osProperty = System.getProperty("os.name");
 
-        files.put(FD_STDIN, new ChannelWrapper());
-        files.put(FD_STDOUT, new ChannelWrapper());
-        files.put(FD_STDERR, new ChannelWrapper());
+        files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
+        files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
         if (osProperty != null && osProperty.toLowerCase(Locale.ENGLISH).contains("win")) {
             filePaths.put(FD_STDIN, "STDIN");
             filePaths.put(FD_STDOUT, "STDOUT");
@@ -253,6 +259,11 @@ public class PosixResources extends PosixSupport {
                 files.put(fd2, channelWrapper);
             }
         }
+    }
+
+    protected boolean isStandardStream(int fd) {
+        ChannelWrapper channelWrapper = files.get(fd);
+        return channelWrapper != null && channelWrapper.isStandardStream;
     }
 
     @TruffleBoundary(allowInlining = true)

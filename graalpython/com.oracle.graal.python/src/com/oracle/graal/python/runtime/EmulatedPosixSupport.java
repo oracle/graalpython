@@ -811,8 +811,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void mkdirAt(int dirFd, PosixPath path, int mode,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
-        String linkPath = pathToJavaStr(path);
-        TruffleFile linkFile = resolvePath(dirFd, linkPath, defaultDirFdPofile);
+        String pathStr = pathToJavaStr(path);
+        TruffleFile linkFile = resolvePath(dirFd, pathStr, defaultDirFdPofile);
         try {
             linkFile.createDirectory();
         } catch (Exception e) {
@@ -865,11 +865,14 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
     public boolean isatty(int fd) {
-        if (fd >= 0 && fd <= 2) {
+        if (isStandardStream(fd)) {
             return context.getOption(PythonOptions.TerminalIsInteractive);
         } else {
-            return false;
+            // These two files are explicitly specified by POSIX
+            String path = getFilePath(fd);
+            return path != null && path.equals("/dev/tty") || path.equals("/dev/console");
         }
     }
 
