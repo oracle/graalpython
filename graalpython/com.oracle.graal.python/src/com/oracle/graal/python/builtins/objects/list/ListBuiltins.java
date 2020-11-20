@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
@@ -130,6 +131,11 @@ public class ListBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
+        builtinConstants.put(__DOC__, //
+                        "Built-in mutable sequence.\n" + //
+                                        "\n" + //
+                                        "If no argument is given, the constructor creates a new empty list.\n" + //
+                                        "The argument must be an iterable if specified.");
         this.builtinConstants.put(__HASH__, PNone.NONE);
     }
 

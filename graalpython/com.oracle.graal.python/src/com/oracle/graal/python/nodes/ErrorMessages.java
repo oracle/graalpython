@@ -160,6 +160,7 @@ public abstract class ErrorMessages {
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
+    public static final String CANT_SET_S_S = "can't set %s.%s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
