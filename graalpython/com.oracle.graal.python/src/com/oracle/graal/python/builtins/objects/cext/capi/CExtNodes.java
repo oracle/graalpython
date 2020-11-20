@@ -3386,9 +3386,9 @@ public abstract class CExtNodes {
          * possible.
          */
         private static long castToLong(InteropLibrary lib, PRaiseNode raiseNode, Object value) {
-            if (lib.fitsInInt(value)) {
+            if (lib.fitsInLong(value)) {
                 try {
-                    return lib.asInt(value);
+                    return lib.asLong(value);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
