@@ -122,6 +122,7 @@ def run_bisect_benchmark(suite, bad, good, callback, threshold=None):
             downstream_bad = get_commit(downstream_suite)
     subresults = {}
     if downstream_bad and downstream_good and downstream_bad != downstream_good:
+        suite.vc.update_to_branch(suite.vc_dir, commits[good_index])
         subresult = run_bisect_benchmark(downstream_suite, downstream_bad, downstream_good, callback, threshold)
         subresults[bad_index] = subresult
     return BisectResult(suite, commits, values, good_index, bad_index, subresults)
@@ -142,17 +143,13 @@ class BisectResult:
 
     @property
     def good_commit(self):
-        try:
+        if 0 <= self.good_index < len(self.commits):
             return self.commits[self.good_index]
-        except IndexError:
-            return None
 
     @property
     def bad_commit(self):
-        try:
+        if 0 <= self.bad_index < len(self.commits):
             return self.commits[self.bad_index]
-        except IndexError:
-            return None
 
     def visualize(self, level=1):
         level_marker = '=' * level
@@ -212,15 +209,16 @@ def _bisect_benchmark(argv, initial_branch, email_to):
             if fetched_enterprise[0]:
                 checkout_args.append('--no-fetch')
             mx.run_mx(checkout_args, out=mx.OutputCapture())
+            # Make sure vm is imported before vm-enterprise
+            get_suite('/vm')
             mx.run_mx(['--env', 'ee', 'sforceimports'], suite=get_suite('/vm-enterprise'))
             fetched_enterprise[0] = True
-        elif suite.name != 'vm':
-            mx.run_mx(['--env', 'ce', 'sforceimports'], suite=get_suite('/vm'))
         suite.vc.update_to_branch(suite.vc_dir, commit)
         mx.run_mx(['sforceimports'], suite=suite)
+        print("debug: graalpython={} graal={} graal-enterprise={}"
+              .format(*(get_commit(get_suite(s)) for s in ('graalpython', '/vm', '/vm-enterprise'))))
         env = os.environ.copy()
-        if 'CI' not in os.environ:
-            env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
+        env['MX_ALT_OUTPUT_ROOT'] = 'mxbuild-{}'.format(commit)
         retcode = mx.run(shlex.split(args.build_command), env=env, nonZeroIsFatal=False)
         if retcode:
             raise RuntimeError("Failed to execute the build command for {}".format(commit))
