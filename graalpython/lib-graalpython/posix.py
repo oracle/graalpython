@@ -47,6 +47,7 @@ stat_result = make_named_tuple_class("stat_result", [
 ])
 stat_result.__qualname__ = 'stat_result'
 stat_result.__name__ = 'stat_result'
+stat_result.__module__ = 'os'
 stat_result.st_atime_ns = property(lambda s: int(s.st_atime * 1000))
 stat_result.st_mtime_ns = property(lambda s: int(s.st_mtime * 1000))
 
