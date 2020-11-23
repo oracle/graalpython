@@ -138,7 +138,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_isatty("(sint32):sint32"),
         call_opendir("([sint8]):sint64"),
         call_fdopendir("(sint32):sint64"),
-        call_closedir("(sint64, sint32):void"),
+        call_closedir("(sint64, sint32):sint32"),
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
@@ -597,7 +597,10 @@ public final class NFIPosixSupport extends PosixSupport {
         synchronized (dirStream.ref.lock) {
             if (!dirStream.ref.closed) {
                 dirStream.ref.closed = true;
-                invokeNode.call(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
+                int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
+                if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
+                    LOGGER.log(Level.INFO, "Error occured during closedir, errno=" + getErrno(invokeNode));
+                }
             }
         }
         DirStreamRef.removeFromSet(dirStream.ref);

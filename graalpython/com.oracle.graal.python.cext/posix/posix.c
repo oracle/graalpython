@@ -308,11 +308,11 @@ intptr_t call_fdopendir(int32_t fd) {
     return (intptr_t) dirp;
 }
 
-void call_closedir(intptr_t dirp, int32_t rewind) {
+int32_t call_closedir(intptr_t dirp, int32_t rewind) {
     if (rewind) {
         rewinddir((DIR *) dirp);
     }
-    closedir((DIR *) dirp);
+    return closedir((DIR *) dirp);
 }
 
 int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t *out) {
