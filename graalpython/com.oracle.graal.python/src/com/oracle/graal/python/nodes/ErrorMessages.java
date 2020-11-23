@@ -164,6 +164,9 @@ public abstract class ErrorMessages {
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
+    public static final String CANT_SUM_BYTEARRAY = "sum() can't sum bytearray [use b''.join(seq) instead]";
+    public static final String CANT_SUM_BYTES = "sum() can't sum bytes [use b''.join(seq) instead]";
+    public static final String CANT_SUM_STRINGS = "sum() can't sum strings [use ''.join(seq) instead]";
     public static final String CANT_TAKE_FLOOR_OR_MOD_OF_COMPLEX = "can't take floor or mod of complex number.";
     public static final String CAPI_SYM_NOT_CALLABLE = "C API symbol %s is not callable";
     public static final String CATCHING_CLS_NOT_ALLOWED = "catching classes that do not inherit from BaseException is not allowed";

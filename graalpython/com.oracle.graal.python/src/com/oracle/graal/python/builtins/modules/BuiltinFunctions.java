@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1919,7 +1920,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleNone", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasStart) {
+                        @Cached("createBinaryProfile()") ConditionProfile hasStart,
+                        @Cached BranchProfile stringStart,
+                        @Cached BranchProfile bytesStart,
+                        @Cached BranchProfile byteArrayStart) {
+            if (PGuards.isString(start)) {
+                stringStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_STRINGS);
+            } else if (start instanceof PBytes) {
+                bytesStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_BYTES);
+            } else if (start instanceof PByteArray) {
+                byteArrayStart.enter();
+                throw raise(TypeError, ErrorMessages.CANT_SUM_BYTEARRAY);
+            }
             Object iterator = lib.getIteratorWithState(arg1, PArguments.getThreadState(frame));
             return iterateGeneric(frame, iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
         }
