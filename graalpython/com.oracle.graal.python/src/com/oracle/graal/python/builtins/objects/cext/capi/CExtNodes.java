@@ -50,6 +50,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
@@ -3169,6 +3172,15 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class UnicodeFromFormatNode extends Node {
+        private static Pattern pattern;
+
+        private static Matcher match(String formatStr) {
+            if (pattern == null) {
+                pattern = Pattern.compile("%(?<flags>[-\\+ #0])?(?<width>\\d+)?(\\.(?<prec>\\d+))?(?<len>(l|ll|z))?(?<spec>[%cduixsAUVSR])");
+            }
+            return pattern.matcher(formatStr);
+        }
+
         public abstract Object execute(String format, Object vaList);
 
         @Specialization
@@ -3190,171 +3202,173 @@ public abstract class CExtNodes {
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
             try {
-                int consumeChars;
-                for (int i = 0; i < format.length(); i += consumeChars) {
-                    // by default, just move by one character
-                    consumeChars = 1;
+                Matcher matcher = match(format);
+                int cur = 0;
+                while (matcher.find(cur)) {
+                    // not all combinations are valid
+                    boolean valid = false;
 
-                    char c = getFormatChar(format, i, raiseNode);
-                    if (c == '%' && i + 1 < format.length()) {
-                        char la = getFormatChar(format, i + 1, raiseNode);
-                        switch (la) {
-                            case '%':
-                                // %%
-                                result.append('%');
-                                consumeChars = 2;
-                                break;
-                            case 'c':
-                                // FIXME(fa): use correct type: LLVMType.int_t
-                                int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t);
-                                if (ordinal < 0 || ordinal > 0x110000) {
-                                    throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
+                    // add anything before the match
+                    result.append(format, cur, matcher.start());
+
+                    cur = matcher.end();
+
+                    String spec = matcher.group("spec");
+                    String len = matcher.group("len");
+                    int prec = getPrec(matcher.group("prec"));
+                    assert spec.length() == 1;
+                    char la = spec.charAt(0);
+                    switch (la) {
+                        case '%':
+                            // %%
+                            result.append('%');
+                            break;
+                        case 'c':
+                            // FIXME(fa): use correct type: LLVMType.int_t
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t);
+                            if (ordinal < 0 || ordinal > 0x110000) {
+                                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
+                            }
+                            result.append((char) ordinal);
+                            break;
+                        case 'd':
+                        case 'i':
+                            // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
+                            if (len != null) {
+                                switch (len) {
+                                    case "ll":
+                                        // FIXME(fa): use correct type: longlong_t
+                                    case "l":
+                                        // FIXME(fa): use correct type: long_t
+                                    case "z":
+                                        // FIXME(fa): use correct type: 'Py_ssize_t'
+                                        Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
+                                        vaArgIdx++;
+                                        result.append(castToLong(interopLibrary, raiseNode, value));
+                                        valid = true;
+                                        break;
                                 }
-                                result.append((char) ordinal);
-                                consumeChars = 2;
-                                break;
-                            case 'd':
-                            case 'i':
-                                // %d, %i
+                            } else {
                                 // FIXME(fa): use correct type: LLVMType.int_t
                                 result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t));
                                 vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'u':
+                                valid = true;
+                            }
+                            break;
+                        case 'u':
+                            // %u, %lu, %llu, %zu
+                            if (len != null) {
+                                switch (len) {
+                                    case "ll":
+                                        // FIXME(fa): use correct type: ulonglong_t
+                                    case "l":
+                                        // FIXME(fa): use correct type: ulong_t
+                                    case "z":
+                                        // FIXME(fa): use correct type: 'size_t'
+                                        Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
+                                        vaArgIdx++;
+                                        result.append(castToLong(interopLibrary, raiseNode, value));
+                                        valid = true;
+                                        break;
+                                }
+                            } else {
                                 // FIXME(fa): use correct type: LLVMType.uint_t
                                 result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t)));
                                 vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'l':
-                                LLVMType llvmType = parseLongType(format, i, raiseNode);
-                                if (llvmType != null) {
-                                    // FIXME(fa): use correct type: llvmType
-                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
-                                    vaArgIdx++;
-                                    switch (llvmType) {
-                                        case long_t:
-                                            consumeChars = 3;
-                                            result.append(castToLong(interopLibrary, raiseNode, value));
-                                            break;
-                                        case longlong_t:
-                                            consumeChars = 4;
-                                            result.append(castToLong(interopLibrary, raiseNode, value));
-                                            break;
-                                        case ulong_t:
-                                            consumeChars = 3;
-                                            result.append(Long.toUnsignedString(castToLong(interopLibrary, raiseNode, value)));
-                                            break;
-                                        case ulonglong_t:
-                                            consumeChars = 4;
-                                            result.append(Long.toUnsignedString(castToLong(interopLibrary, raiseNode, value)));
-                                            break;
-                                        default:
-                                            // just ignore
-                                    }
-                                }
-                                break;
-                            case 'z':
-                                if (i + 2 < format.length()) {
-                                    char lla = getFormatChar(format, i + 2, raiseNode);
-                                    switch (lla) {
-                                        case 'd':
-                                        case 'i':
-                                            // %zd, %zi
-                                            // FIXME(fa): use correct type: LLVMType.Py_ssize_t
-                                            result.append(interopLibrary.asLong(getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t)));
-                                            vaArgIdx++;
-                                            consumeChars = 3;
-                                            break;
-                                        case 'u':
-                                            // %zu
-                                            // FIXME(fa): use correct type: LLVMType.size_t
-                                            Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
-                                            vaArgIdx++;
-                                            result.append(Long.toUnsignedString(interopLibrary.asLong(value)));
-                                            consumeChars = 3;
-                                            break;
-                                    }
-                                }
-                                break;
-                            case 'x':
-                                // %x
-                                // FIXME(fa): use correct type: LLVMType.int_t
-                                result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t)));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 's':
-                                // %s
-                                Object unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx));
-                                try {
-                                    result.append(castToJavaStringNode.execute(unicodeObj));
-                                } catch (CannotCastException e) {
-                                    // That should really not happen because we created the unicode
-                                    // object with FromCharPointerNode which guarantees to return a
-                                    // String/PString.
-                                    throw CompilerDirectives.shouldNotReachHere();
-                                }
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'p':
-                                // %p
-                                result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'A':
-                                // %A
-                                result.append(callBuiltin(contextRef.get(), BuiltinNames.ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'U':
-                                // %U
-                                result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList, vaArgIdx)));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'V':
-                                // %V
-                                Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList, vaArgIdx);
-                                if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
-                                    unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx + 1));
+                                valid = true;
+                            }
+                            break;
+                        case 'x':
+                            // %x
+                            // FIXME(fa): use correct type: LLVMType.int_t
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 's':
+                            // %s
+                            Object unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx));
+                            String sValue = castToJavaStringNode.execute(unicodeObj);
+                            try {
+                                if (prec == -1) {
+                                    result.append(sValue);
                                 } else {
-                                    unicodeObj = toJavaNode.execute(pyObjectPtr);
+                                    result.append(sValue, 0, Math.min(sValue.length(), prec));
                                 }
-                                result.append(castToJavaStringNode.execute(unicodeObj));
-                                vaArgIdx += 2;
-                                consumeChars = 2;
-                                break;
-                            case 'S':
-                                // %S
-                                result.append(callBuiltin(contextRef.get(), BuiltinNames.STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                            case 'R':
-                                // %R
-                                result.append(callBuiltin(contextRef.get(), BuiltinNames.REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
-                                vaArgIdx++;
-                                consumeChars = 2;
-                                break;
-                        }
+                            } catch (CannotCastException e) {
+                                // That should really not happen because we created the unicode
+                                // object with FromCharPointerNode which guarantees to return a
+                                // String/PString.
+                                throw CompilerDirectives.shouldNotReachHere();
+                            }
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'p':
+                            // %p
+                            result.append("0x").append(Long.toHexString(getPyObject(getVaArgsNode, vaList, vaArgIdx).hashCode()));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'A':
+                            // %A
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.ASCII, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'U':
+                            // %U
+                            result.append(castToJavaStringNode.execute(getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'V':
+                            // %V
+                            Object pyObjectPtr = getVaArgsNode.getPyObjectPtr(vaList, vaArgIdx);
+                            if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
+                                unicodeObj = fromCharPointerNode.execute(getVaArgsNode.getCharPtr(vaList, vaArgIdx + 1));
+                            } else {
+                                unicodeObj = toJavaNode.execute(pyObjectPtr);
+                            }
+                            result.append(castToJavaStringNode.execute(unicodeObj));
+                            vaArgIdx += 2;
+                            valid = true;
+                            break;
+                        case 'S':
+                            // %S
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.STR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
+                        case 'R':
+                            // %R
+                            result.append(callBuiltin(contextRef.get(), BuiltinNames.REPR, getPyObject(getVaArgsNode, vaList, vaArgIdx)));
+                            vaArgIdx++;
+                            valid = true;
+                            break;
                     }
-                    // this means, we did not detect a valid format specifier, so add the single
-                    // char
-                    if (consumeChars == 1) {
-                        result.append(c);
+                    // this means, we did not detect a valid format specifier, so add the whole
+                    // group
+                    if (!valid) {
+                        result.append(matcher.group());
                     }
                 }
+                // add anything after the last matched group (or the whole format string if nothing
+                // matched)
+                result.append(format, cur, format.length());
             } catch (InteropException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Error when accessing variable argument at position %d", vaArgIdx);
             } finally {
                 current.get();
             }
             return result.toString();
+        }
+
+        private static int getPrec(String prec) {
+            if (prec == null) {
+                return -1;
+            }
+            return Integer.parseInt(prec);
         }
 
         private static char getFormatChar(String format, int idx, PRaiseNode raiseNode) {
@@ -3398,38 +3412,6 @@ public abstract class CExtNodes {
 
         private static Object getPyObject(GetVaArgsNode getVaArgsNode, Object vaList, int idx) throws InteropException {
             return ToJavaNodeGen.getUncached().execute(getVaArgsNode.getPyObjectPtr(vaList, idx));
-        }
-
-        private static LLVMType parseLongType(String format, int i, PRaiseNode raiseNode) {
-            assert format.charAt(i) == '%';
-            assert format.charAt(i + 1) == 'l';
-            if (i + 2 < format.length()) {
-                char lla = getFormatChar(format, i + 2, raiseNode);
-                switch (lla) {
-                    case 'd':
-                    case 'i':
-                        // %ld, %li
-                        return LLVMType.long_t;
-                    case 'u':
-                        // %lu
-                        return LLVMType.ulong_t;
-                    case 'l':
-                        if (i + 3 < format.length()) {
-                            char llla = getFormatChar(format, i + 3, raiseNode);
-                            switch (llla) {
-                                case 'd':
-                                case 'i':
-                                    // %lld, %lli
-                                    return LLVMType.longlong_t;
-                                case 'u':
-                                    // %llu
-                                    return LLVMType.ulonglong_t;
-                            }
-                        }
-                }
-            }
-            // no error; just ignore invalid format specified
-            return null;
         }
 
         @TruffleBoundary
