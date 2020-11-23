@@ -5,7 +5,6 @@ Note: test_regrtest cannot be run twice in parallel.
 """
 
 import contextlib
-import faulthandler
 import glob
 import io
 import os.path
@@ -55,8 +54,6 @@ class ParseArgsTestCase(unittest.TestCase):
                     libregrtest._parse_args([opt])
                 self.assertIn('Run Python regression tests.', out.getvalue())
 
-    @unittest.skipUnless(hasattr(faulthandler, 'dump_traceback_later'),
-                         "faulthandler.dump_traceback_later() required")
     def test_timeout(self):
         ns = libregrtest._parse_args(['--timeout', '4.2'])
         self.assertEqual(ns.timeout, 4.2)
@@ -520,7 +517,7 @@ class BaseTestCase(unittest.TestCase):
         if not input:
             input = ''
         if 'stderr' not in kw:
-            kw['stderr'] = subprocess.PIPE
+            kw['stderr'] = subprocess.STDOUT
         proc = subprocess.run(args,
                               universal_newlines=True,
                               input=input,
@@ -592,8 +589,7 @@ class ProgramsTestCase(BaseTestCase):
         self.python_args = ['-Wd', '-E', '-bb']
         self.regrtest_args = ['-uall', '-rwW',
                               '--testdir=%s' % self.tmptestdir]
-        if hasattr(faulthandler, 'dump_traceback_later'):
-            self.regrtest_args.extend(('--timeout', '3600', '-j4'))
+        self.regrtest_args.extend(('--timeout', '3600', '-j4'))
         if sys.platform == 'win32':
             self.regrtest_args.append('-n')
 
@@ -664,6 +660,8 @@ class ProgramsTestCase(BaseTestCase):
         test_args = ['--testdir=%s' % self.tmptestdir]
         if platform.machine() == 'ARM64':
             test_args.append('-arm64') # ARM 64-bit build
+        elif platform.machine() == 'ARM':
+            test_args.append('-arm32')   # 32-bit ARM build
         elif platform.architecture()[0] == '64bit':
             test_args.append('-x64')   # 64-bit build
         if not Py_DEBUG:
@@ -679,6 +677,8 @@ class ProgramsTestCase(BaseTestCase):
         rt_args = ["-q"]             # Quick, don't run tests twice
         if platform.machine() == 'ARM64':
             rt_args.append('-arm64') # ARM 64-bit build
+        elif platform.machine() == 'ARM':
+            rt_args.append('-arm32')   # 32-bit ARM build
         elif platform.architecture()[0] == '64bit':
             rt_args.append('-x64')   # 64-bit build
         if Py_DEBUG:
@@ -1232,6 +1232,39 @@ class ArgsTestCase(BaseTestCase):
                                   failed=testname)
         self.assertRegex(output,
                          re.compile('%s timed out' % testname, re.MULTILINE))
+
+    def test_unraisable_exc(self):
+        # --fail-env-changed must catch unraisable exception.
+        # The exceptioin must be displayed even if sys.stderr is redirected.
+        code = textwrap.dedent(r"""
+            import unittest
+            import weakref
+            from test.support import captured_stderr
+
+            class MyObject:
+                pass
+
+            def weakref_callback(obj):
+                raise Exception("weakref callback bug")
+
+            class Tests(unittest.TestCase):
+                def test_unraisable_exc(self):
+                    obj = MyObject()
+                    ref = weakref.ref(obj, weakref_callback)
+                    with captured_stderr() as stderr:
+                        # call weakref_callback() which logs
+                        # an unraisable exception
+                        obj = None
+                    self.assertEqual(stderr.getvalue(), '')
+        """)
+        testname = self.create_test(code=code)
+
+        output = self.run_tests("--fail-env-changed", "-v", testname, exitcode=3)
+        self.check_executed_tests(output, [testname],
+                                  env_changed=[testname],
+                                  fail_env_changed=True)
+        self.assertIn("Warning -- Unraisable exception", output)
+        self.assertIn("Exception: weakref callback bug", output)
 
     def test_cleanup(self):
         dirname = os.path.join(self.tmptestdir, "test_python_123")

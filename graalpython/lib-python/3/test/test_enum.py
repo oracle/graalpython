@@ -9,6 +9,7 @@ from enum import Enum, IntEnum, EnumMeta, Flag, IntFlag, unique, auto
 from io import StringIO
 from pickle import dumps, loads, PicklingError, HIGHEST_PROTOCOL
 from test import support
+from test.support import ALWAYS_EQ
 from datetime import timedelta
 
 
@@ -445,12 +446,63 @@ class TestEnum(unittest.TestCase):
         self.assertEqual('{:<20}'.format(Season.SPRING),
                          '{:<20}'.format(str(Season.SPRING)))
 
-    def test_format_enum_custom(self):
+    def test_str_override_enum(self):
+        class EnumWithStrOverrides(Enum):
+            one = auto()
+            two = auto()
+
+            def __str__(self):
+                return 'Str!'
+        self.assertEqual(str(EnumWithStrOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(EnumWithStrOverrides.one), 'Str!')
+
+    def test_format_override_enum(self):
+        class EnumWithFormatOverride(Enum):
+            one = 1.0
+            two = 2.0
+            def __format__(self, spec):
+                return 'Format!!'
+        self.assertEqual(str(EnumWithFormatOverride.one), 'EnumWithFormatOverride.one')
+        self.assertEqual('{}'.format(EnumWithFormatOverride.one), 'Format!!')
+
+    def test_str_and_format_override_enum(self):
+        class EnumWithStrFormatOverrides(Enum):
+            one = auto()
+            two = auto()
+            def __str__(self):
+                return 'Str!'
+            def __format__(self, spec):
+                return 'Format!'
+        self.assertEqual(str(EnumWithStrFormatOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(EnumWithStrFormatOverrides.one), 'Format!')
+
+    def test_str_override_mixin(self):
+        class MixinEnumWithStrOverride(float, Enum):
+            one = 1.0
+            two = 2.0
+            def __str__(self):
+                return 'Overridden!'
+        self.assertEqual(str(MixinEnumWithStrOverride.one), 'Overridden!')
+        self.assertEqual('{}'.format(MixinEnumWithStrOverride.one), 'Overridden!')
+
+    def test_str_and_format_override_mixin(self):
+        class MixinWithStrFormatOverrides(float, Enum):
+            one = 1.0
+            two = 2.0
+            def __str__(self):
+                return 'Str!'
+            def __format__(self, spec):
+                return 'Format!'
+        self.assertEqual(str(MixinWithStrFormatOverrides.one), 'Str!')
+        self.assertEqual('{}'.format(MixinWithStrFormatOverrides.one), 'Format!')
+
+    def test_format_override_mixin(self):
         class TestFloat(float, Enum):
             one = 1.0
             two = 2.0
             def __format__(self, spec):
                 return 'TestFloat success!'
+        self.assertEqual(str(TestFloat.one), 'TestFloat.one')
         self.assertEqual('{}'.format(TestFloat.one), 'TestFloat success!')
 
     def assertFormatIsValue(self, spec, member):
@@ -499,6 +551,56 @@ class TestEnum(unittest.TestCase):
         self.assertFormatIsValue('{:^20}', Directional.WEST)
         self.assertFormatIsValue('{:>20}', Directional.WEST)
         self.assertFormatIsValue('{:<20}', Directional.WEST)
+
+    def test_object_str_override(self):
+        class Colors(Enum):
+            RED, GREEN, BLUE = 1, 2, 3
+            def __repr__(self):
+                return "test.%s" % (self._name_, )
+            __str__ = object.__str__
+        self.assertEqual(str(Colors.RED), 'test.RED')
+
+    def test_enum_str_override(self):
+        class MyStrEnum(Enum):
+            def __str__(self):
+                return 'MyStr'
+        class MyMethodEnum(Enum):
+            def hello(self):
+                return 'Hello!  My name is %s' % self.name
+        class Test1Enum(MyMethodEnum, int, MyStrEnum):
+            One = 1
+            Two = 2
+        self.assertEqual(str(Test1Enum.One), 'MyStr')
+        #
+        class Test2Enum(MyStrEnum, MyMethodEnum):
+            One = 1
+            Two = 2
+        self.assertEqual(str(Test2Enum.One), 'MyStr')
+
+    def test_inherited_data_type(self):
+        class HexInt(int):
+            def __repr__(self):
+                return hex(self)
+        class MyEnum(HexInt, enum.Enum):
+            A = 1
+            B = 2
+            C = 3
+        self.assertEqual(repr(MyEnum.A), '<MyEnum.A: 0x1>')
+
+    def test_too_many_data_types(self):
+        with self.assertRaisesRegex(TypeError, 'too many data types'):
+            class Huh(str, int, Enum):
+                One = 1
+
+        class MyStr(str):
+            def hello(self):
+                return 'hello, %s' % self
+        class MyInt(int):
+            def repr(self):
+                return hex(self)
+        with self.assertRaisesRegex(TypeError, 'too many data types'):
+            class Huh(MyStr, MyInt, Enum):
+                One = 1
 
     def test_hash(self):
         Season = self.Season
@@ -899,6 +1001,9 @@ class TestEnum(unittest.TestCase):
                 cyan = 4
                 magenta = 5
                 yellow = 6
+        with self.assertRaisesRegex(TypeError, "EvenMoreColor: cannot extend enumeration 'Color'"):
+            class EvenMoreColor(Color, IntEnum):
+                chartruese = 7
 
     def test_exclude_methods(self):
         class whatever(Enum):
@@ -1458,13 +1563,10 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(list(map(int, Color)), [1, 2, 3])
 
     def test_equality(self):
-        class AlwaysEqual:
-            def __eq__(self, other):
-                return True
         class OrdinaryEnum(Enum):
             a = 1
-        self.assertEqual(AlwaysEqual(), OrdinaryEnum.a)
-        self.assertEqual(OrdinaryEnum.a, AlwaysEqual())
+        self.assertEqual(ALWAYS_EQ, OrdinaryEnum.a)
+        self.assertEqual(OrdinaryEnum.a, ALWAYS_EQ)
 
     def test_ordered_mixin(self):
         class OrderedEnum(Enum):
@@ -1711,6 +1813,17 @@ class TestEnum(unittest.TestCase):
                 def _generate_next_value_(name, start, count, last):
                     return name
 
+    def test_auto_order_wierd(self):
+        weird_auto = auto()
+        weird_auto.value = 'pathological case'
+        class Color(Enum):
+            red = weird_auto
+            def _generate_next_value_(name, start, count, last):
+                return name
+            blue = auto()
+        self.assertEqual(list(Color), [Color.red, Color.blue])
+        self.assertEqual(Color.red.value, 'pathological case')
+        self.assertEqual(Color.blue.value, 'blue')
 
     def test_duplicate_auto(self):
         class Dupes(Enum):
@@ -1718,6 +1831,18 @@ class TestEnum(unittest.TestCase):
             second = auto()
             third = auto()
         self.assertEqual([Dupes.first, Dupes.second, Dupes.third], list(Dupes))
+
+    def test_default_missing(self):
+        class Color(Enum):
+            RED = 1
+            GREEN = 2
+            BLUE = 3
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
 
     def test_missing(self):
         class Color(Enum):
@@ -1737,7 +1862,12 @@ class TestEnum(unittest.TestCase):
                     # trigger not found
                     return None
         self.assertIs(Color('three'), Color.blue)
-        self.assertRaises(ValueError, Color, 7)
+        try:
+            Color(7)
+        except ValueError as exc:
+            self.assertTrue(exc.__context__ is None)
+        else:
+            raise Exception('Exception not raised.')
         try:
             Color('bad return')
         except TypeError as exc:
@@ -2219,12 +2349,13 @@ class TestFlag(unittest.TestCase):
             d = 4
             f = 6
         # Bizarre.c | Bizarre.d
-        self.assertRaisesRegex(ValueError, "5 is not a valid Bizarre", Bizarre, 5)
-        self.assertRaisesRegex(ValueError, "5 is not a valid Bizarre", Bizarre, 5)
-        self.assertRaisesRegex(ValueError, "2 is not a valid Bizarre", Bizarre, 2)
-        self.assertRaisesRegex(ValueError, "2 is not a valid Bizarre", Bizarre, 2)
-        self.assertRaisesRegex(ValueError, "1 is not a valid Bizarre", Bizarre, 1)
-        self.assertRaisesRegex(ValueError, "1 is not a valid Bizarre", Bizarre, 1)
+        name = "TestFlag.test_cascading_failure.<locals>.Bizarre"
+        self.assertRaisesRegex(ValueError, "5 is not a valid " + name, Bizarre, 5)
+        self.assertRaisesRegex(ValueError, "5 is not a valid " + name, Bizarre, 5)
+        self.assertRaisesRegex(ValueError, "2 is not a valid " + name, Bizarre, 2)
+        self.assertRaisesRegex(ValueError, "2 is not a valid " + name, Bizarre, 2)
+        self.assertRaisesRegex(ValueError, "1 is not a valid " + name, Bizarre, 1)
+        self.assertRaisesRegex(ValueError, "1 is not a valid " + name, Bizarre, 1)
 
     def test_duplicate_auto(self):
         class Dupes(Enum):

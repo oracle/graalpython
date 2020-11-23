@@ -1,24 +1,22 @@
-# We import importlib *ASAP* in order to test #15386
-import importlib
+import builtins
+import contextlib
+import errno
+import glob
 import importlib.util
 from importlib._bootstrap_external import _get_sourcefile
-import builtins
 import marshal
 import os
 import py_compile
 import random
 import shutil
-import subprocess
 import stat
+import subprocess
 import sys
+import textwrap
 import threading
 import time
 import unittest
-import unittest.mock as mock
-import textwrap
-import errno
-import contextlib
-import glob
+from unittest import mock
 
 import test.support
 from test.support import (
@@ -28,6 +26,7 @@ from test.support import (
     temp_dir, DirsOnSysPath)
 from test.support import script_helper
 from test.test_importlib.util import uncache
+from types import ModuleType
 
 
 skip_if_dont_write_bytecode = unittest.skipIf(
@@ -437,16 +436,24 @@ class ImportTests(unittest.TestCase):
                 os.does_not_exist
 
     def test_concurrency(self):
+        # bpo 38091: this is a hack to slow down the code that calls
+        # has_deadlock(); the logic was itself sometimes deadlocking.
+        def delay_has_deadlock(frame, event, arg):
+            if event == 'call' and frame.f_code.co_name == 'has_deadlock':
+                time.sleep(0.1)
+
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'data'))
         try:
             exc = None
             def run():
+                sys.settrace(delay_has_deadlock)
                 event.wait()
                 try:
                     import package
                 except BaseException as e:
                     nonlocal exc
                     exc = e
+                sys.settrace(None)
 
             for i in range(10):
                 event = threading.Event()
@@ -1340,6 +1347,19 @@ class CircularImportTests(unittest.TestCase):
             "(most likely due to a circular import)",
             str(cm.exception),
         )
+
+    def test_unwritable_module(self):
+        self.addCleanup(unload, "test.test_import.data.unwritable")
+        self.addCleanup(unload, "test.test_import.data.unwritable.x")
+
+        import test.test_import.data.unwritable as unwritable
+        with self.assertWarns(ImportWarning):
+            from test.test_import.data.unwritable import x
+
+        self.assertNotEqual(type(unwritable), ModuleType)
+        self.assertEqual(type(x), ModuleType)
+        with self.assertRaises(AttributeError):
+            unwritable.x = 42
 
 
 if __name__ == '__main__':

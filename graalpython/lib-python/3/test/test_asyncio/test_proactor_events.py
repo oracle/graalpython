@@ -13,6 +13,7 @@ from asyncio.proactor_events import _ProactorWritePipeTransport
 from asyncio.proactor_events import _ProactorDuplexPipeTransport
 from asyncio.proactor_events import _ProactorDatagramTransport
 from test import support
+from test.support import socket_helper
 from test.test_asyncio import utils as test_utils
 
 
@@ -736,6 +737,7 @@ class BaseProactorEventLoopTests(test_utils.TestCase):
 
     def test_loop_self_reading_fut(self):
         fut = mock.Mock()
+        self.loop._self_reading_future = fut
         self.loop._loop_self_reading(fut)
         self.assertTrue(fut.result.called)
         self.proactor.recv.assert_called_with(self.ssock, 4096)
@@ -950,7 +952,7 @@ class ProactorEventLoopUnixSockSendfileTests(test_utils.TestCase):
     def prepare(self):
         sock = self.make_socket()
         proto = self.MyProto(self.loop)
-        port = support.find_unused_port()
+        port = socket_helper.find_unused_port()
         srv_sock = self.make_socket(cleanup=False)
         srv_sock.bind(('127.0.0.1', port))
         server = self.run_loop(self.loop.create_server(

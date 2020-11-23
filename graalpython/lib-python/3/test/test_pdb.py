@@ -425,6 +425,47 @@ def test_list_commands():
     (Pdb) continue
     """
 
+def test_pdb_whatis_command():
+    """Test the whatis command
+
+    >>> myvar = (1,2)
+    >>> def myfunc():
+    ...     pass
+
+    >>> class MyClass:
+    ...    def mymethod(self):
+    ...        pass
+
+    >>> def test_function():
+    ...   import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+
+    >>> with PdbTestInput([  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+    ...    'whatis myvar',
+    ...    'whatis myfunc',
+    ...    'whatis MyClass',
+    ...    'whatis MyClass()',
+    ...    'whatis MyClass.mymethod',
+    ...    'whatis MyClass().mymethod',
+    ...    'continue',
+    ... ]):
+    ...    test_function()
+    --Return--
+    > <doctest test.test_pdb.test_pdb_whatis_command[3]>(2)test_function()->None
+    -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    (Pdb) whatis myvar
+    <class 'tuple'>
+    (Pdb) whatis myfunc
+    Function myfunc
+    (Pdb) whatis MyClass
+    Class test.test_pdb.MyClass
+    (Pdb) whatis MyClass()
+    <class 'test.test_pdb.MyClass'>
+    (Pdb) whatis MyClass.mymethod
+    Function mymethod
+    (Pdb) whatis MyClass().mymethod
+    Method mymethod
+    (Pdb) continue
+    """
 
 def test_post_mortem():
     """Test post mortem traceback debugging.
@@ -984,7 +1025,7 @@ def test_pdb_return_command_for_coroutine():
 
 def test_pdb_until_command_for_generator():
     """Testing no unwindng stack on yield for generators
-       for "until" command if target breakpoing is not reached
+       for "until" command if target breakpoint is not reached
 
     >>> def test_gen():
     ...     yield 0
@@ -1028,7 +1069,7 @@ def test_pdb_until_command_for_generator():
 
 def test_pdb_until_command_for_coroutine():
     """Testing no unwindng stack for coroutines
-       for "until" command if target breakpoing is not reached
+       for "until" command if target breakpoint is not reached
 
     >>> import asyncio
 
@@ -1198,6 +1239,7 @@ class PdbTestCase(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
         ) as proc:
             stdout, stderr = proc.communicate(str.encode(commands))
         stdout = stdout and bytes.decode(stdout)
@@ -1353,10 +1395,11 @@ def bœr():
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env={**os.environ, 'PYTHONIOENCODING': 'utf-8'}
             )
         self.addCleanup(proc.stdout.close)
         stdout, stderr = proc.communicate(b'cont\n')
-        self.assertNotIn('Error', stdout.decode(),
+        self.assertNotIn(b'Error', stdout,
                          "Got an error running test script under PDB")
 
     def test_issue36250(self):
@@ -1382,10 +1425,11 @@ def bœr():
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
             )
         self.addCleanup(proc.stdout.close)
         stdout, stderr = proc.communicate(b'cont\ncont\n')
-        self.assertNotIn('Error', stdout.decode(),
+        self.assertNotIn(b'Error', stdout,
                          "Got an error running test script under PDB")
 
     def test_issue16180(self):
@@ -1425,8 +1469,8 @@ def bœr():
                 )
                 with proc:
                     stdout, stderr = proc.communicate(b'q\n')
-                    self.assertNotIn("NameError: name 'invalid' is not defined",
-                                  stdout.decode())
+                    self.assertNotIn(b"NameError: name 'invalid' is not defined",
+                                  stdout)
 
         finally:
             if save_home is not None:
