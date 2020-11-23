@@ -75,7 +75,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return execute(null, derived, cls);
     }
 
-    @Specialization(guards = "isSameTypeNode.execute(derived, cls)", limit = "1")
+    @Specialization(guards = "isSameMetaObject(isSameTypeNode, derived, cls)", limit = "1")
     @SuppressWarnings("unused")
     static boolean doSameClass(Object derived, Object cls,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode) {
@@ -88,11 +88,12 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return ary;
     }
 
-    @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"!isSameMetaObject(isSameTypeNode, derived, cls)", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static boolean doSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
+                    @Cached @SuppressWarnings("unused") IsSameTypeNode isSameTypeNode,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
@@ -118,7 +119,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return loopUnexploded(frame, cachedCls, isSubclassNode, basesAry);
     }
 
-    private static final boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry) {
+    private static boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry) {
         for (Object baseCls : basesAry) {
             if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
                 return true;
@@ -128,7 +129,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static final boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode) {
+    private static boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode) {
         for (int i = 0; i < bases.length; i++) {
             if (isSubclassNode.execute(frame, bases[i], cachedCls)) {
                 return true;
@@ -144,7 +145,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
-        if (isSameTypeNode.execute(derived, cls)) {
+        if (isSameMetaObject(isSameTypeNode, derived, cls)) {
             return true;
         }
 
@@ -163,5 +164,13 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     private static boolean isEmpty(PTuple bases, SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(bases.getSequenceStorage()) == 0;
+    }
+
+    /**
+     * Tests if the two meta objects {@code derived} and {@code cls} are the same. This differs from
+     * {@link IsSameTypeNode} because it will also accept meta objects that are not classes.
+     */
+    static boolean isSameMetaObject(IsSameTypeNode isSameTypeNode, Object derived, Object cls) {
+        return derived == cls || isSameTypeNode.execute(derived, cls);
     }
 }
