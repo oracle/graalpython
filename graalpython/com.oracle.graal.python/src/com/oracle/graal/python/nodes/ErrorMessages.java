@@ -132,6 +132,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_DELETE_MEMORY = "cannot delete memory";
     public static final String CANNOT_MODIFY_READONLY_MEMORY = "cannot modify read-only memory";
     public static final String CANNOT_EXTEND_INCOMPLETE_P = "Cannot extend an incomplete type '%p'";
+    public static final String CANNOT_FIT_P_INTO_INDEXSIZED_INT = "cannot fit '%p' into an index-sized integer";
     public static final String CANNOT_GET_SHAPE_OF_NATIVE_CLS = "cannot get shape of native class";
     public static final String CANNOT_GET_CONSISTEMT_METHOD_RESOLUTION = "Cannot create a consistent method resolution\norder (MRO) for bases %s";
     public static final String CANNOT_HANDLE_ZIP_FILE = "cannot handle Zip file: '%s'";
