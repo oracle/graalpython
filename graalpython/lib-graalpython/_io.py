@@ -563,7 +563,7 @@ def open_code(path):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# following definitions: patched in the __builtins_patches__ module
+# following definitions: patched in the pyio_patches module
 #
 # ----------------------------------------------------------------------------------------------------------------------
 class _BufferedIOBase(_IOBase):
@@ -612,7 +612,7 @@ def open(*args, **kwargs):
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
-# needed for imports will be patched in the __builtins_patches__ module
+# needed for imports will be patched in the pyio_patches module
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import builtins

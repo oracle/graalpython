@@ -260,6 +260,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         Object setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
                         @Cached GetItemNode getItemNode,
                         @Cached BuiltinConstructors.MemoryViewNode createMemoryView,
+                        @Cached ReleaseNode releaseNode,
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Cached MemoryViewNodes.WriteBytesAtNode writeBytesAtNode) {
@@ -269,19 +270,27 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
             PMemoryView srcView = createMemoryView.execute(frame, object);
-            PMemoryView destView = (PMemoryView) getItemNode.execute(frame, self, slice);
-            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
+            try {
+                PMemoryView destView = (PMemoryView) getItemNode.execute(frame, self, slice);
+                try {
+                    if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
+                        throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
+                    }
+                    // The intermediate array is necessary for overlapping views (where src and dest
+                    // are the same buffer)
+                    byte[] srcBytes = toJavaBytesNode.execute(srcView);
+                    int itemsize = srcView.getItemSize();
+                    for (int i = 0; i < destView.getBufferShape()[0]; i++) {
+                        MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
+                        writeBytesAtNode.execute(srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
+                    }
+                    return PNone.NONE;
+                } finally {
+                    releaseNode.execute(frame, destView);
+                }
+            } finally {
+                releaseNode.execute(frame, srcView);
             }
-            // The intermediate array is necessary for overlapping views (where src and dest are the
-            // same buffer)
-            byte[] srcBytes = toJavaBytesNode.execute(srcView);
-            int itemsize = srcView.getItemSize();
-            for (int i = 0; i < destView.getBufferShape()[0]; i++) {
-                MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
-                writeBytesAtNode.execute(srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
-            }
-            return PNone.NONE;
         }
 
         @Specialization
@@ -350,6 +359,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isMemoryView(other)")
         Object eq(VirtualFrame frame, PMemoryView self, Object other,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached ReleaseNode releaseNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
@@ -359,7 +369,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return eq(frame, self, memoryView, lib, readSelf, readOther);
+            try {
+                return eq(frame, self, memoryView, lib, readSelf, readOther);
+            } finally {
+                releaseNode.execute(frame, memoryView);
+            }
         }
 
         @Fallback
