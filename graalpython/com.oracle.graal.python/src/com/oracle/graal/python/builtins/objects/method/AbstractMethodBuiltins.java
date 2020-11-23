@@ -306,7 +306,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             }
         }
 
-        private String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
             return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
         }
     }
@@ -356,7 +356,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{getattr, args});
         }
 
-        private String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
+        private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
             return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
         }
     }

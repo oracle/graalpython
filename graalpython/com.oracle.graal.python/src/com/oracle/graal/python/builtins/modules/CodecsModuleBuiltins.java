@@ -645,7 +645,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             ERR_UNKNOWN,
         }
 
-        private Errors getErrors(String err) {
+        private static Errors getErrors(String err) {
             if (err.equals(STRICT)) {
                 return Errors.ERR_STRICT;
             } else if (err.equals(REPLACE)) {
