@@ -76,6 +76,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -645,25 +646,32 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public int lengthWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached ConditionProfile ltZero,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @Exclusive @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @Exclusive @Cached CastToJavaLongLossyNode toLong,
+                    @Exclusive @Cached ConditionProfile ignoreOverflow,
+                    @Exclusive @Cached BranchProfile overflow) {
         Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
         if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
             Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-            int len;
-            if (gotState.profile(state == null)) {
-                len = lib.asSize(lenResult);
-            } else {
-                len = lib.asSizeWithState(lenResult, state);
+            // the following mimics typeobject.c#slot_sq_length()
+            // - PyNumber_Index is called first
+            // - checked if negative
+            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
+            lenResult = lib.asIndexWithState(lenResult, state);
+            long longResult;
+            try {
+                longResult = toLong.execute(lenResult); // this is a lossy cast
+                if (ltZero.profile(longResult < 0)) {
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                }
+            } catch (CannotCastException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
             }
-            if (ltZero.profile(len < 0)) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
-            } else {
-                return len;
-            }
+            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
         } else {
             throw raiseNode.raiseHasNoLength(this);
         }
@@ -1105,6 +1113,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
         }
+        return longToInt(longResult, overflow, ignoreOverflow, type, raise, result);
+    }
+
+    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
         try {
             return PInt.intValueExact(longResult);
         } catch (OverflowException e) {
