@@ -85,7 +85,7 @@ class TurtleConfigTest(unittest.TestCase):
 
         self.assertEqual(parsed_cfg, expected)
 
-    def test_partial_config_dict_with_commments(self):
+    def test_partial_config_dict_with_comments(self):
 
         cfg_name = self.get_cfg_file(test_config_two)
         parsed_cfg = turtle.config_dict(cfg_name)
@@ -126,6 +126,14 @@ class VectorComparisonMixin:
         for idx, (i, j) in enumerate(zip(vec1, vec2)):
             self.assertAlmostEqual(
                 i, j, msg='values at index {} do not match'.format(idx))
+
+class Multiplier:
+
+    def __mul__(self, other):
+        return f'M*{other}'
+
+    def __rmul__(self, other):
+        return f'{other}*M'
 
 
 class TestVec2D(VectorComparisonMixin, unittest.TestCase):
@@ -208,9 +216,15 @@ class TestVec2D(VectorComparisonMixin, unittest.TestCase):
         self.assertAlmostEqual(answer, expected)
 
         vec = Vec2D(0.5, 3)
-        answer = vec * 10
         expected = Vec2D(5, 30)
-        self.assertVectorsAlmostEqual(answer, expected)
+        self.assertVectorsAlmostEqual(vec * 10, expected)
+        self.assertVectorsAlmostEqual(10 * vec, expected)
+        self.assertVectorsAlmostEqual(vec * 10.0, expected)
+        self.assertVectorsAlmostEqual(10.0 * vec, expected)
+
+        M = Multiplier()
+        self.assertEqual(vec * M, Vec2D(f"{vec[0]}*M", f"{vec[1]}*M"))
+        self.assertEqual(M * vec, f'M*{vec}')
 
     def test_vector_negative(self):
         vec = Vec2D(10, -10)

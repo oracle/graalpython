@@ -559,6 +559,23 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, P('a/b').with_name, 'c/')
         self.assertRaises(ValueError, P('a/b').with_name, 'c/d')
 
+    def test_with_stem_common(self):
+        P = self.cls
+        self.assertEqual(P('a/b').with_stem('d'), P('a/d'))
+        self.assertEqual(P('/a/b').with_stem('d'), P('/a/d'))
+        self.assertEqual(P('a/b.py').with_stem('d'), P('a/d.py'))
+        self.assertEqual(P('/a/b.py').with_stem('d'), P('/a/d.py'))
+        self.assertEqual(P('/a/b.tar.gz').with_stem('d'), P('/a/d.gz'))
+        self.assertEqual(P('a/Dot ending.').with_stem('d'), P('a/d'))
+        self.assertEqual(P('/a/Dot ending.').with_stem('d'), P('/a/d'))
+        self.assertRaises(ValueError, P('').with_stem, 'd')
+        self.assertRaises(ValueError, P('.').with_stem, 'd')
+        self.assertRaises(ValueError, P('/').with_stem, 'd')
+        self.assertRaises(ValueError, P('a/b').with_stem, '')
+        self.assertRaises(ValueError, P('a/b').with_stem, '/c')
+        self.assertRaises(ValueError, P('a/b').with_stem, 'c/')
+        self.assertRaises(ValueError, P('a/b').with_stem, 'c/d')
+
     def test_with_suffix_common(self):
         P = self.cls
         self.assertEqual(P('a/b').with_suffix('.gz'), P('a/b.gz'))
@@ -618,6 +635,40 @@ class _BasePurePathTest(object):
         self.assertRaises(ValueError, p.relative_to, P())
         self.assertRaises(ValueError, p.relative_to, '')
         self.assertRaises(ValueError, p.relative_to, P('a'))
+
+    def test_is_relative_to_common(self):
+        P = self.cls
+        p = P('a/b')
+        self.assertRaises(TypeError, p.is_relative_to)
+        self.assertRaises(TypeError, p.is_relative_to, b'a')
+        self.assertTrue(p.is_relative_to(P()))
+        self.assertTrue(p.is_relative_to(''))
+        self.assertTrue(p.is_relative_to(P('a')))
+        self.assertTrue(p.is_relative_to('a/'))
+        self.assertTrue(p.is_relative_to(P('a/b')))
+        self.assertTrue(p.is_relative_to('a/b'))
+        # With several args.
+        self.assertTrue(p.is_relative_to('a', 'b'))
+        # Unrelated paths.
+        self.assertFalse(p.is_relative_to(P('c')))
+        self.assertFalse(p.is_relative_to(P('a/b/c')))
+        self.assertFalse(p.is_relative_to(P('a/c')))
+        self.assertFalse(p.is_relative_to(P('/a')))
+        p = P('/a/b')
+        self.assertTrue(p.is_relative_to(P('/')))
+        self.assertTrue(p.is_relative_to('/'))
+        self.assertTrue(p.is_relative_to(P('/a')))
+        self.assertTrue(p.is_relative_to('/a'))
+        self.assertTrue(p.is_relative_to('/a/'))
+        self.assertTrue(p.is_relative_to(P('/a/b')))
+        self.assertTrue(p.is_relative_to('/a/b'))
+        # Unrelated paths.
+        self.assertFalse(p.is_relative_to(P('/c')))
+        self.assertFalse(p.is_relative_to(P('/a/b/c')))
+        self.assertFalse(p.is_relative_to(P('/a/c')))
+        self.assertFalse(p.is_relative_to(P()))
+        self.assertFalse(p.is_relative_to(''))
+        self.assertFalse(p.is_relative_to(P('a')))
 
     def test_pickling_common(self):
         P = self.cls
@@ -980,6 +1031,20 @@ class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertRaises(ValueError, P('c:a/b').with_name, 'd:/e')
         self.assertRaises(ValueError, P('c:a/b').with_name, '//My/Share')
 
+    def test_with_stem(self):
+        P = self.cls
+        self.assertEqual(P('c:a/b').with_stem('d'), P('c:a/d'))
+        self.assertEqual(P('c:/a/b').with_stem('d'), P('c:/a/d'))
+        self.assertEqual(P('c:a/Dot ending.').with_stem('d'), P('c:a/d'))
+        self.assertEqual(P('c:/a/Dot ending.').with_stem('d'), P('c:/a/d'))
+        self.assertRaises(ValueError, P('c:').with_stem, 'd')
+        self.assertRaises(ValueError, P('c:/').with_stem, 'd')
+        self.assertRaises(ValueError, P('//My/Share').with_stem, 'd')
+        self.assertRaises(ValueError, P('c:a/b').with_stem, 'd:')
+        self.assertRaises(ValueError, P('c:a/b').with_stem, 'd:e')
+        self.assertRaises(ValueError, P('c:a/b').with_stem, 'd:/e')
+        self.assertRaises(ValueError, P('c:a/b').with_stem, '//My/Share')
+
     def test_with_suffix(self):
         P = self.cls
         self.assertEqual(P('c:a/b').with_suffix('.gz'), P('c:a/b.gz'))
@@ -1061,6 +1126,59 @@ class PureWindowsPathTest(_BasePurePathTest, unittest.TestCase):
         self.assertRaises(ValueError, p.relative_to, P('c:/Server/Share/Foo'))
         self.assertRaises(ValueError, p.relative_to, P('//z/Share/Foo'))
         self.assertRaises(ValueError, p.relative_to, P('//Server/z/Foo'))
+
+    def test_is_relative_to(self):
+        P = self.cls
+        p = P('C:Foo/Bar')
+        self.assertTrue(p.is_relative_to(P('c:')))
+        self.assertTrue(p.is_relative_to('c:'))
+        self.assertTrue(p.is_relative_to(P('c:foO')))
+        self.assertTrue(p.is_relative_to('c:foO'))
+        self.assertTrue(p.is_relative_to('c:foO/'))
+        self.assertTrue(p.is_relative_to(P('c:foO/baR')))
+        self.assertTrue(p.is_relative_to('c:foO/baR'))
+        # Unrelated paths.
+        self.assertFalse(p.is_relative_to(P()))
+        self.assertFalse(p.is_relative_to(''))
+        self.assertFalse(p.is_relative_to(P('d:')))
+        self.assertFalse(p.is_relative_to(P('/')))
+        self.assertFalse(p.is_relative_to(P('Foo')))
+        self.assertFalse(p.is_relative_to(P('/Foo')))
+        self.assertFalse(p.is_relative_to(P('C:/Foo')))
+        self.assertFalse(p.is_relative_to(P('C:Foo/Bar/Baz')))
+        self.assertFalse(p.is_relative_to(P('C:Foo/Baz')))
+        p = P('C:/Foo/Bar')
+        self.assertTrue(p.is_relative_to('c:'))
+        self.assertTrue(p.is_relative_to(P('c:/')))
+        self.assertTrue(p.is_relative_to(P('c:/foO')))
+        self.assertTrue(p.is_relative_to('c:/foO/'))
+        self.assertTrue(p.is_relative_to(P('c:/foO/baR')))
+        self.assertTrue(p.is_relative_to('c:/foO/baR'))
+        # Unrelated paths.
+        self.assertFalse(p.is_relative_to(P('C:/Baz')))
+        self.assertFalse(p.is_relative_to(P('C:/Foo/Bar/Baz')))
+        self.assertFalse(p.is_relative_to(P('C:/Foo/Baz')))
+        self.assertFalse(p.is_relative_to(P('C:Foo')))
+        self.assertFalse(p.is_relative_to(P('d:')))
+        self.assertFalse(p.is_relative_to(P('d:/')))
+        self.assertFalse(p.is_relative_to(P('/')))
+        self.assertFalse(p.is_relative_to(P('/Foo')))
+        self.assertFalse(p.is_relative_to(P('//C/Foo')))
+        # UNC paths.
+        p = P('//Server/Share/Foo/Bar')
+        self.assertTrue(p.is_relative_to(P('//sErver/sHare')))
+        self.assertTrue(p.is_relative_to('//sErver/sHare'))
+        self.assertTrue(p.is_relative_to('//sErver/sHare/'))
+        self.assertTrue(p.is_relative_to(P('//sErver/sHare/Foo')))
+        self.assertTrue(p.is_relative_to('//sErver/sHare/Foo'))
+        self.assertTrue(p.is_relative_to('//sErver/sHare/Foo/'))
+        self.assertTrue(p.is_relative_to(P('//sErver/sHare/Foo/Bar')))
+        self.assertTrue(p.is_relative_to('//sErver/sHare/Foo/Bar'))
+        # Unrelated paths.
+        self.assertFalse(p.is_relative_to(P('/Server/Share/Foo')))
+        self.assertFalse(p.is_relative_to(P('c:/Server/Share/Foo')))
+        self.assertFalse(p.is_relative_to(P('//z/Share/Foo')))
+        self.assertFalse(p.is_relative_to(P('//Server/z/Foo')))
 
     def test_is_absolute(self):
         P = self.cls
@@ -1633,13 +1751,15 @@ class _BasePathTest(object):
         next(it2)
         with p:
             pass
-        # I/O operation on closed path.
-        self.assertRaises(ValueError, next, it)
-        self.assertRaises(ValueError, next, it2)
-        self.assertRaises(ValueError, p.open)
-        self.assertRaises(ValueError, p.resolve)
-        self.assertRaises(ValueError, p.absolute)
-        self.assertRaises(ValueError, p.__enter__)
+        # Using a path as a context manager is a no-op, thus the following
+        # operations should still succeed after the context manage exits.
+        next(it)
+        next(it2)
+        p.exists()
+        p.resolve()
+        p.absolute()
+        with p:
+            pass
 
     def test_chmod(self):
         p = self.cls(BASE) / 'fileA'
@@ -1778,6 +1898,16 @@ class _BasePathTest(object):
         self.assertEqual(replaced_q, self.cls(r))
         self.assertEqual(os.stat(r).st_size, size)
         self.assertFileNotFound(q.stat)
+
+    @support.skip_unless_symlink
+    def test_readlink(self):
+        P = self.cls(BASE)
+        self.assertEqual((P / 'linkA').readlink(), self.cls('fileA'))
+        self.assertEqual((P / 'brokenLink').readlink(),
+                         self.cls('non-existing'))
+        self.assertEqual((P / 'linkB').readlink(), self.cls('dirB'))
+        with self.assertRaises(OSError):
+            (P / 'fileA').readlink()
 
     def test_touch_common(self):
         P = self.cls(BASE)
@@ -2174,6 +2304,9 @@ class _BasePathTest(object):
 class PathTest(_BasePathTest, unittest.TestCase):
     cls = pathlib.Path
 
+    def test_class_getitem(self):
+        self.assertIs(self.cls[str], self.cls)
+
     def test_concrete_class(self):
         p = self.cls('a')
         self.assertIs(type(p),
@@ -2213,6 +2346,15 @@ class PosixPathTest(_BasePathTest, unittest.TestCase):
             pass
         st = os.stat(join('other_new_file'))
         self.assertEqual(stat.S_IMODE(st.st_mode), 0o644)
+
+    def test_resolve_root(self):
+        current_directory = os.getcwd()
+        try:
+            os.chdir('/')
+            p = self.cls('spam')
+            self.assertEqual(str(p.resolve()), '/spam')
+        finally:
+            os.chdir(current_directory)
 
     def test_touch_mode(self):
         old_mask = os.umask(0)

@@ -1,7 +1,7 @@
 # Test the module type
 import unittest
 import weakref
-from test.support import gc_collect, requires_type_collecting, impl_detail
+from test.support import gc_collect, import impl_detail
 from test.support.script_helper import assert_python_ok
 
 import sys
@@ -102,7 +102,6 @@ class ModuleTests(unittest.TestCase):
         self.assertEqual(f().__dict__["bar"], 4)
 
     @impl_detail("refcounting", graalvm=False)
-    @requires_type_collecting
     def test_clear_dict_in_ref_cycle(self):
         destroyed = []
         m = ModuleType("foo")
@@ -268,7 +267,6 @@ a = A(destroyed)"""
                          '{!r} does not end with {!r}'.format(r, ends_with))
 
     @impl_detail("refcounting", graalvm=False)
-    @requires_type_collecting
     def test_module_finalization_at_shutdown(self):
         # Module globals and builtins should still be available during shutdown
         rc, out, err = assert_python_ok("-c", "from test import final_a")

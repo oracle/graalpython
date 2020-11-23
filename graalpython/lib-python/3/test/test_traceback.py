@@ -7,7 +7,7 @@ import sys
 import unittest
 import re
 from test import support
-from test.support import TESTFN, Error, captured_output, unlink, cpython_only
+from test.support import TESTFN, Error, captured_output, unlink, cpython_only, ALWAYS_EQ
 from test.support.script_helper import assert_python_ok
 import textwrap
 
@@ -58,13 +58,13 @@ class TracebackCases(unittest.TestCase):
                                         SyntaxError)
         self.assertIn("^", err[2]) # third line has caret
         self.assertEqual(err[2].count('\n'), 1)   # and no additional newline
-        self.assertEqual(err[1].find("+"), err[2].find("^"))  # in the right place
+        self.assertEqual(err[1].find("+") + 1, err[2].find("^"))  # in the right place
 
         err = self.get_exception_format(self.syntax_error_with_caret_non_ascii,
                                         SyntaxError)
         self.assertIn("^", err[2]) # third line has caret
         self.assertEqual(err[2].count('\n'), 1)   # and no additional newline
-        self.assertEqual(err[1].find("+"), err[2].find("^"))  # in the right place
+        self.assertEqual(err[1].find("+") + 1, err[2].find("^"))  # in the right place
 
     def test_nocaret(self):
         exc = SyntaxError("error", ("x.py", 23, None, "bad syntax"))
@@ -78,14 +78,13 @@ class TracebackCases(unittest.TestCase):
         self.assertEqual(len(err), 4)
         self.assertEqual(err[1].strip(), "print(2)")
         self.assertIn("^", err[2])
-        self.assertEqual(err[1].find(")"), err[2].find("^"))
+        self.assertEqual(err[1].find(")") + 1, err[2].find("^"))
 
+        # No caret for "unexpected indent"
         err = self.get_exception_format(self.syntax_error_bad_indentation2,
                                         IndentationError)
-        self.assertEqual(len(err), 4)
+        self.assertEqual(len(err), 3)
         self.assertEqual(err[1].strip(), "print(2)")
-        self.assertIn("^", err[2])
-        self.assertEqual(err[1].find("p"), err[2].find("^"))
 
     def test_base_exception(self):
         # Test that exceptions derived from BaseException are formatted right
@@ -174,7 +173,6 @@ class TracebackCases(unittest.TestCase):
         # Issue #18960: coding spec should have no effect
         do_test("x=0\n# coding: GBK\n", "h\xe9 ho", 'utf-8', 5)
 
-    @support.requires_type_collecting
     @support.impl_detail("finalization", graalvm=False)
     def test_print_traceback_at_exit(self):
         # Issue #22599: Ensure that it is possible to use the traceback module
@@ -314,7 +312,7 @@ class TracebackFormatTests(unittest.TestCase):
         with captured_output("stderr") as stderr_f:
             try:
                 f()
-            except RecursionError as exc:
+            except RecursionError:
                 render_exc()
             else:
                 self.fail("no recursion occurred")
@@ -364,7 +362,7 @@ class TracebackFormatTests(unittest.TestCase):
         with captured_output("stderr") as stderr_g:
             try:
                 g()
-            except ValueError as exc:
+            except ValueError:
                 render_exc()
             else:
                 self.fail("no value error was raised")
@@ -400,7 +398,7 @@ class TracebackFormatTests(unittest.TestCase):
         with captured_output("stderr") as stderr_h:
             try:
                 h()
-            except ValueError as exc:
+            except ValueError:
                 render_exc()
             else:
                 self.fail("no value error was raised")
@@ -428,7 +426,7 @@ class TracebackFormatTests(unittest.TestCase):
         with captured_output("stderr") as stderr_g:
             try:
                 g(traceback._RECURSIVE_CUTOFF)
-            except ValueError as exc:
+            except ValueError:
                 render_exc()
             else:
                 self.fail("no error raised")
@@ -456,7 +454,7 @@ class TracebackFormatTests(unittest.TestCase):
         with captured_output("stderr") as stderr_g:
             try:
                 g(traceback._RECURSIVE_CUTOFF + 1)
-            except ValueError as exc:
+            except ValueError:
                 render_exc()
             else:
                 self.fail("no error raised")
@@ -661,6 +659,7 @@ class BaseExceptionReportingTests:
         self.assertIn('inner_raise() # Marker', blocks[2])
         self.check_zero_div(blocks[2])
 
+    @unittest.skipIf(support.use_old_parser(), "Pegen is arguably better here, so no need to fix this")
     def test_syntax_error_offset_at_eol(self):
         # See #10186.
         def e():
@@ -670,7 +669,7 @@ class BaseExceptionReportingTests:
         def e():
             exec("x = 5 | 4 |")
         msg = self.get_report(e).splitlines()
-        self.assertEqual(msg[-2], '              ^')
+        self.assertEqual(msg[-2], '               ^')
 
     def test_message_none(self):
         # A message that looks like "None" should not be treated specially
@@ -682,6 +681,25 @@ class BaseExceptionReportingTests:
         self.assertIn('Exception\n', err)
         err = self.get_report(Exception(''))
         self.assertIn('Exception\n', err)
+
+    def test_syntax_error_various_offsets(self):
+        for offset in range(-5, 10):
+            for add in [0, 2]:
+                text = " "*add + "text%d" % offset
+                expected = ['  File "file.py", line 1']
+                if offset < 1:
+                    expected.append("    %s" % text.lstrip())
+                elif offset <= 6:
+                    expected.append("    %s" % text.lstrip())
+                    expected.append("    %s^" % (" "*(offset-1)))
+                else:
+                    expected.append("    %s" % text.lstrip())
+                    expected.append("    %s^" % (" "*5))
+                expected.append("SyntaxError: msg")
+                expected.append("")
+                err = self.get_report(SyntaxError("msg", ("file.py", 1, offset+add, text)))
+                exp = "\n".join(expected)
+                self.assertEqual(exp, err)
 
 
 class PyExcReportingTests(BaseExceptionReportingTests, unittest.TestCase):
@@ -891,6 +909,8 @@ class TestFrame(unittest.TestCase):
         # operator fallbacks to FrameSummary.__eq__.
         self.assertEqual(tuple(f), f)
         self.assertIsNone(f.locals)
+        self.assertNotEqual(f, object())
+        self.assertEqual(f, ALWAYS_EQ)
 
     def test_lazy_lines(self):
         linecache.clearcache()
@@ -1086,6 +1106,18 @@ class TestTracebackException(unittest.TestCase):
         self.assertEqual(expected_stack, exc.stack)
         self.assertEqual(exc_info[0], exc.exc_type)
         self.assertEqual(str(exc_info[1]), str(exc))
+
+    def test_comparison(self):
+        try:
+            1/0
+        except Exception:
+            exc_info = sys.exc_info()
+            exc = traceback.TracebackException(*exc_info)
+            exc2 = traceback.TracebackException(*exc_info)
+        self.assertIsNot(exc, exc2)
+        self.assertEqual(exc, exc2)
+        self.assertNotEqual(exc, object())
+        self.assertEqual(exc, ALWAYS_EQ)
 
     def test_unhashable(self):
         class UnhashableException(Exception):

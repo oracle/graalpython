@@ -684,7 +684,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         self.doTest(".py", files, TESTMOD, comment=b"c" * ((1 << 16) - 1))
 
 
-@support.requires_zlib
+@support.requires_zlib()
 class CompressedZipImportTestCase(UncompressedZipImportTestCase):
     compression = ZIP_DEFLATED
 

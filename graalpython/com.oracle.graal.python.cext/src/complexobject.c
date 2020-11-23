@@ -30,7 +30,7 @@ Py_complex PyComplex_AsCComplex(PyObject *op) {
 /* Submitted by Jim Hugunin */
 
 #include "Python.h"
-#include "structmember.h"
+#include "structmember.h"         // PyMemberDef
 
 /* elementary operations on complex numbers */
 
