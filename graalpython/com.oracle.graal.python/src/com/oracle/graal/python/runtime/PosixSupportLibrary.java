@@ -295,7 +295,7 @@ public abstract class PosixSupportLibrary extends Library {
 
         @TruffleBoundary
         public ByteBuffer getByteBuffer() {
-            return ByteBuffer.wrap(data);
+            return ByteBuffer.wrap(data, 0, (int) length);
         }
     }
 
