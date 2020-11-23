@@ -1138,12 +1138,12 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean pos(boolean arg) {
+        boolean absBoolean(boolean arg) {
             return arg;
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        int pos(int arg) throws OverflowException {
+        int absInt(int arg) throws OverflowException {
             int result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;
@@ -1151,13 +1151,14 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization
-        long posOvf(int arg) {
+        @Specialization(replaces = "absInt")
+        long absIntOvf(int arg) {
+            // Math.abs(Integer#MIN_VALUE) returns Integer#MIN_VALUE
             return Math.abs((long) arg);
         }
 
         @Specialization(rewriteOn = {ArithmeticException.class, OverflowException.class})
-        long pos(long arg) throws OverflowException {
+        long absLong(long arg) throws OverflowException {
             long result = Math.abs(arg);
             if (result < 0) {
                 throw OverflowException.INSTANCE;
@@ -1165,23 +1166,23 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(rewriteOn = IllegalArgumentException.class)
-        PInt posOvf(long arg) throws IllegalArgumentException {
+        @Specialization(replaces = "absLong")
+        PInt absLongOvf(long arg) {
             long result = Math.abs(arg);
             if (result < 0) {
-                return factory().createInt(op(PInt.longToBigInteger(arg)));
+                return factory().createInt(absBigInteger(PInt.longToBigInteger(arg)));
             } else {
                 return factory().createInt(PInt.longToBigInteger(arg));
             }
         }
 
         @Specialization
-        PInt pos(PInt arg) {
-            return factory().createInt(op(arg.getValue()));
+        PInt absPInt(PInt arg) {
+            return factory().createInt(absBigInteger(arg.getValue()));
         }
 
         @TruffleBoundary
-        static BigInteger op(BigInteger value) {
+        static BigInteger absBigInteger(BigInteger value) {
             return value.abs();
         }
     }
