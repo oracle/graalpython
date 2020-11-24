@@ -260,6 +260,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltins.IsIdentifierNode;
 
 @CoreFunctions(defineModule = BuiltinNames.BUILTINS)
 public final class BuiltinConstructors extends PythonBuiltins {
@@ -2214,6 +2215,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetItemsizeNode getItemSize,
                         @Cached WriteAttributeToObjectNode writeItemSize,
                         @Cached GetBestBaseClassNode getBestBaseNode,
+                        @Cached IsIdentifierNode isIdentifier,
                         @Cached DictBuiltins.CopyNode copyDict) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
@@ -2230,7 +2232,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
+                                isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2326,7 +2329,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
                         PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
-                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
+                        IsIdentifierNode isIdentifier) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2422,6 +2426,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     // Check valid slot name
                     if (element instanceof String) {
                         slotName = (String) element;
+                        if (!(boolean) isIdentifier.call(frame, slotName)) {
+                            throw raise(TypeError, ErrorMessages.SLOTS_MUST_BE_IDENTIFIERS);
+                        }
                     } else {
                         throw raise(TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "__slots__ items", element);
                     }
@@ -2638,7 +2645,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // Name mangling: __private becomes _classname__private. This is independent from how
             // the name is used.
             int nlen, plen, ipriv;
-            if (privateobj == null || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
+            if (privateobj == null || ident.equals("_") || ident.charAt(0) != '_' || ident.charAt(1) != '_') {
                 return ident;
             }
             nlen = ident.length();

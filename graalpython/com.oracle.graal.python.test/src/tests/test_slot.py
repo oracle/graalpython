@@ -56,6 +56,15 @@ class TestSlots(unittest.TestCase):
         obj.world = "world"
         self.assertEqual(obj.world, "world")
         
+    def test_slots_must_be_identifiers(self):
+        class C: __slots__ = ['a', '_1', '_', 'a1']
+        with self.assertRaises(TypeError):
+            class C: __slots__ = ['']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['1']
+            class C: __slots__ = ['a$']
+        
+        
     def test_dict_and_weakref_are_listed_in_slots(self):
         class D: __slots__ = ['__dict__']
         self.assertEqual(tuple(D.__slots__), ('__dict__',))
