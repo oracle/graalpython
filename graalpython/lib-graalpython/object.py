@@ -90,6 +90,9 @@ def reduce_newobj(obj):
     try:
         getstate = obj.__getstate__
     except AttributeError:
+        if getattr(type(obj), '__itemsize__', None):
+            raise TypeError("cannot pickle '{}' object".format(type(obj).__name__))
+
         state = getattr(obj, "__dict__", None)
         names = slotnames(cls)  # not checking for list
         if names is not None:
