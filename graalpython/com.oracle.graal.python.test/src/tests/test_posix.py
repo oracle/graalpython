@@ -498,6 +498,7 @@ class ScandirTests(unittest.TestCase):
     #     with self.assertRaises(TypeError):
     #         entry.is_dir(True)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_error_msg(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
@@ -505,6 +506,7 @@ class ScandirTests(unittest.TestCase):
         with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: '" + self.abc_path + "'"):
             entry.stat()
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_error_msg_bytes(self):
         with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
             entry = next(dir)

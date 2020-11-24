@@ -677,7 +677,7 @@ public final class NFIPosixSupport extends PosixSupport {
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
             PythonUtils.arraycopy(dirEntry.dirPath, 0, buf, 0, pathLen);
-            buf[pathLen] = '/';
+            buf[pathLen] = PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
             Buffer path = Buffer.wrap(buf);
             logExit("dirEntryGetPath", "'%s'", path);
@@ -685,7 +685,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         protected static boolean endsWithSlash(DirEntry dirEntry) {
-            return dirEntry.dirPath[dirEntry.dirPath.length - 1] == '/';
+            return dirEntry.dirPath[dirEntry.dirPath.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
         }
     }
 
@@ -705,10 +705,9 @@ public final class NFIPosixSupport extends PosixSupport {
         logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         // There are two caches - one for `follow_symlinks=True` and the other for
-        // 'follow_symlinks=False`.
-        // The are different only when the dir entry is a symlink. If it is not, they need to be the
-        // same,
-        // so we must make sure that fstatat() gets called only once.
+        // 'follow_symlinks=False`. They are different only when the dir entry is a symlink. If it
+        // is not, they need to be the same, so we must make sure that fstatat() gets called only
+        // once.
         long[] res = dirEntry.getStatCache(followSymlinks);
         if (res == null) {
             if (followSymlinks && !posixLib.dirEntryIsSymlink(this, dirEntry)) {
@@ -940,8 +939,8 @@ public final class NFIPosixSupport extends PosixSupport {
         final Buffer name;
         final long ino;
         final long type;
-        long[] lstatCache;
-        long[] statCache;
+        volatile long[] lstatCache;
+        volatile long[] statCache;
 
         DirEntry(byte[] dirPath, int dirFd, Buffer name, long ino, long type) {
             this.dirPath = dirPath;
