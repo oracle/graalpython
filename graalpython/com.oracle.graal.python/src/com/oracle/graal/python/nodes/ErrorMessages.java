@@ -235,6 +235,7 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_S_NOT_P = "expected %s, not %p";
     public static final String EXPECTED_S_P_FOUND = "expected %s, %p found";
     public static final String EXPECTED_STR_BYTE_OSPATHLIKE_OBJ = "expected str, bytes or os.PathLike object, not %p";
+    public static final String S_EXPECTED_STRING_OF_LEN_BUT_P = "%s expected string of length %s, but %p found";
     public static final String EXPECTED_UNICODE_CHAR_NOT_P = "expected a unicode character, not %p";
     public static final String EXPONENT_TOO_LARGE = "exponent too large";
     public static final String FACTORIAL_NOT_DEFINED_FOR_NEGATIVE = "factorial() not defined for negative values";

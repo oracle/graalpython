@@ -1572,6 +1572,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // ord(c)
     @Builtin(name = ORD, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class OrdNode extends PythonBuiltinNode {
 
         @Specialization
@@ -1605,6 +1606,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
             return castNode.execute(getItemNode.execute(frame, chr.getSequenceStorage(), 0));
+        }
+
+        @Specialization(guards = {"!isString(obj)", "!isBytes(obj)"})
+        public Object ord(@SuppressWarnings("unused") Object obj) {
+            throw raise(TypeError, ErrorMessages.S_EXPECTED_STRING_OF_LEN_BUT_P, "ord()", "1", "obj");
         }
     }
 
