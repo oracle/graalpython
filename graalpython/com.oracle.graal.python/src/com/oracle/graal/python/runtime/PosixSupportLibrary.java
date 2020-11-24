@@ -64,6 +64,16 @@ public abstract class PosixSupportLibrary extends Library {
 
     public static final char POSIX_FILENAME_SEPARATOR = '/';
 
+    public static final int S_IFMT = 0170000;
+    public static final int S_IFDIR = 0040000;
+    public static final int S_IFREG = 0100000;
+    public static final int S_IFLNK = 0120000;
+
+    public static final int DT_UNKNOWN = 0;
+    public static final int DT_DIR = 4;
+    public static final int DT_REG = 8;
+    public static final int DT_LNK = 10;
+
     public abstract String getBackend(Object recevier);
 
     public abstract String strerror(Object receiver, int errorCode);
@@ -188,11 +198,10 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract long[] dirEntryStat(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException, PosixExceptionWithOpaquePath;
 
-    public abstract boolean dirEntryIsSymlink(Object receiver, Object dirEntry) throws PosixException, PosixExceptionWithOpaquePath;
-
-    public abstract boolean dirEntryIsFile(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException, PosixExceptionWithOpaquePath;
-
-    public abstract boolean dirEntryIsDir(Object receiver, Object dirEntry, boolean followSymlinks) throws PosixException, PosixExceptionWithOpaquePath;
+    /**
+     * @return one of the {@code DT_xxx} constants
+     */
+    public abstract int dirEntryGetType(Object receiver, Object dirEntry);
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library

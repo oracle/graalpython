@@ -928,19 +928,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public boolean dirEntryIsSymlink(Object dirEntry) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public boolean dirEntryIsFile(Object dirEntry, boolean followSymlinks) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public boolean dirEntryIsDir(Object dirEntry, boolean followSymlinks) {
+    public int dirEntryGetType(Object dirEntry) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

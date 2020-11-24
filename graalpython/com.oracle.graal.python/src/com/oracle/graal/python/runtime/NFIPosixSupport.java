@@ -58,7 +58,6 @@ import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionBase;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionWithOpaquePath;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
@@ -99,16 +98,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
-
-    private static final int DT_UNKNOWN = 0;
-    private static final int DT_DIR = 4;
-    private static final int DT_REG = 8;
-    private static final int DT_LNK = 10;
-
-    private static final int S_IFMT = 0170000;
-    private static final int S_IFDIR = 0040000;
-    private static final int S_IFREG = 0100000;
-    private static final int S_IFLNK = 0120000;
 
     private final ReferenceQueue<DirStream> dirStreamRefQueue = new ReferenceQueue<>();
 
@@ -626,7 +615,7 @@ public final class NFIPosixSupport extends PosixSupport {
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
-            DirEntry dirEntry = new DirEntry(dirStream.path, dirStream.dirFd, name.withLength(findZero(name.data)), out[0], out[1]);
+            DirEntry dirEntry = new DirEntry(dirStream.path, dirStream.dirFd, name.withLength(findZero(name.data)), out[0], (int) out[1]);
             logExit("readdir", "%s", dirEntry);
             return dirEntry;
         }
@@ -647,7 +636,7 @@ public final class NFIPosixSupport extends PosixSupport {
         return dirEntry.name;
     }
 
-    // TODO should we cache the result?
+    // TODO should we cache the result? Move to NfiDirEntryBuiltins?
     @ExportMessage
     public static class DirEntryGetPath {
         @Specialization(guards = "dirEntry.dirPath == null")
@@ -704,119 +693,23 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
         logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
         DirEntry dirEntry = (DirEntry) dirEntryObj;
-        // There are two caches - one for `follow_symlinks=True` and the other for
-        // 'follow_symlinks=False`. They are different only when the dir entry is a symlink. If it
-        // is not, they need to be the same, so we must make sure that fstatat() gets called only
-        // once.
-        long[] res = dirEntry.getStatCache(followSymlinks);
-        if (res == null) {
-            if (followSymlinks && !posixLib.dirEntryIsSymlink(this, dirEntry)) {
-                // The entry is not a symlink, so both stat caches need to have the
-                // same value. Also, the `follow_symlinks=False` cache might already be filled in.
-                // (In fact, the call to dirEntryIsSymlink in the condition may fill it.)
-                // So we call ourselves recursively to either use or fill that cache first, and the
-                // `follow_symlinks=True` cache will be filled below.
-                res = dirEntryStat(dirEntry, false, posixLib, invokeNode);
-            } else {
-                Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
-                res = new long[13];
-                if (invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(res)) != 0) {
-                    throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
-                }
-            }
-            dirEntry.setStatCache(followSymlinks, res);
+        // TODO NfiDirEntryBuiltins could use fstatat instead
+        Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
+        long[] res = new long[13];
+        if (invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(res)) != 0) {
+            throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
         }
         logExit("dirEntryStat", "%s", res);
         return res;
     }
 
     @ExportMessage
-    abstract static class DirEntryIsSymlink {
-        @Specialization(guards = "isTypeKnown(dirEntry)")
-        static boolean known(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
-            logEnter("dirEntryIsSymlink", "%s", dirEntry);
-            boolean result = dirEntry.type == DT_LNK;
-            logExit("dirEntryIsSymlink", "%b", result);
-            return result;
-        }
-
-        @Specialization(guards = "!isTypeKnown(dirEntry)")
-        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
-            logEnter("dirEntryIsSymlink", "%s", dirEntry);
-            boolean result = receiver.dirEntryTestMode(dirEntry, false, S_IFLNK, posixLib);
-            logExit("dirEntryIsSymlink", "%b", result);
-            return result;
-        }
-
-        static boolean isTypeKnown(DirEntry dirEntry) {
-            return dirEntry.type != DT_UNKNOWN;
-        }
-    }
-
-    @ExportMessage
-    abstract static class DirEntryIsFile {
-        @Specialization(guards = "isTypeKnown(dirEntry, followSymlinks)")
-        @SuppressWarnings("unused")
-        static boolean known(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks) {
-            logEnter("dirEntryIsFile", "%s", dirEntry);
-            boolean result = dirEntry.type == DT_REG;
-            logExit("dirEntryIsFile", "%b", result);
-            return result;
-        }
-
-        @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
-        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
-            logEnter("dirEntryIsFile", "%s", dirEntry);
-            boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFREG, posixLib);
-            logExit("dirEntryIsFile", "%b", result);
-            return result;
-        }
-
-        static boolean isTypeKnown(DirEntry dirEntry, boolean followSymlinks) {
-            return dirEntry.type != DT_UNKNOWN && (dirEntry.type != DT_LNK || !followSymlinks);
-        }
-    }
-
-    @ExportMessage
-    abstract static class DirEntryIsDir {
-        @Specialization(guards = "isTypeKnown(dirEntry, followSymlinks)")
-        @SuppressWarnings("unused")
-        static boolean known(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks) {
-            logEnter("dirEntryIsDir", "%s", dirEntry);
-            boolean result = dirEntry.type == DT_DIR;
-            logExit("dirEntryIsDir", "%b", result);
-            return result;
-        }
-
-        @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
-        static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
-            logEnter("dirEntryIsDir", "%s", dirEntry);
-            boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFDIR, posixLib);
-            logExit("dirEntryIsDir", "%b", result);
-            return result;
-        }
-
-        static boolean isTypeKnown(DirEntry dirEntry, boolean followSymlinks) {
-            return dirEntry.type != DT_UNKNOWN && (dirEntry.type != DT_LNK || !followSymlinks);
-        }
-    }
-
-    private boolean dirEntryTestMode(DirEntry dirEntry, boolean followSymlinks, int modeBits, PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
-        assert dirEntry.type == DT_UNKNOWN || (dirEntry.type == DT_LNK && followSymlinks);
-        long[] stat;
-        try {
-            stat = posixLib.dirEntryStat(this, dirEntry, followSymlinks);
-        } catch (PosixExceptionBase e) {
-            if (e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
-                return false;
-            }
-            throw e;
-        }
-        long mode = stat[0];        // TODO constant sync with native code
-        return (mode & S_IFMT) == modeBits;
+    @SuppressWarnings("static-method")
+    public int dirEntryGetType(Object dirEntryObj) {
+        logEnter("dirEntryGetType", "%s", dirEntryObj);
+        DirEntry dirEntry = (DirEntry) dirEntryObj;
+        logExit("dirEntryGetType", "%s", dirEntry.type);
+        return dirEntry.type;
     }
 
     // ------------------
@@ -938,29 +831,14 @@ public final class NFIPosixSupport extends PosixSupport {
         final int dirFd;
         final Buffer name;
         final long ino;
-        final long type;
-        volatile long[] lstatCache;
-        volatile long[] statCache;
+        final int type;
 
-        DirEntry(byte[] dirPath, int dirFd, Buffer name, long ino, long type) {
+        DirEntry(byte[] dirPath, int dirFd, Buffer name, long ino, int type) {
             this.dirPath = dirPath;
             this.dirFd = dirFd;
             this.name = name;
             this.ino = ino;
             this.type = type;
-        }
-
-        long[] getStatCache(boolean followSymlinks) {
-            return followSymlinks ? statCache : lstatCache;
-        }
-
-        long[] setStatCache(boolean followSymlinks, long[] value) {
-            if (followSymlinks) {
-                statCache = value;
-            } else {
-                lstatCache = value;
-            }
-            return value;
         }
 
         @Override

@@ -41,16 +41,31 @@
 package com.oracle.graal.python.builtins.objects.posix;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.object.Shape;
 
 public class PNfiDirEntry extends PythonBuiltinObject {
 
     final Object dirEntryData;
     final boolean produceBytes;
+    volatile PTuple statCache;
+    volatile PTuple lstatCache;
 
     public PNfiDirEntry(Object cls, Shape instanceShape, Object dirEntryData, boolean produceBytes) {
         super(cls, instanceShape);
         this.dirEntryData = dirEntryData;
         this.produceBytes = produceBytes;
+    }
+
+    PTuple getStatCache(boolean followSymlinks) {
+        return followSymlinks ? statCache : lstatCache;
+    }
+
+    void setStatCache(boolean followSymlinks, PTuple value) {
+        if (followSymlinks) {
+            statCache = value;
+        } else {
+            lstatCache = value;
+        }
     }
 }
