@@ -1803,14 +1803,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         Object round(VirtualFrame frame, Object x, @SuppressWarnings("unused") PNone n,
-                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__);
+                        @CachedLibrary("x") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
+                        @Cached BranchProfile noRound) {
+            Object method = lib.lookupAttributeOnType(x, __ROUND__);
+            if (method == PNone.NO_VALUE) {
+                noRound.enter();
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+            }
+            return methodLib.callUnboundMethod(method, frame, x);
         }
 
         @Specialization(guards = "!isNoValue(n)", limit = "1")
         Object round(VirtualFrame frame, Object x, Object n,
-                        @SuppressWarnings("unused") @CachedLibrary("x") PythonObjectLibrary lib) {
-            return lib.lookupAndCallSpecialMethod(x, frame, __ROUND__, n);
+                        @CachedLibrary("x") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary methodLib,
+                        @Cached BranchProfile noRound) {
+            Object method = lib.lookupAttributeOnType(x, __ROUND__);
+            if (method == PNone.NO_VALUE) {
+                noRound.enter();
+                throw raise(TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, __ROUND__);
+            }
+            return methodLib.callUnboundMethod(method, frame, x, n);
         }
     }
 
