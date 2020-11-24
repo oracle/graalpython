@@ -704,27 +704,31 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
         logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
         DirEntry dirEntry = (DirEntry) dirEntryObj;
+        // There are two caches - one for `follow_symlinks=True` and the other for
+        // 'follow_symlinks=False`.
+        // The are different only when the dir entry is a symlink. If it is not, they need to be the
+        // same,
+        // so we must make sure that fstatat() gets called only once.
         long[] res = dirEntry.getStatCache(followSymlinks);
         if (res == null) {
-            if (!followSymlinks || posixLib.dirEntryIsSymlink(this, dirEntry)) {
-                res = fetchStat(dirEntry, followSymlinks, posixLib, invokeNode);
-            } else {
+            if (followSymlinks && !posixLib.dirEntryIsSymlink(this, dirEntry)) {
+                // The entry is not a symlink, so both stat caches need to have the
+                // same value. Also, the `follow_symlinks=False` cache might already be filled in.
+                // (In fact, the call to dirEntryIsSymlink in the condition may fill it.)
+                // So we call ourselves recursively to either use or fill that cache first, and the
+                // `follow_symlinks=True` cache will be filled below.
                 res = dirEntryStat(dirEntry, false, posixLib, invokeNode);
+            } else {
+                Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
+                res = new long[13];
+                if (invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(res)) != 0) {
+                    throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
+                }
             }
             dirEntry.setStatCache(followSymlinks, res);
         }
         logExit("dirEntryStat", "%s", res);
         return res;
-    }
-
-    private long[] fetchStat(DirEntry dirEntry, boolean followSymlinks, PosixSupportLibrary posixLib, InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
-        Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
-        long[] out = new long[13];
-        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
-        if (res != 0) {
-            throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
-        }
-        return out;
     }
 
     @ExportMessage
