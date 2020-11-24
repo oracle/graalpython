@@ -58,7 +58,6 @@ import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionWithOpaquePath;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -73,7 +72,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameInstance;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
@@ -562,7 +560,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, (byte[]) path.value, PosixSupportLibrary.DEFAULT_DIR_FD);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, false);
         logExit("opendir", "%s", dirStream);
         return dirStream;
     }
@@ -575,7 +573,7 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ptr == 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
         }
-        Object dirStream = new DirStream(dirStreamRefQueue, ptr, null, fd.fd);
+        Object dirStream = new DirStream(dirStreamRefQueue, ptr, true);
         logExit("fdopendir", "%s", dirStream);
         return dirStream;
     }
@@ -615,7 +613,7 @@ public final class NFIPosixSupport extends PosixSupport {
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
-            DirEntry dirEntry = new DirEntry(dirStream.path, dirStream.dirFd, name.withLength(findZero(name.data)), out[0], (int) out[1]);
+            DirEntry dirEntry = new DirEntry(name.withLength(findZero(name.data)), out[0], (int) out[1]);
             logExit("readdir", "%s", dirEntry);
             return dirEntry;
         }
@@ -636,36 +634,30 @@ public final class NFIPosixSupport extends PosixSupport {
         return dirEntry.name;
     }
 
-    // TODO should we cache the result? Move to NfiDirEntryBuiltins?
     @ExportMessage
     public static class DirEntryGetPath {
-        @Specialization(guards = "dirEntry.dirPath == null")
-        static Buffer noPath(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
-            logEnter("dirEntryGetPath", "%s", dirEntry);
-            logExit("dirEntryGetPath", "'%s'", dirEntry.name);
-            return dirEntry.name;
-        }
-
-        @Specialization(guards = {"dirEntry.dirPath != null", "endsWithSlash(dirEntry)"})
-        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
-            logEnter("dirEntryGetPath", "%s", dirEntry);
-            int pathLen = dirEntry.dirPath.length;
+        @Specialization(guards = "endsWithSlash(scandirPath)")
+        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, PosixPath scandirPath) {
+            logEnter("dirEntryGetPath", "%s, %s", dirEntry, scandirPath);
+            Buffer scandirPathBuffer = (Buffer) scandirPath.value;
+            int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + nameLen];
-            PythonUtils.arraycopy(dirEntry.dirPath, 0, buf, 0, pathLen);
+            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen, nameLen);
             Buffer path = Buffer.wrap(buf);
             logExit("dirEntryGetPath", "'%s'", path);
             return path;
         }
 
-        @Specialization(guards = {"dirEntry.dirPath != null", "!endsWithSlash(dirEntry)"})
-        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry) {
-            logEnter("dirEntryGetPath", "%s", dirEntry);
-            int pathLen = dirEntry.dirPath.length;
+        @Specialization(guards = "!endsWithSlash(scandirPath)")
+        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, PosixPath scandirPath) {
+            logEnter("dirEntryGetPath", "%s, %s", dirEntry, scandirPath);
+            Buffer scandirPathBuffer = (Buffer) scandirPath.value;
+            int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
-            PythonUtils.arraycopy(dirEntry.dirPath, 0, buf, 0, pathLen);
+            PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
             buf[pathLen] = PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
             Buffer path = Buffer.wrap(buf);
@@ -673,8 +665,9 @@ public final class NFIPosixSupport extends PosixSupport {
             return path;
         }
 
-        protected static boolean endsWithSlash(DirEntry dirEntry) {
-            return dirEntry.dirPath[dirEntry.dirPath.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
+        protected static boolean endsWithSlash(PosixPath path) {
+            Buffer b = (Buffer) path.value;
+            return b.data[b.data.length - 1] == PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
         }
     }
 
@@ -685,22 +678,6 @@ public final class NFIPosixSupport extends PosixSupport {
         DirEntry entry = (DirEntry) dirEntry;
         logExit("dirEntryGetInode", "%d", entry.ino);
         return entry.ino;
-    }
-
-    @ExportMessage
-    public long[] dirEntryStat(Object dirEntryObj, boolean followSymlinks,
-                    @CachedLibrary("this") PosixSupportLibrary posixLib,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
-        logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
-        DirEntry dirEntry = (DirEntry) dirEntryObj;
-        // TODO NfiDirEntryBuiltins could use fstatat instead
-        Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
-        long[] res = new long[13];
-        if (invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(res)) != 0) {
-            throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
-        }
-        logExit("dirEntryStat", "%s", res);
-        return res;
     }
 
     @ExportMessage
@@ -758,13 +735,13 @@ public final class NFIPosixSupport extends PosixSupport {
         return str.getBytes();
     }
 
-    private static byte[] checkPath(byte[] path) {
+    private static Buffer checkPath(byte[] path) {
         for (byte b : path) {
             if (b == 0) {
                 return null;
             }
         }
-        return path;
+        return Buffer.wrap(path);
     }
 
     // ------------------
@@ -810,32 +787,24 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static class DirStream {
         final DirStreamRef ref;
-        final byte[] path;
-        final int dirFd;
 
-        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, byte[] path, int dirFd) {
-            ref = new DirStreamRef(this, queue, nativePtr, path == null);
-            this.path = path;
-            this.dirFd = dirFd;
+        DirStream(ReferenceQueue<DirStream> queue, long nativePtr, boolean needsRewind) {
+            ref = new DirStreamRef(this, queue, nativePtr, needsRewind);
         }
 
         @Override
         public String toString() {
             CompilerAsserts.neverPartOfCompilation();
-            return "DirStreamState -> " + ref + ", path=" + (path == null ? "null" : new String(path)) + ", dirFd=" + dirFd;
+            return "DirStreamState -> " + ref;
         }
     }
 
     protected static class DirEntry {
-        final byte[] dirPath;
-        final int dirFd;
         final Buffer name;
         final long ino;
         final int type;
 
-        DirEntry(byte[] dirPath, int dirFd, Buffer name, long ino, int type) {
-            this.dirPath = dirPath;
-            this.dirFd = dirFd;
+        DirEntry(Buffer name, long ino, int type) {
             this.name = name;
             this.ino = ino;
             this.type = type;
@@ -847,8 +816,6 @@ public final class NFIPosixSupport extends PosixSupport {
                             "name='" + new String(name.data, 0, (int) name.length) + "'" +
                             ", ino=" + ino +
                             ", type=" + type +
-                            ", dirPath=" + (dirPath == null ? "null" : new String(dirPath)) +
-                            ", dirFd=" + dirFd +
                             '}';
         }
     }
@@ -874,12 +841,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
         throw newPosixException(invokeNode, errno, filename, null);
-    }
-
-    private PosixException newPosixExceptionWithOpaquePath(InvokeNativeFunction invokeNode, int errno, Buffer filename) throws PosixExceptionWithOpaquePath {
-        String msg = strerror(errno, invokeNode);
-        log(Level.FINE, "  -> throw errno=%d, msg=%s, filename1=%s, filename2=%s", errno, msg, filename, null);
-        throw new PosixExceptionWithOpaquePath(errno, msg, filename, null);
     }
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
@@ -910,15 +871,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private Object pathToCString(PosixPath path) {
-        return wrap(nullTerminate((byte[]) path.value));
+        return bufferToCString((Buffer) path.value);
     }
 
     private Object bufferToCString(Buffer path) {
         return wrap(nullTerminate(path.data, (int) path.length));
-    }
-
-    private static byte[] nullTerminate(byte[] str) {
-        return nullTerminate(str, str.length);
     }
 
     private static byte[] nullTerminate(byte[] str, int length) {
@@ -961,7 +918,8 @@ public final class NFIPosixSupport extends PosixSupport {
     private static void fixLogArgs(Object[] args) {
         for (int i = 0; i < args.length; ++i) {
             if (args[i] instanceof PosixPath) {
-                args[i] = new String((byte[]) ((PosixPath) args[i]).value);
+                Buffer b = (Buffer) ((PosixPath) args[i]).value;
+                args[i] = PythonUtils.newString(b.data, 0, (int) b.length);
             }
             if (args[i] instanceof long[]) {
                 args[i] = Arrays.toString((long[]) args[i]);

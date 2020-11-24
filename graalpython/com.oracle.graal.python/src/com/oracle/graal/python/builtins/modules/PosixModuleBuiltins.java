@@ -1749,7 +1749,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path), path.wasBufferLike);
+                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path), path);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1761,7 +1761,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
             auditNode.audit("os.scandir", fd.originalObject);
             try {
-                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd), false);
+                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd), fd);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }

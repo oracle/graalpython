@@ -910,19 +910,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
-    public Object dirEntryGetPath(Object dirEntry) {
+    public Object dirEntryGetPath(Object dirEntry, PosixPath scandirPath) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     public long dirEntryGetInode(Object dirEntry) {
-        throw CompilerDirectives.shouldNotReachHere("Not implemented");
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"static-method", "unused"})
-    public long[] dirEntryStat(Object dirEntry, boolean followSymlinks) {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 

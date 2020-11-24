@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -947,12 +948,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSemLock(cls, getShape(cls), name, kind, sharedSemaphore));
     }
 
-    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, boolean produceBytes) {
-        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, produceBytes));
+    public PNfiScandirIterator createNfiScandirIterator(Object dirStream, PosixFileHandle path) {
+        return trace(new PNfiScandirIterator(PythonBuiltinClassType.PNfiScandirIterator, PythonBuiltinClassType.PNfiScandirIterator.getInstanceShape(getLanguage()), dirStream, path));
     }
 
-    public PNfiDirEntry createNfiDirEntry(Object dirEntryData, boolean produceBytes) {
-        return trace(new PNfiDirEntry(PythonBuiltinClassType.PNfiDirEntry, PythonBuiltinClassType.PNfiDirEntry.getInstanceShape(getLanguage()), dirEntryData, produceBytes));
+    public PNfiDirEntry createNfiDirEntry(Object dirEntryData, PosixFileHandle path) {
+        return trace(new PNfiDirEntry(PythonBuiltinClassType.PNfiDirEntry, PythonBuiltinClassType.PNfiDirEntry.getInstanceShape(getLanguage()), dirEntryData, path));
     }
 
     public PScandirIterator createScandirIterator(Object cls, String path, DirectoryStream<TruffleFile> next, boolean produceBytes) {

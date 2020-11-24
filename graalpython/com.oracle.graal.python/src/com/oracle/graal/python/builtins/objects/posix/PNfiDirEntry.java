@@ -42,19 +42,22 @@ package com.oracle.graal.python.builtins.objects.posix;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.truffle.api.object.Shape;
 
 public class PNfiDirEntry extends PythonBuiltinObject {
 
     final Object dirEntryData;
-    final boolean produceBytes;
+    final PosixFileHandle scandirPath;
     volatile PTuple statCache;
     volatile PTuple lstatCache;
+    volatile PosixPath pathCache;
 
-    public PNfiDirEntry(Object cls, Shape instanceShape, Object dirEntryData, boolean produceBytes) {
+    public PNfiDirEntry(Object cls, Shape instanceShape, Object dirEntryData, PosixFileHandle scandirPath) {
         super(cls, instanceShape);
         this.dirEntryData = dirEntryData;
-        this.produceBytes = produceBytes;
+        this.scandirPath = scandirPath;
     }
 
     PTuple getStatCache(boolean followSymlinks) {
@@ -67,5 +70,9 @@ public class PNfiDirEntry extends PythonBuiltinObject {
         } else {
             lstatCache = value;
         }
+    }
+
+    boolean produceBytes() {
+        return scandirPath instanceof PosixPath && ((PosixPath) scandirPath).wasBufferLike;
     }
 }

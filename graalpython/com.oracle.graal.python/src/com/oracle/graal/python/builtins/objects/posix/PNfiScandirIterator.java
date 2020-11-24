@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.posix;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -51,12 +52,12 @@ import com.oracle.truffle.api.object.Shape;
 public final class PNfiScandirIterator extends PythonBuiltinObject {
 
     final Object dirStream;
-    final boolean produceBytes;
+    final PosixFileHandle path;
 
-    public PNfiScandirIterator(Object cls, Shape instanceShape, Object dirStream, boolean produceBytes) {
+    public PNfiScandirIterator(Object cls, Shape instanceShape, Object dirStream, PosixFileHandle path) {
         super(cls, instanceShape);
         this.dirStream = dirStream;
-        this.produceBytes = produceBytes;
+        this.path = path;
     }
 
     /* this is correct because it cannot be subclassed in Python */

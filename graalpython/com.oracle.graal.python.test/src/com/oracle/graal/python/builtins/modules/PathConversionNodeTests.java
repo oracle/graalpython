@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
@@ -92,7 +93,10 @@ public class PathConversionNodeTests {
     @Before
     public void setUp() {
         PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
-        pathToString = backendName.equals("java") ? p -> (String) p.value : p -> new String((byte[]) p.value);
+        pathToString = backendName.equals("java") ? p -> (String) p.value : p -> {
+            Buffer b = (Buffer) p.value;
+            return new String(b.data, 0, (int) b.length);
+        };
     }
 
     @After

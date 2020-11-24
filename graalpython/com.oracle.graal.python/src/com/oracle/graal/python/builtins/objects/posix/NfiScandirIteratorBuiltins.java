@@ -107,7 +107,7 @@ public class NfiScandirIteratorBuiltins extends PythonBuiltins {
                     CloseNode.closedir(self, getPosixSupport(), posixLib);
                     throw raise(PythonBuiltinClassType.StopIteration);
                 }
-                return factory().createNfiDirEntry(dirEntryData, self.produceBytes);
+                return factory().createNfiDirEntry(dirEntryData, self.path);
             } catch (PosixException e) {
                 CloseNode.closedir(self, getPosixSupport(), posixLib);
                 throw raiseOSErrorFromPosixException(frame, e);

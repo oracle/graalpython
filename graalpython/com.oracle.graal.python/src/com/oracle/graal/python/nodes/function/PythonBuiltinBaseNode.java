@@ -112,7 +112,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithContext implements 
         return raiseNode;
     }
 
-    protected PConstructAndRaiseNode getConstructAndRaiseNode() {
+    private PConstructAndRaiseNode getConstructAndRaiseNode() {
         if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
