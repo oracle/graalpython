@@ -44,7 +44,7 @@
 #define MUST_INLINE __attribute__((always_inline)) inline
 #define NO_INLINE __attribute__((noinline))
 
-#include <polyglot.h>
+#include <graalvm/llvm/polyglot.h>
 
 #include "Python.h"
 #include <truffle.h>
