@@ -715,3 +715,6 @@ class defaultdict(dict):
     def __reduce__(self):
         args = tuple() if self.default_factory is None else (self.default_factory,)
         return type(self), args, None, None, iter(self.items())
+
+
+defaultdict.__module__ = 'collections'
