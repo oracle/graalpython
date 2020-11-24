@@ -131,7 +131,10 @@
 *graalpython.lib-python.3.test.test_enum.TestHelpers.test_is_descriptor
 *graalpython.lib-python.3.test.test_enum.TestHelpers.test_is_dunder
 *graalpython.lib-python.3.test.test_enum.TestHelpers.test_is_sunder
+*graalpython.lib-python.3.test.test_enum.TestIntEnumConvert.test_convert
 *graalpython.lib-python.3.test.test_enum.TestIntEnumConvert.test_convert_raise
+*graalpython.lib-python.3.test.test_enum.TestIntEnumConvert.test_convert_value_lookup_priority
+*graalpython.lib-python.3.test.test_enum.TestIntEnumConvert.test_convert_warn
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_and
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_bool
 *graalpython.lib-python.3.test.test_enum.TestIntFlag.test_contains
