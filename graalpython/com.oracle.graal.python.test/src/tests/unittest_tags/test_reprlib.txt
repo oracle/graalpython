@@ -7,6 +7,7 @@
 *graalpython.lib-python.3.test.test_reprlib.LongReprTest.test_type
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_builtin_function
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_cell
+*graalpython.lib-python.3.test.test_reprlib.ReprTests.test_container
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_descriptors
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_frozenset
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_instance
@@ -18,6 +19,5 @@
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_string
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_tuple
 *graalpython.lib-python.3.test.test_reprlib.ReprTests.test_unsortable
-*graalpython.lib-python.3.test.test_reprlib.ReprTests.test_cell
 *graalpython.lib-python.3.test.test_reprlib.TestRecursiveRepr.test_assigned_attributes
 *graalpython.lib-python.3.test.test_reprlib.TestRecursiveRepr.test_recursive_repr
