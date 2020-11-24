@@ -497,21 +497,20 @@ class ScandirTests(unittest.TestCase):
     #         entry.is_file(True)
     #     with self.assertRaises(TypeError):
     #         entry.is_dir(True)
-    #
-    # TODO temporarily disabled - needs resolution of an issue in NFIPosixSupport#fetchStat
-    # def test_stat_error_msg(self):
-    #     with os.scandir(TEST_FULL_PATH1) as dir:
-    #         entry = next(dir)
-    #     os.unlink(self.abc_path)
-    #     with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: '" + self.abc_path + "'"):
-    #         entry.stat()
-    #
-    # def test_stat_error_msg_bytes(self):
-    #     with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
-    #         entry = next(dir)
-    #     os.unlink(self.abc_path)
-    #     with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: b'" + self.abc_path + "'"):
-    #         entry.stat()
+
+    def test_stat_error_msg(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        os.unlink(self.abc_path)
+        with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: '" + self.abc_path + "'"):
+            entry.stat()
+
+    def test_stat_error_msg_bytes(self):
+        with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
+            entry = next(dir)
+        os.unlink(self.abc_path)
+        with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: b'" + self.abc_path + "'"):
+            entry.stat()
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_uses_lstat_cache(self):

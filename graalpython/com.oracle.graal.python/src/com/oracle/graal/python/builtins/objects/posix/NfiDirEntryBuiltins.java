@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -61,6 +62,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionWithOpaquePath;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -180,6 +184,8 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                 return PosixModuleBuiltins.createStatResult(factory(), positiveLongProfile, posixLib.dirEntryStat(getPosixSupport(), self.dirEntryData, followSymlinks));
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixExceptionWithOpaquePath e) {
+                throw raiseOSErrorFromPosixExceptionWithOpaquePath(frame, self, e, getPosixSupport(), posixLib, factory(), getConstructAndRaiseNode());
             }
         }
     }
@@ -194,6 +200,8 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                 return posixLib.dirEntryIsSymlink(getPosixSupport(), self.dirEntryData);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixExceptionWithOpaquePath e) {
+                throw raiseOSErrorFromPosixExceptionWithOpaquePath(frame, self, e, getPosixSupport(), posixLib, factory(), getConstructAndRaiseNode());
             }
         }
     }
@@ -215,6 +223,8 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                 return posixLib.dirEntryIsFile(getPosixSupport(), self.dirEntryData, followSymlinks);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixExceptionWithOpaquePath e) {
+                throw raiseOSErrorFromPosixExceptionWithOpaquePath(frame, self, e, getPosixSupport(), posixLib, factory(), getConstructAndRaiseNode());
             }
         }
     }
@@ -236,7 +246,26 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                 return posixLib.dirEntryIsDir(getPosixSupport(), self.dirEntryData, followSymlinks);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixExceptionWithOpaquePath e) {
+                throw raiseOSErrorFromPosixExceptionWithOpaquePath(frame, self, e, getPosixSupport(), posixLib, factory(), getConstructAndRaiseNode());
             }
         }
+    }
+
+    private static Object convertOpaquePath(PNfiDirEntry self, Object opaquePath, Object posixSupport, PosixSupportLibrary posixLib, PythonObjectFactory factory) {
+        if (opaquePath == null) {
+            return null;
+        }
+        if (self.produceBytes) {
+            return posixLib.getPathAsBytes(posixSupport, opaquePath, factory);
+        } else {
+            return posixLib.getPathAsString(posixSupport, opaquePath);
+        }
+    }
+
+    private static PException raiseOSErrorFromPosixExceptionWithOpaquePath(VirtualFrame frame, PNfiDirEntry self, PosixExceptionWithOpaquePath e, Object posixSupport, PosixSupportLibrary posixLib, PythonObjectFactory factory, PConstructAndRaiseNode raiseNode) {
+        Object filename1 = convertOpaquePath(self, e.getFilename1(), posixSupport, posixLib, factory);
+        Object filename2 = convertOpaquePath(self, e.getFilename2(), posixSupport, posixLib, factory);
+        throw raiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, filename2);
     }
 }

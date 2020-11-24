@@ -58,6 +58,8 @@ import com.oracle.graal.python.runtime.NativeLibrary.NativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.TypedNativeLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionBase;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixExceptionWithOpaquePath;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -599,7 +601,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 dirStream.ref.closed = true;
                 int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
                 if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
-                    LOGGER.log(Level.INFO, "Error occured during closedir, errno=" + getErrno(invokeNode));
+                    log(Level.INFO, "Error occured during closedir, errno=%d", getErrno(invokeNode));
                 }
             }
         }
@@ -637,6 +639,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public Object dirEntryGetName(Object dirEntryObj) {
         logEnter("dirEntryGetName", "%s", dirEntryObj);
         DirEntry dirEntry = (DirEntry) dirEntryObj;
@@ -687,6 +690,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public long dirEntryGetInode(Object dirEntry) {
         logEnter("dirEntryGetInode", "%s", dirEntry);
         DirEntry entry = (DirEntry) dirEntry;
@@ -697,7 +701,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public long[] dirEntryStat(Object dirEntryObj, boolean followSymlinks,
                     @CachedLibrary("this") PosixSupportLibrary posixLib,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
         logEnter("dirEntryStat", "%s, %b", dirEntryObj, followSymlinks);
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         long[] res = dirEntry.getStatCache(followSymlinks);
@@ -713,15 +717,12 @@ public final class NFIPosixSupport extends PosixSupport {
         return res;
     }
 
-    private long[] fetchStat(DirEntry dirEntry, boolean followSymlinks, PosixSupportLibrary posixLib, InvokeNativeFunction invokeNode) throws PosixException {
+    private long[] fetchStat(DirEntry dirEntry, boolean followSymlinks, PosixSupportLibrary posixLib, InvokeNativeFunction invokeNode) throws PosixException, PosixExceptionWithOpaquePath {
         Buffer path = (Buffer) posixLib.dirEntryGetPath(this, dirEntry);
         long[] out = new long[13];
         int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirEntry.dirFd, bufferToCString(path), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
         if (res != 0) {
-            // TODO the path should use receiver.getPathAsBytes() depending on the type of argument
-            // to scandir. Once that is solved, consider factoring out the common code with
-            // NFIPosixSupport#fstatAt() and then this can be inlined in its only caller
-            throw newPosixException(invokeNode, getErrno(invokeNode), getPathAsString(path));
+            throw newPosixExceptionWithOpaquePath(invokeNode, getErrno(invokeNode), path);
         }
         return out;
     }
@@ -738,7 +739,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @Specialization(guards = "!isTypeKnown(dirEntry)")
         static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
             logEnter("dirEntryIsSymlink", "%s", dirEntry);
             boolean result = receiver.dirEntryTestMode(dirEntry, false, S_IFLNK, posixLib);
             logExit("dirEntryIsSymlink", "%b", result);
@@ -763,7 +764,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
         static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
             logEnter("dirEntryIsFile", "%s", dirEntry);
             boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFREG, posixLib);
             logExit("dirEntryIsFile", "%b", result);
@@ -788,7 +789,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @Specialization(guards = "!isTypeKnown(dirEntry, followSymlinks)")
         static boolean unknown(NFIPosixSupport receiver, DirEntry dirEntry, boolean followSymlinks,
-                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException {
+                        @CachedLibrary("receiver") PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
             logEnter("dirEntryIsDir", "%s", dirEntry);
             boolean result = receiver.dirEntryTestMode(dirEntry, followSymlinks, S_IFDIR, posixLib);
             logExit("dirEntryIsDir", "%b", result);
@@ -800,12 +801,12 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
-    private boolean dirEntryTestMode(DirEntry dirEntry, boolean followSymlinks, int modeBits, PosixSupportLibrary posixLib) throws PosixException {
+    private boolean dirEntryTestMode(DirEntry dirEntry, boolean followSymlinks, int modeBits, PosixSupportLibrary posixLib) throws PosixException, PosixExceptionWithOpaquePath {
         assert dirEntry.type == DT_UNKNOWN || (dirEntry.type == DT_LNK && followSymlinks);
         long[] stat;
         try {
             stat = posixLib.dirEntryStat(this, dirEntry, followSymlinks);
-        } catch (PosixException e) {
+        } catch (PosixExceptionBase e) {
             if (e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
                 return false;
             }
@@ -992,6 +993,12 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
         throw newPosixException(invokeNode, errno, filename, null);
+    }
+
+    private PosixException newPosixExceptionWithOpaquePath(InvokeNativeFunction invokeNode, int errno, Buffer filename) throws PosixExceptionWithOpaquePath {
+        String msg = strerror(errno, invokeNode);
+        log(Level.FINE, "  -> throw errno=%d, msg=%s, filename1=%s, filename2=%s", errno, msg, filename, null);
+        throw new PosixExceptionWithOpaquePath(errno, msg, filename, null);
     }
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
