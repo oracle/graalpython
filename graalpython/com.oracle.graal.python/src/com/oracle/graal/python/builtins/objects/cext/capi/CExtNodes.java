@@ -3371,14 +3371,6 @@ public abstract class CExtNodes {
             return Integer.parseInt(prec);
         }
 
-        private static char getFormatChar(String format, int idx, PRaiseNode raiseNode) {
-            char c = format.charAt(idx);
-            if (c > 127) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "PyUnicode_FromFormatV() expects an ASCII-encoded format string, got a non-ASCII byte: 0x%02x", c);
-            }
-            return c;
-        }
-
         /**
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
