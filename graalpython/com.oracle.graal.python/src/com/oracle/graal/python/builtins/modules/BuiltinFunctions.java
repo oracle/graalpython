@@ -160,6 +160,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -740,6 +741,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
+
+        // code.h
+        private static final int CO_NESTED = 0x0010;
+        private static final int CO_FUTURE_DIVISION = 0x20000;
+        private static final int CO_FUTURE_ABSOLUTE_IMPORT = 0x40000;
+        private static final int CO_FUTURE_WITH_STATEMENT = 0x80000;
+        private static final int CO_FUTURE_PRINT_FUNCTION = 0x100000;
+        private static final int CO_FUTURE_UNICODE_LITERALS = 0x200000;
+
+        private static final int CO_FUTURE_BARRY_AS_BDFL = 0x400000;
+        private static final int CO_FUTURE_GENERATOR_STOP = 0x800000;
+        private static final int CO_FUTURE_ANNOTATIONS = 0x1000000;
+
+        // compile.h
+        private static final int PyCF_MASK = CO_FUTURE_DIVISION | CO_FUTURE_ABSOLUTE_IMPORT | CO_FUTURE_WITH_STATEMENT | CO_FUTURE_PRINT_FUNCTION | CO_FUTURE_UNICODE_LITERALS |
+                        CO_FUTURE_BARRY_AS_BDFL | CO_FUTURE_GENERATOR_STOP | CO_FUTURE_ANNOTATIONS;
+        private static final int PyCF_MASK_OBSOLETE = CO_NESTED;
+
+        private static final int PyCF_DONT_IMPLY_DEDENT = 0x0200;
+        private static final int PyCF_ONLY_AST = 0x0400;
+        private static final int PyCF_TYPE_COMMENTS = 0x1000;
+
         /**
          * Decides wether this node should attempt to map the filename to a URI for the benefit of
          * Truffle tooling
@@ -762,7 +785,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        PCode compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        PCode compile(String expression, String filename, String mode, int kwFlags, Object kwDontInherit, int kwOptimize) {
             String code = expression;
             PythonContext context = getContext();
             ParserMode pm;
@@ -800,6 +823,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "3")
         PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
                         @Cached CastToJavaStringNode castStr,
+                        @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
@@ -813,8 +837,33 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(TypeError, ErrorMessages.ARG_S_MUST_BE_S_NOT_P, "compile()", "mode", "str", wMode);
             }
+            int flags = 0;
+            if (kwFlags != PNone.NO_VALUE) {
+                try {
+                    flags = castInt.execute(kwFlags);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
+                }
+                if ((flags & ~(PyCF_MASK | PyCF_MASK_OBSOLETE | PyCF_DONT_IMPLY_DEDENT | PyCF_ONLY_AST | PyCF_TYPE_COMMENTS)) > 0) {
+                    throw raise(ValueError, "compile(): unrecognised flags");
+                }
+            }
+            int optimize = 0;
+            if (kwOptimize != PNone.NO_VALUE) {
+                try {
+                    optimize = castInt.execute(kwOptimize);
+                } catch (CannotCastException e) {
+                    throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, kwFlags);
+                }
+                if (optimize < -1 || optimize > 2) {
+                    throw raise(TypeError, "compile(): invalid optimize value", kwOptimize);
+                }
+            }
             String source = sourceAsString(wSource, filename, interopLib, lib, handleDecodingErrorNode);
-            return compile(source, filename, mode, kwFlags, kwDontInherit, kwOptimize);
+            if (source.indexOf(0) > -1) {
+                throw raise(ValueError, "source code string cannot contain null bytes");
+            }
+            return compile(source, filename, mode, flags, kwDontInherit, optimize);
         }
 
         // modeled after _Py_SourceAsString
