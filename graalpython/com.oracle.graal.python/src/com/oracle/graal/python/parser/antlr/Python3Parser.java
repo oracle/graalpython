@@ -917,7 +917,7 @@ public class Python3Parser extends Parser {
 			        } else {
 			            factory.getScopeEnvironment().addSeenVar(dottedName);
 			        }
-			        push( new DecoratorSSTNode(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx))); 
+			        push( factory.createDecorator(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx))); 
 			    
 			}
 		}
@@ -1136,7 +1136,7 @@ public class Python3Parser extends Parser {
 			setState(272);
 			match(COLON);
 			 
-			            String name = _localctx.n.getText(); 
+			            String name = factory.mangleName(_localctx.n.getText()); 
 			            ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
 			            String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
 			            ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -1662,6 +1662,9 @@ public class Python3Parser extends Parser {
 			            if (isForbiddenName(name)) {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
 			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
 			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
@@ -1736,7 +1739,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name, type); 
+			 args.addSplat(name != null ? factory.mangleName(name) : null, type); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1797,6 +1800,9 @@ public class Python3Parser extends Parser {
 			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
 			            if (isForbiddenName(name)) {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
 			            }
 			            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
@@ -2246,6 +2252,9 @@ public class Python3Parser extends Parser {
 			            if (isForbiddenName(name)) {
 			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
 			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
 			            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
@@ -2302,7 +2311,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name, null);
+			 args.addSplat(name != null ? factory.mangleName(name) : null, null);
 			}
 		}
 		catch (RecognitionException re) {
@@ -2340,7 +2349,11 @@ public class Python3Parser extends Parser {
 			setState(561);
 			_localctx.NAME = match(NAME);
 
-			            if (args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
+			            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            }
 			        
@@ -6725,7 +6738,7 @@ public class Python3Parser extends Parser {
 					_localctx.NAME = match(NAME);
 					   
 					                    assert _localctx.NAME != null;
-					                    _localctx.result =  new GetAttributeSSTNode(_localctx.result, (_localctx.NAME!=null?_localctx.NAME.getText():null), getStartIndex(_localctx), getStopIndex(_localctx.NAME));
+					                    _localctx.result =  factory.createGetAttribute(_localctx.result, (_localctx.NAME!=null?_localctx.NAME.getText():null), getStartIndex(_localctx), getStopIndex(_localctx.NAME));
 					                
 					}
 					break;

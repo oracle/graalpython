@@ -817,7 +817,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               CelVars: None
               FreeVars: None
               NeedsCellFrame: False
-              FrameDescriptor: 25 slots [__init__, __setitem__, __delitem__, __iter__, __reversed__, clear, popitem, move_to_end, __sizeof__, update, __update, keys, items, values, __ne__, __marker, pop, setdefault, __repr__, __reduce__, copy, fromkeys, __eq__, <>temp23, __doc__]
+              FrameDescriptor: 25 slots [__init__, __setitem__, __delitem__, __iter__, __reversed__, clear, popitem, move_to_end, __sizeof__, update, _OrderedDict__update, keys, items, values, __ne__, _OrderedDict__marker, pop, setdefault, __repr__, __reduce__, copy, fromkeys, __eq__, <>temp23, __doc__]
               ExecutionSlots:
                 FreeVarsSlots: None
                 CellVarsSlots: None
@@ -967,7 +967,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ExpressionStatementNode SourceSection: [4330,4341]`self.__root`
                                           GetAttributeNodeGen SourceSection: [4330,4341]`self.__root`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __root
+                                              Key: _OrderedDict__root
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -979,7 +979,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         ExceptNode SourceSection: None
                                           BlockNode SourceSection: None
                                             SetAttributeNodeGen SourceSection: [4385,4410]`self.__hardroot = _L...`
-                                              Attribute: __hardroot
+                                              Attribute: _OrderedDict__hardroot
                                               ReadLocalVariableNode SourceSection: [4385,4389]`self`
                                                 Frame: [2,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1000,7 +1000,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                   GetAttributeNodeGen SourceSection: [4451,4466]`self.__hardroot`
                                                     GetFixedAttributeNodeGen SourceSection: None
-                                                      Key: __hardroot
+                                                      Key: _OrderedDict__hardroot
                                                       CachedDispatchFirst SourceSection: None
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -1010,7 +1010,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       Frame: [2,self,Illegal]
                                                       ReadVariableFromFrameNodeGen SourceSection: None
                                               SetAttributeNodeGen SourceSection: None
-                                                Attribute: __root
+                                                Attribute: _OrderedDict__root
                                                 ReadLocalVariableNode SourceSection: [4423,4427]`self`
                                                   Frame: [2,self,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
@@ -1049,7 +1049,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   Frame: [7,<>temp7,Illegal]
                                                   ReadVariableFromFrameNodeGen SourceSection: None
                                             SetAttributeNodeGen SourceSection: [4521,4536]`self.__map = {}`
-                                              Attribute: __map
+                                              Attribute: _OrderedDict__map
                                               ReadLocalVariableNode SourceSection: [4521,4525]`self`
                                                 Frame: [2,self,Illegal]
                                                 ReadVariableFromFrameNodeGen SourceSection: None
@@ -1215,7 +1215,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           SetItemNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: None
                                               GetFixedAttributeNodeGen SourceSection: None
-                                                Key: __map
+                                                Key: _OrderedDict__map
                                                 CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -1243,7 +1243,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             Frame: [7,root,Illegal]
                                           GetAttributeNodeGen SourceSection: [4984,4995]`self.__root`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __root
+                                              Key: _OrderedDict__root
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1443,7 +1443,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [5504,5514]`self.__map`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __map
+                                              Key: _OrderedDict__map
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1555,7 +1555,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [1,root,Illegal]
                                       GetAttributeNodeGen SourceSection: [5827,5838]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __root
+                                          Key: _OrderedDict__root
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1677,7 +1677,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [1,root,Illegal]
                                       GetAttributeNodeGen SourceSection: [6095,6106]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __root
+                                          Key: _OrderedDict__root
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1801,7 +1801,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [1,root,Illegal]
                                       GetAttributeNodeGen SourceSection: [6314,6325]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __root
+                                          Key: _OrderedDict__root
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -1840,7 +1840,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [6371,6381]`self.__map`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __map
+                                              Key: _OrderedDict__map
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -1928,7 +1928,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [2,root,Illegal]
                                       GetAttributeNodeGen SourceSection: [6700,6711]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __root
+                                          Key: _OrderedDict__root
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2056,7 +2056,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     DeleteItemNodeGen SourceSection: [7036,7055]`del self.__map[key]`
                                       GetAttributeNodeGen SourceSection: None
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __map
+                                          Key: _OrderedDict__map
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2158,7 +2158,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                       GetItemNodeGen SourceSection: [7324,7339]`self.__map[key]`
                                         GetAttributeNodeGen SourceSection: None
                                           GetFixedAttributeNodeGen SourceSection: None
-                                            Key: __map
+                                            Key: _OrderedDict__map
                                             CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -2237,7 +2237,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                         Frame: [7,root,Illegal]
                                       GetAttributeNodeGen SourceSection: [7520,7531]`self.__root`
                                         GetFixedAttributeNodeGen SourceSection: None
-                                          Key: __root
+                                          Key: _OrderedDict__root
                                           CachedDispatchFirst SourceSection: None
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -2457,7 +2457,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [8099,8109]`self.__map`
                                               GetFixedAttributeNodeGen SourceSection: None
-                                                Key: __map
+                                                Key: _OrderedDict__map
                                                 CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2487,7 +2487,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [8182,8197]`self.__hardroot`
                                               GetFixedAttributeNodeGen SourceSection: None
-                                                Key: __hardroot
+                                                Key: _OrderedDict__hardroot
                                                 CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2518,7 +2518,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               ReadVariableFromFrameNodeGen SourceSection: None
                                             GetAttributeNodeGen SourceSection: [8245,8256]`self.__root`
                                               GetFixedAttributeNodeGen SourceSection: None
-                                                Key: __root
+                                                Key: _OrderedDict__root
                                                 CachedDispatchFirst SourceSection: None
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2801,7 +2801,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     Index: 0
                                 StringLiteralNode SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: __marker
+                                Identifier: _OrderedDict__marker
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           KwArguments: None
                           Documentation: StringLiteralNode: `od.pop(k[,d]) -> v, ...`
@@ -2900,7 +2900,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             ReadVariableFromFrameNodeGen SourceSection: None
                                           GetAttributeNodeGen SourceSection: [9213,9226]`self.__marker`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: __marker
+                                              Key: _OrderedDict__marker
                                               CachedDispatchFirst SourceSection: None
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
