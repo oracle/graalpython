@@ -289,6 +289,7 @@ def PyTruffle_Object_LEN(obj):
 
 ##################### BYTES
 
+@may_raise(-1)
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
     if not PyBytes_Check(obj):
         raise TypeError('expected bytes, {!s} found'.format(type(obj)))
@@ -312,6 +313,7 @@ def PyBytes_Concat(original, newpart):
     return original + newpart
 
 
+@may_raise
 def PyBytes_FromFormat(fmt, args):
     formatted = fmt % args
     return formatted.encode()

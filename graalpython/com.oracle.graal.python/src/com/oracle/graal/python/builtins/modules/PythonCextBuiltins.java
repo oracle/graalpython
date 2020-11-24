@@ -725,6 +725,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object run(PBaseException exception, Object object,
                         @Cached WriteUnraisableNode writeUnraisableNode) {
             writeUnraisableNode.execute(null, exception, null, (object instanceof PNone) ? PNone.NONE : object);
+            getContext().setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
     }
