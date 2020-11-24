@@ -111,7 +111,6 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
     static class MethKeywords extends MethodWrapper {
 
         public MethKeywords(Object method, Object typeid) {
@@ -151,7 +150,6 @@ public abstract class ManagedMethodWrappers {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
     static class MethVarargs extends MethodWrapper {
 
         public MethVarargs(Object method) {
