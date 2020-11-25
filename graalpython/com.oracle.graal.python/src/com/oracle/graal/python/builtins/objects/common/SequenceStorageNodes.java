@@ -1208,6 +1208,20 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, value);
         }
 
+        @Specialization(rewriteOn = OverflowException.class)
+        protected static void doIntL(IntSequenceStorage storage, int idx, long value) throws OverflowException {
+            storage.setIntItemNormalized(idx, PInt.intValueExact(value));
+        }
+
+        @Specialization(replaces = "doIntL")
+        protected static void doIntLOvf(IntSequenceStorage storage, int idx, long value) {
+            try {
+                storage.setIntItemNormalized(idx, PInt.intValueExact(value));
+            } catch (OverflowException e) {
+                throw new SequenceStoreException(value);
+            }
+        }
+
         @Specialization(guards = "!value.isNative()")
         protected static void doInt(IntSequenceStorage storage, int idx, PInt value) {
             try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.nodes.util;
 
-UPCALL_ID(_PyErr_Warn);
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 
-// partially taken from CPython "Python/_warnings.c"
-MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_level, PyObject *source) {
-    PyObject *res;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
 
-    if (category == NULL) {
-        category = PyExc_RuntimeWarning;
+/**
+ * Casts a Python integer to a Java long without coercion. The difference to
+ * {@link CastToJavaLongExactNode} is that if a {@link PInt} is larger than
+ * {@link Integer#MAX_VALUE} but still just requires 64-bits, we will still to the cast resulting in
+ * a negative Java long. This is useful for hash functions where the sign bit does not really matter
+ * but just the bits.
+ * 
+ * <b>ATTENTION:</b> If the cast isn't possible, the node will throw a {@link CannotCastException}.
+ */
+@GenerateUncached
+public abstract class CastUnsignedToJavaLongNode extends CastToJavaLongNode {
+
+    @Specialization(rewriteOn = OverflowException.class, insertBefore = "doNativeObject")
+    static long toLongNoOverflow(PInt x) throws OverflowException {
+        return x.longValueExact();
     }
 
-    PyObject* result = UPCALL_CEXT_O(_jls__PyErr_Warn, native_to_java(message), native_to_java(category), stack_level, native_to_java(source));
-    if(result == NULL) {
-    	return -1;
+    @Specialization(replaces = "toLongNoOverflow", insertBefore = "doNativeObject")
+    static long toLong(PInt x,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            return x.longValueExact();
+        } catch (OverflowException e) {
+            if (x.isZeroOrPositive() && x.bitLength() <= 64) {
+                return x.longValue();
+            }
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "long");
+        }
     }
-    Py_DECREF(result);
-    return 0;
 }
-
-// taken from CPython "Python/_warnings.c"
-int PyErr_WarnEx(PyObject *category, const char *text, Py_ssize_t stack_level) {
-    int ret;
-    PyObject *message = PyUnicode_FromString(text);
-    if (message == NULL)
-        return -1;
-    ret = warn_unicode(category, message, stack_level, NULL);
-    Py_DECREF(message);
-    return ret;
-}
-
-NO_INLINE int PyErr_WarnFormat(PyObject *category, Py_ssize_t stack_level, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    PyObject* result = PyUnicode_FromFormatV(format, args);
-    va_end(args);
-    return warn_unicode(category, result, stack_level, Py_None);
-}
-
-int PyErr_ResourceWarning(PyObject *source, Py_ssize_t stack_level, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    PyObject* result = PyUnicode_FromFormatV(format, args);
-    va_end(args);
-    return warn_unicode(PyExc_ResourceWarning, result, stack_level, source);
-}
-

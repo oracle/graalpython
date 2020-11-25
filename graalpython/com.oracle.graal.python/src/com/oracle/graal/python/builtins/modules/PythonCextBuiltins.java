@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirst
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.VoidPtrToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CastToNativeLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
@@ -3806,6 +3807,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return (PBuiltinFunction) object;
             }
             return null;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyTruffle_Unicode_FromFormat", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleUnicodeFromFromat extends PythonBuiltinNode {
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, String format, Object vaList,
+                        @Cached UnicodeFromFormatNode unicodeFromFormatNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            try {
+                return toSulongNode.execute(unicodeFromFormatNode.execute(format, vaList));
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(frame, e);
+                return getNativeNullNode.execute();
+            }
         }
     }
 }

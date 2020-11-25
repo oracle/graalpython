@@ -117,7 +117,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                 }
                 return String.format(format, args);
             } catch (IllegalFormatException e) {
-                throw new RuntimeException("error while formatting \"" + format + "\"", e);
+                // According to PyUnicode_FromFormat, invalid format specifiers are just ignored.
+                return format;
             }
         }
 

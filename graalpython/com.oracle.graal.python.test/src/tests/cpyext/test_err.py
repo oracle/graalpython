@@ -198,6 +198,20 @@ class TestPyErr(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyErr_Format_dS = CPyExtFunctionVoid(
+        _reference_format,
+        lambda: (
+            (ValueError, "hello %d times %S", 10, "world"),
+            (ValueError, "hello %c times %R", 95, "world"),
+        ),
+        resultspec="O",
+        argspec='OsiO',
+        arguments=["PyObject* v", "char* msg", "int arg0", "PyObject* arg1"],
+        resultval="NULL",
+        callfunction="PyErr_Format",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyErr_PrintEx = CPyExtFunction(
         lambda args: None,
         lambda: (

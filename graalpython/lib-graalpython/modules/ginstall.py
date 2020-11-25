@@ -131,7 +131,7 @@ def known_packages():
     @pip_package()
     def attrs(**kwargs):
 
-        install_from_pypi("attrs==19.1.0", **kwargs)
+        install_from_pypi("attrs==19.2.0", **kwargs)
 
     @pip_package()
     def pyparsing(**kwargs):
@@ -230,6 +230,17 @@ def known_packages():
         numpy(**kwargs)
         Cython(**kwargs)
         install_from_pypi("h5py==2.10.0", **kwargs)
+
+    @pip_package()
+    def sortedcontainers(**kwargs):
+        install_from_pypi("sortedcontainers==2.1.0", **kwargs)
+
+    @pip_package()
+    def hypothesis(**kwargs):
+        setuptools(**kwargs)
+        attrs(**kwargs)
+        sortedcontainers(**kwargs)
+        install_from_pypi("hypothesis==5.41.1", **kwargs)
 
     # Does not yet work
     # def h5py(**kwargs):
