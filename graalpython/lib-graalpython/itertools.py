@@ -777,6 +777,15 @@ class zip_longest():
         self.iterators = [iter(iter1)] + [iter(arg) for arg in args]
         return self
 
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), tuple(self.iterators), self.fillvalue
+
+
+    @__graalpython__.builtin_method
+    def __setstate__(self, state):
+        self.fillvalue = state
+
 
 class cycle():
     """
