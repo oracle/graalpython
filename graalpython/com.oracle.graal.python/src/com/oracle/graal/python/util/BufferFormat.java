@@ -48,27 +48,29 @@ package com.oracle.graal.python.util;
  * string around for error messages.
  */
 public enum BufferFormat {
-    UINT_8(1),
-    INT_8(1),
-    UINT_16(2),
-    INT_16(2),
-    UINT_32(4),
-    INT_32(4),
-    UINT_64(8),
-    INT_64(8),
-    FLOAT(4),
-    DOUBLE(8),
+    UINT_8(1, "B"),
+    INT_8(1, "b"),
+    UINT_16(2, "H"),
+    INT_16(2, "h"),
+    UINT_32(4, "I"),
+    INT_32(4, "i"),
+    UINT_64(8, "L"),
+    INT_64(8, "l"),
+    FLOAT(4, "f"),
+    DOUBLE(8, "d"),
     // Unicode is array-only and deprecated
-    UNICODE(4),
+    UNICODE(4, "u"),
     // The following are memoryview-only
-    CHAR(1),
-    BOOLEAN(1),
-    OTHER(-1);
+    CHAR(1, "c"),
+    BOOLEAN(1, "?"),
+    OTHER(-1, null);
 
     public final int bytesize;
+    public final String baseTypeCode;
 
-    BufferFormat(int bytesize) {
+    BufferFormat(int bytesize, String baseTypeCode) {
         this.bytesize = bytesize;
+        this.baseTypeCode = baseTypeCode;
     }
 
     public static BufferFormat forMemoryView(String formatString) {

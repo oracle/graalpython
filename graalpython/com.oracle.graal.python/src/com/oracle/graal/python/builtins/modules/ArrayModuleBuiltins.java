@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.nio.ByteOrder;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -40,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.array.PArray.MachineFormat;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -58,6 +60,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -192,6 +195,19 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 return array;
             }
 
+            @Specialization(guards = "isString(initializer)")
+            PArray arrayWithStringInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
+                            @Cached CastToJavaStringNode cast,
+                            @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode) {
+                BufferFormat format = getFormatChecked(typeCode);
+                if (format != BufferFormat.UNICODE) {
+                    throw raise(TypeError, "cannot use a str to initialize an array with typecode '%s'", typeCode);
+                }
+                PArray array = getFactory().createArray(cls, typeCode, format);
+                fromUnicodeNode.execute(frame, array, cast.execute(initializer));
+                return array;
+            }
+
             @Specialization
             PArray arrayArrayInitializer(VirtualFrame frame, Object cls, String typeCode, PArray initializer,
                             @Cached ArrayNodes.PutValueNode putValueNode,
@@ -230,7 +246,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = "!isBytes(initializer)", limit = "3")
+            @Specialization(guards = {"!isBytes(initializer)", "!isString(initializer)"}, limit = "3")
             PArray arrayIteratorInitializer(VirtualFrame frame, Object cls, String typeCode, Object initializer,
                             @CachedLibrary("initializer") PythonObjectLibrary lib,
                             @Cached ArrayNodes.PutValueNode putValueNode,
@@ -306,25 +322,64 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "mformatCode", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class ArrayReconstructorNode extends PythonClinicBuiltinNode {
-        @Specialization
-        Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
+        @Specialization(guards = "mformatCode == cachedCode")
+        Object reconstructCached(VirtualFrame frame, Object arrayType, String typeCode, @SuppressWarnings("unused") int mformatCode, PBytes bytes,
+                        @Cached("mformatCode") int cachedCode,
+                        @Cached("createIdentityProfile()") ValueProfile formatProfile,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
             BufferFormat format = BufferFormat.forArray(typeCode);
             if (format == null) {
                 throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
             }
+            return doReconstruct(frame, arrayType, typeCode, cachedCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, formatProfile.profile(format));
+        }
+
+        @Specialization(replaces = "reconstructCached")
+        Object reconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached ArrayBuiltins.FromBytesNode fromBytesNode,
+                        @Cached ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ArrayBuiltins.ByteSwapNode byteSwapNode) {
+            BufferFormat format = BufferFormat.forArray(typeCode);
+            if (format == null) {
+                throw raise(ValueError, "bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+            }
+            return doReconstruct(frame, arrayType, typeCode, mformatCode, bytes, lib, fromBytesNode, fromUnicodeNode, isSubtypeNode, byteSwapNode, format);
+        }
+
+        private Object doReconstruct(VirtualFrame frame, Object arrayType, String typeCode, int mformatCode, PBytes bytes, PythonObjectLibrary lib,
+                        ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, IsSubtypeNode isSubtypeNode,
+                        ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format) {
             if (!isSubtypeNode.execute(frame, arrayType, PythonBuiltinClassType.PArray)) {
                 throw raise(TypeError, "%n is not a subtype of array", arrayType);
             }
-            PArray.MachineFormat expectedFormat = PArray.MachineFormat.forFormat(format);
-            if (expectedFormat != null && expectedFormat.code == mformatCode) {
-                PArray array = factory().createArray(arrayType, typeCode, format);
-                fromBytesNode.execute(frame, array, bytes);
+            MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);
+            if (machineFormat != null) {
+                PArray array;
+                if (machineFormat == MachineFormat.forFormat(format)) {
+                    array = factory().createArray(arrayType, typeCode, machineFormat.format);
+                    fromBytesNode.execute(frame, array, bytes);
+                } else {
+                    String newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
+                    array = factory().createArray(arrayType, newTypeCode, machineFormat.format);
+                    if (machineFormat.unicodeEncoding != null) {
+                        Object decoded = lib.lookupAndCallRegularMethod(bytes, frame, "decode", machineFormat.unicodeEncoding);
+                        fromUnicodeNode.execute(frame, array, decoded);
+                    } else {
+                        fromBytesNode.execute(frame, array, bytes);
+                        if (machineFormat.order != ByteOrder.nativeOrder()) {
+                            byteSwapNode.call(frame, array);
+                        }
+                    }
+                }
                 return array;
             } else {
-                // TODO implement decoding for arrays pickled on a machine of different architecture
-                throw raise(PythonBuiltinClassType.NotImplementedError, "Cannot decode array format");
+                throw raise(ValueError, "third argument must be a valid machine format code.");
             }
         }
 

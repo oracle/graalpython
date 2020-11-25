@@ -1069,10 +1069,10 @@ class BaseTest:
         if self.typecode != 'u':
             with self.assertRaises(TypeError) as cm:
                 a = array.array(self.typecode, 'foo')
-            # XXX Truffle change: don't dwell on exact error messages, this feature is deprecated anyway
-            # self.assertIn("cannot use a str", str(cm.exception))
+            self.assertIn("cannot use a str", str(cm.exception))
             with self.assertRaises(TypeError) as cm:
                 a = array.array(self.typecode, array.array('u', 'foo'))
+            # XXX Truffle change: don't dwell on exact error messages, this feature is deprecated anyway
             # self.assertIn("cannot use a unicode array", str(cm.exception))
         else:
             a = array.array(self.typecode, "foo")

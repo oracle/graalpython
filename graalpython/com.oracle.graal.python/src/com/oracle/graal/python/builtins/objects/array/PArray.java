@@ -170,7 +170,6 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     public enum MachineFormat {
-        UNKNOWN_FORMAT(-1, null, null),
         UNSIGNED_INT8(0, BufferFormat.UINT_8, null),
         SIGNED_INT8(1, BufferFormat.INT_8, null),
         UNSIGNED_INT16_LE(2, BufferFormat.UINT_16, ByteOrder.LITTLE_ENDIAN),
@@ -189,26 +188,42 @@ public final class PArray extends PythonBuiltinObject {
         IEEE_754_FLOAT_BE(15, BufferFormat.FLOAT, ByteOrder.BIG_ENDIAN),
         IEEE_754_DOUBLE_LE(16, BufferFormat.DOUBLE, ByteOrder.LITTLE_ENDIAN),
         IEEE_754_DOUBLE_BE(17, BufferFormat.DOUBLE, ByteOrder.BIG_ENDIAN),
-        // TODO
-        UTF16_LE(18, null, ByteOrder.LITTLE_ENDIAN),
-        UTF16_BE(19, null, ByteOrder.BIG_ENDIAN),
-        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN),
-        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN);
+        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, "utf-32-le"),
+        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, "utf-32-be"),
+        // These two need to come after UTF32, so that forFormat doesn't pick them for UNICODE
+        UTF16_LE(18, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, "utf-16-le"),
+        UTF16_BE(19, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, "utf-16-be");
 
         public final int code;
         public final BufferFormat format;
         public final ByteOrder order;
+        public final String unicodeEncoding;
 
         MachineFormat(int code, BufferFormat format, ByteOrder order) {
+            this(code, format, order, null);
+        }
+
+        MachineFormat(int code, BufferFormat format, ByteOrder order, String unicodeEncoding) {
             this.code = code;
             this.format = format;
             this.order = order;
+            this.unicodeEncoding = unicodeEncoding;
         }
 
         @ExplodeLoop
         public static MachineFormat forFormat(BufferFormat format) {
             for (MachineFormat machineFormat : MachineFormat.values()) {
                 if (machineFormat.format == format && (machineFormat.order == null || machineFormat.order == ByteOrder.nativeOrder())) {
+                    return machineFormat;
+                }
+            }
+            return null;
+        }
+
+        @ExplodeLoop
+        public static MachineFormat fromCode(int code) {
+            for (MachineFormat machineFormat : MachineFormat.values()) {
+                if (machineFormat.code == code) {
                     return machineFormat;
                 }
             }
