@@ -531,6 +531,7 @@ public final class Python3Core implements PythonCore {
                 builtin.postInitialize(this);
             }
 
+            getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
         }
     }

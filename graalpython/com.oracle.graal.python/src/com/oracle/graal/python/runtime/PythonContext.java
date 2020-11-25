@@ -256,6 +256,7 @@ public final class PythonContext {
     // The context-local resources
     private final PosixResources resources;
     private final AsyncHandler handler;
+    private final AsyncHandler.SharedFinalizer sharedFinalizer;
 
     // decides if we run the async weakref callbacks and destructors
     private boolean gcEnabled = true;
@@ -272,6 +273,7 @@ public final class PythonContext {
         this.env = env;
         this.resources = new PosixResources();
         this.handler = new AsyncHandler(this);
+        this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
         this.resources.setEnv(env);
         this.in = env.in();
@@ -1088,5 +1090,9 @@ public final class PythonContext {
 
     public void setGcEnabled(boolean flag) {
         gcEnabled = flag;
+    }
+
+    public AsyncHandler.SharedFinalizer getSharedFinalizer() {
+        return sharedFinalizer;
     }
 }
