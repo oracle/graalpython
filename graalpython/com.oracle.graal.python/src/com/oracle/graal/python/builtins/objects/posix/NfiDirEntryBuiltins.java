@@ -122,7 +122,6 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
     abstract static class GetOpaquePathHelperNode extends PythonBuiltinBaseNode {
 
         abstract Object execute(VirtualFrame frame, Object dirEntryData, PosixFileHandle path);
@@ -148,7 +147,6 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
     abstract static class CachedPosixPathNode extends PythonBuiltinBaseNode {
 
         abstract PosixPath execute(VirtualFrame frame, PNfiDirEntry self);
@@ -229,7 +227,6 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
     abstract static class StatHelperNode extends PythonBuiltinBaseNode {
 
         abstract PTuple execute(VirtualFrame frame, PNfiDirEntry self, boolean followSymlinks, boolean catchNoent);
@@ -284,7 +281,6 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
     abstract static class TestModeNode extends PythonBuiltinBaseNode {
 
         private final long expectedMode;
@@ -323,13 +319,13 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         private StatHelperNode getStatHelperNode() {
             if (statHelperNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                statHelperNode = insert(NfiDirEntryBuiltinsFactory.StatHelperNodeFactory.create());
+                statHelperNode = insert(NfiDirEntryBuiltinsFactory.StatHelperNodeGen.create());
             }
             return statHelperNode;
         }
 
         static TestModeNode create(long expectedMode, int expectedDirEntryType) {
-            return NfiDirEntryBuiltinsFactory.TestModeNodeFactory.create(expectedMode, expectedDirEntryType);
+            return NfiDirEntryBuiltinsFactory.TestModeNodeGen.create(expectedMode, expectedDirEntryType);
         }
     }
 
