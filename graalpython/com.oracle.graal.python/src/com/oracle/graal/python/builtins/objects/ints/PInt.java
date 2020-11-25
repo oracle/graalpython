@@ -64,6 +64,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     public static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);

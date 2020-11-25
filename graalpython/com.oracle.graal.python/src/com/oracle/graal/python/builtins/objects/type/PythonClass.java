@@ -43,6 +43,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * Mutable class.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {

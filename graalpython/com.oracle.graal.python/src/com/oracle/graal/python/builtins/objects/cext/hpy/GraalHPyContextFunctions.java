@@ -419,7 +419,6 @@ public abstract class GraalHPyContextFunctions {
 
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyUnaryArithmetic extends GraalHPyArithmetic {
         private final UnaryArithmetic unaryOperator;
 
@@ -442,7 +441,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyBinaryArithmetic extends GraalHPyArithmetic {
         private final BinaryArithmetic binaryOperator;
 
@@ -465,7 +463,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyTernaryArithmetic extends GraalHPyArithmetic {
         private final TernaryArithmetic ternaryOperator;
 
@@ -488,7 +485,6 @@ public abstract class GraalHPyContextFunctions {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyInplaceArithmetic extends GraalHPyArithmetic {
         private final InplaceArithmetic inplaceOperator;
 

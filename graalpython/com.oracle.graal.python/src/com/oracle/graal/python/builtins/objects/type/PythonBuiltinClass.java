@@ -45,6 +45,7 @@ import com.oracle.truffle.api.library.ExportMessage;
  * A Python built-in class that is immutable.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 

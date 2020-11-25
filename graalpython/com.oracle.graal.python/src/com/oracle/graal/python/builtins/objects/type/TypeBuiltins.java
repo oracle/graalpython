@@ -130,6 +130,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -280,16 +281,18 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization(guards = "lib.isLazyPythonClass(klass)")
+        @SuppressWarnings("unused")
         Object doit(Object klass,
-                        @Cached("create()") GetMroNode getMroNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached GetMroNode getMroNode,
+                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
         @Specialization(guards = "!lib.isLazyPythonClass(object)")
+        @SuppressWarnings("unused")
         Object doit(Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, MRO, "type", object);
         }
     }
