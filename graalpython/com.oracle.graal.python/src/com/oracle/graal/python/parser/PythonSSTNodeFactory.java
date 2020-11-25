@@ -65,6 +65,7 @@ import com.oracle.graal.python.parser.sst.BooleanLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.CallSSTNode;
 import com.oracle.graal.python.parser.sst.ClassSSTNode;
 import com.oracle.graal.python.parser.sst.CollectionSSTNode;
+import com.oracle.graal.python.parser.sst.DecoratorSSTNode;
 import com.oracle.graal.python.parser.sst.FactorySSTVisitor;
 import com.oracle.graal.python.parser.sst.FloatLiteralSSTNode;
 import com.oracle.graal.python.parser.sst.ForComprehensionSSTNode;
@@ -124,6 +125,12 @@ public final class PythonSSTNodeFactory {
         throw errors.raiseInvalidSyntax(source, createSourceSection(startOffset, endOffset), message, messageParams);
     }
 
+    public SSTNode createDecorator(String name, ArgListBuilder arg, int startOffset, int endOffset) {
+        int dotIndex = name.indexOf('.');
+        String mangledName = dotIndex == -1 ? mangleName(name) : mangleName(name.substring(0, dotIndex)) + name.substring(dotIndex);
+        return new DecoratorSSTNode(mangledName, arg, startOffset, endOffset);
+    }
+
     public SSTNode createImport(String name, String asName, int startOffset, int endOffset) {
         String varName;
         if (asName != null) {
@@ -137,6 +144,7 @@ public final class PythonSSTNodeFactory {
                 // create local variable just for the top module
                 varName = name.substring(0, dotIndex);
             }
+            varName = mangleName(varName);
         }
         scopeEnvironment.createLocal(varName);
         return new ImportSSTNode(scopeEnvironment.getCurrentScope(), name, asName, startOffset, endOffset);
@@ -156,14 +164,52 @@ public final class PythonSSTNodeFactory {
         return new ImportFromSSTNode(scopeEnvironment.getCurrentScope(), from, asNames, startOffset, endOffset);
     }
 
+    public String mangleName(String name) {
+        int len = name.length();
+        if (len < 3 || name.charAt(0) != '_' || name.charAt(1) != '_' || (name.charAt(len - 1) == '_' && name.charAt(len - 2) == '_') || name.indexOf('.') != -1) {
+            return name;
+        }
+        // then name can be mangled if is under class
+        ScopeInfo scope = scopeEnvironment.getCurrentScope();
+        while (scope != null && scope.getScopeKind() != ScopeKind.Class) {
+            scope = scope.getParent();
+        }
+
+        if (scope != null && scope.getScopeKind() == ScopeKind.Class) {
+            String scopeName = scope.getScopeId();
+            if (scopeName.charAt(0) == '_') {
+                // trim leading '_'
+                int index = 1;
+                int scopeNameLen = scopeName.length();
+                while (index < scopeNameLen && scopeName.charAt(index) == '_') {
+                    index++;
+                }
+                scopeName = index != scopeNameLen ? scopeName.substring(index) : null;
+            }
+            if (scopeName != null) {
+                if ((long) scopeName.length() + len >= Integer.MAX_VALUE) {
+                    throw errors.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PRIVATE_IDENTIFIER_TOO_LARGE_TO_BE_MANGLED);
+                }
+                return '_' + scopeName + name;
+            }
+        }
+        return name;
+    }
+
     public VarLookupSSTNode createVariableLookup(String name, int start, int stop) {
-        scopeEnvironment.addSeenVar(name);
-        return new VarLookupSSTNode(name, start, stop);
+        String mangleName = mangleName(name);
+        scopeEnvironment.addSeenVar(mangleName);
+        return new VarLookupSSTNode(mangleName, start, stop);
     }
 
     public SSTNode createClassDefinition(String name, ArgListBuilder baseClasses, SSTNode body, int start, int stop) {
         // scopeEnvironment.createLocal(name);
         return new ClassSSTNode(scopeEnvironment.getCurrentScope(), name, baseClasses, body, start, stop);
+    }
+
+    public GetAttributeSSTNode createGetAttribute(SSTNode receiver, String name, int startOffset, int endOffset) {
+        String mangledName = mangleName(name);
+        return new GetAttributeSSTNode(receiver, mangledName, startOffset, endOffset);
     }
 
     public SSTNode registerGlobal(String[] names, int startOffset, int endOffset) {

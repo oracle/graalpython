@@ -512,7 +512,7 @@ decorator:
         } else {
             factory.getScopeEnvironment().addSeenVar(dottedName);
         }
-        push( new DecoratorSSTNode(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
+        push( factory.createDecorator(dottedName, args, getStartIndex($ctx), getLastIndex($ctx))); 
     }
 ;
 
@@ -543,7 +543,7 @@ funcdef
 		'->' test
 	)? ':' 
 	{ 
-            String name = $n.getText(); 
+            String name = factory.mangleName($n.getText()); 
             ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
             String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
             ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -609,6 +609,9 @@ defparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
+            if (name != null) {
+                name = factory.mangleName(name);
+            }
             ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
@@ -628,7 +631,7 @@ splatparameter [ArgDefListBuilder args]
 		NAME { name = $NAME.text; }
 		( ':' test { type = $test.result; } )?
 	)?
-	{ args.addSplat(name, type); }
+	{ args.addSplat(name != null ? factory.mangleName(name) : null, type); }
 ;
 
 kwargsparameter [ArgDefListBuilder args]
@@ -640,6 +643,9 @@ kwargsparameter [ArgDefListBuilder args]
             String name = $NAME.text;
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+            }
+            if (name != null) {
+                name = factory.mangleName(name);
             }
             if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, $ctx, getCurrentToken());
@@ -691,6 +697,9 @@ vdefparameter [ArgDefListBuilder args]
             if (isForbiddenName(name)) {
                 factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
             }
+            if (name != null) {
+                name = factory.mangleName(name);
+            }
             ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
             switch(result) {
                 case NONDEFAULT_FOLLOWS_DEFAULT:
@@ -707,14 +716,18 @@ vsplatparameter [ArgDefListBuilder args]
 	'*'
 	{ String name = null; }
 	( NAME { name = $NAME.text; } )?
-	{ args.addSplat(name, null);}
+	{ args.addSplat(name != null ? factory.mangleName(name) : null, null);}
 ;
 
 vkwargsparameter [ArgDefListBuilder args]
 :
 	'**' NAME
 	{
-            if (args.addKwargs($NAME.text, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+            String name = $NAME.text;
+            if (name != null) {
+                name = factory.mangleName(name);
+            }
+            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
                 throw new PythonRecognitionException("duplicate argument '" + $NAME.text + "' in function definition", this, _input, $ctx, getCurrentToken());
             }
         }
@@ -1357,7 +1370,7 @@ atom_expr returns [SSTNode result]
 		| '.' NAME 
                 {   
                     assert $NAME != null;
-                    $result = new GetAttributeSSTNode($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
+                    $result = factory.createGetAttribute($result, $NAME.text, getStartIndex($ctx), getStopIndex($NAME));
                 }
 	)*
 ;

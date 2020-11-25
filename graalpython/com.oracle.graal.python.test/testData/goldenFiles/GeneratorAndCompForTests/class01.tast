@@ -86,7 +86,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                           Frame: [1,root,Illegal]
                                         GetAttributeNodeGen SourceSection: [68,79]`self.__root`
                                           GetFixedAttributeNodeGen SourceSection: None
-                                            Key: __root
+                                            Key: _OrderedDict__root
                                             CachedDispatchFirst SourceSection: None
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__

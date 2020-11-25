@@ -65,7 +65,7 @@ Scope: []
         FreeVars: Empty
     Scope: Tokenizer
         Kind: Class
-        FrameDescriptor: [getwhile, pos, get, tell, match, __next, __init__, error, getuntil, seek]
+        FrameDescriptor: [getwhile, pos, _Tokenizer__next, get, tell, match, __init__, error, getuntil, seek]
         CellVars: Empty
         FreeVars: Empty
         Scope: error
@@ -108,7 +108,7 @@ Scope: []
             FrameDescriptor: [char, self, <return_val>]
             CellVars: Empty
             FreeVars: Empty
-        Scope: __next
+        Scope: _Tokenizer__next
             Kind: Function
             FrameDescriptor: [char, self, index, <return_val>]
             CellVars: Empty

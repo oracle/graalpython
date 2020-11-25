@@ -47,10 +47,10 @@ class TruffleCodec(codecs.Codec):
         self.encoding = encoding
 
     def encode(self, input, errors='strict'):
-        return _codecs.__truffle_encode(input, self.encoding, errors)
+        return _codecs.__truffle_encode__(input, self.encoding, errors)
 
     def decode(self, input, errors='strict'):
-        return _codecs.__truffle_decode(input, self.encoding, errors, True)
+        return _codecs.__truffle_decode__(input, self.encoding, errors, True)
 
 
 # TODO - the incremental codec and reader/writer won't work well with stateful encodings, like some of the CJK encodings
@@ -60,7 +60,7 @@ class TruffleIncrementalEncoder(codecs.IncrementalEncoder):
         self.encoding = encoding
 
     def encode(self, input, final=False):
-        return _codecs.__truffle_encode(input, self.encoding, self.errors)[0]
+        return _codecs.__truffle_encode__(input, self.encoding, self.errors)[0]
 
 
 class TruffleIncrementalDecoder(codecs.BufferedIncrementalDecoder):
@@ -69,7 +69,7 @@ class TruffleIncrementalDecoder(codecs.BufferedIncrementalDecoder):
         self.encoding = encoding
 
     def _buffer_decode(self, input, errors, final):
-        return _codecs.__truffle_decode(input, self.encoding, errors, final)
+        return _codecs.__truffle_decode__(input, self.encoding, errors, final)
 
 
 class TruffleStreamWriter(codecs.StreamWriter):
@@ -78,7 +78,7 @@ class TruffleStreamWriter(codecs.StreamWriter):
         self.encoding = encoding
 
     def encode(self, input, errors='strict'):
-        return _codecs.__truffle_encode(input, self.encoding, errors)
+        return _codecs.__truffle_encode__(input, self.encoding, errors)
 
 
 class TruffleStreamReader(codecs.StreamReader):
@@ -87,7 +87,7 @@ class TruffleStreamReader(codecs.StreamReader):
         self.encoding = encoding
 
     def decode(self, input, errors='strict'):
-        return _codecs.__truffle_decode(input, self.encoding, errors)
+        return _codecs.__truffle_decode__(input, self.encoding, errors)
 
 
 class apply_encoding:
