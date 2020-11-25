@@ -188,6 +188,7 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
+    @ExportMessage
     protected static boolean hasSideEffect(EconomicMapStorage self) {
         return self.map.hasSideEffect();
     }
@@ -351,7 +352,7 @@ public class EconomicMapStorage extends HashingStorage {
         }
     }
 
-    protected static boolean hasSideEffect(Object o, LookupInheritedAttributeNode.Dynamic lookup) {
+    private static boolean hasDELSideEffect(Object o, LookupInheritedAttributeNode.Dynamic lookup) {
         return o instanceof PythonObject && lookup.execute(o, __DEL__) != PNone.NO_VALUE;
     }
 
@@ -377,10 +378,10 @@ public class EconomicMapStorage extends HashingStorage {
                         @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             Object value = self.map.removeKey(newKey, lib, otherlib, gotState, state);
-            if (hasSideEffect(key, lookup)) {
+            if (hasDELSideEffect(key, lookup)) {
                 callNode.executeObject(lookup.execute(key, __DEL__), key);
             }
-            if (hasSideEffect(value, lookup)) {
+            if (hasDELSideEffect(value, lookup)) {
                 callNode.executeObject(lookup.execute(value, __DEL__), value);
             }
             return self;
@@ -409,8 +410,8 @@ public class EconomicMapStorage extends HashingStorage {
             while (advance(cursor)) {
                 Object key = getKey(cursor);
                 Object value = getValue(cursor);
-                entries[i++] = hasSideEffect(key, lookup) ? key : null;
-                entries[i++] = hasSideEffect(value, lookup) ? value : null;
+                entries[i++] = hasDELSideEffect(key, lookup) ? key : null;
+                entries[i++] = hasDELSideEffect(value, lookup) ? value : null;
             }
             self.map.clear();
             for (Object o : entries) {

@@ -101,6 +101,7 @@
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_keys
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_iter_values
 *graalpython.lib-python.3.test.test_descr.DictProxyTests.test_repr
+*graalpython.lib-python.3.test.test_descr.MiscTests.test_type_lookup_mro_reference
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_extend
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_set_bases_on_self
 *graalpython.lib-python.3.test.test_descr.MroTest.test_incomplete_super

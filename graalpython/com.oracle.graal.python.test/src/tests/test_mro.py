@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -203,6 +203,60 @@ def test_class_with_slots_assignment():
     try:
         x.__class__ = Z
     except TypeError as e:
+        assert True
+    else:
+        assert False
+
+def test_mro_change_on_attr_access():
+    eq_called = []
+    class MyKey(object):        
+        def __hash__(self):            
+            return hash('mykey')
+        def __eq__(self, other):
+            eq_called.append(1)
+            X.__bases__ = (Base2,)
+
+    class Base(object):
+        mykey = 'base 42'
+
+    class Base2(object):
+        mykey = 'base2 42'
+
+    X = type('X', (Base,), {MyKey(): 5})
+    assert X.mykey == 'base 42'
+    assert eq_called == [1]
+    
+    # ----------------------------------
+    class MyKey(object):        
+        def __hash__(self):            
+            return hash('mykey')
+        def __eq__(self, other):
+            X.__bases__ = (Base,)
+
+    class Base(object):
+        pass
+
+    class Base2(object):
+        mykey = '42'        
+
+    X = type('X', (Base,Base2,), {MyKey(): 5})
+    mk = X.mykey
+    assert mk == '42'
+    
+    X = type('X', (Base2,), {MyKey(): 5})
+    assert X.mykey == '42'
+
+    # ----------------------------------
+    class Base(object):
+        mykey = 'from Base2'        
+
+    class Base2(object):
+        pass
+        
+    X = type('X', (Base2,), {MyKey(): 5})
+    try:    
+        assert X.mykey == '42'
+    except AttributeError as e:
         assert True
     else:
         assert False
