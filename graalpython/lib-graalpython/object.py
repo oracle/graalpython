@@ -71,6 +71,9 @@ def _get_new_arguments(obj):
 
 def reduce_newobj(obj):
     cls = obj.__class__
+    if not cls.__dict__.get('__new__', None):
+        raise TypeError("cannot pickle '{}' object".format(cls.__name__))
+
     args, kwargs = _get_new_arguments(obj)
     import_copyreg()
 
@@ -92,7 +95,7 @@ def reduce_newobj(obj):
     except AttributeError:
         itemsize = getattr(type(obj), '__itemsize__', 0)
         if itemsize != 0:
-            raise TypeError("cannot pickle '{}' object".format(type(obj).__name__))
+            raise TypeError("cannot pickle '{}' object".format(cls.__name__))
 
         state = getattr(obj, "__dict__", None)
         names = slotnames(cls)  # not checking for list
