@@ -75,6 +75,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -1704,7 +1705,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "nfi_ScandirIterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PNfiScandirIterator, isPublic = false)
     @GenerateNodeFactory
-    public abstract static class NfiScandirIteratorNode extends PythonBuiltinNode {
+    abstract static class NfiScandirIteratorNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object scandirIterator(Object args, Object kwargs) {
@@ -1714,7 +1715,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "nfi_DirEntry", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PNfiDirEntry, isPublic = true)
     @GenerateNodeFactory
-    public abstract static class NfiDirEntryNode extends PythonBuiltinNode {
+    abstract static class NfiDirEntryNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object dirEntry(Object args, Object kwargs) {
@@ -1730,17 +1731,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PosixModuleBuiltinsClinicProviders.NfiScandirNodeClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization(guards = "isDefault(handle)")
-        PNfiScandirIterator scandirDefault(VirtualFrame frame, @SuppressWarnings("unused") PosixFileHandle handle,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached SysModuleBuiltins.AuditNode auditNode) {
-            // TODO PathConversionNode could support defaultValue, converting "." to byte array
-            // requires fsencode - should be cahced at the least
-            // Or PosixSupportLibrary.opendir could just accept null path
-            Object path = posixLib.createPathFromString(getPosixSupport(), ".");
-            return scandirPath(frame, new PosixPath(null, path, false), posixLib, auditNode);
         }
 
         @Specialization
@@ -1766,9 +1756,75 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
+    }
 
-        protected boolean isDefault(PosixFileHandle handle) {
-            return handle == PosixFileHandle.DEFAULT;
+    @Builtin(name = "nfi_listdir", minNumOfPositionalArgs = 0, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"true", "true"})
+    @GenerateNodeFactory
+    abstract static class NfiListdirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiListdirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PList listdirPath(VirtualFrame frame, PosixPath path,
+                          @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                          @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.listdir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            try {
+                return listdir(posixLib.opendir(getPosixSupport(), path), path.wasBufferLike, posixLib);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization
+        PList listdirFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.listdir", fd.originalObject);
+            try {
+                return listdir(posixLib.fdopendir(getPosixSupport(), fd), false, posixLib);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        private PList listdir(Object dirStream, boolean produceBytes, PosixSupportLibrary posixLib) throws PosixException {
+            List<Object> list = createList();
+            try {
+                while (true) {
+                    Object dirEntry = posixLib.readdir(getPosixSupport(), dirStream);
+                    if (dirEntry == null) {
+                        return factory().createList(listToArray(list));
+                    }
+                    Object name = posixLib.dirEntryGetName(getPosixSupport(), dirEntry);
+                    if (produceBytes) {
+                        addToList(list, posixLib.getPathAsBytes(getPosixSupport(), name, factory()));
+                    } else {
+                        addToList(list, posixLib.getPathAsString(getPosixSupport(), name));
+                    }
+                }
+            } finally {
+                posixLib.closedir(getPosixSupport(), dirStream);
+            }
+        }
+
+        @TruffleBoundary
+        private List<Object> createList() {
+            return new ArrayList<>();
+        }
+
+        @TruffleBoundary
+        private void addToList(List<Object> list, Object element) {
+            list.add(element);
+        }
+
+        @TruffleBoundary
+        private Object[] listToArray(List<Object> list) {
+            return list.toArray();
         }
     }
 
@@ -3017,8 +3073,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "nullable")
-        PosixFileHandle doNone(@SuppressWarnings("unused") PNone value) {
-            return PosixFileHandle.DEFAULT;
+        PosixFileHandle doNone(@SuppressWarnings("unused") PNone value,
+                               @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return new PosixPath(null, checkPath(posixLib.createPathFromString(getPosixSupport(), ".")), false);
         }
 
         @Specialization(guards = "allowFd")

@@ -106,8 +106,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void noneAllowed() {
-        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NONE));
-        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NO_VALUE));
+        Assert.assertEquals(".", callAndExpectPath(true, false, PNone.NONE, null, false));
+        Assert.assertEquals(".", callAndExpectPath(true, false, PNone.NO_VALUE, null, false));
     }
 
     @Test

@@ -165,7 +165,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void closedir(Object receiver, Object dirStream);
 
     /**
-     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods
+     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods or
+     *         {@code null} when there are no more items
      */
     public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
 
@@ -305,19 +306,12 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract static class PosixFileHandle {
 
-        public static final PosixFileHandle DEFAULT = new PosixFileHandle() {
-        };
-
         /**
          * Contains the original object (or the object returned by {@code __fspath__}) for auditing
          * purposes. This field is {code null} iff the path parameter was optional and the caller
          * did not provide it.
          */
         public final Object originalObject;
-
-        private PosixFileHandle() {
-            originalObject = null;
-        }
 
         protected PosixFileHandle(Object originalObject) {
             this.originalObject = originalObject;

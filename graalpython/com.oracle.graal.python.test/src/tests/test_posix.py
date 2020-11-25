@@ -342,6 +342,10 @@ class ScandirEmptyTests(unittest.TestCase):
         with os.scandir(TEST_FULL_PATH1) as dir:
             self.assertEqual(0, len([entry for entry in dir]))
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir_empty(self):
+        self.assertEqual([], os.listdir(TEST_FULL_PATH1))
+
 
 class ScandirTests(unittest.TestCase):
 
@@ -507,6 +511,17 @@ class ScandirTests(unittest.TestCase):
         stat_res = entry.stat(follow_symlinks=False)
         os.unlink(self.abc_path)
         self.assertEqual(stat_res, entry.stat(follow_symlinks=True))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir(self):
+        self.assertEqual(['.abc'], os.listdir(TEST_FULL_PATH1))
+        self.assertEqual([b'.abc'], os.listdir(os.fsencode(TEST_FULL_PATH1)))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir_default_arg(self):
+        lst = os.listdir()
+        self.assertFalse('.' in lst)
+        self.assertFalse('..' in lst)
 
 
 class ScandirSymlinkToFileTests(unittest.TestCase):
