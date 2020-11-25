@@ -71,11 +71,13 @@ def _get_new_arguments(obj):
 
 def reduce_newobj(obj):
     cls = obj.__class__
-    if not cls.__dict__.get('__new__', None):
+    if not hasattr(cls, '__new__'):
         raise TypeError("cannot pickle '{}' object".format(cls.__name__))
 
     args, kwargs = _get_new_arguments(obj)
     import_copyreg()
+
+    hasargs = args is not None
 
     if kwargs is None or len(kwargs) == 0:
         newobj = copyreg.__newobj__
@@ -93,8 +95,9 @@ def reduce_newobj(obj):
     try:
         getstate = obj.__getstate__
     except AttributeError:
+        required = not hasargs and not isinstance(obj, (list, dict))
         itemsize = getattr(type(obj), '__itemsize__', 0)
-        if itemsize != 0:
+        if required and itemsize != 0:
             raise TypeError("cannot pickle '{}' object".format(cls.__name__))
 
         state = getattr(obj, "__dict__", None)
