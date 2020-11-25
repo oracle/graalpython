@@ -199,4 +199,3 @@ if __graalpython__.jython_emulation_enabled:
 
 
 sys.meta_path.append(JavaImportFinder())
-__getattr__ = JavaPackageLoader._make_getattr("java")
