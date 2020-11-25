@@ -236,7 +236,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             try {
-                return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -247,7 +247,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             try {
-                return toJavaStringNode.execute(pol.lookupAttribute(method.getFunction(), frame, __NAME__));
+                return toJavaStringNode.execute(pol.lookupAttributeStrict(method.getFunction(), frame, __NAME__));
             } catch (CannotCastException cce) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
