@@ -2820,7 +2820,7 @@ public abstract class SequenceStorageNodes {
             ThreadState threadState = PArguments.getThreadState(frame);
             for (int i = 0; i < lenNode.execute(left); i++) {
                 Object leftItem = getItemNode.execute(left, i);
-                if (lib.equalsWithState(leftItem, item, lib, threadState)) {
+                if (lib.equalsWithState(item, leftItem, lib, threadState)) {
                     return i;
                 }
             }

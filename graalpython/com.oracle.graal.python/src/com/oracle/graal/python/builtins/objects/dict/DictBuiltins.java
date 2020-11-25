@@ -259,7 +259,7 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Cached GetDictStorageNode getStorage,
                         @CachedLibrary("getStorage.execute(dict)") HashingStorageLibrary lib) {
             HashingStorage storage = getStorage.execute(dict);
-            for (DictEntry entry : lib.entries(storage)) {
+            for (DictEntry entry : lib.reverseEntries(storage)) {
                 PTuple result = factory().createTuple(new Object[]{entry.getKey(), entry.getValue()});
                 lib.delItem(storage, entry.getKey());
                 return result;
