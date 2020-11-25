@@ -779,7 +779,7 @@ class zip_longest():
 
     @__graalpython__.builtin_method
     def __reduce__(self):
-        return type(self), tuple(self.iterators), self.fillvalue
+        return type(self), tuple([(it if it else tuple()) for it in self.iterators]), self.fillvalue
 
 
     @__graalpython__.builtin_method
