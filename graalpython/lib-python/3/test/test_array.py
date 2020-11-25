@@ -994,6 +994,8 @@ class BaseTest:
         expected = m.tobytes()
         self.assertEqual(a.tobytes(), expected)
         self.assertEqual(a.tobytes()[0], expected[0])
+        # XXX Truffle change: we don't forbid resizing arrays when exported to memoryview
+        return
         # Resizing is forbidden when there are buffer exports.
         # For issue 4509, we also check after each error that
         # the array was not modified.
