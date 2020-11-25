@@ -257,7 +257,7 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
         GuestVm.__init__(self, host_vm=host_vm)
 
     def override_iterations(self, requested_iterations):
-        return 2
+        return 3
 
     def hosting_registry(self):
         return java_vm_registry
@@ -282,6 +282,7 @@ class JythonVm(AbstractPythonIterationsControlVm, GuestVm):
                 if a.startswith("-D") or a.startswith("-XX"):
                     vm_args.insert(0, a)
                     args.remove(a)
+            args = self._override_iterations_args(args)
             cmd = vm_args + args
 
             if not self._env:
