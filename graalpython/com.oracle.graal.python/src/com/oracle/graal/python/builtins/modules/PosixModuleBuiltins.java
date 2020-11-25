@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.posix.PNfiScandirIterator;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -1436,31 +1437,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         protected static boolean isDefault(int dirFd) {
             return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD;
         }
-
-        private static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
-            Object[] res = new Object[16];
-            for (int i = 0; i < 7; i++) {
-                res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
-            }
-            res[6] = out[6];
-            for (int i = 7; i < 10; i++) {
-                long seconds = out[i];
-                long nsFraction = out[i + 3];
-                res[i] = seconds;
-                res[i + 3] = seconds + nsFraction * 1.0e-9;
-                res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
-            }
-            // TODO intrinsify the os.stat_result named tuple and create the instance directly
-            return factory.createTuple(res);
-        }
-
-        @TruffleBoundary
-        private static BigInteger convertToNanoseconds(long sec, long ns) {
-            // TODO it may be possible to do this in long without overflow
-            BigInteger r = BigInteger.valueOf(sec);
-            r = r.multiply(BigInteger.valueOf(1000000000));
-            return r.add(BigInteger.valueOf(ns));
-        }
     }
 
     @Builtin(name = "nfi_lstat", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
@@ -1480,7 +1456,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstatAt(getPosixSupport(), dirFd, path, false);
-                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1503,7 +1479,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached ConditionProfile positiveLongProfile) {
             try {
                 long[] out = posixLib.fstat(getPosixSupport(), fd, null, true);
-                return NfiStatNode.createStatResult(factory(), positiveLongProfile, out);
+                return createStatResult(factory(), positiveLongProfile, out);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1723,6 +1699,76 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         boolean isatty(int fd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             return posixLib.isatty(getPosixSupport(), fd);
+        }
+    }
+
+    @Builtin(name = "nfi_ScandirIterator", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PNfiScandirIterator, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class NfiScandirIteratorNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object scandirIterator(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.ScandirIterator");
+        }
+    }
+
+    @Builtin(name = "nfi_DirEntry", takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PNfiDirEntry, isPublic = true)
+    @GenerateNodeFactory
+    public abstract static class NfiDirEntryNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object dirEntry(Object args, Object kwargs) {
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "posix.DirEntry");
+        }
+    }
+
+    @Builtin(name = "nfi_scandir", minNumOfPositionalArgs = 0, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"true", "true"})
+    @GenerateNodeFactory
+    abstract static class NfiScandirNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiScandirNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "isDefault(handle)")
+        PNfiScandirIterator scandirDefault(VirtualFrame frame, @SuppressWarnings("unused") PosixFileHandle handle,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            // TODO PathConversionNode could support defaultValue, converting "." to byte array
+            // requires fsencode - should be cahced at the least
+            // Or PosixSupportLibrary.opendir could just accept null path
+            Object path = posixLib.createPathFromString(getPosixSupport(), ".");
+            return scandirPath(frame, new PosixPath(null, path, false), posixLib, auditNode);
+        }
+
+        @Specialization
+        PNfiScandirIterator scandirPath(VirtualFrame frame, PosixPath path,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            try {
+                return factory().createNfiScandirIterator(posixLib.opendir(getPosixSupport(), path), path);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization
+        PNfiScandirIterator scandirFd(VirtualFrame frame, PosixFd fd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.scandir", fd.originalObject);
+            try {
+                return factory().createNfiScandirIterator(posixLib.fdopendir(getPosixSupport(), fd), fd);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        protected boolean isDefault(PosixFileHandle handle) {
+            return handle == PosixFileHandle.DEFAULT;
         }
     }
 
@@ -2862,6 +2908,31 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         return dirFd == PosixSupportLibrary.DEFAULT_DIR_FD ? -1 : dirFd;
     }
 
+    public static PTuple createStatResult(PythonObjectFactory factory, ConditionProfile positiveLongProfile, long[] out) {
+        Object[] res = new Object[16];
+        for (int i = 0; i < 7; i++) {
+            res[i] = PInt.createPythonIntFromUnsignedLong(factory, positiveLongProfile, out[i]);
+        }
+        res[6] = out[6];
+        for (int i = 7; i < 10; i++) {
+            long seconds = out[i];
+            long nsFraction = out[i + 3];
+            res[i] = seconds;
+            res[i + 3] = seconds + nsFraction * 1.0e-9;
+            res[i + 6] = factory.createInt(convertToNanoseconds(seconds, nsFraction));
+        }
+        // TODO intrinsify the os.stat_result named tuple and create the instance directly
+        return factory.createTuple(res);
+    }
+
+    @TruffleBoundary
+    private static BigInteger convertToNanoseconds(long sec, long ns) {
+        // TODO it may be possible to do this in long without overflow
+        BigInteger r = BigInteger.valueOf(sec);
+        r = r.multiply(BigInteger.valueOf(1000000000));
+        return r.add(BigInteger.valueOf(ns));
+    }
+
     // ------------------
     // Converters
 
@@ -2974,7 +3045,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         PosixFileHandle doUnicode(String value,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)));
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), value)), false);
         }
 
         @Specialization
@@ -2982,14 +3053,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             String str = castToJavaStringNode.execute(value);
-            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)));
+            return new PosixPath(value, checkPath(posixLib.createPathFromString(getPosixSupport(), str)), false);
         }
 
         @Specialization
         PosixFileHandle doBytes(PBytesLike value,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))));
+            return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
         }
 
         @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
@@ -3000,7 +3071,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
                             ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
             try {
-                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), lib.getBufferBytes(value))));
+                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), lib.getBufferBytes(value))), true);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
             }

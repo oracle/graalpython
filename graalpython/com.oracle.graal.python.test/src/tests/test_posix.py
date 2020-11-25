@@ -62,9 +62,11 @@ except:
 
 
 import unittest
+import array
 import sys
 import stat
 import tempfile
+from contextlib import contextmanager
 
 
 PREFIX = 'graalpython_test'
@@ -74,6 +76,22 @@ TEST_FILENAME1 = f'{PREFIX}_{os.getpid()}_tmp1'
 TEST_FILENAME2 = f'{PREFIX}_{os.getpid()}_tmp2'
 TEST_FULL_PATH1 = os.path.join(TEMP_DIR, TEST_FILENAME1)
 TEST_FULL_PATH2 = os.path.join(TEMP_DIR, TEST_FILENAME2)
+
+
+@contextmanager
+def auto_close(fd):
+    try:
+        yield fd
+    finally:
+        os.close(fd)
+
+@contextmanager
+def open(name, flags):
+    fd = os.open(name, flags)
+    try:
+        yield fd
+    finally:
+        os.close(fd)
 
 
 class PosixTests(unittest.TestCase):
@@ -168,15 +186,12 @@ class PosixTests(unittest.TestCase):
             os.rmdir(TEST_FULL_PATH1)
 
     def test_mkdir_rmdir_dirfd(self):
-        tmp_fd = os.open(TEMP_DIR, 0)
-        try:
+        with open(TEMP_DIR, 0) as tmp_fd:
             os.mkdir(TEST_FILENAME1, dir_fd=tmp_fd)
             try:
                 self.assertTrue(stat.S_ISDIR(os.stat(TEST_FULL_PATH1).st_mode))
             finally:
                 os.rmdir(TEST_FILENAME1, dir_fd=tmp_fd)
-        finally:
-            os.close(tmp_fd)
 
     def test_umask(self):
         orig = os.umask(0o22)
@@ -197,20 +212,14 @@ class WithCurdirFdTests(unittest.TestCase):
         self.assertFalse(os.get_inheritable(self.fd))
         os.set_inheritable(self.fd, True)
         self.assertTrue(os.get_inheritable(self.fd))
-        fd2 = os.dup(self.fd)
-        try:
+        with auto_close(os.dup(self.fd)) as fd2:
             self.assertFalse(os.get_inheritable(fd2))
             os.set_inheritable(fd2, True)
             self.assertTrue(os.get_inheritable(fd2))
-        finally:
-            os.close(fd2)
-        fd2 = os.dup2(self.fd, fd2, True)
-        try:
+        with auto_close(os.dup2(self.fd, fd2, True)) as fd2:
             self.assertTrue(os.get_inheritable(fd2))
             os.set_inheritable(fd2, False)
             self.assertFalse(os.get_inheritable(fd2))
-        finally:
-            os.close(fd2)
 
     def test_fsync(self):
         os.fsync(self.fd)
@@ -268,13 +277,10 @@ class WithTempFilesTests(unittest.TestCase):
 
     def test_stat_fd(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
-        fd1 = os.open(TEST_FULL_PATH2, 0)   # TEST_FULL_PATH2 is a symlink to TEST_FULL_PATH1
-        try:
-            self.assertEqual(inode, os.stat(fd1).st_ino)
+        with open(TEST_FULL_PATH2, 0) as fd:   # TEST_FULL_PATH2 is a symlink to TEST_FULL_PATH1
+            self.assertEqual(inode, os.stat(fd).st_ino)
             with self.assertRaises(ValueError, msg="stat: cannot use fd and follow_symlinks together"):
-                os.stat(fd1, follow_symlinks=False)
-        finally:
-            os.close(fd1)
+                os.stat(fd, follow_symlinks=False)
 
     def test_stat_dirfd(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
@@ -293,11 +299,8 @@ class WithTempFilesTests(unittest.TestCase):
 
     def test_fstat(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
-        fd1 = os.open(TEST_FULL_PATH2, 0)           # follows symlink
-        try:
-            self.assertEqual(inode, os.fstat(fd1).st_ino)
-        finally:
-            os.close(fd1)
+        with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
+            self.assertEqual(inode, os.fstat(fd).st_ino)
 
 
 class ChdirTests(unittest.TestCase):
@@ -317,20 +320,309 @@ class ChdirTests(unittest.TestCase):
 
     def test_chdir_fd(self):
         os.chdir(TEMP_DIR)
-        fd = os.open(self.old_wd, 0)
-        try:
+        with open(self.old_wd, 0) as fd:
             os.chdir(fd)
             self.assertEqual(self.old_wd, os.getcwd())
-        finally:
-            os.close(fd)
 
     def test_fchdir(self):
-        fd = os.open(self.old_wd, 0)
-        try:
+        with open(self.old_wd, 0) as fd:
             os.fchdir(fd)
             self.assertEqual(os.fsencode(self.old_wd), os.getcwdb())
-        finally:
-            os.close(fd)
+
+
+class ScandirEmptyTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+
+    def tearDown(self):
+        os.rmdir(TEST_FULL_PATH1)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_empty(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(0, len([entry for entry in dir]))
+
+
+class ScandirTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+        self.abc_path = os.path.join(TEST_FULL_PATH1, '.abc')
+        os.close(os.open(self.abc_path, os.O_WRONLY | os.O_CREAT))
+
+    def tearDown(self):
+        try:
+            os.unlink(self.abc_path)
+        except FileNotFoundError:
+            pass
+        os.rmdir(TEST_FULL_PATH1)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_explicit_close(self):
+        # __exit__ must deal with explicit close()
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            dir.close()
+
+        # __exit__ must deal with explicit close(), exhausted dir stream
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(1, len([x for x in dir]))
+            dir.close()
+
+        # close() must deal with __exit__
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            pass
+        dir.close()
+
+        # close() must deal with __exit__, exhausted dir stream
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertEqual(1, len([x for x in dir]))
+        dir.close()
+
+        # __next__ must deal with closed streams
+        self.assertRaises(StopIteration, next, dir)
+        # second close() is no-op
+        dir.close()
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_fd_rewind(self):
+        with open(TEST_FULL_PATH1, 0) as fd:
+            with os.scandir(fd) as dir:
+                self.assertEqual(1, len([x for x in dir]))
+            # ScandirIterator.__exit__() must rewind
+            # also, fd must still be valid (scandir should do dup)
+            dir = os.scandir(fd)
+            self.assertEqual(1, len([x for x in dir]))
+            dir.close()
+            # ScandirIterator.close() must rewind
+            self.assertEqual(1, len([x for x in os.scandir(fd)]))
+            # ScandirIterator.__next__ must rewind the dir when exhausted even if not closed explicitly
+            self.assertEqual(1, len([x for x in os.scandir(fd)]))
+            # two dir streams based on the same fd must influence each other
+            dir1 = os.scandir(fd)
+            dir2 = os.scandir(fd)
+            next(dir1)
+            dir1.close()
+            # ScandirIterator.close() must rewind
+            self.assertEqual(1, len([x for x in dir2]))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_default_arg(self):
+        with os.scandir() as dir:
+            self.assertEqual('./', next(dir).path[:2])
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_path_str(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry '.abc'>", repr(entry))
+        self.assertEqual('.abc', entry.name)
+        self.assertEqual(self.abc_path, entry.path)
+        self.assertEqual(self.abc_path, os.fspath(entry))
+
+        # trailing slash
+        with os.scandir(TEST_FULL_PATH1 + '/') as dir:
+            self.assertEqual(self.abc_path, next(dir).path)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_path_bytes(self):
+        with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry b'.abc'>", repr(entry))
+        self.assertEqual(b'.abc', entry.name)
+        self.assertEqual(os.fsencode(self.abc_path), entry.path)
+        self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
+
+        # trailing slash
+        with os.scandir(os.fsencode(TEST_FULL_PATH1 + '/')) as dir:
+            self.assertEqual(os.fsencode(self.abc_path), next(dir).path)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_path_bufferlike(self):
+        with os.scandir(array.array('B', os.fsencode(TEST_FULL_PATH1))) as dir:
+            entry = next(dir)
+        self.assertEqual("<DirEntry b'.abc'>", repr(entry))
+        self.assertEqual(b'.abc', entry.name)
+        self.assertEqual(os.fsencode(self.abc_path), entry.path)
+        self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_path_fd(self):
+        with open(TEST_FULL_PATH1, 0) as fd:
+            with os.scandir(fd) as dir:
+                entry = next(dir)
+            # using fd instead of path returns strings and path is the same as name
+            self.assertEqual("<DirEntry '.abc'>", repr(entry))
+            self.assertEqual('.abc', entry.name)
+            self.assertEqual('.abc', entry.path)
+            self.assertEqual('.abc', os.fspath(entry))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_inode(self):
+        sr = os.stat(self.abc_path)
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertEqual('.abc', entry.name)
+        self.assertEqual(sr.st_ino, entry.inode())
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_stat(self):
+        orig_stat_result = os.stat(self.abc_path)
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertEqual(orig_stat_result, entry.stat())
+
+        # DirEntry.stat must be cached
+        with open(self.abc_path, os.O_WRONLY) as fd:
+            os.write(fd, b'x')
+        self.assertEqual(orig_stat_result, entry.stat())
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_scandir_entry_type(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertTrue(entry.is_file())
+        self.assertFalse(entry.is_dir())
+        self.assertFalse(entry.is_symlink())
+        self.assertTrue(entry.is_file(follow_symlinks=False))
+        self.assertFalse(entry.is_dir(follow_symlinks=False))
+
+    # TODO temporarily disabled - needs a fix from master
+    # def test_kw_only(self):
+    #     with os.scandir(TEST_FULL_PATH1) as dir:
+    #         entry = next(dir)
+    #     with self.assertRaises(TypeError):
+    #         entry.stat(True)
+    #     with self.assertRaises(TypeError):
+    #         entry.is_file(True)
+    #     with self.assertRaises(TypeError):
+    #         entry.is_dir(True)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_stat_error_msg(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        os.unlink(self.abc_path)
+        with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: '" + self.abc_path + "'"):
+            entry.stat()
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_stat_error_msg_bytes(self):
+        with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
+            entry = next(dir)
+        os.unlink(self.abc_path)
+        with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: b'" + self.abc_path + "'"):
+            entry.stat()
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_stat_uses_lstat_cache(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        stat_res = entry.stat(follow_symlinks=False)
+        os.unlink(self.abc_path)
+        self.assertEqual(stat_res, entry.stat(follow_symlinks=True))
+
+
+class ScandirSymlinkToFileTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+        os.close(os.open(TEST_FULL_PATH2, os.O_WRONLY | os.O_CREAT))
+        self.link_path = os.path.join(TEST_FULL_PATH1, 'abc')
+        os.symlink(TEST_FULL_PATH2, self.link_path)
+        self.symlink_inode = os.stat(self.link_path, follow_symlinks=False).st_ino
+        self.target_inode = os.stat(TEST_FULL_PATH2).st_ino
+
+    def tearDown(self):
+        os.unlink(self.link_path)
+        os.rmdir(TEST_FULL_PATH1)
+        try:
+            os.unlink(TEST_FULL_PATH2)
+        except FileNotFoundError:
+            pass
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_basic(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertTrue(entry.is_symlink())
+        self.assertTrue(entry.is_file())
+        self.assertFalse(entry.is_dir())
+        self.assertTrue(entry.is_file(follow_symlinks=True))
+        self.assertFalse(entry.is_dir(follow_symlinks=True))
+        self.assertFalse(entry.is_file(follow_symlinks=False))
+        self.assertFalse(entry.is_dir(follow_symlinks=False))
+
+        self.assertEqual(self.target_inode, entry.stat().st_ino)
+        self.assertEqual(self.target_inode, entry.stat(follow_symlinks=True).st_ino)
+        self.assertEqual(self.symlink_inode, entry.stat(follow_symlinks=False).st_ino)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_cached(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        stat_res_true = entry.stat(follow_symlinks=True)
+        stat_res_false = entry.stat(follow_symlinks=False)
+        # both stat results must be cached
+        with open(TEST_FULL_PATH2, os.O_WRONLY) as fd:
+            os.write(fd, b'x')
+        os.unlink(self.link_path)
+        os.close(os.open(self.link_path, os.O_WRONLY | os.O_CREAT))
+        self.assertEqual(stat_res_true, entry.stat(follow_symlinks=True))
+        self.assertEqual(stat_res_false, entry.stat(follow_symlinks=False))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_file_not_found(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        os.unlink(TEST_FULL_PATH2)
+        self.assertFalse(entry.is_file(follow_symlinks=True))
+
+
+class ScandirSymlinkToDirTests(unittest.TestCase):
+
+    def setUp(self):
+        os.mkdir(TEST_FULL_PATH1)
+        os.mkdir(TEST_FULL_PATH2)
+        self.link_path = os.path.join(TEST_FULL_PATH1, 'abc')
+        os.symlink(TEST_FULL_PATH2, self.link_path, target_is_directory=True)
+        self.symlink_inode = os.stat(self.link_path, follow_symlinks=False).st_ino
+        self.target_inode = os.stat(TEST_FULL_PATH2).st_ino
+
+    def tearDown(self):
+        try:
+            os.unlink(self.link_path)
+        except:
+            # TODO temporary hack needed as long as emulated unlink refuses to remove symlinks to dirs
+            os.rmdir(self.link_path)
+        os.rmdir(TEST_FULL_PATH1)
+        try:
+            os.rmdir(TEST_FULL_PATH2)
+        except FileNotFoundError:
+            pass
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_basic(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        self.assertTrue(entry.is_symlink())
+        self.assertFalse(entry.is_file())
+        self.assertTrue(entry.is_dir())
+        self.assertFalse(entry.is_file(follow_symlinks=True))
+        self.assertTrue(entry.is_dir(follow_symlinks=True))
+        self.assertFalse(entry.is_file(follow_symlinks=False))
+        self.assertFalse(entry.is_dir(follow_symlinks=False))
+
+        self.assertEqual(self.target_inode, entry.stat().st_ino)
+        self.assertEqual(self.target_inode, entry.stat(follow_symlinks=True).st_ino)
+        self.assertEqual(self.symlink_inode, entry.stat(follow_symlinks=False).st_ino)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_file_not_found(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            entry = next(dir)
+        os.rmdir(TEST_FULL_PATH2)
+        self.assertFalse(entry.is_dir(follow_symlinks=True))
 
 
 if __name__ == '__main__':

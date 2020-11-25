@@ -155,6 +155,8 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
+import com.oracle.graal.python.builtins.objects.posix.NfiDirEntryBuiltins;
+import com.oracle.graal.python.builtins.objects.posix.NfiScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
@@ -356,6 +358,8 @@ public final class Python3Core implements PythonCore {
                         new GetSetDescriptorTypeBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
+                        new NfiScandirIteratorBuiltins(),
+                        new NfiDirEntryBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
                         new ImpModuleBuiltins(),

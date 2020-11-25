@@ -93,11 +93,13 @@ import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -874,6 +876,54 @@ public final class EmulatedPosixSupport extends PosixResources {
             String path = getFilePath(fd);
             return path != null && (path.equals("/dev/tty") || path.equals("/dev/console"));
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object opendir(PosixPath path) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object fdopendir(PosixFd fd) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void closedir(Object dirStream) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object readdir(Object dirStream) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object dirEntryGetName(Object dirEntry) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object dirEntryGetPath(Object dirEntry, PosixPath scandirPath) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public long dirEntryGetInode(Object dirEntry) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public int dirEntryGetType(Object dirEntry) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     // ------------------

@@ -48,14 +48,16 @@
 #define _GNU_SOURCE
 #endif
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/utsname.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 
@@ -288,6 +290,41 @@ int32_t call_fchdir(int32_t fd) {
 
 int32_t call_isatty(int32_t fd) {
     return isatty(fd);
+}
+
+intptr_t call_opendir(const char *name) {
+    return (intptr_t) opendir(name);
+}
+
+intptr_t call_fdopendir(int32_t fd) {
+    int fd2 = dup(fd);
+    if (fd2 == -1) {
+        return 0;
+    }
+    DIR *dirp = fdopendir(fd2);
+    if (dirp == NULL) {
+        close(fd2);
+    }
+    return (intptr_t) dirp;
+}
+
+int32_t call_closedir(intptr_t dirp, int32_t rewind) {
+    if (rewind) {
+        rewinddir((DIR *) dirp);
+    }
+    return closedir((DIR *) dirp);
+}
+
+int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t *out) {
+    errno = 0;
+    struct dirent *dirEntry = readdir((DIR *) dirp);
+    if (dirEntry != NULL) {
+        snprintf(nameBuf, nameBufSize, "%s", dirEntry->d_name);
+        out[0] = dirEntry->d_ino;
+        out[1] = dirEntry->d_type;
+        return 1;
+    }
+    return 0;
 }
 
 int32_t get_errno() {

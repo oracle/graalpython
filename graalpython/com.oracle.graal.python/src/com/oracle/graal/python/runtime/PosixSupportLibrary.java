@@ -62,6 +62,18 @@ public abstract class PosixSupportLibrary extends Library {
 
     public static final int O_CLOEXEC = 524288;
 
+    public static final char POSIX_FILENAME_SEPARATOR = '/';
+
+    public static final int S_IFMT = 0170000;
+    public static final int S_IFDIR = 0040000;
+    public static final int S_IFREG = 0100000;
+    public static final int S_IFLNK = 0120000;
+
+    public static final int DT_UNKNOWN = 0;
+    public static final int DT_DIR = 4;
+    public static final int DT_REG = 8;
+    public static final int DT_LNK = 10;
+
     public abstract String getBackend(Object recevier);
 
     public abstract String strerror(Object receiver, int errorCode);
@@ -141,6 +153,45 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void fchdir(Object receiver, int fd, Object pathname, boolean handleEintr) throws PosixException;
 
     public abstract boolean isatty(Object receiver, int fd);
+
+    /**
+     * @return an opaque directory stream object to be used in calls to {@code readdir} and
+     *         {@code closedir}
+     */
+    public abstract Object opendir(Object receiver, PosixPath path) throws PosixException;
+
+    public abstract Object fdopendir(Object receiver, PosixFd fd) throws PosixException;
+
+    public abstract void closedir(Object receiver, Object dirStream);
+
+    /**
+     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods
+     */
+    public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
+
+    /**
+     * @return an opaque object representing the dir entry name
+     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsString(Object, Object)
+     */
+    public abstract Object dirEntryGetName(Object receiver, Object dirEntry) throws PosixException;
+
+    /**
+     * Returns the dir entry path, which is the name of the dir entry joined with the given path.
+     *
+     * @param scandirPath the path originally passed to {@link #opendir(Object, PosixPath)}
+     * @return an opaque object representing the dir entry path
+     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsString(Object, Object)
+     */
+    public abstract Object dirEntryGetPath(Object receiver, Object dirEntry, PosixPath scandirPath) throws PosixException;
+
+    public abstract long dirEntryGetInode(Object receiver, Object dirEntry) throws PosixException;
+
+    /**
+     * @return one of the {@code DT_xxx} constants
+     */
+    public abstract int dirEntryGetType(Object receiver, Object dirEntry);
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
@@ -269,7 +320,6 @@ public abstract class PosixSupportLibrary extends Library {
         }
 
         protected PosixFileHandle(Object originalObject) {
-            assert originalObject != null;
             this.originalObject = originalObject;
         }
     }
@@ -283,10 +333,12 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public static class PosixPath extends PosixFileHandle {
         public final Object value;
+        public final boolean wasBufferLike;
 
-        public PosixPath(Object originalObject, Object value) {
+        public PosixPath(Object originalObject, Object value, boolean wasBufferLike) {
             super(originalObject);
             this.value = value;
+            this.wasBufferLike = wasBufferLike;
         }
     }
 

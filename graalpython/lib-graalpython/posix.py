@@ -82,6 +82,11 @@ def __dir_entry_stat(self, follow_symlinks=True):
     return stat_result(__dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
 DirEntry.stat = __dir_entry_stat
 
+__nfi_dir_entry_old_stat = nfi_DirEntry.stat
+def __nfi_dir_entry_stat(self, *, follow_symlinks=True):
+    return stat_result(__nfi_dir_entry_old_stat(self, follow_symlinks=follow_symlinks))
+nfi_DirEntry.stat = __nfi_dir_entry_stat
+
 
 @__graalpython__.builtin
 def lstat(filename):

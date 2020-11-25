@@ -40,24 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.graal.python.util.Function;
-import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
+import static com.oracle.graal.python.PythonLanguage.getContext;
+
+import java.math.BigInteger;
+import java.util.Collections;
+
 import org.graalvm.polyglot.Context;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -71,10 +58,25 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.math.BigInteger;
-import java.util.Collections;
-
-import static com.oracle.graal.python.PythonLanguage.getContext;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.graal.python.util.Function;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 @RunWith(Parameterized.class)
 public class PathConversionNodeTests {
@@ -91,7 +93,10 @@ public class PathConversionNodeTests {
     @Before
     public void setUp() {
         PythonTests.enterContext(Collections.singletonMap("python.PosixModuleBackend", backendName), new String[0]);
-        pathToString = backendName.equals("java") ? p -> (String) p.value : p -> new String((byte[]) p.value);
+        pathToString = backendName.equals("java") ? p -> (String) p.value : p -> {
+            Buffer b = (Buffer) p.value;
+            return new String(b.data, 0, (int) b.length);
+        };
     }
 
     @After
@@ -121,8 +126,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void string() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, "abc"));
-        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString("abc")));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, "abc", false));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createString("abc"), false));
     }
 
     @Test
@@ -134,10 +139,10 @@ public class PathConversionNodeTests {
 
     @Test
     public void bytes() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createBytes("abc".getBytes())));
-        Assert.assertEquals("abc", callAndExpectPath(false, true, factory().createBytes("abc".getBytes())));
-        Assert.assertEquals("abc", callAndExpectPath(true, false, factory().createBytes("abc".getBytes())));
-        Assert.assertEquals("abc", callAndExpectPath(true, true, factory().createBytes("abc".getBytes())));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, factory().createBytes("abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(false, true, factory().createBytes("abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(true, false, factory().createBytes("abc".getBytes()), true));
+        Assert.assertEquals("abc", callAndExpectPath(true, true, factory().createBytes("abc".getBytes()), true));
     }
 
     @Test
@@ -149,7 +154,7 @@ public class PathConversionNodeTests {
 
     @Test
     public void buffer() {
-        Assert.assertEquals("abc", callAndExpectPath(false, false, evalValue("import array\narray.array('B', b'abc')")));
+        Assert.assertEquals("abc", callAndExpectPath(false, false, evalValue("import array\narray.array('B', b'abc')"), true));
         // TODO: can we assert somehow that a warning is actually produced?
     }
 
@@ -277,17 +282,17 @@ public class PathConversionNodeTests {
 
     @Test
     public void fspathBytes() {
-        Assert.assertEquals("abc", callAndExpectPathEx("p = b'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
+        Assert.assertEquals("abc", callAndExpectPathEx("p = b'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)", true));
     }
 
     @Test
     public void fspathString() {
-        Assert.assertEquals("abc", callAndExpectPathEx("p = 'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
+        Assert.assertEquals("abc", callAndExpectPathEx("p = 'abc'\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)", false));
     }
 
     @Test
     public void fspathPString() {
-        Assert.assertEquals("abc", callAndExpectPathEx("class S(str):\n  pass\np = S('abc')\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)"));
+        Assert.assertEquals("abc", callAndExpectPathEx("class S(str):\n  pass\np = S('abc')\nclass C:\n  def __fspath__(self):\n    return p\n(C(), p)", false));
     }
 
     @Test
@@ -367,23 +372,24 @@ public class PathConversionNodeTests {
         return callTarget.call();
     }
 
-    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig) {
+    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, Object orig, boolean wasBufferLike) {
         Object result = call(nullable, allowFd, arg);
         Assert.assertThat(result, CoreMatchers.instanceOf(PosixPath.class));
         PosixPath path = (PosixPath) result;
         Assert.assertSame(orig, path.originalObject);
+        Assert.assertEquals(wasBufferLike, path.wasBufferLike);
         return pathToString.apply(path);
     }
 
-    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg) {
-        return callAndExpectPath(nullable, allowFd, arg, arg);
+    private String callAndExpectPath(boolean nullable, boolean allowFd, Object arg, boolean wasBufferLike) {
+        return callAndExpectPath(nullable, allowFd, arg, arg, wasBufferLike);
     }
 
-    private String callAndExpectPathEx(String script) {
+    private String callAndExpectPathEx(String script, boolean wasBufferLike) {
         PTuple o = (PTuple) evalValue(script);
         Object arg = o.getSequenceStorage().getItemNormalized(0);
         Object orig = o.getSequenceStorage().getItemNormalized(1);
-        return callAndExpectPath(true, true, arg, orig);
+        return callAndExpectPath(true, true, arg, orig, wasBufferLike);
     }
 
     private static int callAndExpectFd(Object arg) {
