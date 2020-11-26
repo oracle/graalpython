@@ -44,8 +44,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
-import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -70,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
@@ -104,6 +103,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -384,6 +385,7 @@ public final class Python3Core implements PythonCore {
                         new CodecsTruffleModuleBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
+                        new JArrayModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
