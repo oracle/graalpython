@@ -681,6 +681,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    public static Shape getShapeForClassWithoutDict(PythonManagedClass klass) {
+        return Shape.newBuilder(klass.getInstanceShape()).shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG).build();
+    }
+
     public Shape getBuiltinTypeInstanceShape(PythonBuiltinClassType type) {
         int ordinal = type.ordinal();
         Shape shape = builtinTypeInstanceShapes[ordinal];
