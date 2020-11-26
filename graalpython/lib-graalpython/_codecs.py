@@ -150,16 +150,6 @@ def lookup_error(errors='strict'):
 
 
 @__graalpython__.builtin
-def escape_encode(data, errors=None):
-    return unicode_escape_encode(data, errors)
-
-
-@__graalpython__.builtin
-def escape_decode(data, errors=None):
-    return unicode_escape_decode(data, errors)
-
-
-@__graalpython__.builtin
 def utf_8_encode(string, errors=None):
     return __truffle_encode__(string, "utf-8", errors)
 

@@ -53,7 +53,7 @@ class ProxyType(object):
         import weakref
         object.__setattr__(self, "_weakref", weakref.ref(other))
 
-    def __getattr__(self, key):
+    def __getattribute__(self, key):
         return getattr(_proxy_get(self), key)
 
     def __setattr__(self, key, value):

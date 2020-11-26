@@ -509,4 +509,52 @@ public abstract class StringNodes {
             return StringNodesFactory.RFindNodeGen.create();
         }
     }
+
+    public abstract static class CountNode extends PNodeWithContext {
+
+        public abstract int execute(String self, String sub, int start, int end);
+
+        protected boolean stringIsEmpty(String s) {
+            return s.length() == 0;
+        }
+
+        protected boolean noStringIsEmpty(String a, String b) {
+            return !stringIsEmpty(a) && !stringIsEmpty(b);
+        }
+
+        @Specialization(guards = "stringIsEmpty(self)")
+        int countSelfEmpty(@SuppressWarnings("unused") String self, String sub, int start, @SuppressWarnings("unused") int end) {
+            return (sub.length() == 0 && start <= 0) ? 1 : 0;
+        }
+
+        @Specialization(guards = "stringIsEmpty(sub)")
+        int countSubEmpty(String self, @SuppressWarnings("unused") String sub, int start, int end) {
+            return (start <= self.length()) ? (end - start) + 1 : 0;
+        }
+
+        @Specialization(guards = "noStringIsEmpty(self, sub)")
+        int count(String self, String sub, int start, int end,
+                        @Cached FindNode findNode) {
+            int selfLen = self.length();
+            int subLen = sub.length();
+
+            int idx = findNode.execute(self, sub, start, end);
+            if (idx < 0) {
+                return 0;
+            }
+
+            int cnt = 1;
+            while (idx < selfLen && idx >= 0 && cnt < selfLen) {
+                idx = findNode.execute(self, sub, idx + subLen, end);
+                if (idx >= 0) {
+                    cnt++;
+                }
+            }
+            return cnt;
+        }
+
+        public static CountNode create() {
+            return StringNodesFactory.CountNodeGen.create();
+        }
+    }
 }

@@ -31,6 +31,8 @@
 // Generated from graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4 by ANTLR 4.7.2
 package com.oracle.graal.python.parser.antlr;
 
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -8276,7 +8278,7 @@ public class Python3Parser extends Parser {
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				 
+
 				                    String name = getCurrentToken().getText();
 				                    if (isForbiddenName(name)) {
 				                        factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);

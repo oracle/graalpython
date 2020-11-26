@@ -45,7 +45,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class BytesUtils {
 
-    static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
+    public static final byte[] HEXDIGITS = "0123456789abcdef".getBytes();
 
     // tables are copied from CPython/Python/pyctype.c
     static final byte PY_CTF_LOWER = 0x01;

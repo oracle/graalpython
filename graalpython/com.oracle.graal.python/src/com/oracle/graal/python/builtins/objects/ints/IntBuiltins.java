@@ -2792,6 +2792,25 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends IntNode {
     }
 
+    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doI(int self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object doL(long self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object getPI(PInt self) {
+            return factory().createTuple(new Object[]{factory().createInt(self.getValue())});
+        }
+    }
+
     @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
