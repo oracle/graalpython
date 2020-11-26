@@ -1010,7 +1010,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "fromunicode", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "str"})
     @ArgumentClinic(name = "str", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class FromUnicodeNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object fromunicode(VirtualFrame frame, PArray self, String str,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
@@ -1018,11 +1018,11 @@ public class ArrayBuiltins extends PythonBuiltins {
                 int length = PString.codePointCount(str, 0, str.length());
                 int newLength = PythonUtils.addExact(self.getLength(), length);
                 self.resizeStorage(newLength);
-                for (int i = 0, index = 0; i < length; index++) {
-                    int cpCount = PString.charCount(PString.codePointAt(str, i));
-                    String value = PString.substring(str, i, i + cpCount);
-                    putValueNode.execute(frame, self, self.getLength() + index, value);
-                    i += cpCount;
+                for (int codePointIndex = 0, charIndex = 0; codePointIndex < length; codePointIndex++) {
+                    int charCount = PString.charCount(PString.codePointAt(str, charIndex));
+                    String value = PString.substring(str, charIndex, charIndex + charCount);
+                    putValueNode.execute(frame, self, self.getLength() + codePointIndex, value);
+                    charIndex += charCount;
                 }
                 self.setLength(newLength);
                 return PNone.NONE;
@@ -1123,7 +1123,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = "byteswap", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ByteSwapNode extends PythonUnaryBuiltinNode {
+    public abstract static class ByteSwapNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.getFormat().bytesize == 1")
         static Object byteswap1(@SuppressWarnings("unused") PArray self) {
