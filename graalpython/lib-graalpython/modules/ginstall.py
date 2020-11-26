@@ -508,7 +508,7 @@ def read_first_existing(pkg_name, versions, dir, suffix):
 
 # end of code duplicated in pip_hook.py
 
-def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env={}):
+def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True, env=None):
     package_pattern = os.environ.get("GINSTALL_PACKAGE_PATTERN", "https://pypi.org/pypi/%s/json")
     package_version_pattern = os.environ.get("GINSTALL_PACKAGE_VERSION_PATTERN", "https://pypi.org/pypi/%s/%s/json")
 
@@ -534,6 +534,16 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
                 if url_info["python_version"] == "source":
                     url = url_info["url"]
                     break
+
+    # make copy of env
+    env = env.copy() if env is not None else os.environ.copy()
+    from distutils.sysconfig import get_config_var
+    env.setdefault("CC", get_config_var("CC"))
+    env.setdefault("CXX", get_config_var("CXX"))
+    env.setdefault("AR", get_config_var("AR"))
+    env.setdefault("RANLIB", get_config_var("RANLIB"))
+    env.setdefault("CFLAGS", get_config_var("CFLAGS"))
+    env.setdefault("LDFLAGS", get_config_var("CCSHARED"))
 
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
