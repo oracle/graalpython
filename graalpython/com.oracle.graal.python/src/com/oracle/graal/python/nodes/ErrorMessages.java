@@ -323,6 +323,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_PTR_OBJ = "invalid pointer object: %s";
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
+    public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";

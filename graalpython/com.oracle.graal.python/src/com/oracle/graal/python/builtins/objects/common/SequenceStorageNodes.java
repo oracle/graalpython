@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -2150,17 +2151,31 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(SequenceStorage src, int srcPos, byte[] dest, int destPos, int length);
 
         @Specialization
-        static void doByteSequenceStorage(ByteSequenceStorage src, int srcPos, byte[] dest, int destPos, int length) {
-            PythonUtils.arraycopy(src.getInternalByteArray(), srcPos, dest, destPos, length);
+        static void doByteSequenceStorage(ByteSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                PythonUtils.arraycopy(src.getInternalByteArray(), srcPos, dest, destPos, length);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+            }
         }
 
         @Specialization(guards = "isByteStorage(src)")
         static void doNativeByte(NativeSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached GetItemScalarNode getItemNode) {
-            for (int i = 0; i < length; i++) {
-                int elem = getItemNode.executeInt(src, srcPos + i);
-                assert elem >= 0 && elem < 256;
-                dest[destPos + i] = (byte) elem;
+                        @Cached GetItemScalarNode getItemNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                for (int i = 0; i < length; i++) {
+                    int elem = getItemNode.executeInt(src, srcPos + i);
+                    assert elem >= 0 && elem < 256;
+                    dest[destPos + i] = (byte) elem;
+                }
+            } catch (PException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
             }
         }
     }
@@ -2172,15 +2187,29 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(byte[] src, int srcPos, SequenceStorage dest, int destPos, int length);
 
         @Specialization
-        static void doByteSequenceStorage(byte[] src, int srcPos, ByteSequenceStorage dest, int destPos, int length) {
-            PythonUtils.arraycopy(src, srcPos, dest.getInternalByteArray(), destPos, length);
+        static void doByteSequenceStorage(byte[] src, int srcPos, ByteSequenceStorage dest, int destPos, int length,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                PythonUtils.arraycopy(src, srcPos, dest.getInternalByteArray(), destPos, length);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+            }
         }
 
         @Specialization(guards = "isByteStorage(dest)")
         static void doNativeByte(byte[] src, int srcPos, NativeSequenceStorage dest, int destPos, int length,
-                        @Cached SetItemScalarNode setItemNode) {
-            for (int i = 0; i < length; i++) {
-                setItemNode.execute(dest, destPos + i, src[srcPos + i]);
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                for (int i = 0; i < length; i++) {
+                    setItemNode.execute(dest, destPos + i, src[srcPos + i]);
+                }
+            } catch (PException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
             }
         }
     }
