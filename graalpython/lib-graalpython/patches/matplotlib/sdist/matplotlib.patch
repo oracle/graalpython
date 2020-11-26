@@ -1,9 +1,15 @@
-commit 959e43ded26fc39c0e148af0f64e7e6f31d5f547
-Author: Florian Angerer <florian.angerer@oracle.com>
-Date:   Wed Nov 11 14:13:13 2020 +0100
-
-    Replace kiwisolver by cassowary
-
+diff --git a/lib/matplotlib.egg-info/requires.txt b/lib/matplotlib.egg-info/requires.txt
+index 756f584..134f562 100644
+--- a/lib/matplotlib.egg-info/requires.txt
++++ b/lib/matplotlib.egg-info/requires.txt
+@@ -1,6 +1,6 @@
+ certifi>=2020.06.20
+ cycler>=0.10
+-kiwisolver>=1.0.1
++cassowary>=0.5.2
+ numpy>=1.15
+ pillow>=6.2.0
+ pyparsing!=2.0.4,!=2.1.2,!=2.1.6,>=2.0.3
 diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
 index 340eaeb..7d1dfa8 100644
 --- a/lib/matplotlib/__init__.py
@@ -432,6 +438,29 @@ index 0afa2e4..ea81c7e 100644
  
  
  def match_width_margins(boxes, levels=1):
+diff --git a/lib/matplotlib/image.py b/lib/matplotlib/image.py
+index 14866cc..8ab2629 100644
+--- a/lib/matplotlib/image.py
++++ b/lib/matplotlib/image.py
+@@ -1545,7 +1545,7 @@ def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None,
+         # Vector formats that are not handled by PIL.
+         if pil_kwargs is not None:
+             raise ValueError(
+-                f"Cannot use 'pil_kwargs' when saving to {format}")
++                "Cannot use 'pil_kwargs' when saving to {}".format(format))
+         fig = Figure(dpi=dpi, frameon=False)
+         fig.figimage(arr, cmap=cmap, vmin=vmin, vmax=vmax, origin=origin,
+                      resize=True)
+@@ -1583,8 +1583,7 @@ def imsave(fname, arr, vmin=None, vmax=None, cmap=None, format=None,
+                                          "'pnginfo' entry in 'pil_kwargs'.")
+             else:
+                 metadata = {
+-                    "Software": (f"Matplotlib version{mpl.__version__}, "
+-                                 f"https://matplotlib.org/"),
++                    "Software": ("Matplotlib version{}, https://matplotlib.org/".format(mpl.__version__)),
+                     **(metadata if metadata is not None else {}),
+                 }
+                 pil_kwargs["pnginfo"] = pnginfo = PIL.PngImagePlugin.PngInfo()
 diff --git a/setup.py b/setup.py
 index 81eae82..80ee5af 100644
 --- a/setup.py
@@ -445,6 +474,161 @@ index 81eae82..80ee5af 100644
          "numpy>=1.15",
          "pillow>=6.2.0",
          "pyparsing>=2.0.3,!=2.0.4,!=2.1.2,!=2.1.6",
+diff --git a/src/_backend_agg_wrapper.cpp b/src/_backend_agg_wrapper.cpp
+index 1377231..f77b95b 100644
+--- a/src/_backend_agg_wrapper.cpp
++++ b/src/_backend_agg_wrapper.cpp
+@@ -40,7 +40,7 @@ static void PyBufferRegion_dealloc(PyBufferRegion *self)
+     Py_TYPE(self)->tp_free((PyObject *)self);
+ }
+ 
+-static PyObject *PyBufferRegion_to_string(PyBufferRegion *self, PyObject *args, PyObject *kwds)
++static PyObject *PyBufferRegion_to_string(PyBufferRegion *self)
+ {
+     return PyBytes_FromStringAndSize((const char *)self->x->get_data(),
+                                      self->x->get_height() * self->x->get_stride());
+@@ -48,7 +48,7 @@ static PyObject *PyBufferRegion_to_string(PyBufferRegion *self, PyObject *args,
+ 
+ /* TODO: This doesn't seem to be used internally.  Remove? */
+ 
+-static PyObject *PyBufferRegion_set_x(PyBufferRegion *self, PyObject *args, PyObject *kwds)
++static PyObject *PyBufferRegion_set_x(PyBufferRegion *self, PyObject *args)
+ {
+     int x;
+     if (!PyArg_ParseTuple(args, "i:set_x", &x)) {
+@@ -59,7 +59,7 @@ static PyObject *PyBufferRegion_set_x(PyBufferRegion *self, PyObject *args, PyOb
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyBufferRegion_set_y(PyBufferRegion *self, PyObject *args, PyObject *kwds)
++static PyObject *PyBufferRegion_set_y(PyBufferRegion *self, PyObject *args)
+ {
+     int y;
+     if (!PyArg_ParseTuple(args, "i:set_y", &y)) {
+@@ -70,14 +70,14 @@ static PyObject *PyBufferRegion_set_y(PyBufferRegion *self, PyObject *args, PyOb
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyBufferRegion_get_extents(PyBufferRegion *self, PyObject *args, PyObject *kwds)
++static PyObject *PyBufferRegion_get_extents(PyBufferRegion *self)
+ {
+     agg::rect_i rect = self->x->get_rect();
+ 
+     return Py_BuildValue("IIII", rect.x1, rect.y1, rect.x2, rect.y2);
+ }
+ 
+-static PyObject *PyBufferRegion_to_string_argb(PyBufferRegion *self, PyObject *args, PyObject *kwds)
++static PyObject *PyBufferRegion_to_string_argb(PyBufferRegion *self)
+ {
+     PyObject *bufobj;
+     uint8_t *buf;
+@@ -198,7 +198,7 @@ static void PyRendererAgg_dealloc(PyRendererAgg *self)
+     Py_TYPE(self)->tp_free((PyObject *)self);
+ }
+ 
+-static PyObject *PyRendererAgg_draw_path(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_draw_path(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     py::PathIterator path;
+@@ -227,7 +227,7 @@ static PyObject *PyRendererAgg_draw_path(PyRendererAgg *self, PyObject *args, Py
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyRendererAgg_draw_text_image(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_draw_text_image(PyRendererAgg *self, PyObject *args)
+ {
+     numpy::array_view<agg::int8u, 2> image;
+     double x;
+@@ -252,7 +252,7 @@ static PyObject *PyRendererAgg_draw_text_image(PyRendererAgg *self, PyObject *ar
+     Py_RETURN_NONE;
+ }
+ 
+-PyObject *PyRendererAgg_draw_markers(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++PyObject *PyRendererAgg_draw_markers(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     py::PathIterator marker_path;
+@@ -288,7 +288,7 @@ PyObject *PyRendererAgg_draw_markers(PyRendererAgg *self, PyObject *args, PyObje
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyRendererAgg_draw_image(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_draw_image(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     double x;
+@@ -316,7 +316,7 @@ static PyObject *PyRendererAgg_draw_image(PyRendererAgg *self, PyObject *args, P
+ }
+ 
+ static PyObject *
+-PyRendererAgg_draw_path_collection(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++PyRendererAgg_draw_path_collection(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     agg::trans_affine master_transform;
+@@ -387,7 +387,7 @@ PyRendererAgg_draw_path_collection(PyRendererAgg *self, PyObject *args, PyObject
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyRendererAgg_draw_quad_mesh(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_draw_quad_mesh(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     agg::trans_affine master_transform;
+@@ -439,7 +439,7 @@ static PyObject *PyRendererAgg_draw_quad_mesh(PyRendererAgg *self, PyObject *arg
+ }
+ 
+ static PyObject *
+-PyRendererAgg_draw_gouraud_triangle(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++PyRendererAgg_draw_gouraud_triangle(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     numpy::array_view<const double, 2> points;
+@@ -480,7 +480,7 @@ PyRendererAgg_draw_gouraud_triangle(PyRendererAgg *self, PyObject *args, PyObjec
+ }
+ 
+ static PyObject *
+-PyRendererAgg_draw_gouraud_triangles(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++PyRendererAgg_draw_gouraud_triangles(PyRendererAgg *self, PyObject *args)
+ {
+     GCAgg gc;
+     numpy::array_view<const double, 3> points;
+@@ -527,7 +527,7 @@ PyRendererAgg_draw_gouraud_triangles(PyRendererAgg *self, PyObject *args, PyObje
+ }
+ 
+ static PyObject *
+-PyRendererAgg_get_content_extents(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++PyRendererAgg_get_content_extents(PyRendererAgg *self)
+ {
+     agg::rect_i extents;
+ 
+@@ -561,14 +561,14 @@ int PyRendererAgg_get_buffer(PyRendererAgg *self, Py_buffer *buf, int flags)
+     return 1;
+ }
+ 
+-static PyObject *PyRendererAgg_clear(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_clear(PyRendererAgg *self)
+ {
+     CALL_CPP("clear", self->x->clear());
+ 
+     Py_RETURN_NONE;
+ }
+ 
+-static PyObject *PyRendererAgg_copy_from_bbox(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_copy_from_bbox(PyRendererAgg *self, PyObject *args)
+ {
+     agg::rect_d bbox;
+     BufferRegion *reg;
+@@ -586,7 +586,7 @@ static PyObject *PyRendererAgg_copy_from_bbox(PyRendererAgg *self, PyObject *arg
+     return regobj;
+ }
+ 
+-static PyObject *PyRendererAgg_restore_region(PyRendererAgg *self, PyObject *args, PyObject *kwds)
++static PyObject *PyRendererAgg_restore_region(PyRendererAgg *self, PyObject *args)
+ {
+     PyBufferRegion *regobj;
+     int xx1 = 0, yy1 = 0, xx2 = 0, yy2 = 0, x = 0, y = 0;
 diff --git a/src/_path_wrapper.cpp b/src/_path_wrapper.cpp
 index 708d7d3..f4484ac 100644
 --- a/src/_path_wrapper.cpp
@@ -575,3 +759,169 @@ index 708d7d3..f4484ac 100644
  {
      py::PathIterator path;
      agg::trans_affine trans;
+diff --git a/src/ft2font_wrapper.cpp b/src/ft2font_wrapper.cpp
+index ba361ac..ab2321c 100644
+--- a/src/ft2font_wrapper.cpp
++++ b/src/ft2font_wrapper.cpp
+@@ -523,7 +523,7 @@ const char *PyFT2Font_clear__doc__ =
+     "\n"
+     "Clear all the glyphs, reset for a new set_text";
+ 
+-static PyObject *PyFT2Font_clear(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_clear(PyFT2Font *self)
+ {
+     CALL_CPP("clear", (self->x->clear()));
+ 
+@@ -535,7 +535,7 @@ const char *PyFT2Font_set_size__doc__ =
+     "\n"
+     "Set the point size and dpi of the text.\n";
+ 
+-static PyObject *PyFT2Font_set_size(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_set_size(PyFT2Font *self, PyObject *args)
+ {
+     double ptsize;
+     double dpi;
+@@ -554,7 +554,7 @@ const char *PyFT2Font_set_charmap__doc__ =
+     "\n"
+     "Make the i-th charmap current\n";
+ 
+-static PyObject *PyFT2Font_set_charmap(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_set_charmap(PyFT2Font *self, PyObject *args)
+ {
+     int i;
+ 
+@@ -572,7 +572,7 @@ const char *PyFT2Font_select_charmap__doc__ =
+     "\n"
+     "select charmap i where i is one of the FT_Encoding number\n";
+ 
+-static PyObject *PyFT2Font_select_charmap(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_select_charmap(PyFT2Font *self, PyObject *args)
+ {
+     unsigned long i;
+ 
+@@ -594,7 +594,7 @@ const char *PyFT2Font_get_kerning__doc__ =
+     "  KERNING_UNFITTED - Return scaled but un-grid-fitted kerning distances\n"
+     "  KERNING_UNSCALED - Return the kerning vector in original font units\n";
+ 
+-static PyObject *PyFT2Font_get_kerning(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_kerning(PyFT2Font *self, PyObject *args)
+ {
+     FT_UInt left, right, mode;
+     int result;
+@@ -673,7 +673,7 @@ const char *PyFT2Font_get_num_glyphs__doc__ =
+     "\n"
+     "Return the number of loaded glyphs\n";
+ 
+-static PyObject *PyFT2Font_get_num_glyphs(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_num_glyphs(PyFT2Font *self)
+ {
+     return PyLong_FromLong(self->x->get_num_glyphs());
+ }
+@@ -761,7 +761,7 @@ const char *PyFT2Font_get_width_height__doc__ =
+     "The rotation of the string is accounted for.  To get width and height\n"
+     "in pixels, divide these values by 64\n";
+ 
+-static PyObject *PyFT2Font_get_width_height(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_width_height(PyFT2Font *self)
+ {
+     long width, height;
+ 
+@@ -776,7 +776,7 @@ const char *PyFT2Font_get_bitmap_offset__doc__ =
+     "Get the offset in 26.6 subpixels for the bitmap if ink hangs left or below (0, 0).\n"
+     "Since matplotlib only supports left-to-right text, y is always 0.\n";
+ 
+-static PyObject *PyFT2Font_get_bitmap_offset(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_bitmap_offset(PyFT2Font *self)
+ {
+     long x, y;
+ 
+@@ -792,7 +792,7 @@ const char *PyFT2Font_get_descent__doc__ =
+     "The rotation of the string is accounted for.  To get the descent\n"
+     "in pixels, divide this value by 64.\n";
+ 
+-static PyObject *PyFT2Font_get_descent(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_descent(PyFT2Font *self)
+ {
+     long descent;
+ 
+@@ -893,7 +893,7 @@ const char *PyFT2Font_get_glyph_name__doc__ =
+     "names (per FT_FACE_FLAG_GLYPH_NAMES), this returns a made-up name which \n"
+     "does *not* roundtrip through `.get_name_index`.\n";
+ 
+-static PyObject *PyFT2Font_get_glyph_name(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_glyph_name(PyFT2Font *self, PyObject *args)
+ {
+     unsigned int glyph_number;
+     char buffer[128];
+@@ -910,7 +910,7 @@ const char *PyFT2Font_get_charmap__doc__ =
+     "Returns a dictionary that maps the character codes of the selected charmap\n"
+     "(Unicode by default) to their corresponding glyph indices.\n";
+ 
+-static PyObject *PyFT2Font_get_charmap(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_charmap(PyFT2Font *self)
+ {
+     PyObject *charmap;
+     if (!(charmap = PyDict_New())) {
+@@ -940,7 +940,7 @@ const char *PyFT2Font_get_char_index__doc__ =
+     "\n"
+     "Given a character code, returns a glyph index.\n";
+ 
+-static PyObject *PyFT2Font_get_char_index(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_char_index(PyFT2Font *self, PyObject *args)
+ {
+     FT_UInt index;
+     FT_ULong ccode;
+@@ -962,7 +962,7 @@ const char *PyFT2Font_get_sfnt__doc__ =
+     "key is the platform-ID, ISO-encoding-scheme, language-code, and "
+     "description.\n";
+ 
+-static PyObject *PyFT2Font_get_sfnt(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_sfnt(PyFT2Font *self)
+ {
+     PyObject *names;
+ 
+@@ -1022,7 +1022,7 @@ const char *PyFT2Font_get_name_index__doc__ =
+     "Returns the glyph index of a given glyph name.\n"
+     "The glyph index 0 means `undefined character code'.\n";
+ 
+-static PyObject *PyFT2Font_get_name_index(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_name_index(PyFT2Font *self, PyObject *args)
+ {
+     char *glyphname;
+     long name_index;
+@@ -1038,7 +1038,7 @@ const char *PyFT2Font_get_ps_font_info__doc__ =
+     "\n"
+     "Return the information in the PS Font Info structure.\n";
+ 
+-static PyObject *PyFT2Font_get_ps_font_info(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_ps_font_info(PyFT2Font *self)
+ {
+     PS_FontInfoRec fontinfo;
+ 
+@@ -1066,7 +1066,7 @@ const char *PyFT2Font_get_sfnt_table__doc__ =
+     "Return one of the following SFNT tables: head, maxp, OS/2, hhea, "
+     "vhea, post, or pclt.\n";
+ 
+-static PyObject *PyFT2Font_get_sfnt_table(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_sfnt_table(PyFT2Font *self, PyObject *args)
+ {
+     char *tagname;
+     if (!PyArg_ParseTuple(args, "s:get_sfnt_table", &tagname)) {
+@@ -1368,7 +1368,7 @@ const char *PyFT2Font_get_path__doc__ =
+     "Get the path data from the currently loaded glyph as a tuple of vertices, "
+     "codes.\n";
+ 
+-static PyObject *PyFT2Font_get_path(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_path(PyFT2Font *self)
+ {
+     int count;
+ 
+@@ -1390,7 +1390,7 @@ const char *PyFT2Font_get_image__doc__ =
+     "\n"
+     "Returns the underlying image buffer for this font object.\n";
+ 
+-static PyObject *PyFT2Font_get_image(PyFT2Font *self, PyObject *args, PyObject *kwds)
++static PyObject *PyFT2Font_get_image(PyFT2Font *self)
+ {
+     FT2Image &im = self->x->get_image();
+     npy_intp dims[] = {(npy_intp)im.get_height(), (npy_intp)im.get_width() };
