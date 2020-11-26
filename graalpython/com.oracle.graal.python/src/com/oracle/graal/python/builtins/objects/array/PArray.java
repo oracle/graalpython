@@ -97,14 +97,6 @@ public final class PArray extends PythonBuiltinObject {
         this.exports = exports;
     }
 
-    public synchronized void incrementExports() {
-        exports++;
-    }
-
-    public synchronized void decrementExports() {
-        exports--;
-    }
-
     public void checkCanResize(PythonBuiltinBaseNode node) {
         if (exports != 0) {
             throw node.raise(BufferError, ErrorMessages.EXPORTS_CANNOT_RESIZE);

@@ -51,7 +51,7 @@ import com.oracle.truffle.api.object.Shape;
 @ExportLibrary(InteropLibrary.class)
 public final class PByteArray extends PBytesLike {
 
-    private volatile int exports = 0;
+    private volatile int exports;
 
     public PByteArray(Object cls, Shape instanceShape, byte[] bytes) {
         super(cls, instanceShape, bytes);
@@ -105,14 +105,6 @@ public final class PByteArray extends PBytesLike {
 
     public void setExports(int exports) {
         this.exports = exports;
-    }
-
-    public synchronized void incrementExports() {
-        exports++;
-    }
-
-    public synchronized void decrementExports() {
-        exports--;
     }
 
     public void checkCanResize(PythonBuiltinBaseNode node) {
