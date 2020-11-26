@@ -237,8 +237,16 @@ public abstract class CExtParseArgumentsNode {
                         return state.close();
                     }
                 case '|':
+                    if (state.restOptional) {
+                        raiseNode.raiseIntWithoutFrame(0, SystemError, "Invalid format string (| specified twice)", c);
+                        throw ParseArgumentsException.raise();
+                    }
                     return state.restOptional();
                 case '$':
+                    if (state.restKeywordsOnly) {
+                        raiseNode.raiseIntWithoutFrame(0, SystemError, "Invalid format string ($ specified twice)", c);
+                        throw ParseArgumentsException.raise();
+                    }
                     return state.restKeywordsOnly();
                 case '!':
                 case '&':
@@ -328,11 +336,11 @@ public abstract class CExtParseArgumentsNode {
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(funName, outIndex, restOptional, true, nestedArgs, nativeContext);
+            return new ParserState(funName, outIndex, restOptional, false, nestedArgs, nativeContext);
         }
 
         ParserState close() {
-            return new ParserState(funName, outIndex, restOptional, true, v.prev, nativeContext);
+            return new ParserState(funName, outIndex, restOptional, false, v.prev, nativeContext);
         }
 
     }
