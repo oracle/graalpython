@@ -1625,7 +1625,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 ManagedBuffer managedBuffer = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    managedBuffer = ManagedBuffer.createForNative(bufferStructPointer);
+                    managedBuffer = new ManagedBuffer(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(getQueue.execute(), managedBuffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),

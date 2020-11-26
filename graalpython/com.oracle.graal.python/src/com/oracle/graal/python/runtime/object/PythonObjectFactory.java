@@ -419,6 +419,12 @@ public abstract class PythonObjectFactory extends Node {
                         BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
+    public PMemoryView createMemoryViewForManagedObject(Object object, int itemsize, int length, boolean readonly, String format) {
+        return createMemoryView(null, null, object, length * itemsize, readonly, itemsize, format, 1,
+                        null, 0, new int[]{length}, new int[]{itemsize}, null,
+                        PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+    }
+
     public final PMethod createMethod(Object cls, Object self, Object function) {
         return trace(new PMethod(cls, getShape(cls), self, function));
     }

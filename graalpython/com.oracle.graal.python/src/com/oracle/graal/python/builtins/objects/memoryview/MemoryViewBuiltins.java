@@ -67,11 +67,9 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
@@ -111,7 +109,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
@@ -135,8 +132,6 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 return;
             }
             ManagedBuffer buffer = reference.getManagedBuffer();
-            // Managed buffers should be released directly in the reference queue thread
-            assert buffer.isForNative();
             boolean shouldLock = !context.getSingleThreadedAssumption().isValid();
             if (shouldLock) {
                 context.acquireInteropLock();
@@ -171,17 +166,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 }
                 ManagedBuffer buffer = bufferReference.getManagedBuffer();
                 if (buffer.decrementExports() == 0) {
-                    if (buffer.isForNative()) {
-                        return new NativeBufferReleaseCallback(bufferReference);
-                    } else {
-                        Object owner = buffer.getOwner();
-                        // It's a weakref, it may go away and in that case we don't have to do
-                        // anything
-                        if (owner != null) {
-                            releaseBufferOfManagedObject(owner);
-                        }
-                        return null;
-                    }
+                    return new NativeBufferReleaseCallback(bufferReference);
                 }
             }
             return null;
@@ -777,18 +762,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getReference() != null", "!self.getManagedBuffer().isForNative()"})
-        Object releaseManaged(PMemoryView self,
-                        @Cached("createClassProfile()") ValueProfile bufferClassProfile) {
-            checkExports(self);
-            if (checkShouldReleaseBuffer(self)) {
-                releaseBufferOfManagedObject(bufferClassProfile.profile(self.getOwner()));
-            }
-            self.setReleased();
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().isForNative()"})
+        @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
                         @Cached ExecutionContext.ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.PCallCapiFunction callRelease) {
@@ -962,14 +936,6 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         boolean get(PMemoryView self) {
             self.checkReleased(this);
             return self.isCContiguous() || self.isFortranContiguous();
-        }
-    }
-
-    private static void releaseBufferOfManagedObject(Object object) {
-        if (object instanceof PByteArray) {
-            ((PByteArray) object).decrementExports();
-        } else if (object instanceof PArray) {
-            ((PArray) object).decrementExports();
         }
     }
 }
