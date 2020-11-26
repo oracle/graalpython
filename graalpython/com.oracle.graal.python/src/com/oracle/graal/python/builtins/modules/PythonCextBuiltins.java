@@ -3420,7 +3420,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocTrack extends PythonBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocTrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
         int doCachedDomainIdx(VirtualFrame frame, @SuppressWarnings("unused") long domain, Object pointerObject, long size,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
@@ -3436,7 +3436,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(VirtualFrame frame, int domain, Object pointerObject, long size,
+        int doGeneric(VirtualFrame frame, long domain, Object pointerObject, long size,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return doCachedDomainIdx(frame, domain, pointerObject, size, context, domain, lookupDomain(domain));
         }
@@ -3452,7 +3452,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleTraceMallocUntrack extends PythonBinaryBuiltinNode {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PyTruffleTraceMallocUntrack.class);
 
-        @Specialization(guards = {"domain == cachedDomain"}, limit = "3")
+        @Specialization(guards = {"domain == cachedDomain"}, limit = "3", assumptions = "singleContextAssumption()")
         int doCachedDomainIdx(@SuppressWarnings("unused") long domain, Object pointerObject,
                         @Cached("domain") @SuppressWarnings("unused") long cachedDomain,
                         @Cached("lookupDomain(domain)") int cachedDomainIdx) {
@@ -3467,7 +3467,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = "doCachedDomainIdx")
-        int doGeneric(int domain, Object pointerObject) {
+        int doGeneric(long domain, Object pointerObject) {
             return doCachedDomainIdx(domain, pointerObject, domain, lookupDomain(domain));
         }
 
