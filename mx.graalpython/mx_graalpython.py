@@ -521,10 +521,12 @@ def graalpytest(args):
     cmd_args += testfiles
     if args.filter:
         cmd_args += ["-k", args.filter]
+    env = os.environ.copy()
+    env['PYTHONHASHSEED'] = '0'
     if args.python:
-        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True)
+        return mx.run([args.python] + cmd_args, nonZeroIsFatal=True, env=env)
     else:
-        return do_run_python(cmd_args)
+        return do_run_python(cmd_args, env=env)
 
 
 def _list_graalpython_unittests(paths=None, exclude=None):
@@ -563,6 +565,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Tr
     exclude = exclude or []
     if env is None:
         env = os.environ.copy()
+    env['PYTHONHASHSEED'] = '0'
 
     # list of excluded tests
     if aot_compatible:
@@ -644,8 +647,10 @@ def graalpython_gate_runner(args, tasks):
                     exe = os.path.join(exe, "python")
                 else:
                     exe = "python3"
+                env = os.environ.copy()
+                env['PYTHONHASHSEED'] = '0'
                 test_args = [exe, _graalpytest_driver(), "-v", _graalpytest_root()]
-                mx.run(test_args, nonZeroIsFatal=True)
+                mx.run(test_args, nonZeroIsFatal=True, env=env)
             mx.run(["env"])
             run_python_unittests(python_gvm())
 

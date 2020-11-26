@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -128,9 +129,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(BufferFormat.class)
-    public abstract static class UnpackValueNode extends Node {
-        @Child private PRaiseNode raiseNode;
-
+    public abstract static class UnpackValueNode extends PNodeWithRaise {
         public abstract Object execute(BufferFormat format, String formatStr, byte[] bytes, int offset);
 
         @Specialization(guards = "format != OTHER")
@@ -144,19 +143,10 @@ public class MemoryViewNodes {
         Object notImplemented(BufferFormat format, String formatStr, byte[] bytes, int offset) {
             throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_FORMAT_S_NOT_SUPPORTED, formatStr);
         }
-
-        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(type, message, args);
-        }
     }
 
     @ImportStatic({BufferFormat.class, PGuards.class})
-    public abstract static class PackValueNode extends Node {
-        @Child private PRaiseNode raiseNode;
+    public abstract static class PackValueNode extends PNodeWithRaise {
         @Child private IsBuiltinClassProfile isOverflowErrorProfile;
 
         public abstract void execute(VirtualFrame frame, BufferFormat format, String formatStr, Object object, byte[] bytes, int offset);
@@ -184,14 +174,6 @@ public class MemoryViewNodes {
         private PException processException(PException e, String formatStr) {
             e.expect(OverflowError, getIsOverflowErrorProfile());
             throw valueError(formatStr);
-        }
-
-        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(type, message, args);
         }
 
         private IsBuiltinClassProfile getIsOverflowErrorProfile() {
@@ -421,8 +403,7 @@ public class MemoryViewNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class PointerLookupNode extends Node {
-        @Child private PRaiseNode raiseNode;
+    abstract static class PointerLookupNode extends PNodeWithRaise {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PythonObjectLibrary indexLib;
         @CompilationFinal private ConditionProfile hasSuboffsetsProfile;
@@ -549,14 +530,6 @@ public class MemoryViewNodes {
             return hasSuboffsetsProfile;
         }
 
-        private PException raise(PythonBuiltinClassType type, String message, Object... args) {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
-            }
-            throw raiseNode.raise(type, message, args);
-        }
-
         private CExtNodes.PCallCapiFunction getCallCapiFunction() {
             if (callCapiFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -574,7 +547,9 @@ public class MemoryViewNodes {
         byte[] tobytesCached(PMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
@@ -587,7 +562,9 @@ public class MemoryViewNodes {
         @Specialization(replaces = "tobytesCached")
         byte[] tobytesGeneric(PMemoryView self,
                         @Cached ReadBytesAtNode readBytesAtNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached PRaiseNode raiseNode) {
+            self.checkReleased(raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
