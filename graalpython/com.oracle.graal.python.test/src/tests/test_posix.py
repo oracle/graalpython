@@ -338,7 +338,6 @@ class ScandirEmptyTests(unittest.TestCase):
     def tearDown(self):
         os.rmdir(TEST_FULL_PATH1)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_empty(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             self.assertEqual(0, len([entry for entry in dir]))
@@ -358,7 +357,6 @@ class ScandirTests(unittest.TestCase):
             pass
         os.rmdir(TEST_FULL_PATH1)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_explicit_close(self):
         # __exit__ must deal with explicit close()
         with os.scandir(TEST_FULL_PATH1) as dir:
@@ -384,7 +382,6 @@ class ScandirTests(unittest.TestCase):
         # second close() is no-op
         dir.close()
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_fd_rewind(self):
         with open(TEST_FULL_PATH1, 0) as fd:
             with os.scandir(fd) as dir:
@@ -406,12 +403,10 @@ class ScandirTests(unittest.TestCase):
             # ScandirIterator.close() must rewind
             self.assertEqual(1, len([x for x in dir2]))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_default_arg(self):
         with os.scandir() as dir:
             self.assertEqual('./', next(dir).path[:2])
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_path_str(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
@@ -424,7 +419,6 @@ class ScandirTests(unittest.TestCase):
         with os.scandir(TEST_FULL_PATH1 + '/') as dir:
             self.assertEqual(self.abc_path, next(dir).path)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_path_bytes(self):
         with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
             entry = next(dir)
@@ -437,7 +431,6 @@ class ScandirTests(unittest.TestCase):
         with os.scandir(os.fsencode(TEST_FULL_PATH1 + '/')) as dir:
             self.assertEqual(os.fsencode(self.abc_path), next(dir).path)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_path_bufferlike(self):
         with os.scandir(array.array('B', os.fsencode(TEST_FULL_PATH1))) as dir:
             entry = next(dir)
@@ -446,7 +439,6 @@ class ScandirTests(unittest.TestCase):
         self.assertEqual(os.fsencode(self.abc_path), entry.path)
         self.assertEqual(os.fsencode(self.abc_path), os.fspath(entry))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_path_fd(self):
         with open(TEST_FULL_PATH1, 0) as fd:
             with os.scandir(fd) as dir:
@@ -457,7 +449,6 @@ class ScandirTests(unittest.TestCase):
             self.assertEqual('.abc', entry.path)
             self.assertEqual('.abc', os.fspath(entry))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_inode(self):
         sr = os.stat(self.abc_path)
         with os.scandir(TEST_FULL_PATH1) as dir:
@@ -465,7 +456,6 @@ class ScandirTests(unittest.TestCase):
         self.assertEqual('.abc', entry.name)
         self.assertEqual(sr.st_ino, entry.inode())
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_stat(self):
         orig_stat_result = os.stat(self.abc_path)
         with os.scandir(TEST_FULL_PATH1) as dir:
@@ -477,7 +467,6 @@ class ScandirTests(unittest.TestCase):
             os.write(fd, b'x')
         self.assertEqual(orig_stat_result, entry.stat())
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_scandir_entry_type(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
@@ -498,7 +487,6 @@ class ScandirTests(unittest.TestCase):
     #     with self.assertRaises(TypeError):
     #         entry.is_dir(True)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_error_msg(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
@@ -506,7 +494,6 @@ class ScandirTests(unittest.TestCase):
         with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: '" + self.abc_path + "'"):
             entry.stat()
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_error_msg_bytes(self):
         with os.scandir(os.fsencode(TEST_FULL_PATH1)) as dir:
             entry = next(dir)
@@ -514,7 +501,6 @@ class ScandirTests(unittest.TestCase):
         with self.assertRaisesRegex(FileNotFoundError, r"\[Errno 2\] [^:]+: b'" + self.abc_path + "'"):
             entry.stat()
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_stat_uses_lstat_cache(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
@@ -541,8 +527,7 @@ class ScandirSymlinkToFileTests(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
-    def test_basic(self):
+    def test_scandir_symlink_to_file_basic(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
         self.assertTrue(entry.is_symlink())
@@ -557,8 +542,7 @@ class ScandirSymlinkToFileTests(unittest.TestCase):
         self.assertEqual(self.target_inode, entry.stat(follow_symlinks=True).st_ino)
         self.assertEqual(self.symlink_inode, entry.stat(follow_symlinks=False).st_ino)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
-    def test_cached(self):
+    def test_scandir_symlink_to_file_cached(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
         stat_res_true = entry.stat(follow_symlinks=True)
@@ -571,8 +555,7 @@ class ScandirSymlinkToFileTests(unittest.TestCase):
         self.assertEqual(stat_res_true, entry.stat(follow_symlinks=True))
         self.assertEqual(stat_res_false, entry.stat(follow_symlinks=False))
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
-    def test_file_not_found(self):
+    def test_scandir_symlink_to_file_file_not_found(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
         os.unlink(TEST_FULL_PATH2)
@@ -601,8 +584,7 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
         except FileNotFoundError:
             pass
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
-    def test_basic(self):
+    def test_scandir_symlink_to_dir_basic(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
         self.assertTrue(entry.is_symlink())
@@ -617,8 +599,7 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
         self.assertEqual(self.target_inode, entry.stat(follow_symlinks=True).st_ino)
         self.assertEqual(self.symlink_inode, entry.stat(follow_symlinks=False).st_ino)
 
-    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
-    def test_file_not_found(self):
+    def test_scandir_symlink_to_dir_file_not_found(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             entry = next(dir)
         os.rmdir(TEST_FULL_PATH2)

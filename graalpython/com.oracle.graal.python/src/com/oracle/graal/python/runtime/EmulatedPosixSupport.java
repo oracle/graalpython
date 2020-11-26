@@ -786,10 +786,13 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Shared("defaultDirProfile") @Cached ConditionProfile defaultDirFdPofile) throws PosixException {
         String pathname = pathToJavaStr(path);
         TruffleFile f = resolvePath(dirFd, pathname, defaultDirFdPofile);
-        boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
-        if (isDirectory != rmdir) {
-            errorBranch.enter();
-            throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR, path.originalObject);
+        if (f.exists(LinkOption.NOFOLLOW_LINKS)) {
+            // we cannot check this if the file does not exist
+            boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
+            if (isDirectory != rmdir) {
+                errorBranch.enter();
+                throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR, path.originalObject);
+            }
         }
         try {
             f.delete();
@@ -996,7 +999,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                 return PosixSupportLibrary.DT_REG;
             }
         } catch (IOException e) {
-            LOGGER.log(Level.INFO, "Silenced exception in dirEntryGetType", e);
+            LOGGER.log(Level.FINE, "Silenced exception in dirEntryGetType", e);
             // The caller will re-try using stat, which can throw PosixException and it should get
             // the same error again
         }
