@@ -174,6 +174,10 @@ public class InteropLibraryTest extends PythonTests {
             context.eval("python", "1/0");
         } catch (PolyglotException e) {
             Value exception = e.getGuestObject();
+            assertTrue(exception.isException());
+            Value clazz = exception.getMetaObject();
+            assertTrue(clazz.isMetaObject());
+            assertEquals("ZeroDivisionError", clazz.getMetaSimpleName());
             assertTrue(exception.hasMember("args"));
             Value args = exception.getMember("args");
             assertTrue(args.hasArrayElements());
