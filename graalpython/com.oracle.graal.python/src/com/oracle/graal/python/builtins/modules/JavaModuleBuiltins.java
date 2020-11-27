@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -72,8 +74,13 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
 @CoreFunctions(defineModule = JavaModuleBuiltins.JAVA)
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -257,6 +264,94 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         Object none(VirtualFrame frame, PythonModule mod, Object name,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             return lib.callObject(getAttr(frame, mod, lib), frame, name);
+        }
+    }
+
+    @Builtin(name = "as_java_byte_array", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AsJavaByteArrayNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object doBytesByteStorage(PBytesLike object) {
+            return new PUnsignedBytesWrapper(object);
+        }
+
+        @Specialization(guards = "lib.isBuffer(object)", limit = "3")
+        static Object doBuffer(Object object,
+                        @CachedLibrary("object") PythonObjectLibrary lib) {
+            try {
+                return new InteropByteArray(lib.getBufferBytes(object));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        @Fallback
+        Object doError(Object object) {
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, object);
+        }
+    }
+
+    /**
+     * A simple wrapper object that bit-casts an integer in range {@code 0-255} to a Java
+     * {@code byte}. This can be used to expose a bytes-like object to Java as {@code byte[]}.
+     */
+    @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
+    @SuppressWarnings("static-method")
+    static final class PUnsignedBytesWrapper implements TruffleObject {
+        final PBytesLike delegate;
+
+        PUnsignedBytesWrapper(PBytesLike delegate) {
+            this.delegate = delegate;
+        }
+
+        @ExportMessage
+        boolean hasArrayElements(
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) {
+            return delegateLib.hasArrayElements(delegate);
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index,
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) {
+            return delegateLib.isArrayElementReadable(delegate, index);
+        }
+
+        @ExportMessage
+        long getArraySize(
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib) throws UnsupportedMessageException {
+            return delegateLib.getArraySize(delegate);
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index,
+                        @CachedLibrary("this.delegate") InteropLibrary delegateLib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws InvalidArrayIndexException, UnsupportedMessageException {
+            Object element = delegateLib.readArrayElement(delegate, index);
+            if (elementLib.fitsInLong(element)) {
+                long i = elementLib.asLong(element);
+                if (compareUnsigned(i, Byte.MAX_VALUE) <= 0) {
+                    return (byte) i;
+                } else if (compareUnsigned(i, 0xFF) <= 0) {
+                    return (byte) -(-i & 0xFF);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere("bytes object contains non-byte values");
+        }
+
+        /**
+         * This is taken from {@link Long#compare(long, long)}} (just to avoid a
+         * {@code TruffleBoundary}).
+         */
+        private static int compare(long x, long y) {
+            return (x < y) ? -1 : ((x == y) ? 0 : 1);
+        }
+
+        /**
+         * This is taken from {@link Long#compareUnsigned(long, long)}} (just to avoid a
+         * {@code TruffleBoundary}).
+         */
+        private static int compareUnsigned(long x, long y) {
+            return compare(x + Long.MIN_VALUE, y + Long.MIN_VALUE);
         }
     }
 }
