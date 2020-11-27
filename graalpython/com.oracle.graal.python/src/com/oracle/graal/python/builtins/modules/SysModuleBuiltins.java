@@ -493,13 +493,13 @@ public class SysModuleBuiltins extends PythonBuiltins {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
         }
     }
-    
+
     @Builtin(name = "is_finalizing")
     @GenerateNodeFactory
     public abstract static class IsFinalizingNode extends PythonBuiltinNode {
         @Specialization
         static boolean doGeneric(
-                @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.isFinalizing();
         }
     }
