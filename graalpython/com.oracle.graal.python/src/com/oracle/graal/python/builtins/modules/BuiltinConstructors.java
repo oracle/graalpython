@@ -156,7 +156,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -3395,32 +3394,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false, getQueue.execute());
+            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), true, "B");
         }
 
         @Specialization
         PMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
+            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), false, "B");
         }
 
         @Specialization
-        PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
-            int itemsize = object.getFormat().bytesize;
-            return fromManaged(object, itemsize, object.getLength(), false, object.getFormatStr(), true, getQueue.execute());
+        PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object) {
+            return factory().createMemoryViewForManagedObject(object, object.getFormat().bytesize, object.getLength(), false, object.getFormatStr());
         }
 
         @Specialization
         PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             object.checkReleased(this);
             return factory().createMemoryView(getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
                             object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
@@ -3448,18 +3443,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         PMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
-        }
-
-        private PMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
-                        MemoryViewNodes.BufferReferences refQueue) {
-            ManagedBuffer managedBuffer = null;
-            if (needsRelease) {
-                // TODO We should lock the underlying storage for resizing
-                managedBuffer = ManagedBuffer.createForManaged(object);
-            }
-            return factory().createMemoryView(refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
-                            null, 0, new int[]{length}, new int[]{itemsize}, null,
-                            PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
         }
 
         public static MemoryViewNode create() {

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -344,8 +345,15 @@ public abstract class BufferStorageNodes {
         }
 
         @Specialization
-        static void doArray(PArray src, int srcPos, byte[] dest, int destPos, int length) {
-            PythonUtils.arraycopy(src.getBuffer(), srcPos, dest, destPos, length);
+        static void doArray(PArray src, int srcPos, byte[] dest, int destPos, int length,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                PythonUtils.arraycopy(src.getBuffer(), srcPos, dest, destPos, length);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+            }
         }
     }
 
@@ -361,8 +369,15 @@ public abstract class BufferStorageNodes {
         }
 
         @Specialization
-        static void doArray(byte[] src, int srcPos, PArray dest, int destPos, int length) {
-            PythonUtils.arraycopy(src, srcPos, dest.getBuffer(), destPos, length);
+        static void doArray(byte[] src, int srcPos, PArray dest, int destPos, int length,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                PythonUtils.arraycopy(src, srcPos, dest.getBuffer(), destPos, length);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // This can happen when the array gets resized while being exported
+                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+            }
         }
     }
 }

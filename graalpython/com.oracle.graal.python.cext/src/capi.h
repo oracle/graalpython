@@ -385,6 +385,7 @@ extern PyObject* wrapped_null;
 /* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

@@ -201,6 +201,9 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object concat(PArray self, int value) {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
+                if (newLength != self.getLength()) {
+                    self.checkCanResize(this);
+                }
                 int itemsize = self.getFormat().bytesize;
                 int segmentLength = self.getLength() * itemsize;
                 self.resize(newLength);
@@ -533,6 +536,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             if (simpleStepProfile.profile(step == 1)) {
                 if (differentLengthProfile.profile(sliceLength != needed)) {
+                    self.checkCanResize(this);
                     if (growProfile.profile(sliceLength < needed)) {
                         if (stop < start) {
                             stop = start;
@@ -579,19 +583,21 @@ public class ArrayBuiltins extends PythonBuiltins {
         public abstract Object executeSlice(PArray self, PSlice slice);
 
         @Specialization(guards = "!isPSlice(idx)", limit = "3")
-        static Object delitem(PArray self, Object idx,
+        Object delitem(PArray self, Object idx,
                         @CachedLibrary("idx") PythonObjectLibrary lib,
                         @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode) {
+            self.checkCanResize(this);
             int index = normalizeIndexNode.execute(lib.asIndex(idx), self.getLength());
             self.delSlice(index, 1);
             return PNone.NONE;
         }
 
         @Specialization
-        static Object delitem(PArray self, PSlice slice,
+        Object delitem(PArray self, PSlice slice,
                         @Cached ConditionProfile simpleStepProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            self.checkCanResize(this);
             int length = self.getLength();
             PSlice.SliceInfo sliceInfo = adjustIndices.execute(length, sliceUnpack.execute(slice));
             int start = sliceInfo.start;
@@ -713,6 +719,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int index = self.getLength();
                 int newLength = PythonUtils.addExact(index, 1);
+                self.checkCanResize(this);
                 self.resize(newLength);
                 putValueNode.execute(frame, self, index, value);
                 return PNone.NONE;
@@ -730,6 +737,9 @@ public class ArrayBuiltins extends PythonBuiltins {
         Object extend(PArray self, PArray value) {
             try {
                 int newLength = PythonUtils.addExact(self.getLength(), value.getLength());
+                if (newLength != self.getLength()) {
+                    self.checkCanResize(this);
+                }
                 int itemsize = self.getFormat().bytesize;
                 self.resizeStorage(newLength);
                 PythonUtils.arraycopy(value.getBuffer(), 0, self.getBuffer(), self.getLength() * itemsize, value.getLength() * itemsize);
@@ -750,7 +760,11 @@ public class ArrayBuiltins extends PythonBuiltins {
             SequenceStorage storage = getSequenceStorageNode.execute(value);
             int storageLength = lenNode.execute(storage);
             try {
-                self.resizeStorage(PythonUtils.addExact(self.getLength(), storageLength));
+                int newLength = PythonUtils.addExact(self.getLength(), storageLength);
+                if (newLength != self.getLength()) {
+                    self.checkCanResize(this);
+                }
+                self.resizeStorage(newLength);
             } catch (OverflowException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raise(MemoryError);
@@ -786,6 +800,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 // in CPython
                 try {
                     length = PythonUtils.addExact(length, 1);
+                    self.checkCanResize(this);
                     self.resizeStorage(length);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -825,6 +840,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             // Need to check the validity of the value before moving the memory around to ensure the
             // operation can fail atomically
             checkValueNode.execute(frame, self, value);
+            self.checkCanResize(this);
             try {
                 self.shift(index, 1);
             } catch (OverflowException e) {
@@ -851,6 +867,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             for (int i = 0; i < self.getLength(); i++) {
                 Object item = getValueNode.execute(self, i);
                 if (lib.equalsWithFrame(item, value, lib, frame)) {
+                    self.checkCanResize(this);
                     self.delSlice(i, 1);
                     return PNone.NONE;
                 }
@@ -872,6 +889,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             }
             int index = normalizeIndexNode.execute(inputIndex, self.getLength());
             Object value = getValueNode.execute(self, index);
+            self.checkCanResize(this);
             self.delSlice(index, 1);
             return value;
         }
@@ -898,6 +916,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                     }
                     int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
                     byte[] bufferBytes = lib.getBufferBytes(buffer);
+                    self.checkCanResize(this);
                     self.resize(newLength);
                     PythonUtils.arraycopy(bufferBytes, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
                 } catch (UnsupportedMessageException e) {
@@ -965,6 +984,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 SequenceStorage storage = getSequenceStorageNode.execute(list);
                 int length = lenNode.execute(storage);
                 int newLength = PythonUtils.addExact(self.getLength(), length);
+                self.checkCanResize(this);
                 self.resizeStorage(newLength);
                 for (int i = 0; i < length; i++) {
                     putValueNode.execute(frame, self, self.getLength() + i, getItemScalarNode.execute(storage, i));
@@ -1017,6 +1037,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int length = PString.codePointCount(str, 0, str.length());
                 int newLength = PythonUtils.addExact(self.getLength(), length);
+                self.checkCanResize(this);
                 self.resizeStorage(newLength);
                 for (int codePointIndex = 0, charIndex = 0; codePointIndex < length; codePointIndex++) {
                     int charCount = PString.charCount(PString.codePointAt(str, charIndex));

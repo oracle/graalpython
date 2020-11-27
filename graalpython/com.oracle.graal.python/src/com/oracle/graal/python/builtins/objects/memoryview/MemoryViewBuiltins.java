@@ -66,11 +66,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.SepExpectByteNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
@@ -111,7 +109,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
@@ -135,8 +132,6 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 return;
             }
             ManagedBuffer buffer = reference.getManagedBuffer();
-            // Managed buffers should be released directly in the reference queue thread
-            assert buffer.isForNative();
             boolean shouldLock = !context.getSingleThreadedAssumption().isValid();
             if (shouldLock) {
                 context.acquireInteropLock();
@@ -171,17 +166,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 }
                 ManagedBuffer buffer = bufferReference.getManagedBuffer();
                 if (buffer.decrementExports() == 0) {
-                    if (buffer.isForNative()) {
-                        return new NativeBufferReleaseCallback(bufferReference);
-                    } else {
-                        Object owner = buffer.getOwner();
-                        // It's a weakref, it may go away and in that case we don't have to do
-                        // anything
-                        if (owner != null) {
-                            releaseBufferOfManagedObject(owner);
-                        }
-                        return null;
-                    }
+                    return new NativeBufferReleaseCallback(bufferReference);
                 }
             }
             return null;
@@ -260,6 +245,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         Object setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
                         @Cached GetItemNode getItemNode,
                         @Cached BuiltinConstructors.MemoryViewNode createMemoryView,
+                        @Cached ReleaseNode releaseNode,
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Cached MemoryViewNodes.WriteBytesAtNode writeBytesAtNode) {
@@ -269,19 +255,27 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 throw raise(NotImplementedError, ErrorMessages.MEMORYVIEW_SLICE_ASSIGNMENT_RESTRICTED_TO_DIM_1);
             }
             PMemoryView srcView = createMemoryView.execute(frame, object);
-            PMemoryView destView = (PMemoryView) getItemNode.execute(frame, self, slice);
-            if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
-                throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
+            try {
+                PMemoryView destView = (PMemoryView) getItemNode.execute(frame, self, slice);
+                try {
+                    if (srcView.getDimensions() != destView.getDimensions() || srcView.getBufferShape()[0] != destView.getBufferShape()[0] || srcView.getFormat() != destView.getFormat()) {
+                        throw raise(ValueError, ErrorMessages.MEMORYVIEW_DIFFERENT_STRUCTURES);
+                    }
+                    // The intermediate array is necessary for overlapping views (where src and dest
+                    // are the same buffer)
+                    byte[] srcBytes = toJavaBytesNode.execute(srcView);
+                    int itemsize = srcView.getItemSize();
+                    for (int i = 0; i < destView.getBufferShape()[0]; i++) {
+                        MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
+                        writeBytesAtNode.execute(srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
+                    }
+                    return PNone.NONE;
+                } finally {
+                    releaseNode.execute(frame, destView);
+                }
+            } finally {
+                releaseNode.execute(frame, srcView);
             }
-            // The intermediate array is necessary for overlapping views (where src and dest are the
-            // same buffer)
-            byte[] srcBytes = toJavaBytesNode.execute(srcView);
-            int itemsize = srcView.getItemSize();
-            for (int i = 0; i < destView.getBufferShape()[0]; i++) {
-                MemoryViewNodes.MemoryPointer destPtr = pointerLookupNode.execute(frame, destView, i);
-                writeBytesAtNode.execute(srcBytes, i * itemsize, itemsize, self, destPtr.ptr, destPtr.offset);
-            }
-            return PNone.NONE;
         }
 
         @Specialization
@@ -350,6 +344,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isMemoryView(other)")
         Object eq(VirtualFrame frame, PMemoryView self, Object other,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached ReleaseNode releaseNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
@@ -359,7 +354,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             } catch (PException e) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            return eq(frame, self, memoryView, lib, readSelf, readOther);
+            try {
+                return eq(frame, self, memoryView, lib, readSelf, readOther);
+            } finally {
+                releaseNode.execute(frame, memoryView);
+            }
         }
 
         @Fallback
@@ -763,18 +762,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.getReference() != null", "!self.getManagedBuffer().isForNative()"})
-        Object releaseManaged(PMemoryView self,
-                        @Cached("createClassProfile()") ValueProfile bufferClassProfile) {
-            checkExports(self);
-            if (checkShouldReleaseBuffer(self)) {
-                releaseBufferOfManagedObject(bufferClassProfile.profile(self.getOwner()));
-            }
-            self.setReleased();
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"self.getReference() != null", "self.getManagedBuffer().isForNative()"})
+        @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
                         @Cached ExecutionContext.ForeignCallContext foreignCallContext,
                         @Cached CExtNodes.PCallCapiFunction callRelease) {
@@ -948,14 +936,6 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         boolean get(PMemoryView self) {
             self.checkReleased(this);
             return self.isCContiguous() || self.isFortranContiguous();
-        }
-    }
-
-    private static void releaseBufferOfManagedObject(Object object) {
-        if (object instanceof PByteArray) {
-            // TODO GR-26945
-        } else if (object instanceof PArray) {
-            // TODO GR-26945
         }
     }
 }
