@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -948,12 +949,15 @@ public class TypeBuiltins extends PythonBuiltins {
             try {
                 String string = castToJavaStringNode.execute(value);
                 if (containsNullCharacter(string)) {
-                    throw raise(PythonBuiltinClassType.ValueError, "type name must not contain null characters");
+                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
+                }
+                if (!canEncodeUTF8(string)) {
+                    throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, string);
                 }
                 cls.setName(string);
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, "can only assign string to %p.__name__, not '%p'", cls, value);
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P, "string", cls, __NAME__, value);
             }
         }
 

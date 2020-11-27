@@ -98,7 +98,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -107,6 +106,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
@@ -173,6 +173,8 @@ import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfIntRangeNo
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -2353,7 +2355,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             assert metaclass != null;
 
-            if (name.indexOf('\0') != -1) {
+            if (!canEncodeUTF8(name)) {
+                throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_CLASSNAME, name);
+            }
+            if (containsNullCharacter(name)) {
                 throw raise(ValueError, ErrorMessages.TYPE_NAME_NO_NULL_CHARS);
             }
 
@@ -2563,8 +2568,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         doc = ((PString) value).getValue();
                     }
                     if (doc != null) {
-                        if (!canEncode(doc)) {
-                            throw raise(PythonBuiltinClassType.UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
+                        if (!canEncodeUTF8(doc)) {
+                            throw raise(UnicodeEncodeError, ErrorMessages.CANNOT_ENCODE_DOCSTR, doc);
                         }
                     }
                     pythonClass.setAttribute(key, value);
@@ -2598,11 +2603,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     typeDict.setDictStorage(updatedStore);
                 }
             }
-        }
-
-        @TruffleBoundary
-        private static boolean canEncode(String doc) {
-            return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
         }
 
         @TruffleBoundary

@@ -108,6 +108,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
+    public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P = "can only assign non-empty tuple to %p.__bases__, not ()";
     public static final String CAN_ONLY_CONCAT_S_NOT_P_TO_S = "can only concatenate %s (not \"%p\") to %s";
     public static final String CAN_ONLY_JOIN_ITERABLE = "can only join an iterable";
@@ -606,6 +607,7 @@ public abstract class ErrorMessages {
     public static final String SIGN_NOT_ALLOWED_FOR_STRING_FMT = "Sign not allowed in string format specifier";
     public static final String ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = "Zero padding is not allowed in complex format specifier";
     public static final String POW_THIRD_ARG_CANNOT_BE_ZERO = "pow() 3rd argument cannot be 0";
+    public static final String CANNOT_ENCODE_CLASSNAME = "'utf-8' codec can't encode class name '%s'";
     public static final String CANNOT_ENCODE_DOCSTR = "'utf-8' codec can't encode docstring '%s'";
     public static final String PRECISION_NOT_ALLOWED_FOR_INT = "Precision not allowed in integer format specifier";
     public static final String SIGN_NOT_ALLOWED_WITH_C_FOR_INT = "Sign not allowed with integer format specifier 'c'";

@@ -48,6 +48,7 @@ import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UCharacterCategory;
 import com.ibm.icu.lang.UProperty;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import java.nio.charset.StandardCharsets;
 
 public final class StringUtils {
     public enum StripKind {
@@ -215,6 +216,11 @@ public final class StringUtils {
     @TruffleBoundary
     public static boolean containsNullCharacter(String value) {
         return value.indexOf(0) > 0;
+    }
+
+    @TruffleBoundary
+    public static boolean canEncodeUTF8(String doc) {
+        return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
     }
 
     @TruffleBoundary
