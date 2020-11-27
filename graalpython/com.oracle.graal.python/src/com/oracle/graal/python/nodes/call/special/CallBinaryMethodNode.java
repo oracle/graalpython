@@ -68,27 +68,11 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return CallBinaryMethodNodeGen.getUncached();
     }
 
-    public abstract boolean executeBool(Frame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
-
     public abstract boolean executeBool(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract int executeInt(Frame frame, Object callable, boolean arg, boolean arg2) throws UnexpectedResultException;
-
-    public abstract int executeInt(Frame frame, Object callable, int arg, int arg2) throws UnexpectedResultException;
 
     public abstract int executeInt(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
 
-    public abstract long executeLong(Frame frame, Object callable, long arg, long arg2) throws UnexpectedResultException;
-
     public abstract long executeLong(Frame frame, Object callable, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(Frame frame, Object callable, double arg, double arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(Frame frame, Object callable, int arg, int arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(Frame frame, Object callable, long arg, long arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(Frame frame, Object callable, double arg, double arg2) throws UnexpectedResultException;
 
     public abstract Object executeObject(Frame frame, Object callable, Object arg1, Object arg2);
 
