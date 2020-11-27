@@ -73,24 +73,31 @@ import com.oracle.truffle.api.source.SourceSection;
  * <li>all filenames including full paths are logged</li>
  * <li>only {@link PosixException} are logged</li>
  * <li>this class assumes default string/bytes encoding to keep it simple</li>
- * <li>logging must be enabled using the {@link PythonOptions#PosixModuleBackendLogging} option</li>
+ * <li>logging must be enabled using the
+ * {@code --log.python.com.oracle.graal.python.runtime.LoggingPosixSupport.level=FINE} option</li>
  * </ul>
  *
  * Logging levels:
  * <ul>
- * <li>INFO - all important messages</li>
- * <li>FINE - supporting messages (e.g. path conversions)</li>
- * <li>FINER - top 3 frames of the call stack</li>
+ * <li>FINE - all important messages</li>
+ * <li>FINER - supporting messages (e.g. path conversions) + top 3 frames of the call stack</li>
  * <li>FINEST - whole call stack</li>
  * </ul>
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public class LoggingPosixSupport extends PosixSupport {
 
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LoggingPosixSupport.class);
+    private static final Level DEFAULT_LEVEL = Level.FINE;
+
     protected final PosixSupport delegate;
 
     public LoggingPosixSupport(PosixSupport delegate) {
         this.delegate = delegate;
+    }
+
+    public static boolean isEnabled() {
+        return LoggingPosixSupport.LOGGER.isLoggable(DEFAULT_LEVEL);
     }
 
     @Override
@@ -101,15 +108,15 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     final String getBackend(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "getBackend", "");
-        return logExit(Level.FINE, "getBackend", "%s", lib.getBackend(delegate));
+        logEnter(Level.FINER, "getBackend", "");
+        return logExit(Level.FINER, "getBackend", "%s", lib.getBackend(delegate));
     }
 
     @ExportMessage
     final String strerror(int errorCode,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "strerror", "%d", errorCode);
-        return logExit(Level.FINE, "strerror", "%s", lib.strerror(delegate, errorCode));
+        logEnter(Level.FINER, "strerror", "%d", errorCode);
+        return logExit(Level.FINER, "strerror", "%s", lib.strerror(delegate, errorCode));
     }
 
     @ExportMessage
@@ -486,33 +493,30 @@ public class LoggingPosixSupport extends PosixSupport {
     @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "createPathFromString", "%s", path);
-        return logExit(Level.FINE, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
+        logEnter(Level.FINER, "createPathFromString", "%s", path);
+        return logExit(Level.FINER, "createPathFromString", "%s", lib.createPathFromString(delegate, path));
     }
 
     @ExportMessage
     final Object createPathFromBytes(byte[] path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "createPathFromBytes", "%s", path);
-        return logExit(Level.FINE, "createPathFromBytes", "%s", lib.createPathFromBytes(delegate, path));
+        logEnter(Level.FINER, "createPathFromBytes", "%s", path);
+        return logExit(Level.FINER, "createPathFromBytes", "%s", lib.createPathFromBytes(delegate, path));
     }
 
     @ExportMessage
     final String getPathAsString(Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "getPathAsString", "%s", path);
-        return logExit(Level.FINE, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
+        logEnter(Level.FINER, "getPathAsString", "%s", path);
+        return logExit(Level.FINER, "getPathAsString", "%s", lib.getPathAsString(delegate, path));
     }
 
     @ExportMessage
     final PBytes getPathAsBytes(Object path, PythonObjectFactory factory,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter(Level.FINE, "getPathAsBytes", "%s", path);
-        return logExit(Level.FINE, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path, factory));
+        logEnter(Level.FINER, "getPathAsBytes", "%s", path);
+        return logExit(Level.FINER, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path, factory));
     }
-
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LoggingPosixSupport.class);
-    private static final Level DEFAULT_LEVEL = Level.INFO;
 
     @TruffleBoundary
     private static void logEnter(Level level, String msg, String argFmt, Object... args) {

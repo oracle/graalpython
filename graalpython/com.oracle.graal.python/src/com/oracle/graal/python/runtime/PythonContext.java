@@ -511,24 +511,24 @@ public final class PythonContext {
 
     private PosixSupport initalizePosixSupport() {
         String option = getLanguage().getEngineOption(PythonOptions.PosixModuleBackend);
-        PosixSupport posixSupport;
+        PosixSupport result;
         switch (option) {
             case "java":
-                posixSupport = new EmulatedPosixSupport(this);
+                result = new EmulatedPosixSupport(this);
                 break;
             case "native":
-                posixSupport = NFIPosixSupport.createNative(this);
+                result = NFIPosixSupport.createNative(this);
                 break;
             case "llvm":
-                posixSupport = NFIPosixSupport.createLLVM(this);
+                result = NFIPosixSupport.createLLVM(this);
                 break;
             default:
                 throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));
         }
-        if (getLanguage().getEngineOption(PythonOptions.PosixModuleBackendLogging)) {
-            return new LoggingPosixSupport(posixSupport);
+        if (LoggingPosixSupport.isEnabled()) {
+            return new LoggingPosixSupport(result);
         }
-        return posixSupport;
+        return result;
     }
 
     private String sysPrefix, basePrefix, coreHome, stdLibHome, capiHome;

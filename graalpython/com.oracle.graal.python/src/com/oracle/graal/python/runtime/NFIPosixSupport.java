@@ -523,7 +523,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 dirStream.ref.closed = true;
                 int res = invokeNode.callInt(lib, NativeFunctions.call_closedir, dirStream.ref.nativePtr, dirStream.ref.needsRewind ? 1 : 0);
                 if (res != 0 && LOGGER.isLoggable(Level.INFO)) {
-                    LOGGER.log(Level.INFO, "Error occured during closedir, errno=" + getErrno(invokeNode));
+                    log(Level.INFO, "Error occured during closedir, errno=%d", getErrno(invokeNode));
                 }
             }
         }
@@ -798,5 +798,12 @@ public final class NFIPosixSupport extends PosixSupport {
         byte[] terminated = new byte[length + 1];
         PythonUtils.arraycopy(str, 0, terminated, 0, length);
         return terminated;
+    }
+
+    @TruffleBoundary
+    private static void log(Level level, String fmt, Object... args) {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, String.format(fmt, args));
+        }
     }
 }
