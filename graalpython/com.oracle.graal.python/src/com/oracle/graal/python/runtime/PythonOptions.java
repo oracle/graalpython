@@ -123,6 +123,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module. Valid values are 'java', 'native', 'llvm'.") //
     public static final OptionKey<String> PosixModuleBackend = new OptionKey<>("java");
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Enables logging of the backend for the POSIX module.") //
+    public static final OptionKey<Boolean> PosixModuleBackendLogging = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Value of the --check-hash-based-pycs command line option" +
                     "- 'default' means the 'check_source' flag in hash-based pycs" +
                     "  determines invalidation" +
