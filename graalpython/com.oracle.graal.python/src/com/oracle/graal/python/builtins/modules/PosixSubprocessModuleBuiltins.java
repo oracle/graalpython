@@ -206,7 +206,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                 } else {
                     argStrings.set(0, path);
                 }
-                TruffleFile executableFile = getSafeTruffleFile(truffleEnv, argStrings.get(0));
+                TruffleFile executableFile = cwdFile.resolve(argStrings.get(0));
                 if (executableFile.isExecutable()) {
                     try {
                         return exec(argStrings, cwdFile, envMap, p2cwrite, p2cread, c2pwrite, c2pread, errwrite, errpipe_write, resources, errread);
