@@ -151,6 +151,7 @@ public abstract class SpecialMethodNames {
     public static final String __REDUCE_EX__ = "__reduce_ex__";
     public static final String __GETINITARGS__ = "__getinitargs__";
     public static final String __GETNEWARGS__ = "__getnewargs__";
+    public static final String __GETNEWARGS_EX__ = "__getnewargs_ex__";
     public static final String __GETSTATE__ = "__getstate__";
     public static final String __SETSTATE__ = "__setstate__";
     public static final String __GETFORMAT__ = "__getformat__";

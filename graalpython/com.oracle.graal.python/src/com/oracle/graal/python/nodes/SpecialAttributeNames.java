@@ -55,6 +55,8 @@ public abstract class SpecialAttributeNames {
     public static final String __DICT__ = "__dict__";
     public static final String __CLASS__ = "__class__";
     public static final String __BASE__ = "__base__";
+    public static final String __NEWOBJ__ = "__newobj__";
+    public static final String __NEWOBJ_EX__ = "__newobj_ex__";
     public static final String __BASES__ = "__bases__";
     public static final String __NAME__ = "__name__";
     public static final String __QUALNAME__ = "__qualname__";
@@ -73,6 +75,7 @@ public abstract class SpecialAttributeNames {
     public static final String __SUPPRESS_CONTEXT__ = "__suppress_context__";
     public static final String __BASICSIZE__ = "__basicsize__";
     public static final String __SLOTS__ = "__slots__";
+    public static final String __SLOTNAMES__ = "__slotnames__";
     public static final String __DICTOFFSET__ = "__dictoffset__";
     public static final String __ITEMSIZE__ = "__itemsize__";
     public static final String __WEAKREF__ = "__weakref__";
