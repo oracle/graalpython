@@ -1006,6 +1006,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         return PosixSupportLibrary.DT_UNKNOWN;
     }
 
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void futimeNs(PosixFd fd, long[] timespec) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
     // ------------------
     // Path conversions
 

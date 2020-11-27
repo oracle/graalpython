@@ -335,6 +335,7 @@ public abstract class ErrorMessages {
     public static final String D_IS_NOT_IN_RANGE = "%d is not in range";
     public static final String INIT_TAKES_ONE_ARG = "%N.__init__() takes exactly one argument (the instance to initialize)";
     public static final String INIT_TAKES_ONE_ARG_OBJECT = "object.__init__() takes exactly one argument (the instance to initialize)";
+    public static final String INVALID_VALUE_NAN = "Invalid value NaN (not a number)";
     public static final String IS_NOT_SUBTYPE_OF = "%s.__new__(%N): %N is not a subtype of %s";
     public static final String IS_NOT_TYPE_OBJ = "%s is not a type object (%p)";
     public static final String ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_CLSS_WAS = "issubclass() arg 2 must be a class or tuple of classes";
@@ -389,6 +390,7 @@ public abstract class ErrorMessages {
     public static final String MODULE_S_HAS_NO_ATTR_S = "module '%s' has no attribute '%s'";
     public static final String MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = "multi-dimensional sub-views are not implemented";
     public static final String MULTIPLE_BASES_LAYOUT_CONFLICT = "multiple bases have instance lay-out conflict";
+    public static final String MUST_BE = "%s: '%s' must be %s";
     public static final String MUST_BE_A_CELL = "%s must be a cell";
     public static final String MUST_BE_BYTE_STRING_LEGTH1_NOT_P = "must be a byte string of length 1, not %p";
     public static final String MUST_BE_EITHER_OR = "%s: '%s' must be either %s or %s";
@@ -404,6 +406,7 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS = "%s must be strings";
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
+    public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
     public static final String MUST_SPECIFY_FILTERS = "Must specify filters for FORMAT_RAW";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
@@ -544,6 +547,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_TOO_LARGE = "timeout value is too large";
+    public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
     public static final String TOO_LARGE_TO_CONVERT_TO = "%s too large to convert to %s";
     public static final String TOO_MANY_ARG = "%s: too many arguments";

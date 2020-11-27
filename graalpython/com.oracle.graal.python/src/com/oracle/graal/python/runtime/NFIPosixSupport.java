@@ -116,6 +116,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_fdopendir("(sint32):sint64"),
         call_closedir("(sint64, sint32):sint32"),
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
+        call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
+        call_futimens("(sint32, [sint64]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -372,7 +374,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public long[] fstatAt(int dirFd, PosixPath pathname, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
-        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, context.getEnv().asGuestValue(out));
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, wrap(out));
         if (res != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
         }
@@ -385,7 +387,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
         long[] out = new long[13];
         while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, context.getEnv().asGuestValue(out));
+            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, wrap(out));
             if (res == 0) {
                 return out;
             }
@@ -542,7 +544,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 return null;
             }
             do {
-                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.ref.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, context.getEnv().asGuestValue(out));
+                result = invokeNode.callInt(lib, NativeFunctions.call_readdir, dirStream.ref.nativePtr, wrap(name), DIRENT_NAME_BUF_LENGTH, wrap(out));
             } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
         }
         if (result != 0) {
@@ -605,6 +607,30 @@ public final class NFIPosixSupport extends PosixSupport {
     public int dirEntryGetType(Object dirEntryObj) {
         DirEntry dirEntry = (DirEntry) dirEntryObj;
         return dirEntry.type;
+    }
+
+    @ExportMessage
+    public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("utimeNsAt", "%d, '%s', %s, %b", dirFd, pathname, timespec, followSymlinks);
+        assert timespec == null || timespec.length == 4;
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
+        if (ret != 0) {
+            // filename is intentionally not included, see CPython's os_utime_impl
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void futimeNs(PosixFd fd, long[] timespec,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        logEnter("futimeNs", "%d, %s", fd.fd, timespec);
+        assert timespec == null || timespec.length == 4;
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd.fd, wrap(timespec));
+        if (ret != 0) {
+            // filename is intentionally not included, see CPython's os_utime_impl
+            throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
     }
 
     // ------------------
@@ -767,6 +793,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private Object wrap(byte[] bytes) {
         return context.getEnv().asGuestValue(bytes);
+    }
+
+    private Object wrap(long[] longs) {
+        return context.getEnv().asGuestValue(longs);
     }
 
     private Object wrap(Buffer buffer) {

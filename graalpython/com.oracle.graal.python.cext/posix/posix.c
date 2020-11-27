@@ -327,6 +327,32 @@ int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t
     return 0;
 }
 
+int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
+    if (!timespec) {
+        return utimensat(fixDirFd(dirFd), path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    } else {
+        struct timespec times[2];
+        times[0].tv_sec = timespec[0];
+        times[0].tv_nsec = timespec[1];
+        times[1].tv_sec = timespec[2];
+        times[1].tv_nsec = timespec[3];
+        return utimensat(fixDirFd(dirFd), path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    }
+}
+
+int32_t call_futimens(int32_t fd, int64_t *timespec) {
+    if (!timespec) {
+        return futimens(fd, NULL);
+    } else {
+        struct timespec times[2];
+        times[0].tv_sec = timespec[0];
+        times[0].tv_nsec = timespec[1];
+        times[1].tv_sec = timespec[2];
+        times[1].tv_nsec = timespec[3];
+        return futimens(fd, times);
+    }
+}
+
 int32_t get_errno() {
     return errno;
 }

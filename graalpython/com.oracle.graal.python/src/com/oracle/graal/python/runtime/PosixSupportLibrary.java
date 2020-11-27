@@ -195,6 +195,20 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int dirEntryGetType(Object receiver, Object dirEntry);
 
     /**
+     * Equivalent of POSIX {@code utimensat()}.
+     * 
+     * @param timespec an array of 4 longs in this order:
+     *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
+     *            to set both times to 'now'
+     */
+    public abstract void utimeNsAt(Object receiver, int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) throws PosixException;
+
+    /**
+     * Equivalent of POSIX {@code futimens()}.
+     */
+    public abstract void futimeNs(Object receiver, PosixFd fd, long[] timespec) throws PosixException;
+
+    /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary
      * conversion contains embedded null characters.

@@ -279,28 +279,43 @@ class WithTempFilesTests(unittest.TestCase):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:   # TEST_FULL_PATH2 is a symlink to TEST_FULL_PATH1
             self.assertEqual(inode, os.stat(fd).st_ino)
-            with self.assertRaises(ValueError, msg="stat: cannot use fd and follow_symlinks together"):
+            with self.assertRaisesRegex(ValueError, "stat: cannot use fd and follow_symlinks together"):
                 os.stat(fd, follow_symlinks=False)
 
     def test_stat_dirfd(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         self.assertEqual(inode, os.stat(TEST_FILENAME1, dir_fd=self.tmp_fd).st_ino)
-        with self.assertRaises(ValueError, msg="stat: can't specify dir_fd without matching path"):
+        with self.assertRaisesRegex(ValueError, "stat: can't specify dir_fd without matching path"):
             os.stat(0, dir_fd=self.tmp_fd)
-        with self.assertRaises(ValueError, msg="stat: can't specify dir_fd without matching path"):
+        with self.assertRaisesRegex(ValueError, "stat: can't specify dir_fd without matching path"):
             os.stat(0, dir_fd=self.tmp_fd, follow_symlinks=False)
 
     def test_lstat(self):
         inode = os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_ino
         self.assertEqual(inode, os.lstat(TEST_FULL_PATH2).st_ino)   # lstat does not follow symlink
         self.assertEqual(inode, os.lstat(TEST_FILENAME2, dir_fd=self.tmp_fd).st_ino)
-        with self.assertRaises(TypeError, msg="lstat: path should be string, bytes or os.PathLike, not int"):
+        with self.assertRaisesRegex(TypeError, "lstat: path should be string, bytes or os.PathLike, not int"):
             os.lstat(self.tmp_fd)
 
     def test_fstat(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_utime_basic(self):
+        stat_result = os.stat(TEST_FULL_PATH1)
+        os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
+        self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
+        os.utime(TEST_FULL_PATH2, ns=(952468575678901234, 1579569825123456789), follow_symlinks=False)
+        self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
+        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_mtime - 1579569825) < 10)
+        self.assertTrue(os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_atime > 900000000)
+        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(stat_result.st_atime_ns, stat_result.st_mtime_ns))
+        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
+        with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
+            os.utime(fd, times=(12345, 67890))
+            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
 
 
 class ChdirTests(unittest.TestCase):
@@ -619,6 +634,49 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
             entry = next(dir)
         os.rmdir(TEST_FULL_PATH2)
         self.assertFalse(entry.is_dir(follow_symlinks=True))
+
+
+class UtimeErrorsTests(unittest.TestCase):
+
+    def test_utime_both_specified(self):
+        with self.assertRaisesRegex(ValueError, "utime: you may specify either 'times' or 'ns' but not both"):
+            os.utime(TEST_FULL_PATH1, (1, 2), ns=(3, 4))
+        with self.assertRaisesRegex(ValueError, "utime: you may specify either 'times' or 'ns' but not both"):
+            os.utime(TEST_FULL_PATH1, (1, 2), ns=None)
+
+    def test_utime_times_not_a_tuple(self):
+        with self.assertRaisesRegex(TypeError, "utime: 'times' must be either a tuple of two ints or None"):
+            os.utime(TEST_FULL_PATH1, '')
+
+    def test_utime_ns_not_a_tuple(self):
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, ns='')
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, ns=None)
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, None, ns='')
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, None, ns=None)
+
+    def test_utime_fd_symlinks(self):
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, None, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, (1, 2), follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, ns=(1, 2), follow_symlinks=False)
+
+    def test_utime_fd_dirfd(self):
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, dir_fd=2)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, None, dir_fd=2, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, (1, 2), dir_fd=2, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, ns=(1, 2), dir_fd=2)
 
 
 if __name__ == '__main__':
