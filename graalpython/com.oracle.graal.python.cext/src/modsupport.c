@@ -467,12 +467,14 @@ MUST_INLINE static PyObject* _PyTruffle_BuildValue(const char* format, va_list v
             break;
         case ':':
         case ',':
+        case ' ':
             if (v->prev == NULL) {
                 PyErr_SetString(PyExc_SystemError, "':' without '{' in Py_BuildValue");
             }
             break;
         default:
-            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", format_idx, format);
+            PyErr_SetString(PyExc_SystemError, "bad format char passed to Py_BuildValue");
+            return NULL;
         }
         c = format[++format_idx];
     }
