@@ -266,6 +266,12 @@ class WithTempFilesTests(unittest.TestCase):
     def test_unlink_dirfd(self):
         os.unlink(TEST_FILENAME1, dir_fd=self.tmp_fd)
 
+    def test_unlink_remove_err_msg(self):
+        with self.assertRaisesRegex(TypeError, 'unlink'):
+            os.unlink(3.14)
+        with self.assertRaisesRegex(TypeError, 'remove'):
+            os.remove(3.14)
+
     def test_stat(self):
         sr1 = os.stat(TEST_FULL_PATH1)
         self.assertEqual(int(sr1.st_atime), sr1[7])

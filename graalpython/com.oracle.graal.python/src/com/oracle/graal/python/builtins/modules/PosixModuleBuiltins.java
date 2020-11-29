@@ -1506,7 +1506,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "nfi_unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, keywordOnlyNames = {"dir_fd"})
+    @Builtin(name = "nfi_unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
     @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
     @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
@@ -1528,6 +1528,21 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "nfi_remove", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiRemoveNode extends NfiUnlinkNode {
+
+        // although this built-in is the same as unlink(), we need to provide our own
+        // ArgumentClinicProvider because the error messages contain the name of the built-in
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiRemoveNodeClinicProviderGen.INSTANCE;
         }
     }
 
