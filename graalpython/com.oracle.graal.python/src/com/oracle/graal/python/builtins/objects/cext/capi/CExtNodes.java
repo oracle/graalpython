@@ -3224,8 +3224,7 @@ public abstract class CExtNodes {
                             result.append('%');
                             break;
                         case 'c':
-                            // FIXME(fa): use correct type: LLVMType.int_t
-                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t);
+                            int ordinal = getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t);
                             if (ordinal < 0 || ordinal > 0x110000) {
                                 throw raiseNode.raise(PythonBuiltinClassType.OverflowError, "character argument not in range(0x110000)");
                             }
@@ -3235,22 +3234,26 @@ public abstract class CExtNodes {
                         case 'i':
                             // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
                             if (len != null) {
+                                LLVMType llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        // FIXME(fa): use correct type: longlong_t
+                                        llvmType = LLVMType.longlong_t;
+                                        break;
                                     case "l":
-                                        // FIXME(fa): use correct type: long_t
+                                        llvmType = LLVMType.long_t;
+                                        break;
                                     case "z":
-                                        // FIXME(fa): use correct type: 'Py_ssize_t'
-                                        Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
-                                        vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, value));
-                                        valid = true;
+                                        llvmType = LLVMType.Py_ssize_t;
                                         break;
                                 }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
                             } else {
-                                // FIXME(fa): use correct type: LLVMType.int_t
-                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t));
+                                result.append(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t));
                                 vaArgIdx++;
                                 valid = true;
                             }
@@ -3258,30 +3261,33 @@ public abstract class CExtNodes {
                         case 'u':
                             // %u, %lu, %llu, %zu
                             if (len != null) {
+                                LLVMType llvmType = null;
                                 switch (len) {
                                     case "ll":
-                                        // FIXME(fa): use correct type: ulonglong_t
+                                        llvmType = LLVMType.ulonglong_t;
+                                        break;
                                     case "l":
-                                        // FIXME(fa): use correct type: ulong_t
+                                        llvmType = LLVMType.ulong_t;
+                                        break;
                                     case "z":
-                                        // FIXME(fa): use correct type: 'size_t'
-                                        Object value = getVaArgsNode.execute(vaList, vaArgIdx, LLVMType.int64_ptr_t);
-                                        vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, raiseNode, value));
-                                        valid = true;
+                                        llvmType = LLVMType.size_t;
                                         break;
                                 }
+                                if (llvmType != null) {
+                                    Object value = getVaArgsNode.execute(vaList, vaArgIdx, llvmType);
+                                    vaArgIdx++;
+                                    result.append(castToLong(interopLibrary, raiseNode, value));
+                                    valid = true;
+                                }
                             } else {
-                                // FIXME(fa): use correct type: LLVMType.uint_t
-                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t)));
+                                result.append(Integer.toUnsignedString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.uint_t)));
                                 vaArgIdx++;
                                 valid = true;
                             }
                             break;
                         case 'x':
                             // %x
-                            // FIXME(fa): use correct type: LLVMType.int_t
-                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int32_ptr_t)));
+                            result.append(Integer.toHexString(getAndCastToInt(getVaArgsNode, interopLibrary, raiseNode, vaList, vaArgIdx, LLVMType.int_t)));
                             vaArgIdx++;
                             valid = true;
                             break;
