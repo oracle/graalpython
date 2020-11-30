@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.exception;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,9 +52,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * Use this node to get the traceback object of an exception object. The traceback may need to be
  * created lazily and this node takes care of it.
  */
+@GenerateUncached
 public abstract class GetExceptionTracebackNode extends Node {
 
-    public abstract PTraceback execute(VirtualFrame frame, PBaseException e);
+    public abstract PTraceback execute(PBaseException e);
 
     @Specialization
     static PTraceback doExisting(PBaseException e,
@@ -68,5 +69,9 @@ public abstract class GetExceptionTracebackNode extends Node {
 
     public static GetExceptionTracebackNode create() {
         return GetExceptionTracebackNodeGen.create();
+    }
+
+    public static GetExceptionTracebackNode getUncached() {
+        return GetExceptionTracebackNodeGen.getUncached();
     }
 }

@@ -82,7 +82,7 @@ public abstract class WriteUnraisableNode extends Node {
             Object unraisablehook = getUnraisableHook.executeObject(frame, sysModule);
             Object argumentsFactory = getArgumentsFactory.executeObject(frame, sysModule);
             Object exceptionType = lib.getLazyPythonClass(exception);
-            Object traceback = getExceptionTracebackNode.execute(frame, exception);
+            Object traceback = getExceptionTracebackNode.execute(exception);
             if (traceback == null) {
                 traceback = PNone.NONE;
             }
