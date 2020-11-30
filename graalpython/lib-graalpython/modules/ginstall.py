@@ -552,12 +552,18 @@ def install_from_pypi(package, extra_opts=[], add_cflags="", ignore_errors=True,
     # make copy of env
     env = env.copy() if env is not None else os.environ.copy()
     from distutils.sysconfig import get_config_var
-    env.setdefault("CC", get_config_var("CC"))
-    env.setdefault("CXX", get_config_var("CXX"))
-    env.setdefault("AR", get_config_var("AR"))
-    env.setdefault("RANLIB", get_config_var("RANLIB"))
-    env.setdefault("CFLAGS", get_config_var("CFLAGS"))
-    env.setdefault("LDFLAGS", get_config_var("CCSHARED"))
+
+    def set_if_exists(env_var, conf_var):
+        conf_value = get_config_var(conf_var)
+        if conf_value:
+            env.setdefault(env_var, conf_value)
+
+    set_if_exists("CC", "CC")
+    set_if_exists("CXX", "CXX")
+    set_if_exists("AR", "AR")
+    set_if_exists("RANLIB", "RANLIB")
+    set_if_exists("CFLAGS", "CFLAGS")
+    set_if_exists("LDFLAGS", "CCSHARED")
 
     if url:
         _install_from_url(url, package=package, extra_opts=extra_opts, add_cflags=add_cflags,
