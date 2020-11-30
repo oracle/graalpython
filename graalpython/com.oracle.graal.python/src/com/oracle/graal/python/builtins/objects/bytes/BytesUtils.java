@@ -346,21 +346,19 @@ public final class BytesUtils {
         byte[] bytes = unicodeEscape(str);
         boolean hasSingleQuote = false;
         boolean hasDoubleQuote = false;
-        for (int i = 0; i < bytes.length; i++) {
-            char c = (char) bytes[i];
-            hasSingleQuote |= c == '\'';
-            hasDoubleQuote |= c == '"';
+        for (byte b : bytes) {
+            hasSingleQuote |= b == '\'';
+            hasDoubleQuote |= b == '"';
         }
         boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
         char quote = useDoubleQuotes ? '"' : '\'';
         StringBuilder sb = PythonUtils.newStringBuilder(bytes.length + 2);
         PythonUtils.append(sb, quote);
-        for (int i = 0; i < bytes.length; i++) {
-            char c = (char) bytes[i];
-            if (c == '\'' && !useDoubleQuotes) {
+        for (byte b : bytes) {
+            if (b == '\'' && !useDoubleQuotes) {
                 PythonUtils.append(sb, "\\'");
             } else {
-                PythonUtils.append(sb, c);
+                PythonUtils.append(sb, (char) b);
             }
         }
         PythonUtils.append(sb, quote);
@@ -400,7 +398,7 @@ public final class BytesUtils {
         } else if (b == '\r') {
             PythonUtils.append(sb, "\\r");
         } else if (b == '\'') {
-            PythonUtils.append(sb, isSingleQuote ? "\\'" : "\'");
+            PythonUtils.append(sb, isSingleQuote ? "\\'" : "'");
         } else if (b > 31 && b <= 126) {
             char chr = (char) b;
             if (chr == '\\') {
@@ -716,6 +714,16 @@ public final class BytesUtils {
             return hexChar - 'A' + 10;
         }
         return 37;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int memchr(byte[] bytes, int start, byte v, int len) {
+        for (int i = start; i < start + len; i++) {
+            if (bytes[i] == v) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @TruffleBoundary
