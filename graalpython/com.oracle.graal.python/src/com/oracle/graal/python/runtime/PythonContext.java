@@ -709,18 +709,23 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    public void registerShutdownHook(ShutdownHook shutdownHook) {
+    public void registerAtexitHook(ShutdownHook shutdownHook) {
         shutdownHooks.add(shutdownHook);
     }
 
     @TruffleBoundary
-    public void registerShutdownHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+    public void registerAtexitHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
         atExitHooks.put(callable, new AtExitHook(arguments, keywords, ct));
     }
 
     @TruffleBoundary
-    public void deregisterShutdownHook(Object callable) {
+    public void deregisterAtexitHook(Object callable) {
         atExitHooks.removeKey(callable);
+    }
+
+    @TruffleBoundary
+    public void clearAtexitHooks() {
+        atExitHooks.clear();
     }
 
     @TruffleBoundary
@@ -731,9 +736,12 @@ public final class PythonContext {
     }
 
     @TruffleBoundary
-    private void runShutdownHooks() {
-        handler.shutdown();
-        // run atExitHooks in reverse order they were registered
+    public int getAtexitHookCount() {
+        return atExitHooks.size();
+    }
+
+    @TruffleBoundary
+    public void runAtexitHooks() {
         MapCursor<Object, AtExitHook> cursor = atExitHooks.getEntries();
         AtExitHook[] hooks = new AtExitHook[atExitHooks.size()];
         Object[] callables = new Object[atExitHooks.size()];
@@ -745,6 +753,13 @@ public final class PythonContext {
         for (int i = hooks.length - 1; i >= 0; i--) {
             hooks[i].ct.call(callables[i], hooks[i].arguments, hooks[i].keywords);
         }
+    }
+
+    @TruffleBoundary
+    public void runShutdownHooks() {
+        handler.shutdown();
+        // run atExitHooks in reverse order they were registered
+        runAtexitHooks();
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }

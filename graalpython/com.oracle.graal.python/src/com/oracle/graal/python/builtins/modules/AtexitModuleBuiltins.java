@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -110,7 +111,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
             AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage());
-            getContext().registerShutdownHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitCallTarget));
+            getContext().registerAtexitHook(callable, arguments, keywords, PythonUtils.getOrCreateCallTarget(atExitCallTarget));
             return callable;
         }
     }
@@ -120,7 +121,37 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object register(Object callable) {
-            getContext().deregisterShutdownHook(callable);
+            getContext().deregisterAtexitHook(callable);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_clear")
+    @GenerateNodeFactory
+    abstract static class ClearNode extends PythonBuiltinNode {
+        @Specialization
+        Object clear() {
+            getContext().clearAtexitHooks();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_ncallbacks")
+    @GenerateNodeFactory
+    abstract static class NCallbacksNode extends PythonBuiltinNode {
+        @Specialization
+        int get() {
+            return getContext().getAtexitHookCount();
+        }
+    }
+
+    @Builtin(name = "_run_exitfuncs")
+    @GenerateNodeFactory
+    abstract static class RunExitfuncsNode extends PythonBuiltinNode {
+        @Specialization
+        Object run() {
+            getContext().runAtexitHooks();
+            getContext().clearAtexitHooks();
             return PNone.NONE;
         }
     }
