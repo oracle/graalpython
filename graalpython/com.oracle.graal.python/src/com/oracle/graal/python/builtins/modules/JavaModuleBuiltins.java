@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -50,6 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -61,17 +63,22 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(defineModule = "java")
+@CoreFunctions(defineModule = JavaModuleBuiltins.JAVA)
 public class JavaModuleBuiltins extends PythonBuiltins {
+    protected static final String JAVA = "java";
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return JavaModuleBuiltinsFactory.getFactories();
@@ -81,6 +88,13 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         builtinConstants.put("__path__", "java!");
+    }
+
+    @Override
+    public void postInitialize(PythonCore core) {
+        super.postInitialize(core);
+        PythonModule javaModule = core.lookupBuiltinModule(JAVA);
+        javaModule.setAttribute(__GETATTR__, javaModule.getAttribute(GetAttrNode.JAVA_GETATTR));
     }
 
     @Builtin(name = "type", minNumOfPositionalArgs = 1)
@@ -217,6 +231,32 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         @Fallback
         boolean fallback(Object object, Object klass) {
             throw raise(TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
+        }
+    }
+
+    @Builtin(name = GetAttrNode.JAVA_GETATTR, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetAttrNode extends PythonBuiltinNode {
+
+        protected static final String JAVA_GETATTR = "java_getattr";
+        private static final String JAVA_PKG_LOADER = "JavaPackageLoader";
+        private static final String MAKE_GETATTR = "_make_getattr";
+
+        @CompilationFinal protected Object getAttr;
+
+        private Object getAttr(VirtualFrame frame, PythonModule mod, PythonObjectLibrary lib) {
+            if (getAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                Object javaLoader = lib.lookupAttributeStrict(mod, frame, JAVA_PKG_LOADER);
+                getAttr = lib.lookupAndCallRegularMethod(javaLoader, frame, MAKE_GETATTR, JAVA);
+            }
+            return getAttr;
+        }
+
+        @Specialization
+        Object none(VirtualFrame frame, PythonModule mod, Object name,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+            return lib.callObject(getAttr(frame, mod, lib), frame, name);
         }
     }
 }

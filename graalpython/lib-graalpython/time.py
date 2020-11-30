@@ -94,19 +94,6 @@ def localtime(seconds=None):
 
 
 @__graalpython__.builtin
-def asctime(t=None):
-    """
-    asctime([tuple]) -> string
-
-    Convert a time tuple to a string, e.g. 'Sat Jun 06 16:26:11 1998'.
-    When the time tuple is not present, current time as returned by localtime()
-    is used.
-    """
-    if not t:
-        t = localtime()
-    return strftime("%a %b %d %H:%M:%S %Y", t)
-
-@__graalpython__.builtin
 def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
     from _strptime import _strptime_time
     return _strptime_time(data_string, format)
