@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_get_paths
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_get_platform
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_get_scheme_names
+*graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_ldshared_value
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_main
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_platform_in_subprocess
 *graalpython.lib-python.3.test.test_sysconfig.TestSysConfig.test_srcdir_independent_of_cwd
