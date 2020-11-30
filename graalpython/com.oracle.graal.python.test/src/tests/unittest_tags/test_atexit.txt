@@ -4,7 +4,9 @@
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_clear
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_exit
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_order
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_print_tracebacks
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_raise
+*graalpython.lib-python.3.test.test_atexit.GeneralTest.test_raise_unnormalized
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_shutdown
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_stress
 *graalpython.lib-python.3.test.test_atexit.GeneralTest.test_unregister

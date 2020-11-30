@@ -54,7 +54,6 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -79,7 +78,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -752,10 +750,6 @@ public final class PythonContext {
                 hook.ct.call(hook.callable, hook.arguments, hook.keywords);
             } catch (PException e) {
                 lastException = e;
-                if (!IsBuiltinClassProfile.profileClassSlowPath(e.getEscapedException(), PythonBuiltinClassType.SystemExit)) {
-                    System.err.println("Error in atexit._run_exitfuncs:");
-                    ExceptionUtils.printPythonLikeStackTrace(e);
-                }
             }
         }
         atExitHooks.clear();
