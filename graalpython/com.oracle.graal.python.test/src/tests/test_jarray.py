@@ -126,7 +126,7 @@ if platform.system() == 'Java' or sys.implementation.name == "graalpython":
         default_value = 0
         instance = 1099511627776
 
-    # TODO interop doesn't support assigning doubles to a float array
+    # TODO interop doesn't support assigning doubles to a float array: GR-27806
     # class FloatJArrayTest(AbstractJArrayTest, unittest.TestCase):
     #     type = 'f'
     #     default_value = 0.0
