@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -618,8 +619,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(lib.getLazyPythonClass(instance), self);
+        return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);
     }
 
     @ExportMessage
