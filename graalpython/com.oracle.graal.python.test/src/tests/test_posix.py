@@ -707,6 +707,7 @@ class RenameTests(unittest.TestCase):
         except (FileNotFoundError, NotADirectoryError):
             pass
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_rename_simple(self):
         os.rename(TEST_FULL_PATH1, self.dst_full_path)
         with self.assertRaises(FileNotFoundError):
@@ -715,13 +716,14 @@ class RenameTests(unittest.TestCase):
         os.replace(self.dst_full_path, TEST_FULL_PATH1)
         os.stat(TEST_FULL_PATH1)
         with self.assertRaises(FileNotFoundError):
-            os.stat(self.dst_full_path, 0)
+            os.stat(self.dst_full_path)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
     def test_rename_with_dirfd(self):
         with open(TEMP_DIR, 0) as tmp_fd:
             os.rename(TEST_FILENAME1, self.dst_full_path, src_dir_fd=tmp_fd)
         with self.assertRaises(FileNotFoundError):
-            os.stat(TEST_FULL_PATH1, 0)
+            os.stat(TEST_FULL_PATH1)
         os.stat(self.dst_full_path)
         with open(TEMP_DIR, 0) as tmp_fd:
             os.rename(self.dst_full_path, TEST_FILENAME1, dst_dir_fd=tmp_fd)

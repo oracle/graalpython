@@ -1832,17 +1832,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private List<Object> createList() {
+        private static List<Object> createList() {
             return new ArrayList<>();
         }
 
         @TruffleBoundary
-        private void addToList(List<Object> list, Object element) {
+        private static void addToList(List<Object> list, Object element) {
             list.add(element);
         }
 
         @TruffleBoundary
-        private Object[] listToArray(List<Object> list) {
+        private static Object[] listToArray(List<Object> list) {
             return list.toArray();
         }
     }
@@ -3185,7 +3185,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
      * Equivalent of {@code _PyTime_ObjectToTimespec} as used in {@code os_utime_impl}.
      */
     abstract static class ObjectToTimespecNode extends ConvertToTimespecBaseNode {
-        abstract void execute(VirtualFrame frame, Object obj, long[] timespec, int offset);
 
         @Specialization(guards = "!isNan(value)")
         void doDoubleNotNan(double value, long[] timespec, int offset) {
@@ -3261,8 +3260,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
 
         private static final long BILLION = 1000000000;
-
-        abstract void execute(VirtualFrame frame, Object obj, long[] timespec, int offset);
 
         @Specialization
         void doInt(int value, long[] timespec, int offset) {

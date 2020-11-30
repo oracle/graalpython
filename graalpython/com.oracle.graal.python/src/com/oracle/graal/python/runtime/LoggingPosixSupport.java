@@ -492,7 +492,7 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks,
-                         @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("utimeNsAt", "%d, %s, %s, %b", dirFd, pathname, timespec, followSymlinks);
         try {
             lib.utimeNsAt(delegate, dirFd, pathname, timespec, followSymlinks);
@@ -500,10 +500,10 @@ public class LoggingPosixSupport extends PosixSupport {
             throw logException("utimeNsAt", e);
         }
     }
-    
+
     @ExportMessage
     final void futimeNs(PosixFd fd, long[] timespec,
-                        @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("futimeNs", "%s, %s", fd, timespec);
         try {
             lib.futimeNs(delegate, fd, timespec);
@@ -511,10 +511,10 @@ public class LoggingPosixSupport extends PosixSupport {
             throw logException("futimeNs", e);
         }
     }
-    
+
     @ExportMessage
     final void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath,
-                        @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("renameAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
         try {
             lib.renameAt(delegate, oldDirFd, oldPath, newDirFd, newPath);
