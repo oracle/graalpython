@@ -287,7 +287,7 @@ def known_packages():
 
     @pip_package()
     def certifi(**kwargs):
-        install_from_pypi("certifi==2019.9.11", **kwargs)
+        install_from_pypi("certifi==2020.11.8", **kwargs)
 
     @pip_package()
     def idna(**kwargs):
