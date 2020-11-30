@@ -553,6 +553,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final Object readlinkat(int dirFd, PosixPath path,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("readlinkat", "%d, %s", dirFd, path);
+        try {
+            return logExit("readlinkat", "%s", lib.readlinkat(delegate, dirFd, path));
+        } catch (PosixException e) {
+            throw logException("readlinkat", e);
+        }
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINER, "createPathFromString", "%s", path);

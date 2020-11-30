@@ -344,6 +344,13 @@ class WithTempFilesTests(unittest.TestCase):
             os.chmod(fd, orig_mode)
         self.assertEqual(orig_mode, os.stat(TEST_FULL_PATH1).st_mode & 0o777)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_readlink(self):
+        self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FULL_PATH2))
+        self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FULL_PATH2)))
+        self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FILENAME2, dir_fd=self.tmp_fd))
+        self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FILENAME2), dir_fd=self.tmp_fd))
+
 
 class ChdirTests(unittest.TestCase):
 

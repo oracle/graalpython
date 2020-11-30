@@ -81,6 +81,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
+    private static final int PATH_MAX = 4096;
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
@@ -122,6 +123,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
         call_fchmod("(sint32, sint32):sint32"),
+        call_readlinkat("(sint32, [sint8], [sint8], uint64):sint64"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -667,6 +669,17 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
         }
+    }
+
+    @ExportMessage
+    public Object readlinkat(int dirFd, PosixPath path,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Buffer buffer = Buffer.allocate(PATH_MAX);
+        long n = invokeNode.callLong(lib, NativeFunctions.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
+        if (n < 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+        }
+        return buffer.withLength(n);
     }
 
     // ------------------

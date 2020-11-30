@@ -216,6 +216,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void fchmod(Object receiver, PosixFd fd, int mode) throws PosixException;
 
+    public abstract Object readlinkat(Object receiver, int dirFd, PosixPath path) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

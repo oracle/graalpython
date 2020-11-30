@@ -2118,6 +2118,39 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_readlink", minNumOfPositionalArgs = 1, parameterNames = {"path"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd"}, doc = "readlink(path, *, dir_fd=None) -> path\n" +
+                    "\nReturn a string representing the path to which the symbolic link points.\n")
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiReadlinkNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiReadlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "path.wasBufferLike")
+        PBytes readlinkAsBytes(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path), factory());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization(guards = "!path.wasBufferLike")
+        String readlinkAsString(VirtualFrame frame, PosixPath path, int dirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

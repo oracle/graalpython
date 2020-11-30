@@ -376,6 +376,10 @@ int32_t call_fchmod(int32_t fd, int32_t mode) {
     return fchmod(fd, mode);
 }
 
+int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
+    return readlinkat(dirFd, path, buf, size);
+}
+
 int32_t get_errno() {
     return errno;
 }
