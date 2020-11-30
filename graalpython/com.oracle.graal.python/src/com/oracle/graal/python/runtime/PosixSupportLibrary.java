@@ -210,6 +210,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void renameAt(Object receiver, int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) throws PosixException;
 
+    public abstract boolean faccessAt(Object receiver, int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks);
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

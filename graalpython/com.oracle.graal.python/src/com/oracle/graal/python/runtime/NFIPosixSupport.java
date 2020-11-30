@@ -119,6 +119,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
         call_futimens("(sint32, [sint64]):sint32"),
         call_renameat("(sint32, [sint8], sint32, [sint8]):sint32"),
+        call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -639,6 +640,13 @@ public final class NFIPosixSupport extends PosixSupport {
         if (ret != 0) {
             throw newPosixException(invokeNode, getErrno(invokeNode), oldPath.originalObject, newPath.originalObject);
         }
+    }
+
+    @ExportMessage
+    public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
+                             @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_faccessat, dirFd, pathToCString(path), mode, effectiveIds ? 1 : 0, followSymlinks ? 1 : 0);
+        return ret == 0;
     }
 
     // ------------------

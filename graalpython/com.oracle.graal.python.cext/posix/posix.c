@@ -357,6 +357,17 @@ int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, c
     return renameat(oldDirFd, oldPath, newDirFd, newPath);
 }
 
+int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
+    int flags = 0;
+    if (!followSymlinks) {
+        flags |= AT_SYMLINK_NOFOLLOW;
+    }
+    if (effectiveIds) {
+        flags |= AT_EACCESS;
+    }
+    return faccessat(fixDirFd(dirFd), path, mode, flags);
+}
+
 int32_t get_errno() {
     return errno;
 }

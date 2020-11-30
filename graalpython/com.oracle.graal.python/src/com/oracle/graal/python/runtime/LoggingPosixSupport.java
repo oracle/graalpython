@@ -524,6 +524,13 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
+                            @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
+        return logExit("faccessAt", "%b", lib.faccessAt(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINER, "createPathFromString", "%s", path);

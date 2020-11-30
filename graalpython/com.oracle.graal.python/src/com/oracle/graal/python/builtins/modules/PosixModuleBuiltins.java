@@ -2045,6 +2045,27 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_access", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "effective_ids", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "effective_ids", defaultValue = "false", conversion = ClinicConversion.Boolean)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    abstract static class NfiAccessNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiAccessNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        boolean access(PosixPath path, int mode, int dirFd, boolean effectiveIds, boolean followSymlinks,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            return posixLib.faccessAt(getPosixSupport(), dirFd, path, mode, effectiveIds, followSymlinks);
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

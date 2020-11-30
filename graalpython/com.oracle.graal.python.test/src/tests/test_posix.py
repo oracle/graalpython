@@ -323,6 +323,18 @@ class WithTempFilesTests(unittest.TestCase):
             os.utime(fd, times=(12345, 67890))
             self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_access(self):
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
+        os.unlink(TEST_FULL_PATH1)
+        self.assertFalse(os.access(TEST_FULL_PATH2, 0))
+        self.assertFalse(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
+
 
 class ChdirTests(unittest.TestCase):
 
