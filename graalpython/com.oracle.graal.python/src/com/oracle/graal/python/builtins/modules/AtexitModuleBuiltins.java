@@ -121,7 +121,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object register(Object callable) {
-            getContext().deregisterAtexitHook(callable);
+            getContext().unregisterAtexitHook(callable);
             return PNone.NONE;
         }
     }
@@ -150,11 +150,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class RunExitfuncsNode extends PythonBuiltinNode {
         @Specialization
         Object run() {
-            try {
-                getContext().runAtexitHooks();
-            } finally {
-                getContext().clearAtexitHooks();
-            }
+            getContext().runAtexitHooks();
             return PNone.NONE;
         }
     }
