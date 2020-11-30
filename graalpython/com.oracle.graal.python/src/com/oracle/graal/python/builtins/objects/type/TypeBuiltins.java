@@ -485,11 +485,9 @@ public class TypeBuiltins extends PythonBuiltins {
                 // see typeobject.c#type_call()
                 // Ugly exception: when the call was type(something),
                 // don't call tp_init on the result.
-                if (arguments.length == 2 && arguments[0] == PythonBuiltinClassType.PythonClass && keywords.length == 0) {
-                    return newInstance;
+                if (!(arguments.length == 2 && arguments[0] == PythonBuiltinClassType.PythonClass && keywords.length == 0)) {
+                    callInit(lib, newInstance, self, frame, doCreateArgs, arguments, keywords);
                 }
-
-                callInit(lib, newInstance, self, frame, doCreateArgs, arguments, keywords);
                 return newInstance;
             } else {
                 throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getTypeName(self));
