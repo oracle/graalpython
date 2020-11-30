@@ -118,6 +118,7 @@ public final class NFIPosixSupport extends PosixSupport {
         call_readdir("(sint64, [sint8], uint64, [sint64]):sint32"),
         call_utimensat("(sint32, [sint8], [sint64], sint32):sint32"),
         call_futimens("(sint32, [sint64]):sint32"),
+        call_renameat("(sint32, [sint8], sint32, [sint8]):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -612,7 +613,6 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logEnter("utimeNsAt", "%d, '%s', %s, %b", dirFd, pathname, timespec, followSymlinks);
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_utimensat, dirFd, pathToCString(pathname), wrap(timespec), followSymlinks ? 1 : 0);
         if (ret != 0) {
@@ -624,12 +624,20 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public void futimeNs(PosixFd fd, long[] timespec,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        logEnter("futimeNs", "%d, %s", fd.fd, timespec);
         assert timespec == null || timespec.length == 4;
         int ret = invokeNode.callInt(lib, NativeFunctions.call_futimens, fd.fd, wrap(timespec));
         if (ret != 0) {
             // filename is intentionally not included, see CPython's os_utime_impl
             throw newPosixException(invokeNode, getErrno(invokeNode));
+        }
+    }
+
+    @ExportMessage
+    public void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_renameat, oldDirFd, pathToCString(oldPath), newDirFd, pathToCString(newPath));
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), oldPath.originalObject, newPath.originalObject);
         }
     }
 

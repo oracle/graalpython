@@ -208,6 +208,8 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract void futimeNs(Object receiver, PosixFd fd, long[] timespec) throws PosixException;
 
+    public abstract void renameAt(Object receiver, int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

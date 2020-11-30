@@ -353,6 +353,10 @@ int32_t call_futimens(int32_t fd, int64_t *timespec) {
     }
 }
 
+int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+    return renameat(oldDirFd, oldPath, newDirFd, newPath);
+}
+
 int32_t get_errno() {
     return errno;
 }

@@ -2001,6 +2001,50 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_rename", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiRenameNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiRenameNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone rename(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            auditNode.audit("os.rename", src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
+            try {
+                posixLib.renameAt(getPosixSupport(), srcDirFd, src, dstDirFd, dst);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "nfi_replace", minNumOfPositionalArgs = 2, parameterNames = {"src", "dst"}, varArgsMarker = true, keywordOnlyNames = {"src_dir_fd", "dst_dir_fd"})
+    @ArgumentClinic(name = "src", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "dst", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
+    @GenerateNodeFactory
+    abstract static class NfiReplaceNode extends NfiRenameNode {
+
+        // although this built-in is the same as rename(), we need to provide our own
+        // ArgumentClinicProvider because the error messages contain the name of the built-in
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiReplaceNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

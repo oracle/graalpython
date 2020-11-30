@@ -685,5 +685,56 @@ class UtimeErrorsTests(unittest.TestCase):
             os.utime(1, ns=(1, 2), dir_fd=2)
 
 
+class RenameTests(unittest.TestCase):
+
+    def setUp(self):
+        os.close(os.open(TEST_FULL_PATH1, os.O_WRONLY | os.O_CREAT))
+        os.mkdir(TEST_FULL_PATH2)
+        self.dst_name = "xyz"
+        self.dst_full_path = os.path.join(TEST_FULL_PATH2, self.dst_name)
+
+    def tearDown(self):
+        try:
+            os.unlink(TEST_FULL_PATH1)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        try:
+            os.unlink(self.dst_full_path)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        try:
+            os.rmdir(TEST_FULL_PATH2)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+
+    def test_rename_simple(self):
+        os.rename(TEST_FULL_PATH1, self.dst_full_path)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(TEST_FULL_PATH1)
+        os.stat(self.dst_full_path)
+        os.replace(self.dst_full_path, TEST_FULL_PATH1)
+        os.stat(TEST_FULL_PATH1)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(self.dst_full_path, 0)
+
+    def test_rename_with_dirfd(self):
+        with open(TEMP_DIR, 0) as tmp_fd:
+            os.rename(TEST_FILENAME1, self.dst_full_path, src_dir_fd=tmp_fd)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(TEST_FULL_PATH1, 0)
+        os.stat(self.dst_full_path)
+        with open(TEMP_DIR, 0) as tmp_fd:
+            os.rename(self.dst_full_path, TEST_FILENAME1, dst_dir_fd=tmp_fd)
+        os.stat(TEST_FULL_PATH1)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(self.dst_full_path)
+
+    def test_rename_replace_err_msg(self):
+        with self.assertRaisesRegex(TypeError, 'rename'):
+            os.rename(3.14, TEST_FILENAME1)
+        with self.assertRaisesRegex(TypeError, 'replace'):
+            os.replace(TEST_FILENAME1, 3.14)
+
+
 if __name__ == '__main__':
     unittest.main()
