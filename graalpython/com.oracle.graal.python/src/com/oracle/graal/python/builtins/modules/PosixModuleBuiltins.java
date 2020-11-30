@@ -2066,6 +2066,58 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "nfi_chmod", minNumOfPositionalArgs = 2, parameterNames = {"path", "mode"}, varArgsMarker = true, keywordOnlyNames = {"dir_fd", "follow_symlinks"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "true"})
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "dir_fd", conversionClass = DirFdConversionNode.class)
+    @ArgumentClinic(name = "follow_symlinks", defaultValue = "true", conversion = ClinicConversion.Boolean)
+    @GenerateNodeFactory
+    abstract static class NfiChmodNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.NfiChmodNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        PNone chmodFollow(VirtualFrame frame, PosixPath path, int mode, int dirFd, boolean followSymlinks,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("os.chmod", path.originalObject, mode, dirFdForAudit(dirFd));
+            try {
+                posixLib.fchmodat(getPosixSupport(), dirFd, path, mode, followSymlinks);
+            } catch (PosixException e) {
+                // TODO CPython checks for ENOTSUP as well
+                if (e.getErrorCode() == OSErrorEnum.EOPNOTSUPP.getNumber() && !followSymlinks) {
+                    if (dirFd != PosixSupportLibrary.DEFAULT_DIR_FD) {
+                        throw raise(ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chmod");
+                    } else {
+                        throw raise(NotImplementedError, ErrorMessages.UNAVAILABLE_ON_THIS_PLATFORM, "chmod", "follow_symlinks");
+                    }
+                }
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone chmodFollow(VirtualFrame frame, PosixFd fd, int mode, int dirFd, @SuppressWarnings("unused") boolean followSymlinks,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            auditNode.audit("os.chmod", fd.originalObject, mode, dirFdForAudit(dirFd));
+            // Unlike stat and utime which raise CANT_SPECIFY_DIRFD_WITHOUT_PATH or
+            // CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER when an inappropriate combination of
+            // arguments is used, CPython's implementation of chmod simply ignores dir_fd and
+            // follow_symlinks if a fd is specified instead of a path.
+            try {
+                posixLib.fchmod(getPosixSupport(), fd, mode);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "nfi_strerror", minNumOfPositionalArgs = 1, parameterNames = {"code"})
     @ArgumentClinic(name = "code", conversion = ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory

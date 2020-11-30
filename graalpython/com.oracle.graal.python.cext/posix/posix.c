@@ -368,6 +368,14 @@ int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t ef
     return faccessat(fixDirFd(dirFd), path, mode, flags);
 }
 
+int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
+    return fchmodat(fixDirFd(dirFd), path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+}
+
+int32_t call_fchmod(int32_t fd, int32_t mode) {
+    return fchmod(fd, mode);
+}
+
 int32_t get_errno() {
     return errno;
 }

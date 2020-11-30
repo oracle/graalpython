@@ -525,9 +525,31 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
-                            @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
         return logExit("faccessAt", "%b", lib.faccessAt(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+    }
+
+    @ExportMessage
+    final void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchmodat", "%d, %s, 0%o, %b", dirFd, path, mode, followSymlinks);
+        try {
+            lib.fchmodat(delegate, dirFd, path, mode, followSymlinks);
+        } catch (PosixException e) {
+            throw logException("fchmodat", e);
+        }
+    }
+
+    @ExportMessage
+    final void fchmod(PosixFd fd, int mode,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchmod", "%s, 0%o", fd, mode);
+        try {
+            lib.fchmod(delegate, fd, mode);
+        } catch (PosixException e) {
+            throw logException("fchmod", e);
+        }
     }
 
     @ExportMessage

@@ -120,6 +120,8 @@ public final class NFIPosixSupport extends PosixSupport {
         call_futimens("(sint32, [sint64]):sint32"),
         call_renameat("(sint32, [sint8], sint32, [sint8]):sint32"),
         call_faccessat("(sint32, [sint8], sint32, sint32, sint32):sint32"),
+        call_fchmodat("(sint32, [sint8], sint32, sint32):sint32"),
+        call_fchmod("(sint32, sint32):sint32"),
         get_inheritable("(sint32):sint32"),
         set_inheritable("(sint32, sint32):sint32"),
         get_blocking("(sint32):sint32"),
@@ -644,9 +646,27 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
-                             @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_faccessat, dirFd, pathToCString(path), mode, effectiveIds ? 1 : 0, followSymlinks ? 1 : 0);
         return ret == 0;
+    }
+
+    @ExportMessage
+    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmodat, dirFd, pathToCString(path), mode, followSymlinks ? 1 : 0);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+        }
+    }
+
+    @ExportMessage
+    public void fchmod(PosixFd fd, int mode,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmod, fd.fd, mode);
+        if (ret != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+        }
     }
 
     // ------------------

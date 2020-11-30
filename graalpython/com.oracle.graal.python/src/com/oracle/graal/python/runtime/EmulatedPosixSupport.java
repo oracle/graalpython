@@ -1031,6 +1031,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchmod(PosixFd fd, int mode) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
     // ------------------
     // Path conversions
 
