@@ -150,8 +150,11 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class RunExitfuncsNode extends PythonBuiltinNode {
         @Specialization
         Object run() {
-            getContext().runAtexitHooks();
-            getContext().clearAtexitHooks();
+            try {
+                getContext().runAtexitHooks();
+            } finally {
+                getContext().clearAtexitHooks();
+            }
             return PNone.NONE;
         }
     }

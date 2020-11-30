@@ -50,6 +50,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
 import org.graalvm.nativeimage.ImageInfo;
@@ -742,6 +744,7 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runAtexitHooks() {
+        // run atExitHooks in reverse order they were registered
         MapCursor<Object, AtExitHook> cursor = atExitHooks.getEntries();
         AtExitHook[] hooks = new AtExitHook[atExitHooks.size()];
         Object[] callables = new Object[atExitHooks.size()];
@@ -750,16 +753,31 @@ public final class PythonContext {
             callables[i] = cursor.getKey();
             hooks[i] = cursor.getValue();
         }
+        PException lastException = null;
         for (int i = hooks.length - 1; i >= 0; i--) {
-            hooks[i].ct.call(callables[i], hooks[i].arguments, hooks[i].keywords);
+            try {
+                hooks[i].ct.call(callables[i], hooks[i].arguments, hooks[i].keywords);
+            } catch (PException e) {
+                lastException = e;
+                if (!IsBuiltinClassProfile.profileClassSlowPath(e.getEscapedException(), PythonBuiltinClassType.SystemExit)) {
+                    System.err.println("Error in atexit._run_exitfuncs:");
+                    ExceptionUtils.printPythonLikeStackTrace(e);
+                }
+            }
+        }
+        if (lastException != null) {
+            throw lastException;
         }
     }
 
     @TruffleBoundary
     public void runShutdownHooks() {
         handler.shutdown();
-        // run atExitHooks in reverse order they were registered
-        runAtexitHooks();
+        try {
+            runAtexitHooks();
+        } catch (PException e) {
+            // It was printed already, so just discard
+        }
         for (ShutdownHook h : shutdownHooks) {
             h.call(this);
         }
