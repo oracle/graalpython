@@ -29,6 +29,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -187,9 +188,10 @@ public final class PList extends PSequence {
 
     @ExportMessage
     public void writeArrayElement(long index, Object value,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached.Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItem) throws InvalidArrayIndexException {
         try {
-            setItem.execute(store, PInt.intValueExact(index), value);
+            setItem.execute(store, PInt.intValueExact(index), convert.executeConvert(value));
         } catch (OverflowException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InvalidArrayIndexException.create(index);

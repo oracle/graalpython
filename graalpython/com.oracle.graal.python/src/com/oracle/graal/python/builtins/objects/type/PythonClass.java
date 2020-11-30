@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -64,8 +65,9 @@ public final class PythonClass extends PythonManagedClass {
     @ExportMessage
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
     }
 
     @ExportMessage

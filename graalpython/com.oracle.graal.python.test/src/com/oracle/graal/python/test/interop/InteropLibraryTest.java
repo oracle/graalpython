@@ -40,23 +40,26 @@
  */
 package com.oracle.graal.python.test.interop;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Context.Builder;
-import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.ProxyArray;
-
-import com.oracle.graal.python.test.PythonTests;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Context.Builder;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
 
 public class InteropLibraryTest extends PythonTests {
     private Context context;
@@ -163,6 +166,28 @@ public class InteropLibraryTest extends PythonTests {
         Value tripples = collect.execute(new LazyArray(list.iterator()));
         assertTrue("Array returned", tripples.hasArrayElements());
         assertEquals(list.size() * 3, tripples.getArraySize());
+    }
+
+    @Test
+    public void testException() {
+        try {
+            context.eval("python", "1/0");
+        } catch (PolyglotException e) {
+            Value exception = e.getGuestObject();
+            assertTrue(exception.isException());
+            Value clazz = exception.getMetaObject();
+            assertTrue(clazz.isMetaObject());
+            assertEquals("ZeroDivisionError", clazz.getMetaSimpleName());
+            assertTrue(exception.hasMember("args"));
+            Value args = exception.getMember("args");
+            assertTrue(args.hasArrayElements());
+            assertEquals(1, args.getArraySize());
+            assertEquals("division by zero", args.getArrayElement(0).asString());
+            // This excercises isIdenticalOrUndefined message internally
+            assertNotEquals(exception, args);
+            return;
+        }
+        fail("didn't throw exception");
     }
 
     private static final class LazyArray implements ProxyArray {

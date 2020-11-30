@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.ProfileCla
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -319,11 +320,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     boolean isMetaInstance(Object instance,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) throws UnsupportedMessageException {
         if (!isType.execute(this)) {
             throw UnsupportedMessageException.create();
         }
-        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
     }
 
     @ExportMessage
