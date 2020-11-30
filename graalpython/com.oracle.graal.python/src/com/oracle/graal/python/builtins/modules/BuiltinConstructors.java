@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
-import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -139,6 +138,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGe
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
@@ -156,7 +156,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -245,6 +244,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -3415,9 +3415,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
-                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
             object.checkReleased(this);
-            return factory().createMemoryView(getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
+            return factory().createMemoryView(context, object.getManagedBuffer(), object.getOwner(), object.getLength(),
                             object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                             object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                             object.getBufferSuboffsets(), object.getFlags());

@@ -46,12 +46,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.lang.ref.ReferenceQueue;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
@@ -63,9 +57,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
@@ -74,7 +66,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -641,21 +632,5 @@ public class MemoryViewNodes {
         public static ToJavaBytesFortranOrderNode create() {
             return MemoryViewNodesFactory.ToJavaBytesFortranOrderNodeGen.create();
         }
-    }
-
-    public abstract static class GetBufferReferences extends Node {
-        public abstract BufferReferences execute();
-
-        @Specialization
-        @SuppressWarnings("unchecked")
-        static BufferReferences getRefs(@CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached ReadAttributeFromObjectNode readNode) {
-            return (BufferReferences) readNode.execute(context.getCore().lookupType(PythonBuiltinClassType.PMemoryView), MemoryViewBuiltins.bufferReferencesKey);
-        }
-    }
-
-    public static class BufferReferences {
-        public final ReferenceQueue<PMemoryView> queue = new ReferenceQueue<>();
-        public final Set<BufferReference> set = new HashSet<>();
     }
 }

@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.lzma.PLZMADecompressor;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -406,19 +405,19 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, invokeMro, bases));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize, format, formatString,
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize, format, formatString,
                         ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
-    public PMemoryView createMemoryView(MemoryViewNodes.BufferReferences references, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView createMemoryView(PythonContext context, ManagedBuffer managedBuffer, Object owner,
                     int len, boolean readonly, int itemsize, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
-        return trace(new PMemoryView(cls, getShape(cls), references, managedBuffer, owner, len, readonly, itemsize,
+        return trace(new PMemoryView(cls, getShape(cls), context, managedBuffer, owner, len, readonly, itemsize,
                         BufferFormat.forMemoryView(formatString), formatString, ndim, bufPointer, offset, shape, strides, suboffsets, flags));
     }
 
