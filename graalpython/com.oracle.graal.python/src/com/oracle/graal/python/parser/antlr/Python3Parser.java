@@ -919,7 +919,7 @@ public class Python3Parser extends Parser {
 			        } else {
 			            factory.getScopeEnvironment().addSeenVar(dottedName);
 			        }
-			        push( factory.createDecorator(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx))); 
+			        push( factory.createDecorator(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx)));
 			    
 			}
 		}
@@ -1138,7 +1138,7 @@ public class Python3Parser extends Parser {
 			setState(272);
 			match(COLON);
 			 
-			            String name = factory.mangleName(_localctx.n.getText()); 
+			            String name = factory.mangleName(_localctx.n.getText());
 			            ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
 			            String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
 			            ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -1667,7 +1667,7 @@ public class Python3Parser extends Parser {
 			            if (name != null) {
 			                name = factory.mangleName(name);
 			            }
-			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
+			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue);
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
 			                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
@@ -2257,7 +2257,7 @@ public class Python3Parser extends Parser {
 			            if (name != null) {
 			                name = factory.mangleName(name);
 			            }
-			            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
+			            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue);
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
 			                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
