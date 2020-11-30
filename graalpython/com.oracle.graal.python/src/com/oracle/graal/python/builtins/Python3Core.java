@@ -101,9 +101,11 @@ import com.oracle.graal.python.builtins.modules.TraceModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
+import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -256,7 +258,6 @@ public final class Python3Core implements PythonCore {
                         "_sysconfig",
                         "_socket",
                         "ctypes",
-                        "zlib",
                         "termios",
                         "zipimport",
                         "mmap",
@@ -412,6 +413,8 @@ public final class Python3Core implements PythonCore {
                         new ZipImporterBuiltins(),
                         new ZipImportModuleBuiltins(),
                         new ZLibModuleBuiltins(),
+                        new ZlibCompressBuiltins(),
+                        new ZlibDecompressBuiltins(),
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),

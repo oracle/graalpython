@@ -37,6 +37,7 @@ import org.tukaani.xz.FinishableOutputStream;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -129,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
+import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -932,11 +934,23 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMMap(clazz, getShape(clazz), channel, length, offset));
     }
 
-    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
-        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int level, int wbits, int strategy, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, level, wbits, strategy, zdict));
+    }
+
+    public ZLibCompObject createJavaZLibCompObject(Object clazz, Object stream, int wbits, byte[] zdict) {
+        return trace(ZLibCompObject.createJava(clazz, getShape(clazz), stream, wbits, zdict));
+    }
+
+    public ZLibCompObject createNativeZLibCompObject(Object clazz, Object zst, NFIZlibSupport zlibSupport) {
+        return trace(ZLibCompObject.createNative(clazz, getShape(clazz), zst, zlibSupport));
     }
 
     public PLZMADecompressor createLZMADecompressor(Object clazz, int format, int memlimit) {
         return trace(new PLZMADecompressor(clazz, getShape(clazz), format, memlimit));
+    }
+
+    public PLZMACompressor createLZMACompressor(Object clazz, FinishableOutputStream lzmaStream, ByteArrayOutputStream bos) {
+        return trace(new PLZMACompressor(clazz, getShape(clazz), lzmaStream, bos));
     }
 }

@@ -108,7 +108,7 @@ import com.oracle.truffle.api.source.Source.SourceBuilder;
                 name = PythonLanguage.NAME, //
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = PythonLanguage.MIME_TYPE, //
-                dependentLanguages = "llvm", //
+                dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class)

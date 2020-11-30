@@ -198,7 +198,6 @@ public final class PythonContext {
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
-    static final String CAPI_HOME = "/capi";
     static final String NO_CORE_FATAL = "could not determine Graal.Python's core path - you must pass --python.CoreHome.";
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
@@ -213,6 +212,8 @@ public final class PythonContext {
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+
+    @CompilationFinal private NFIZlibSupport nativeZlib;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -326,6 +327,14 @@ public final class PythonContext {
 
     public PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public boolean isNativeAccessAllowed() {
+        return env.isNativeAccessAllowed();
+    }
+
+    public NFIZlibSupport getNFIZlibSupport() {
+        return nativeZlib;
     }
 
     public TruffleLanguage.Env getEnv() {
@@ -494,6 +503,7 @@ public final class PythonContext {
     }
 
     private void setupRuntimeInformation(boolean isPatching) {
+        nativeZlib = NFIZlibSupport.createNative(this, "");
         PythonModule sysModule = core.lookupBuiltinModule("sys");
         sysModules = (PDict) sysModule.getAttribute("modules");
 

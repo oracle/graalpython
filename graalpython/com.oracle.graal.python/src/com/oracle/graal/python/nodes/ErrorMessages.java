@@ -224,6 +224,7 @@ public abstract class ErrorMessages {
     public static final String EXCEPTIONS_MUST_DERIVE_FROM_BASE_EX = "exceptions must derive from BaseException";
     public static final String EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P = "expected argument types (%s) or (%s) but not (%p, %p)";
     public static final String EXPECTED_AT_MOST_D_ARGS_GOT_D = "%s expected at most %d arguments, got %d";
+    public static final String EXPECTED_BYTESLIKE_GOT_P = "expected a bytes-like object, %p found";
     public static final String EXPECTED_CHARACTER_BUT_STRING_FOUND = "%s expected a character, but string of length %d found";
     public static final String EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = "expected %p.__fspath__() to return str or bytes, not %p";
     public static final String EXPECTED_OBJ_TYPE_S_GOT_P = "expected object of type %s, got %p";
@@ -585,7 +586,6 @@ public abstract class ErrorMessages {
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL = "Was not possible to marshal";
     public static final String WAS_NOT_POSSIBLE_TO_MARSHAL_P = "Was not possible to marshal %p";
     public static final String WEAK_OBJ_GONE_AWAY = "weak object has gone away";
-    public static final String WHILE_PREPARING_TO_DECOMPRESS_DATA = "while preparing to decompress data";
     public static final String WORK_DIR_NOT_ACCESSIBLE = "working directory %s is not accessible";
     public static final String WRITE_BYTE_OUT_OF_RANGE = "write byte out of range";
     public static final String X_NOT_IN_LIST = "x not in list";
@@ -624,6 +624,23 @@ public abstract class ErrorMessages {
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";
     public static final String CANNOT_INTERN_P = "can't intern %p";
+
+    // zlib errors
+    public static final String WHILE_FLUSHING = "while flushing";
+    public static final String WHILE_S_DATA = "while %s data";
+    public static final String WHILE_FINISHING_S = "while finishing %s";
+    public static final String WHILE_SETTING_ZDICT = "while setting zdict";
+    public static final String WHILE_CREATING_S_OBJECT = "while creating %s object";
+    public static final String INVALID_INITIALIZATION_OPTION = "Invalid initialization option";
+    public static final String CANT_ALLOCATE_MEMORY_FOR_S_OBJECT = "Can't allocate memory for %s object";
+    public static final String OUT_OF_MEMORY_WHILE_S_DATA = "Out of memory while %s data";
+    public static final String WHILE_PREPARING_TO_S_DATA = "while preparing to %s data";
+    public static final String INVALID_DICTIONARY = "Invalid dictionary";
+    public static final String WHILE_COPYING_S_OBJECT = "while copying %s object";
+    public static final String INCONSISTENT_STREAM_STATE = "Inconsistent stream state";
+    public static final String INVALID_INPUT_DATA = "invalid input data";
+    public static final String INCOMPLETE_OR_TRUNCATED_STREAM = "incomplete or truncated stream";
+    public static final String S_MUST_BE_GREATER_THAN_ZERO = "%s must be greater than zero";
 
     public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
