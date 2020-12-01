@@ -92,7 +92,6 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
-            @SuppressWarnings("try")
             public Object execute(VirtualFrame frame) {
                 PythonContext context = contextRef.get();
                 context.setTopFrameInfo(PFrame.Reference.EMPTY);
