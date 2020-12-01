@@ -274,7 +274,7 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                     if (catchNoent && e.getErrorCode() == OSErrorEnum.ENOENT.getNumber()) {
                         return null;
                     }
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw raiseOSErrorFromPosixException(frame, e, posixPath.originalObject);
                 }
             }
             self.setStatCache(followSymlinks, res);

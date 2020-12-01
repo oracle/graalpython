@@ -249,34 +249,14 @@ public abstract class PosixSupportLibrary extends Library {
         private static final long serialVersionUID = -115762483478883093L;
 
         private final int errorCode;
-        private final Object filename1;
-        private final Object filename2;
 
         public PosixException(int errorCode, String message) {
-            this(errorCode, message, null, null);
-        }
-
-        public PosixException(int errorCode, String message, Object filename) {
-            this(errorCode, message, filename, null);
-        }
-
-        public PosixException(int errorCode, String message, Object filename1, Object filename2) {
             super(message);
             this.errorCode = errorCode;
-            this.filename1 = filename1;
-            this.filename2 = filename2;
         }
 
         public int getErrorCode() {
             return errorCode;
-        }
-
-        public Object getFilename1() {
-            return filename1;
-        }
-
-        public Object getFilename2() {
-            return filename2;
         }
 
         @SuppressWarnings("sync-override")

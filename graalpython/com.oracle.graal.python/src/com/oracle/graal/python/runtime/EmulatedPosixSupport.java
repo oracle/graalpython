@@ -305,7 +305,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-            throw posixException(errAndMsg, path);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -533,7 +533,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-            throw posixException(errAndMsg, path);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -559,7 +559,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (Exception e) {
             errorBranch.enter();
             ErrorAndMessagePair errAndMsg = OSErrorEnum.fromException(e);
-            throw posixException(errAndMsg, originalPath);
+            throw posixException(errAndMsg);
         }
     }
 
@@ -798,14 +798,14 @@ public final class EmulatedPosixSupport extends PosixResources {
             boolean isDirectory = f.isDirectory(LinkOption.NOFOLLOW_LINKS);
             if (isDirectory != rmdir) {
                 errorBranch.enter();
-                throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR, path.originalObject);
+                throw posixException(isDirectory ? OSErrorEnum.EISDIR : OSErrorEnum.ENOTDIR);
             }
         }
         try {
             f.delete();
         } catch (Exception e) {
             errorBranch.enter();
-            throw posixException(OSErrorEnum.fromException(e), path);
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -821,7 +821,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             linkFile.createSymbolicLink(targetFile);
         } catch (Exception e) {
             errorBranch.enter();
-            throw posixException(OSErrorEnum.fromException(e), target, link);
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -835,7 +835,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             linkFile.createDirectory();
         } catch (Exception e) {
             errorBranch.enter();
-            throw posixException(OSErrorEnum.fromException(e), path);
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -930,7 +930,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             return new EmulatedDirStream(file.newDirectoryStream());
         } catch (IOException e) {
             errorBranch.enter();
-            throw posixException(OSErrorEnum.fromException(e), path);
+            throw posixException(OSErrorEnum.fromException(e));
         }
     }
 
@@ -1222,22 +1222,6 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     static PosixException posixException(OSErrorEnum osError) throws PosixException {
         throw new PosixException(osError.getNumber(), osError.getMessage());
-    }
-
-    static PosixException posixException(OSErrorEnum osError, Object path) throws PosixException {
-        throw new PosixException(osError.getNumber(), osError.getMessage(), path);
-    }
-
-    static PosixException posixException(ErrorAndMessagePair pair, PosixPath path1) throws PosixException {
-        throw new PosixException(pair.oserror.getNumber(), pair.message, path1.originalObject);
-    }
-
-    static PosixException posixException(ErrorAndMessagePair pair, PosixPath path1, PosixPath path2) throws PosixException {
-        throw new PosixException(pair.oserror.getNumber(), pair.message, path1.originalObject, path2.originalObject);
-    }
-
-    static PosixException posixException(ErrorAndMessagePair pair, Object path1) throws PosixException {
-        throw new PosixException(pair.oserror.getNumber(), pair.message, path1);
     }
 
     private static PosixException posixException(ErrorAndMessagePair pair) throws PosixException {

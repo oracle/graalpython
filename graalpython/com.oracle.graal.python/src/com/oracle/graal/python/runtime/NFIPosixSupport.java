@@ -203,7 +203,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             int errno = getErrno(invokeNode);
             if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, pathname.originalObject);
+                throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
@@ -380,7 +380,7 @@ public final class NFIPosixSupport extends PosixSupport {
         long[] out = new long[13];
         int res = invokeNode.callInt(lib, NativeFunctions.call_fstatat, dirFd, pathToCString(pathname), followSymlinks ? 1 : 0, wrap(out));
         if (res != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return out;
     }
@@ -397,7 +397,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             int errno = getErrno(invokeNode);
             if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, filename);
+                throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
@@ -430,7 +430,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_unlinkat, dirFd, pathToCString(pathname), rmdir ? 1 : 0);
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -439,7 +439,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_symlinkat, pathToCString(target), linkpathDirFd, pathToCString(linkpath));
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), target.originalObject, linkpath.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -448,7 +448,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_mkdirat, dirFd, pathToCString(pathname), mode);
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), pathname.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -474,7 +474,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int result = invokeNode.callInt(lib, NativeFunctions.call_chdir, pathToCString(path));
         if (result != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -488,7 +488,7 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             int errno = getErrno(invokeNode);
             if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno, pathname);
+                throw newPosixException(invokeNode, errno);
             }
             context.triggerAsyncActions(null, asyncProfile);
         }
@@ -505,7 +505,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long ptr = invokeNode.callLong(lib, NativeFunctions.call_opendir, pathToCString(path));
         if (ptr == 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return new DirStream(dirStreamRefQueue, ptr, false);
     }
@@ -515,7 +515,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long ptr = invokeNode.callLong(lib, NativeFunctions.call_fdopendir, fd.fd);
         if (ptr == 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return new DirStream(dirStreamRefQueue, ptr, true);
     }
@@ -640,7 +640,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_renameat, oldDirFd, pathToCString(oldPath), newDirFd, pathToCString(newPath));
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), oldPath.originalObject, newPath.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -659,7 +659,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmodat, dirFd, pathToCString(path), mode, followSymlinks ? 1 : 0);
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -668,7 +668,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_fchmod, fd.fd, mode);
         if (ret != 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), fd.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 
@@ -678,7 +678,7 @@ public final class NFIPosixSupport extends PosixSupport {
         Buffer buffer = Buffer.allocate(PATH_MAX);
         long n = invokeNode.callLong(lib, NativeFunctions.call_readlinkat, dirFd, pathToCString(path), wrap(buffer), PATH_MAX);
         if (n < 0) {
-            throw newPosixException(invokeNode, getErrno(invokeNode), path.originalObject);
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
         return buffer.withLength(n);
     }
@@ -824,15 +824,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
-        throw newPosixException(invokeNode, errno, null, null);
-    }
-
-    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename) throws PosixException {
-        throw newPosixException(invokeNode, errno, filename, null);
-    }
-
-    private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno, Object filename1, Object filename2) throws PosixException {
-        throw new PosixException(errno, strerror(errno, invokeNode), filename1, filename2);
+        throw new PosixException(errno, strerror(errno, invokeNode));
     }
 
     private Object wrap(byte[] bytes) {

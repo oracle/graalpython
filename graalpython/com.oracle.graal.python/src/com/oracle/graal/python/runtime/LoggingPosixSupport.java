@@ -620,7 +620,7 @@ public class LoggingPosixSupport extends PosixSupport {
     @TruffleBoundary
     private static PosixException logException(Level level, String msg, PosixException e) throws PosixException {
         if (LOGGER.isLoggable(level)) {
-            LOGGER.log(level, msg + String.format(" -> throw errno=%d, msg=%s, filename1=%s, filename2=%s", fixLogArgs(e.getErrorCode(), e.getMessage(), e.getFilename1(), e.getFilename2())));
+            LOGGER.log(level, msg + String.format(" -> throw errno=%d, msg=%s", fixLogArgs(e.getErrorCode(), e.getMessage())));
         }
         throw e;
     }
