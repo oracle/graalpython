@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import java.io.IOException;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
@@ -94,21 +96,25 @@ public abstract class WriteUnraisableNode extends Node {
                             factory.createTuple(new Object[]{exceptionType, exception, traceback, messageObj, object != null ? object : PNone.NONE}));
             callUnraisableHook.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
-            ignoreException(message);
+            ignoreException(contextRef.get(), message);
         }
     }
 
     @TruffleBoundary
-    private static void ignoreException(String message) {
-        if (message != null) {
-            System.err.println(formatMessage(message));
-        } else {
-            System.err.println("Exception ignored in sys.unraisablehook");
+    private static void ignoreException(PythonContext context, String message) {
+        try {
+            if (message != null) {
+                context.getEnv().err().write(formatMessage(message).getBytes());
+            } else {
+                context.getEnv().err().write("Exception ignored in sys.unraisablehook".getBytes());
+            }
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
         }
     }
 
     @TruffleBoundary
-    private static Object formatMessage(String message) {
+    private static String formatMessage(String message) {
         return "Exception ignored " + message;
     }
 

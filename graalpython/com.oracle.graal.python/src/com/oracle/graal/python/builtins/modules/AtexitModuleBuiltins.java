@@ -120,7 +120,11 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
                 if (!IsBuiltinClassProfile.profileClassSlowPath(lib.getLazyPythonClass(pythonException), PythonBuiltinClassType.SystemExit)) {
                     lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
-                    ExceptionUtils.printExceptionTraceback(context, pythonException);
+                    try {
+                        ExceptionUtils.printExceptionTraceback(context, pythonException);
+                    } catch (PException pe) {
+                        lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Failed to print traceback\n");
+                    }
                 }
             }
         }

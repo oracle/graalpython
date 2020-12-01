@@ -47,11 +47,14 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemEx
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -141,15 +144,25 @@ public class TopLevelExceptionHandler extends RootNode {
         if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
             handleSystemExit(pythonException);
         }
-        ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
-        if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
-            ExceptionUtils.printJavaStackTrace(pythonException.getException());
+        if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
+            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+            PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
+            Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
+
+            PythonModule sys = getContext().getCore().lookupBuiltinModule("sys");
+            sys.setAttribute(BuiltinNames.LAST_TYPE, type);
+            sys.setAttribute(BuiltinNames.LAST_VALUE, pythonException);
+            sys.setAttribute(BuiltinNames.LAST_TRACEBACK, tb);
+
+            ExceptionUtils.printExceptionTraceback(getContext(), pythonException);
+            if (PythonOptions.isPExceptionWithJavaStacktrace(getPythonLanguage())) {
+                ExceptionUtils.printJavaStackTrace(pythonException.getException());
+            }
+            if (!getSourceSection().getSource().isInteractive()) {
+                throw new PythonExitException(this, 1);
+            }
         }
-        if (getSourceSection().getSource().isInteractive()) {
-            throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-        } else {
-            throw new PythonExitException(this, 1);
-        }
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
     }
 
     @TruffleBoundary
