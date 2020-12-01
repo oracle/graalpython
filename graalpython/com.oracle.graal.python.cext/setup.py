@@ -164,9 +164,10 @@ if threaded:
             logger.debug("Compiling {!s}".format(src))
             self._compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
 
-        if len(objects) > 1:
-            logger.debug("Compiling {} objects in parallel.".format(len(objects)))
-            pool = SimpleThreadPool()
+        n_objects = len(objects)
+        if n_objects > 1:
+            logger.debug("Compiling {} objects in parallel.".format(n_objects))
+            pool = SimpleThreadPool(min(n_objects, os.cpu_count()))
             pool.start_thread_pool(_single_compile)
             pool.put_job(objects)
             pool.wait_until_finished()
