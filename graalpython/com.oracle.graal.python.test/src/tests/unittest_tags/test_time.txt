@@ -20,6 +20,7 @@
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_conversions
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_ctime
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_ctime_without_arg
+*graalpython.lib-python.3.test.test_time.TimeTestCase.test_data_attributes
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_default_values_for_zero
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_gmtime_without_arg
 *graalpython.lib-python.3.test.test_time.TimeTestCase.test_insane_timestamps
