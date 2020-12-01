@@ -87,6 +87,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
     private static final long PERF_COUNTER_START = TruffleOptions.AOT ? 0 : System.nanoTime();
+    private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -850,8 +851,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CTimeNode extends PythonBuiltinNode {
 
-        private static final String FORMAT = "%s %s %2d %02d:%02d:%02d %d";
-
         @Specialization
         public String localtime(VirtualFrame frame, Object seconds,
                         @Cached ToLongTime toLongTime) {
@@ -859,7 +858,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         protected static String format(int[] tm) {
-            return ASCTimeNode.format(FORMAT, tm);
+            return ASCTimeNode.format(CTIME_FORMAT, tm);
         }
     }
 
@@ -868,7 +867,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ASCTimeNode extends PythonBuiltinNode {
 
-        private static final String FORMAT = "%s %s %02d %02d:%02d:%02d %d";
         static final String[] WDAY_NAME = new String[]{
                         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
         };
@@ -892,7 +890,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         protected static String format(int[] tm) {
-            return format(FORMAT, tm);
+            return format(CTIME_FORMAT, tm);
         }
 
         @TruffleBoundary
