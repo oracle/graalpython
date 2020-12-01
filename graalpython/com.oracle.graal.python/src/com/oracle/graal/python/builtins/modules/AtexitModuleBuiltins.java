@@ -63,6 +63,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -106,16 +107,21 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                 try {
                     return callNode.execute(null, callable, arguments, keywords);
                 } catch (PException e) {
-                    PBaseException pythonException = e.getEscapedException();
-                    PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                    if (!IsBuiltinClassProfile.profileClassSlowPath(lib.getLazyPythonClass(pythonException), PythonBuiltinClassType.SystemExit)) {
-                        lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
-                        ExceptionUtils.printExceptionTraceback(context, pythonException);
-                    }
+                    handleException(context, e);
                     throw e;
                 } finally {
                     context.popTopFrameInfo();
                     context.setCaughtException(null);
+                }
+            }
+
+            @TruffleBoundary
+            private static void handleException(PythonContext context, PException e) {
+                PBaseException pythonException = e.getEscapedException();
+                PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
+                if (!IsBuiltinClassProfile.profileClassSlowPath(lib.getLazyPythonClass(pythonException), PythonBuiltinClassType.SystemExit)) {
+                    lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
+                    ExceptionUtils.printExceptionTraceback(context, pythonException);
                 }
             }
         }
