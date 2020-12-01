@@ -87,6 +87,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.ForeignCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -175,7 +176,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        static final int MAGIC_NUMBER = 3413;
+        static final int MAGIC_NUMBER = 21000 + SerializationUtils.VERSION * 10;
 
         @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
         @Child private PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
