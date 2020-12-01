@@ -256,9 +256,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("O_SYNC", SYNC);
         builtinConstants.put("O_TEMPORARY", TEMPORARY);
         builtinConstants.put("O_TMPFILE", TMPFILE);
-        builtinConstants.put("SEEK_SET", SEEK_SET);
-        builtinConstants.put("SEEK_CUR", SEEK_CUR);
-        builtinConstants.put("SEEK_END", SEEK_END);
 
         builtinConstants.put("WNOHANG", WNOHANG);
         builtinConstants.put("WUNTRACED", WUNTRACED);
