@@ -324,6 +324,7 @@ class WithTempFilesTests(unittest.TestCase):
             self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    @unittest.skipUnless(sys.platform != 'darwin', 'faccessat on MacOSX does not support follow_symlinks')
     def test_access(self):
         self.assertTrue(os.access(TEST_FULL_PATH2, 0))
         self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))

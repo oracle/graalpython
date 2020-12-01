@@ -650,6 +650,9 @@ public final class NFIPosixSupport extends PosixSupport {
     public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         int ret = invokeNode.callInt(lib, NativeFunctions.call_faccessat, dirFd, pathToCString(path), mode, effectiveIds ? 1 : 0, followSymlinks ? 1 : 0);
+        if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
+            log(Level.FINE, "faccessat return value: %d, errno: %d", ret, getErrno(invokeNode));
+        }
         return ret == 0;
     }
 
