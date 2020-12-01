@@ -126,6 +126,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -1641,10 +1642,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", minNumOfPositionalArgs = 1)
+    @Builtin(name = "urandom", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"size"})
+    @ArgumentClinic(name = "size", conversion = ClinicConversion.Index, defaultValue = "0")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class URandomNode extends PythonBuiltinNode {
+    abstract static class URandomNode extends PythonUnaryClinicBuiltinNode {
         private static SecureRandom secureRandom;
 
         private static SecureRandom createRandomInstance() {
@@ -1666,9 +1668,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return factory().createBytes(bytes);
         }
 
-        @Fallback
-        Object urandomError(Object size) {
-            throw raise(TypeError, ErrorMessages.ARG_EXPECTED_GOT, "integer", size);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.URandomNodeClinicProviderGen.INSTANCE;
         }
     }
 
