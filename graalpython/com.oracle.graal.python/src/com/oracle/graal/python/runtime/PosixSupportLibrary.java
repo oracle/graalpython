@@ -165,7 +165,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void closedir(Object receiver, Object dirStream);
 
     /**
-     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods
+     * @return an opaque dir entry object to be used in calls to {@code dirEntry*()} methods or
+     *         {@code null} when there are no more items
      */
     public abstract Object readdir(Object receiver, Object dirStream) throws PosixException;
 
@@ -192,6 +193,30 @@ public abstract class PosixSupportLibrary extends Library {
      * @return one of the {@code DT_xxx} constants
      */
     public abstract int dirEntryGetType(Object receiver, Object dirEntry);
+
+    /**
+     * Equivalent of POSIX {@code utimensat()}.
+     * 
+     * @param timespec an array of 4 longs in this order:
+     *            {@code atime.tv_sec, atime.tv_nsec, mtime.tv_sec, mtime.tv_nsec} or {@code null}
+     *            to set both times to 'now'
+     */
+    public abstract void utimeNsAt(Object receiver, int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) throws PosixException;
+
+    /**
+     * Equivalent of POSIX {@code futimens()}.
+     */
+    public abstract void futimeNs(Object receiver, PosixFd fd, long[] timespec) throws PosixException;
+
+    public abstract void renameAt(Object receiver, int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) throws PosixException;
+
+    public abstract boolean faccessAt(Object receiver, int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks);
+
+    public abstract void fchmodat(Object receiver, int dirFd, PosixPath path, int mode, boolean followSymlinks) throws PosixException;
+
+    public abstract void fchmod(Object receiver, PosixFd fd, int mode) throws PosixException;
+
+    public abstract Object readlinkat(Object receiver, int dirFd, PosixPath path) throws PosixException;
 
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
@@ -305,19 +330,12 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract static class PosixFileHandle {
 
-        public static final PosixFileHandle DEFAULT = new PosixFileHandle() {
-        };
-
         /**
          * Contains the original object (or the object returned by {@code __fspath__}) for auditing
          * purposes. This field is {code null} iff the path parameter was optional and the caller
          * did not provide it.
          */
         public final Object originalObject;
-
-        private PosixFileHandle() {
-            originalObject = null;
-        }
 
         protected PosixFileHandle(Object originalObject) {
             this.originalObject = originalObject;

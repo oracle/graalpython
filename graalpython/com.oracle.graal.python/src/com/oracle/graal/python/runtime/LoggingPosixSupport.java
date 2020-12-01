@@ -491,6 +491,79 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("utimeNsAt", "%d, %s, %s, %b", dirFd, pathname, timespec, followSymlinks);
+        try {
+            lib.utimeNsAt(delegate, dirFd, pathname, timespec, followSymlinks);
+        } catch (PosixException e) {
+            throw logException("utimeNsAt", e);
+        }
+    }
+
+    @ExportMessage
+    final void futimeNs(PosixFd fd, long[] timespec,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("futimeNs", "%s, %s", fd, timespec);
+        try {
+            lib.futimeNs(delegate, fd, timespec);
+        } catch (PosixException e) {
+            throw logException("futimeNs", e);
+        }
+    }
+
+    @ExportMessage
+    final void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("renameAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
+        try {
+            lib.renameAt(delegate, oldDirFd, oldPath, newDirFd, newPath);
+        } catch (PosixException e) {
+            throw logException("renameAt", e);
+        }
+    }
+
+    @ExportMessage
+    final boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
+        return logExit("faccessAt", "%b", lib.faccessAt(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+    }
+
+    @ExportMessage
+    final void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchmodat", "%d, %s, 0%o, %b", dirFd, path, mode, followSymlinks);
+        try {
+            lib.fchmodat(delegate, dirFd, path, mode, followSymlinks);
+        } catch (PosixException e) {
+            throw logException("fchmodat", e);
+        }
+    }
+
+    @ExportMessage
+    final void fchmod(PosixFd fd, int mode,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("fchmod", "%s, 0%o", fd, mode);
+        try {
+            lib.fchmod(delegate, fd, mode);
+        } catch (PosixException e) {
+            throw logException("fchmod", e);
+        }
+    }
+
+    @ExportMessage
+    final Object readlinkat(int dirFd, PosixPath path,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("readlinkat", "%d, %s", dirFd, path);
+        try {
+            return logExit("readlinkat", "%s", lib.readlinkat(delegate, dirFd, path));
+        } catch (PosixException e) {
+            throw logException("readlinkat", e);
+        }
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINER, "createPathFromString", "%s", path);

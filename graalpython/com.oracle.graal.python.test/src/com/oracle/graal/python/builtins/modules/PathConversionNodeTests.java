@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFileHandle;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -106,8 +105,8 @@ public class PathConversionNodeTests {
 
     @Test
     public void noneAllowed() {
-        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NONE));
-        Assert.assertEquals(PosixFileHandle.DEFAULT, call(true, false, PNone.NO_VALUE));
+        Assert.assertEquals(".", callAndExpectPath(true, false, PNone.NONE, null, false));
+        Assert.assertEquals(".", callAndExpectPath(true, false, PNone.NO_VALUE, null, false));
     }
 
     @Test

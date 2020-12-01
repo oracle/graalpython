@@ -327,6 +327,59 @@ int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t
     return 0;
 }
 
+int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
+    if (!timespec) {
+        return utimensat(fixDirFd(dirFd), path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    } else {
+        struct timespec times[2];
+        times[0].tv_sec = timespec[0];
+        times[0].tv_nsec = timespec[1];
+        times[1].tv_sec = timespec[2];
+        times[1].tv_nsec = timespec[3];
+        return utimensat(fixDirFd(dirFd), path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    }
+}
+
+int32_t call_futimens(int32_t fd, int64_t *timespec) {
+    if (!timespec) {
+        return futimens(fd, NULL);
+    } else {
+        struct timespec times[2];
+        times[0].tv_sec = timespec[0];
+        times[0].tv_nsec = timespec[1];
+        times[1].tv_sec = timespec[2];
+        times[1].tv_nsec = timespec[3];
+        return futimens(fd, times);
+    }
+}
+
+int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+    return renameat(oldDirFd, oldPath, newDirFd, newPath);
+}
+
+int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
+    int flags = 0;
+    if (!followSymlinks) {
+        flags |= AT_SYMLINK_NOFOLLOW;
+    }
+    if (effectiveIds) {
+        flags |= AT_EACCESS;
+    }
+    return faccessat(fixDirFd(dirFd), path, mode, flags);
+}
+
+int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
+    return fchmodat(fixDirFd(dirFd), path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+}
+
+int32_t call_fchmod(int32_t fd, int32_t mode) {
+    return fchmod(fd, mode);
+}
+
+int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
+    return readlinkat(dirFd, path, buf, size);
+}
+
 int32_t get_errno() {
     return errno;
 }

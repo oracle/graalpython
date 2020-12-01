@@ -103,6 +103,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
@@ -1004,6 +1005,48 @@ public final class EmulatedPosixSupport extends PosixResources {
             // the same error again
         }
         return PosixSupportLibrary.DT_UNKNOWN;
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void utimeNsAt(int dirFd, PosixPath pathname, long[] timespec, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void futimeNs(PosixFd fd, long[] timespec) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void renameAt(int oldDirFd, PosixPath oldPath, int newDirFd, PosixPath newPath) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public boolean faccessAt(int dirFd, PosixPath path, int mode, boolean effectiveIds, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchmodat(int dirFd, PosixPath path, int mode, boolean followSymlinks) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public void fchmod(PosixFd fd, int mode) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings({"static-method", "unused"})
+    public Object readlinkat(int dirFd, PosixPath path) {
+        throw CompilerDirectives.shouldNotReachHere("Not implemented");
     }
 
     // ------------------

@@ -266,6 +266,12 @@ class WithTempFilesTests(unittest.TestCase):
     def test_unlink_dirfd(self):
         os.unlink(TEST_FILENAME1, dir_fd=self.tmp_fd)
 
+    def test_unlink_remove_err_msg(self):
+        with self.assertRaisesRegex(TypeError, 'unlink'):
+            os.unlink(3.14)
+        with self.assertRaisesRegex(TypeError, 'remove'):
+            os.remove(3.14)
+
     def test_stat(self):
         sr1 = os.stat(TEST_FULL_PATH1)
         self.assertEqual(int(sr1.st_atime), sr1[7])
@@ -279,28 +285,72 @@ class WithTempFilesTests(unittest.TestCase):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:   # TEST_FULL_PATH2 is a symlink to TEST_FULL_PATH1
             self.assertEqual(inode, os.stat(fd).st_ino)
-            with self.assertRaises(ValueError, msg="stat: cannot use fd and follow_symlinks together"):
+            with self.assertRaisesRegex(ValueError, "stat: cannot use fd and follow_symlinks together"):
                 os.stat(fd, follow_symlinks=False)
 
     def test_stat_dirfd(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         self.assertEqual(inode, os.stat(TEST_FILENAME1, dir_fd=self.tmp_fd).st_ino)
-        with self.assertRaises(ValueError, msg="stat: can't specify dir_fd without matching path"):
+        with self.assertRaisesRegex(ValueError, "stat: can't specify dir_fd without matching path"):
             os.stat(0, dir_fd=self.tmp_fd)
-        with self.assertRaises(ValueError, msg="stat: can't specify dir_fd without matching path"):
+        with self.assertRaisesRegex(ValueError, "stat: can't specify dir_fd without matching path"):
             os.stat(0, dir_fd=self.tmp_fd, follow_symlinks=False)
 
     def test_lstat(self):
         inode = os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_ino
         self.assertEqual(inode, os.lstat(TEST_FULL_PATH2).st_ino)   # lstat does not follow symlink
         self.assertEqual(inode, os.lstat(TEST_FILENAME2, dir_fd=self.tmp_fd).st_ino)
-        with self.assertRaises(TypeError, msg="lstat: path should be string, bytes or os.PathLike, not int"):
+        with self.assertRaisesRegex(TypeError, "lstat: path should be string, bytes or os.PathLike, not int"):
             os.lstat(self.tmp_fd)
 
     def test_fstat(self):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_utime_basic(self):
+        stat_result = os.stat(TEST_FULL_PATH1)
+        os.utime(TEST_FULL_PATH2, (-952468575.678901234, 1579569825.123456789))         # follows symlink
+        self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
+        os.utime(TEST_FULL_PATH2, ns=(952468575678901234, 1579569825123456789), follow_symlinks=False)
+        self.assertTrue(os.stat(TEST_FULL_PATH1).st_atime < -900000000)
+        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_mtime - 1579569825) < 10)
+        self.assertTrue(os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_atime > 900000000)
+        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(stat_result.st_atime_ns, stat_result.st_mtime_ns))
+        self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime - stat_result.st_atime) < 10)
+        with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
+            os.utime(fd, times=(12345, 67890))
+            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    @unittest.skipUnless(sys.platform != 'darwin', 'faccessat on MacOSX does not support follow_symlinks')
+    def test_access(self):
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
+        os.unlink(TEST_FULL_PATH1)
+        self.assertFalse(os.access(TEST_FULL_PATH2, 0))
+        self.assertFalse(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd))
+        self.assertTrue(os.access(TEST_FULL_PATH2, 0, follow_symlinks=False))
+        self.assertTrue(os.access(TEST_FILENAME2, 0, dir_fd=self.tmp_fd, follow_symlinks=False))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_chmod(self):
+        orig_mode = os.stat(TEST_FULL_PATH1).st_mode & 0o777
+        os.chmod(TEST_FILENAME1, 0o624, dir_fd=self.tmp_fd)
+        self.assertEqual(0o624, os.stat(TEST_FULL_PATH1).st_mode & 0o777)
+        with open(TEST_FULL_PATH1, os.O_RDWR) as fd:
+            os.chmod(fd, orig_mode)
+        self.assertEqual(orig_mode, os.stat(TEST_FULL_PATH1).st_mode & 0o777)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_readlink(self):
+        self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FULL_PATH2))
+        self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FULL_PATH2)))
+        self.assertEqual(TEST_FULL_PATH1, os.readlink(TEST_FILENAME2, dir_fd=self.tmp_fd))
+        self.assertEqual(os.fsencode(TEST_FULL_PATH1), os.readlink(os.fsencode(TEST_FILENAME2), dir_fd=self.tmp_fd))
 
 
 class ChdirTests(unittest.TestCase):
@@ -341,6 +391,10 @@ class ScandirEmptyTests(unittest.TestCase):
     def test_scandir_empty(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             self.assertEqual(0, len([entry for entry in dir]))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir_empty(self):
+        self.assertEqual([], os.listdir(TEST_FULL_PATH1))
 
 
 class ScandirTests(unittest.TestCase):
@@ -508,6 +562,17 @@ class ScandirTests(unittest.TestCase):
         os.unlink(self.abc_path)
         self.assertEqual(stat_res, entry.stat(follow_symlinks=True))
 
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir(self):
+        self.assertEqual(['.abc'], os.listdir(TEST_FULL_PATH1))
+        self.assertEqual([b'.abc'], os.listdir(os.fsencode(TEST_FULL_PATH1)))
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_listdir_default_arg(self):
+        lst = os.listdir()
+        self.assertFalse('.' in lst)
+        self.assertFalse('..' in lst)
+
 
 class ScandirSymlinkToFileTests(unittest.TestCase):
 
@@ -604,6 +669,102 @@ class ScandirSymlinkToDirTests(unittest.TestCase):
             entry = next(dir)
         os.rmdir(TEST_FULL_PATH2)
         self.assertFalse(entry.is_dir(follow_symlinks=True))
+
+
+class UtimeErrorsTests(unittest.TestCase):
+
+    def test_utime_both_specified(self):
+        with self.assertRaisesRegex(ValueError, "utime: you may specify either 'times' or 'ns' but not both"):
+            os.utime(TEST_FULL_PATH1, (1, 2), ns=(3, 4))
+        with self.assertRaisesRegex(ValueError, "utime: you may specify either 'times' or 'ns' but not both"):
+            os.utime(TEST_FULL_PATH1, (1, 2), ns=None)
+
+    def test_utime_times_not_a_tuple(self):
+        with self.assertRaisesRegex(TypeError, "utime: 'times' must be either a tuple of two ints or None"):
+            os.utime(TEST_FULL_PATH1, '')
+
+    def test_utime_ns_not_a_tuple(self):
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, ns='')
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, ns=None)
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, None, ns='')
+        with self.assertRaisesRegex(TypeError, "utime: 'ns' must be a tuple of two ints"):
+            os.utime(TEST_FULL_PATH1, None, ns=None)
+
+    def test_utime_fd_symlinks(self):
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, None, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, (1, 2), follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: cannot use fd and follow_symlinks together"):
+            os.utime(1, ns=(1, 2), follow_symlinks=False)
+
+    def test_utime_fd_dirfd(self):
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, dir_fd=2)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, None, dir_fd=2, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, (1, 2), dir_fd=2, follow_symlinks=False)
+        with self.assertRaisesRegex(ValueError, "utime: can't specify dir_fd without matching path"):
+            os.utime(1, ns=(1, 2), dir_fd=2)
+
+
+class RenameTests(unittest.TestCase):
+
+    def setUp(self):
+        os.close(os.open(TEST_FULL_PATH1, os.O_WRONLY | os.O_CREAT))
+        os.mkdir(TEST_FULL_PATH2)
+        self.dst_name = "xyz"
+        self.dst_full_path = os.path.join(TEST_FULL_PATH2, self.dst_name)
+
+    def tearDown(self):
+        try:
+            os.unlink(TEST_FULL_PATH1)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        try:
+            os.unlink(self.dst_full_path)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        try:
+            os.rmdir(TEST_FULL_PATH2)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_rename_simple(self):
+        os.rename(TEST_FULL_PATH1, self.dst_full_path)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(TEST_FULL_PATH1)
+        os.stat(self.dst_full_path)
+        os.replace(self.dst_full_path, TEST_FULL_PATH1)
+        os.stat(TEST_FULL_PATH1)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(self.dst_full_path)
+
+    @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'TODO')
+    def test_rename_with_dirfd(self):
+        with open(TEMP_DIR, 0) as tmp_fd:
+            os.rename(TEST_FILENAME1, self.dst_full_path, src_dir_fd=tmp_fd)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(TEST_FULL_PATH1)
+        os.stat(self.dst_full_path)
+        with open(TEMP_DIR, 0) as tmp_fd:
+            os.rename(self.dst_full_path, TEST_FILENAME1, dst_dir_fd=tmp_fd)
+        os.stat(TEST_FULL_PATH1)
+        with self.assertRaises(FileNotFoundError):
+            os.stat(self.dst_full_path)
+
+    def test_rename_replace_err_msg(self):
+        with self.assertRaisesRegex(TypeError, 'rename'):
+            os.rename(3.14, TEST_FILENAME1)
+        with self.assertRaisesRegex(TypeError, 'replace'):
+            os.replace(TEST_FILENAME1, 3.14)
 
 
 if __name__ == '__main__':
