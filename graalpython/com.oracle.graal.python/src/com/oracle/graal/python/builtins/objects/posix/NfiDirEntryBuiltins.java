@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.posix;
 
+import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.opaquePathToBytes;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.PosixSupportLibrary.DT_UNKNOWN;
@@ -93,7 +94,7 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
         PBytes nameAsBytes(VirtualFrame frame, PNfiDirEntry self,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.dirEntryGetName(getPosixSupport(), self.dirEntryData), factory());
+                return opaquePathToBytes(posixLib.dirEntryGetName(getPosixSupport(), self.dirEntryData), posixLib, getPosixSupport(), factory());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -161,7 +162,7 @@ public class NfiDirEntryBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GetOpaquePathHelperNode getOpaquePathHelperNode) {
             Object opaquePath = getOpaquePathHelperNode.execute(frame, self.dirEntryData, self.scandirPath);
-            self.pathCache = new PosixPath(posixLib.getPathAsBytes(getPosixSupport(), opaquePath, factory()), opaquePath, true);
+            self.pathCache = new PosixPath(opaquePathToBytes(opaquePath, posixLib, getPosixSupport(), factory()), opaquePath, true);
             return self.pathCache;
         }
 

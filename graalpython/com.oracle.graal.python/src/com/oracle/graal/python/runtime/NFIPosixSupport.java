@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.runtime.NativeLibrary.NFIBackend;
@@ -58,7 +57,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -715,14 +713,8 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public PBytes getPathAsBytes(Object path, PythonObjectFactory factory) {
-        Buffer result = (Buffer) path;
-        if (result.length > Integer.MAX_VALUE) {
-            // sanity check that it is safe to cast result.length to int, to be removed once
-            // we support large arrays
-            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
-        }
-        return factory.createBytes(result.data, 0, (int) result.length);
+    public Buffer getPathAsBytes(Object path) {
+        return (Buffer) path;
     }
 
     @TruffleBoundary

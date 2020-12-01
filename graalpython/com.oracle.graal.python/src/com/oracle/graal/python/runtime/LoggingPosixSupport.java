@@ -45,12 +45,10 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixFd;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixPath;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -585,10 +583,10 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final PBytes getPathAsBytes(Object path, PythonObjectFactory factory,
+    final Buffer getPathAsBytes(Object path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINER, "getPathAsBytes", "%s", path);
-        return logExit(Level.FINER, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path, factory));
+        return logExit(Level.FINER, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
     }
 
     @TruffleBoundary

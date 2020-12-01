@@ -42,8 +42,6 @@ package com.oracle.graal.python.runtime;
 
 import java.nio.ByteBuffer;
 
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -172,7 +170,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     /**
      * @return an opaque object representing the dir entry name
-     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsBytes(Object, Object)
      * @see #getPathAsString(Object, Object)
      */
     public abstract Object dirEntryGetName(Object receiver, Object dirEntry) throws PosixException;
@@ -182,7 +180,7 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param scandirPath the path originally passed to {@link #opendir(Object, PosixPath)}
      * @return an opaque object representing the dir entry path
-     * @see #getPathAsBytes(Object, Object, PythonObjectFactory)
+     * @see #getPathAsBytes(Object, Object)
      * @see #getPathAsString(Object, Object)
      */
     public abstract Object dirEntryGetPath(Object receiver, Object dirEntry, PosixPath scandirPath) throws PosixException;
@@ -244,7 +242,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract String getPathAsString(Object receiver, Object path);
 
-    public abstract PBytes getPathAsBytes(Object receiver, Object path, PythonObjectFactory factory);
+    public abstract Buffer getPathAsBytes(Object receiver, Object path);
 
     public static class PosixException extends Exception {
 

@@ -1643,7 +1643,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PBytes getcwdb(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.getcwd(getPosixSupport()), factory());
+                return opaquePathToBytes(posixLib.getcwd(getPosixSupport()), posixLib, getPosixSupport(), factory());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -1821,7 +1821,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     }
                     Object name = posixLib.dirEntryGetName(getPosixSupport(), dirEntry);
                     if (produceBytes) {
-                        addToList(list, posixLib.getPathAsBytes(getPosixSupport(), name, factory()));
+                        addToList(list, opaquePathToBytes(name, posixLib, getPosixSupport(), factory()));
                     } else {
                         addToList(list, posixLib.getPathAsString(getPosixSupport(), name));
                     }
@@ -2134,7 +2134,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         PBytes readlinkAsBytes(VirtualFrame frame, PosixPath path, int dirFd,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                return posixLib.getPathAsBytes(getPosixSupport(), posixLib.readlinkat(getPosixSupport(), dirFd, path), factory());
+                return opaquePathToBytes(posixLib.readlinkat(getPosixSupport(), dirFd, path), posixLib, getPosixSupport(), factory());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -3425,6 +3425,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         BigInteger r = BigInteger.valueOf(sec);
         r = r.multiply(BigInteger.valueOf(1000000000));
         return r.add(BigInteger.valueOf(ns));
+    }
+
+    public static PBytes opaquePathToBytes(Object opaquePath, PosixSupportLibrary posixLib, Object posixSupport, PythonObjectFactory factory) {
+        Buffer buf = posixLib.getPathAsBytes(posixSupport, opaquePath);
+        if (buf.length > Integer.MAX_VALUE) {
+            // sanity check that it is safe to cast result.length to int, to be removed once
+            // we support large arrays
+            throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
+        }
+        return factory.createBytes(buf.data, 0, (int) buf.length);
     }
 
     // ------------------
