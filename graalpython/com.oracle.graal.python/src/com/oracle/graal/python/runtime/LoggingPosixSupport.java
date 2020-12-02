@@ -312,11 +312,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final long[] fstat(int fd, boolean handleEintr,
+    final long[] fstat(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("fstat", "%d, %b", fd, handleEintr);
+        logEnter("fstat", "%d", fd);
         try {
-            return logExit("fstat", "%s", lib.fstat(delegate, fd, handleEintr));
+            return logExit("fstat", "%s", lib.fstat(delegate, fd));
         } catch (PosixException e) {
             throw logException("fstat", e);
         }
@@ -389,11 +389,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void fchdir(int fd, boolean handleEintr,
+    final void fchdir(int fd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("fchdir", "%d, %b", fd, handleEintr);
+        logEnter("fchdir", "%d", fd);
         try {
-            lib.fchdir(delegate, fd, handleEintr);
+            lib.fchdir(delegate, fd);
         } catch (PosixException e) {
             throw logException("fchdir", e);
         }

@@ -65,7 +65,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * Implementation that invokes the native POSIX functions directly using NFI. This requires either
@@ -192,19 +191,12 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public int openAt(int dirFd, Object pathname, int flags, int mode,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
-            if (fd >= 0) {
-                return fd;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int fd = invokeNode.callInt(lib, NativeFunctions.call_openat, dirFd, pathToCString(pathname), flags, mode);
+        if (fd < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return fd;
     }
 
     @ExportMessage
@@ -217,39 +209,25 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public Buffer read(int fd, long length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         Buffer buffer = Buffer.allocate(length);
-        while (true) {
-            setErrno(invokeNode, 0);
-            long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
-            if (n >= 0) {
-                return buffer.withLength(n);
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+        setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
+        long n = invokeNode.callLong(lib, NativeFunctions.call_read, fd, wrap(buffer), length);
+        if (n < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return buffer.withLength(n);
     }
 
     @ExportMessage
     public long write(int fd, Buffer data,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            setErrno(invokeNode, 0);
-            long n = invokeNode.callLong(lib, NativeFunctions.call_write, fd, wrap(data), data.length);
-            if (n >= 0) {
-                return n;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?
+        long n = invokeNode.callLong(lib, NativeFunctions.call_write, fd, wrap(data), data.length);
+        if (n < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
+        return n;
     }
 
     @ExportMessage
@@ -312,35 +290,19 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public void ftruncate(int fd, long length,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
-            if (res == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(lib, NativeFunctions.call_ftruncate, fd, length);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
     @ExportMessage
     public void fsync(int fd,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
-            if (res == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fsync, fd);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
         }
     }
 
@@ -384,21 +346,14 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public long[] fstat(int fd, boolean handleEintr,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
+    public long[] fstat(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         long[] out = new long[13];
-        while (true) {
-            int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, wrap(out));
-            if (res == 0) {
-                return out;
-            }
-            int errno = getErrno(invokeNode);
-            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+        int res = invokeNode.callInt(lib, NativeFunctions.call_fstat, fd, wrap(out));
+        if (res != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
+        return out;
     }
 
     @ExportMessage
@@ -477,18 +432,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void fchdir(int fd, boolean handleEintr,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
-                    @Shared("async") @Cached BranchProfile asyncProfile) throws PosixException {
-        while (true) {
-            if (invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd) == 0) {
-                return;
-            }
-            int errno = getErrno(invokeNode);
-            if (!handleEintr || errno != OSErrorEnum.EINTR.getNumber()) {
-                throw newPosixException(invokeNode, errno);
-            }
-            context.triggerAsyncActions(null, asyncProfile);
+    public void fchdir(int fd,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(lib, NativeFunctions.call_fchdir, fd);
+        if (result != 0) {
+            throw newPosixException(invokeNode, getErrno(invokeNode));
         }
     }
 

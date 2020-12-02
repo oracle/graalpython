@@ -118,12 +118,10 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @param handleEintr if {@code true}, EINTR causes the call to be repeated
      * @return see {@code stat_struct_to_longs} in posix.c for the layout of the array
-     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
-     *             {@code false}
+     * @throws PosixException if an error occurs
      */
-    public abstract long[] fstat(Object receiver, int fd, boolean handleEintr) throws PosixException;
+    public abstract long[] fstat(Object receiver, int fd) throws PosixException;
 
     public abstract Object[] uname(Object receiver) throws PosixException;
 
@@ -142,11 +140,9 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param receiver the receiver of the message
      * @param fd the file descriptor
-     * @param handleEintr if {@code true}, EINTR causes the call to be repeated
-     * @throws PosixException if an error occurs (can be EINTR if {@code handleEintr} is
-     *             {@code false}
+     * @throws PosixException if an error occurs
      */
-    public abstract void fchdir(Object receiver, int fd, boolean handleEintr) throws PosixException;
+    public abstract void fchdir(Object receiver, int fd) throws PosixException;
 
     public abstract boolean isatty(Object receiver, int fd);
 

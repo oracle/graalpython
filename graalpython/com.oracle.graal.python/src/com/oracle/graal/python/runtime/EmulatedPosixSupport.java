@@ -535,7 +535,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public long[] fstat(int fd, boolean handleEintr,
+    public long[] fstat(int fd,
                     @Exclusive @Cached BranchProfile nullPathProfile,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
@@ -848,7 +848,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void fchdir(int fd, boolean handleEintr,
+    public void fchdir(int fd,
                     @Shared("errorBranch") @Cached BranchProfile errorBranch,
                     @Exclusive @Cached BranchProfile asyncProfile) throws PosixException {
         String path = getFilePath(fd);
