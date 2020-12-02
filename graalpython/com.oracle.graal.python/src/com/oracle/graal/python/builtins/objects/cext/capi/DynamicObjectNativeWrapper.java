@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_BASE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_EXPORTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_TYPE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.TP_ALLOC;
@@ -166,6 +167,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -285,6 +287,21 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doObject(Object clazz, PythonNativeWrapper nativeWrapper, String key,
                         @Cached ReadObjectNativeMemberNode readObjectMemberNode) throws UnsupportedMessageException, UnknownIdentifierException {
             return readObjectMemberNode.execute(clazz, nativeWrapper, key);
+        }
+    }
+
+    static class UnknownMemberException extends Exception {
+        private static final long serialVersionUID = 123L;
+        public static final UnknownMemberException INSTANCE = new UnknownMemberException();
+
+        private UnknownMemberException() {
+            super(null, null);
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
         }
     }
 
@@ -711,13 +728,8 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(OB_EXPORTS, key)")
-        static Object doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached("createClassProfile()") ValueProfile classProfile) {
-            SequenceStorage sequenceStorage = classProfile.profile(object.getSequenceStorage());
-            if (sequenceStorage instanceof NativeSequenceStorage) {
-                return ((NativeSequenceStorage) sequenceStorage).getPtr();
-            }
-            return new PySequenceArrayWrapper(object, 1);
+        static int doObExports(PByteArray object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getExports();
         }
 
         @Specialization(guards = "eq(OB_FVAL, key)")
@@ -1031,267 +1043,270 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
     // WRITE
     @GenerateUncached
-    @ImportStatic({NativeMember.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     abstract static class WriteNativeMemberNode extends Node {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(WriteNativeMemberNode.class);
 
-        abstract Object execute(Object receiver, PythonNativeWrapper nativeWrapper, String key, Object value)
+        abstract void execute(Object receiver, PythonNativeWrapper nativeWrapper, String key, Object value)
                         throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException;
 
-        @Specialization(guards = "eq(OB_TYPE, key)")
-        static Object doObType(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @SuppressWarnings("unused") PythonManagedClass value,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            // At this point, we do not support changing the type of an object.
-            return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
-        }
-
-        @Specialization(guards = "eq(OB_REFCNT, key)")
-        static long doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value) {
-            nativeWrapper.setRefCount(value);
-            return value;
-        }
-
-        @Specialization(guards = "eq(TP_FLAGS, key)")
-        static long doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags,
-                        @Cached GetTypeFlagsNode getTypeFlagsNode,
-                        @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
-            if (object instanceof PythonBuiltinClass) {
-                // just assert that we try to set the same flags; if there is a difference, this
-                // means we did not properly maintain our flag definition in
-                // TypeNodes.GetTypeFlagsNode.
-                assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object);
-            } else {
-                writeAttributeToObjectNode.execute(object, SpecialAttributeNames.__FLAGS__, flags);
-            }
-            return flags;
-        }
-
-        @TruffleBoundary
-        private static String flagsErrorMessage(PythonManagedClass object) {
-            return "type flags of " + object.getName() + " definitions are out of sync";
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
-        static long doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached IsBuiltinClassProfile profile) {
-            if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
-                writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
-            } else {
-                writeAttrNode.execute(object, __BASICSIZE__, basicsize);
-            }
-            return basicsize;
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_ITEMSIZE, key)"})
-        static long doTpItemsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long itemsize,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached ConditionProfile profile) {
-            if (!profile.profile(object instanceof PythonBuiltinClass)) {
-                // not expected to happen ...
-                writeAttrNode.execute(object, __ITEMSIZE__, itemsize);
-            }
-            return itemsize;
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
-        static Object doTpAlloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WrapVoidPtrNode asPythonObjectNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
-            return allocFunc;
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_VECTORCALL_OFFSET, key)"})
-        static long doTpVectorcallOffset(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long offset,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_VECTORCALL_OFFSET, offset);
-            return offset;
-        }
-
-        @ValueType
-        private static final class SubclassAddState {
-            private final HashingStorage storage;
-            private final HashingStorageLibrary lib;
-            private final Set<PythonAbstractClass> subclasses;
-
-            private SubclassAddState(HashingStorage storage, HashingStorageLibrary lib, Set<PythonAbstractClass> subclasses) {
-                this.storage = storage;
-                this.lib = lib;
-                this.subclasses = subclasses;
-            }
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEALLOC, key)"})
-        static Object doTpDelloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WrapVoidPtrNode asPythonObjectNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
-            return deallocFunc;
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEL, key)"})
-        static Object doTpDel(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object delFunc,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WrapVoidPtrNode asPythonObjectNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_DEL, asPythonObjectNode.execute(delFunc));
-            return delFunc;
-        }
-
-        @Specialization(guards = {"isPythonClass(object)", "eq(TP_FREE, key)"})
-        static Object doTpFree(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached WrapVoidPtrNode asPythonObjectNode) {
-            writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
-            return freeFunc;
-        }
-
         @GenerateUncached
-        static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
+        @ImportStatic({NativeMember.class, PGuards.class, SpecialMethodNames.class, SpecialAttributeNames.class})
+        abstract static class WriteKnownNativeMemberNode extends Node {
+            abstract void execute(Object receiver, PythonNativeWrapper nativeWrapper, String key, Object value)
+                            throws UnknownMemberException, UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException;
 
-            private static final EachSubclassAdd UNCACHED = new EachSubclassAdd();
+            @Specialization(guards = "eq(OB_TYPE, key)")
+            static void doObType(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                            @SuppressWarnings("unused") PythonManagedClass value,
+                            @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                // At this point, we do not support changing the type of an object.
+                PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
+            }
 
-            @Override
-            public SubclassAddState execute(Object key, SubclassAddState s) {
-                setAdd(s.subclasses, (PythonClass) s.lib.getItem(s.storage, key));
-                return s;
+            @Specialization(guards = "eq(OB_REFCNT, key)")
+            static void doObRefcnt(@SuppressWarnings("unused") Object o, PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long value) {
+                nativeWrapper.setRefCount(value);
+            }
+
+            @Specialization(guards = "eq(OB_EXPORTS, key)")
+            static void doObExports(PByteArray array, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, int value) {
+                array.setExports(value);
+            }
+
+            @Specialization(guards = "eq(TP_FLAGS, key)")
+            static void doTpFlags(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long flags,
+                            @Cached GetTypeFlagsNode getTypeFlagsNode,
+                            @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
+                if (object instanceof PythonBuiltinClass) {
+                    // just assert that we try to set the same flags; if there is a difference, this
+                    // means we did not properly maintain our flag definition in
+                    // TypeNodes.GetTypeFlagsNode.
+                    assert getTypeFlagsNode.execute(object) == flags : flagsErrorMessage(object);
+                } else {
+                    writeAttributeToObjectNode.execute(object, SpecialAttributeNames.__FLAGS__, flags);
+                }
             }
 
             @TruffleBoundary
-            protected static void setAdd(Set<PythonAbstractClass> set, PythonClass cls) {
-                set.add(cls);
+            private static String flagsErrorMessage(PythonManagedClass object) {
+                return "type flags of " + object.getName() + " definitions are out of sync";
             }
 
-            static EachSubclassAdd create() {
-                return new EachSubclassAdd();
-            }
-
-            static EachSubclassAdd getUncached() {
-                return UNCACHED;
-            }
-        }
-
-        @Specialization(guards = "eq(TP_SUBCLASSES, key)", limit = "1")
-        static Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value,
-                        @Cached GetSubclassesNode getSubclassesNode,
-                        @Cached EachSubclassAdd eachNode,
-                        @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
-                        @CachedLibrary("value") PythonNativeWrapperLibrary lib,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
-            PDict dict = (PDict) lib.getDelegate(value);
-            HashingStorage storage = getStorage.execute(dict);
-            Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
-            hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
-            return value;
-        }
-
-        @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
-        static Object doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) {
-            lib.setItem(nativeWrapper.createNativeMemberStore(lang), MD_DEF.getMemberName(), value);
-            return value;
-        }
-
-        @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
-        static Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached WriteAttributeToObjectNode writeAttrNode,
-                        @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
-            Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict)) {
-                // special and fast case: commit items and change store
-                PDict d = (PDict) value;
-                for (HashingStorage.DictEntry entry : d.entries()) {
-                    writeAttrNode.execute(object, entry.getKey(), entry.getValue());
-                }
-                PDict existing = lib.getDict(object);
-                if (existing != null) {
-                    d.setDictStorage(existing.getDictStorage());
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
+            static void doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached IsBuiltinClassProfile profile) {
+                if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
+                    writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
                 } else {
-                    d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
+                    writeAttrNode.execute(object, __BASICSIZE__, basicsize);
                 }
-                lib.setDict(object, d);
-            } else {
-                // TODO custom mapping object
             }
-            return value;
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_ITEMSIZE, key)"})
+            static void doTpItemsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long itemsize,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached ConditionProfile profile) {
+                if (!profile.profile(object instanceof PythonBuiltinClass)) {
+                    // not expected to happen ...
+                    writeAttrNode.execute(object, __ITEMSIZE__, itemsize);
+                }
+            }
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_ALLOC, key)"})
+            static void doTpAlloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object allocFunc,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WrapVoidPtrNode asPythonObjectNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_ALLOC, asPythonObjectNode.execute(allocFunc));
+            }
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_VECTORCALL_OFFSET, key)"})
+            static void doTpVectorcallOffset(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long offset,
+                            @Cached WriteAttributeToObjectNode writeAttrNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_VECTORCALL_OFFSET, offset);
+            }
+
+            @ValueType
+            private static final class SubclassAddState {
+                private final HashingStorage storage;
+                private final HashingStorageLibrary lib;
+                private final Set<PythonAbstractClass> subclasses;
+
+                private SubclassAddState(HashingStorage storage, HashingStorageLibrary lib, Set<PythonAbstractClass> subclasses) {
+                    this.storage = storage;
+                    this.lib = lib;
+                    this.subclasses = subclasses;
+                }
+            }
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEALLOC, key)"})
+            static void doTpDelloc(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object deallocFunc,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WrapVoidPtrNode asPythonObjectNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_DEALLOC, asPythonObjectNode.execute(deallocFunc));
+            }
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_DEL, key)"})
+            static void doTpDel(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object delFunc,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WrapVoidPtrNode asPythonObjectNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_DEL, asPythonObjectNode.execute(delFunc));
+            }
+
+            @Specialization(guards = {"isPythonClass(object)", "eq(TP_FREE, key)"})
+            static void doTpFree(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object freeFunc,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WrapVoidPtrNode asPythonObjectNode) {
+                writeAttrNode.execute(object, TypeBuiltins.TYPE_FREE, asPythonObjectNode.execute(freeFunc));
+            }
+
+            @GenerateUncached
+            static final class EachSubclassAdd extends HashingStorageLibrary.ForEachNode<SubclassAddState> {
+
+                private static final EachSubclassAdd UNCACHED = new EachSubclassAdd();
+
+                @Override
+                public SubclassAddState execute(Object key, SubclassAddState s) {
+                    setAdd(s.subclasses, (PythonClass) s.lib.getItem(s.storage, key));
+                    return s;
+                }
+
+                @TruffleBoundary
+                protected static void setAdd(Set<PythonAbstractClass> set, PythonClass cls) {
+                    set.add(cls);
+                }
+
+                static EachSubclassAdd create() {
+                    return new EachSubclassAdd();
+                }
+
+                static EachSubclassAdd getUncached() {
+                    return UNCACHED;
+                }
+            }
+
+            @Specialization(guards = "eq(TP_SUBCLASSES, key)", limit = "1")
+            static void doTpSubclasses(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value,
+                            @Cached GetSubclassesNode getSubclassesNode,
+                            @Cached EachSubclassAdd eachNode,
+                            @Cached HashingCollectionNodes.GetDictStorageNode getStorage,
+                            @CachedLibrary("value") PythonNativeWrapperLibrary lib,
+                            @CachedLibrary(limit = "1") HashingStorageLibrary hashLib) {
+                PDict dict = (PDict) lib.getDelegate(value);
+                HashingStorage storage = getStorage.execute(dict);
+                Set<PythonAbstractClass> subclasses = getSubclassesNode.execute(object);
+                hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
+            }
+
+            @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
+            static void doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @CachedLanguage PythonLanguage lang,
+                            @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) {
+                lib.setItem(nativeWrapper.createNativeMemberStore(lang), MD_DEF.getMemberName(), value);
+            }
+
+            @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
+            static void doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object nativeValue,
+                            @CachedLibrary("object") PythonObjectLibrary lib,
+                            @Cached AsPythonObjectNode asPythonObjectNode,
+                            @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached IsBuiltinClassProfile isPrimitiveDictProfile) throws UnsupportedMessageException {
+                Object value = asPythonObjectNode.execute(nativeValue);
+                if (value instanceof PDict && isPrimitiveDictProfile.profileObject(value, PythonBuiltinClassType.PDict)) {
+                    // special and fast case: commit items and change store
+                    PDict d = (PDict) value;
+                    for (HashingStorage.DictEntry entry : d.entries()) {
+                        writeAttrNode.execute(object, entry.getKey(), entry.getValue());
+                    }
+                    PDict existing = lib.getDict(object);
+                    if (existing != null) {
+                        d.setDictStorage(existing.getDictStorage());
+                    } else {
+                        d.setDictStorage(new DynamicObjectStorage(object.getStorage()));
+                    }
+                    lib.setDict(object, d);
+                } else {
+                    // TODO custom mapping object
+                }
+            }
+
+            @Specialization(guards = "eq(TP_DICTOFFSET, key)")
+            static void doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
+                // TODO properly implement 'tp_dictoffset' for builtin classes
+                if (!(object instanceof PythonBuiltinClass)) {
+                    setAttrNode.execute(object, __DICTOFFSET__, lib.asPInt(value));
+                }
+            }
+
+            @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
+            static void doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @Cached CastToJavaLongExactNode cast) {
+                try {
+                    object.getExports().set(cast.execute(value));
+                } catch (CannotCastException | PException e) {
+                    throw CompilerDirectives.shouldNotReachHere("Failed to set memoryview exports: invalid type");
+                }
+            }
+
+            @Specialization(guards = "eq(F_LINENO, key)")
+            static void doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
+                            @Cached CastToJavaIntLossyNode castToJavaIntNode) {
+                try {
+                    int lineno = castToJavaIntNode.execute(value);
+                    object.setLine(lineno);
+                } catch (PException e) {
+                    // Ignore
+                }
+            }
+
+            @Fallback
+            @SuppressWarnings("unused")
+            static void fallback(Object object, PythonNativeWrapper wrapper, String key, Object value) throws UnknownMemberException {
+                throw UnknownMemberException.INSTANCE;
+            }
+
+            protected static boolean eq(NativeMember expected, String actual) {
+                return expected.getMemberName().equals(actual);
+            }
         }
 
-        @Specialization(guards = "eq(TP_DICTOFFSET, key)")
-        static Object doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
-            // TODO properly implement 'tp_dictoffset' for builtin classes
-            if (object instanceof PythonBuiltinClass) {
-                return 0L;
-            }
-            setAttrNode.execute(object, __DICTOFFSET__, lib.asPInt(value));
-            return value;
+        @Specialization(rewriteOn = UnknownMemberException.class)
+        static void doKnown(Object object, PythonNativeWrapper nativeWrapper, String key, Object value,
+                        @Cached WriteKnownNativeMemberNode writeKnownNativeMemberNode)
+                        throws UnknownMemberException, UnsupportedMessageException, UnsupportedTypeException, UnknownIdentifierException {
+            writeKnownNativeMemberNode.execute(object, nativeWrapper, key, value);
         }
 
-        @Specialization(guards = "eq(MEMORYVIEW_EXPORTS, key)")
-        static Object doMemoryViewExports(PMemoryView object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached CastToJavaLongExactNode cast) {
-            try {
-                object.getExports().set(cast.execute(value));
-            } catch (CannotCastException | PException e) {
-                throw CompilerDirectives.shouldNotReachHere("Failed to set memoryview exports: invalid type");
-            }
-            return value;
-        }
-
-        @Specialization(guards = "eq(F_LINENO, key)")
-        static int doFLineno(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                        @Cached CastToJavaIntLossyNode castToJavaIntNode) {
-            try {
-                int lineno = castToJavaIntNode.execute(value);
-                object.setLine(lineno);
-                return lineno;
-            } catch (PException e) {
-                return -1;
-            }
-        }
-
-        @Specialization(guards = "isGenericCase(key)", limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key, Object value,
+        @Specialization(replaces = "doKnown")
+        static void doGeneric(Object object, PythonNativeWrapper nativeWrapper, String key, Object value,
+                        @Cached WriteKnownNativeMemberNode writeKnownNativeMemberNode,
                         @CachedLanguage PythonLanguage lang,
-                        @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) throws UnknownIdentifierException {
-            // This is the preliminary generic case: There are native members we know that they
-            // exist but we do currently not represent them. So, store them into a dynamic object
-            // such that native code at least reads the value that was written before.
-            if (nativeWrapper.isMemberModifiable(key)) {
-                logGeneric(key);
-                lib.setItem(nativeWrapper.createNativeMemberStore(lang), key, value);
-                return value;
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib)
+                        throws UnknownIdentifierException, UnsupportedTypeException, UnsupportedMessageException {
+            try {
+                writeKnownNativeMemberNode.execute(object, nativeWrapper, key, value);
+            } catch (UnknownMemberException e) {
+                if (nativeWrapper instanceof DynamicObjectNativeWrapper) {
+                    // This is the preliminary generic case: There are native members we know that
+                    // they exist but we do currently not represent them. So, store them into a
+                    // dynamic object such that native code at least reads the value that was
+                    // written before.
+                    if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
+                        logGeneric(key);
+                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(lang), key, value);
+                    }
+                    throw UnknownIdentifierException.create(key);
+                } else {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
             }
-            throw UnknownIdentifierException.create(key);
         }
 
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
             LOGGER.log(Level.FINE, "write of Python struct native member " + key);
-        }
-
-        protected static boolean eq(NativeMember expected, String actual) {
-            return expected.getMemberName().equals(actual);
-        }
-
-        protected static boolean isGenericCase(String key) {
-            return !(OB_TYPE.getMemberName().equals(key) ||
-                            OB_REFCNT.getMemberName().equals(key) ||
-                            TP_FLAGS.getMemberName().equals(key) ||
-                            TP_BASICSIZE.getMemberName().equals(key) ||
-                            TP_ITEMSIZE.getMemberName().equals(key) ||
-                            TP_ALLOC.getMemberName().equals(key) ||
-                            TP_DEALLOC.getMemberName().equals(key) ||
-                            TP_DEL.getMemberName().equals(key) ||
-                            TP_FREE.getMemberName().equals(key) ||
-                            TP_SUBCLASSES.getMemberName().equals(key) ||
-                            MD_DEF.getMemberName().equals(key) ||
-                            TP_DICT.getMemberName().equals(key));
         }
     }
 
@@ -1299,6 +1314,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     protected boolean isMemberModifiable(String member) {
         return OB_TYPE.getMemberName().equals(member) ||
                         OB_REFCNT.getMemberName().equals(member) ||
+                        OB_EXPORTS.getMemberName().equals(member) ||
                         TP_FLAGS.getMemberName().equals(member) ||
                         TP_BASICSIZE.getMemberName().equals(member) ||
                         TP_ITEMSIZE.getMemberName().equals(member) ||

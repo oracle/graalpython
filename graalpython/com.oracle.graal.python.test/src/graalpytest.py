@@ -329,7 +329,7 @@ class TestCase(object):
     def run_safely(self, func, print_immediately=False):
         if verbose:
             with print_lock:
-                print(u"\n\t\u21B3 ", func.__name__, " ", end="", flush=True)
+                print(u"\n\t\u21B3 ", func.__qualname__, " ", end="", flush=True)
 
         if func.__code__ is Mark.xfail(func).__code__:
             return _skipped_marker

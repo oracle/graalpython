@@ -85,22 +85,6 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static boolean isBuffer(@SuppressWarnings("unused") String str) {
-        return false;
-    }
-
-    @ExportMessage
-    static int getBufferLength(@SuppressWarnings("unused") String str) {
-        return getBufferBytes(str).length;
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    static byte[] getBufferBytes(String str) {
-        return str.getBytes();
-    }
-
-    @ExportMessage
     @TruffleBoundary
     static long hashWithState(String self, @SuppressWarnings("unused") ThreadState state) {
         return self.hashCode();

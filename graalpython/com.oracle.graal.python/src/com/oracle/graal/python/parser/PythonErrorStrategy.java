@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.EXEC;
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
+
 import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.NoViableAltException;
@@ -78,9 +81,22 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
     }
 
-    static ErrorType getErrorType(Exception e) {
+    static ErrorType getErrorType(Exception e, SourceSection section) {
         if (e instanceof DescriptiveBailErrorListener.EmptyRecognitionException) {
-            return ((DescriptiveBailErrorListener.EmptyRecognitionException) e).getErrorType();
+            DescriptiveBailErrorListener.EmptyRecognitionException except = ((DescriptiveBailErrorListener.EmptyRecognitionException) e);
+            ErrorType type = except.getErrorType();
+            if (section.isAvailable() && type == ErrorType.Generic) {
+                String prev = except.getPreviousToken();
+                if (prev != null) {
+                    if (prev.equals(PRINT)) {
+                        return ErrorType.Print;
+                    }
+                    if (prev.equals(EXEC)) {
+                        return ErrorType.Exec;
+                    }
+                }
+            }
+            return type;
         }
         return ErrorType.Generic;
     }

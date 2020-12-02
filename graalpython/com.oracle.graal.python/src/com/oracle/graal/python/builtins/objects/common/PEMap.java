@@ -225,9 +225,9 @@ final class PEMap implements Iterable<DictKey> {
         }
         if (key.hash == other.hash) {
             if (gotState.profile(state != null)) {
-                return keylib.equalsWithState(key.value, other.value, otherlib, state);
+                return otherlib.equalsWithState(other.value, key.value, keylib, state);
             } else {
-                return keylib.equals(key.value, other.value, otherlib);
+                return otherlib.equals(other.value, key.value, keylib);
             }
         }
         return false;

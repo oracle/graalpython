@@ -337,3 +337,46 @@ class TestPyBytes(CPyExtTestCase):
         callfunction="resize_bytes",
         cmpfunc=unhandled_error_compare
     )
+
+    test_bytearray_buffer = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (bytearray(b"hello_world"), b"Hello_worlds"),
+        ),
+        code="""
+        PyObject* test_buffer(PyObject* bytes, PyObject* expected) {
+            Py_buffer buffer;
+            PyObject* ret;
+            if (PyObject_GetBuffer(bytes, &buffer, PyBUF_SIMPLE | PyBUF_WRITABLE) != 0)
+                return NULL;
+            *(char*)buffer.buf = 'H';
+            Py_ssize_t len = PyObject_Size(bytes);
+            if (len == -1)
+                goto error_release;
+            ret = PyObject_CallMethod(bytes, "insert", "ni", len, 'x');
+            if (ret != NULL) {
+                Py_DECREF(ret);
+                PyErr_SetString(PyExc_AssertionError, "insert didn't raise BufferError");
+                goto error_release;
+            }
+            if (!PyErr_ExceptionMatches(PyExc_BufferError))
+                goto error_release;
+            PyErr_Clear();
+            PyBuffer_Release(&buffer);
+            ret = PyObject_CallMethod(bytes, "insert", "ni", len, 's');
+            if (ret == NULL)
+                return NULL;
+            Py_DECREF(ret);
+            Py_INCREF(bytes);
+            return bytes;
+        error_release: 
+            PyBuffer_Release(&buffer);
+            return NULL;            
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* bytes", "PyObject* expected"],
+        callfunction="test_buffer",
+        cmpfunc=unhandled_error_compare
+    )

@@ -41,7 +41,6 @@ public abstract class SequenceStorage {
         Empty,
         Boolean,
         Byte,
-        Char,
         Int,
         Long,
         Double,
@@ -56,7 +55,6 @@ public abstract class SequenceStorage {
                     return false;
                 case Boolean:
                 case Byte:
-                case Char:
                 case Double:
                 case List:
                 case Tuple:

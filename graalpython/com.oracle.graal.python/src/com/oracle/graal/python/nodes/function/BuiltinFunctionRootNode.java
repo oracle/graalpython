@@ -179,9 +179,23 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 }
             }
         }
-
-        return new Signature(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), (builtin.takesVarArgs() || builtin.varArgsMarker()) ? parameterNames.length : -1,
+        assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
+                        " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
+        return new Signature(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
                         builtin.varArgsMarker(), parameterNames, builtin.keywordOnlyNames());
+    }
+
+    // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)
+    // can only be used by builtins with up to n positional arguments (without varargs/kwargs).
+    // (Note that this does not apply to PythonVarargsBuiltinNode which can be used with
+    // varargs/kwargs builtins.)
+    private static boolean canUseSpecialBuiltinNode(Builtin builtin) {
+        return !builtin.takesVarArgs() && !builtin.takesVarKeywordArgs() && !builtin.varArgsMarker() && builtin.keywordOnlyNames().length == 0;
+    }
+
+    private static boolean usesSpecialBuiltinNode(Class<? extends PythonBuiltinBaseNode> clazz) {
+        return PythonUnaryBuiltinNode.class.isAssignableFrom(clazz) || PythonBinaryBuiltinNode.class.isAssignableFrom(clazz) || PythonTernaryBuiltinNode.class.isAssignableFrom(clazz) ||
+                        PythonQuaternaryBuiltinNode.class.isAssignableFrom(clazz);
     }
 
     /**

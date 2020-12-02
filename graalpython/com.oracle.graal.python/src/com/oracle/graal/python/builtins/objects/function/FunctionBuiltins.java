@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__KWDEFAULTS__
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.TRUFFLE_SOURCE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -196,15 +195,6 @@ public class FunctionBuiltins extends PythonBuiltins {
             }
             self.setKwDefaults(keywords.toArray(new PKeyword[keywords.size()]));
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object obj) {
-            throw raise(TypeError, ErrorMessages.CANT_PICKLE_FUNC_OBJS);
         }
     }
 

@@ -294,6 +294,16 @@ public abstract class HashingStorageLibrary extends Library {
     public abstract HashingStorage copy(HashingStorage self);
 
     /**
+     * Determines if the storage has elements with a potential side effect on access.
+     * 
+     * @return {@code true} if the storage has elements with a potential side effect, otherwise
+     *         {@code false}.
+     */
+    public boolean hasSideEffect(HashingStorage self) {
+        return false;
+    }
+
+    /**
      * @return {@code true} if the key-value pairs are equal between these storages.
      */
     public boolean equalsWithState(HashingStorage self, HashingStorage other, ThreadState state) {

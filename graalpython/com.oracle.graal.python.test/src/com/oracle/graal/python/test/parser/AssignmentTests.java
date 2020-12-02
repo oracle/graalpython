@@ -193,29 +193,4 @@ public class AssignmentTests extends ParserTestBase {
     public void annotationType03() throws Exception {
         checkTreeResult("j = 1\n" + "ahoj.__annotations__['j'] = float");
     }
-
-    @Test
-    public void annotationType04() throws Exception {
-        checkSyntaxErrorMessage("lambda: x:x", "SyntaxError: illegal target for annotation");
-    }
-
-    @Test
-    public void annotationType05() throws Exception {
-        checkSyntaxErrorMessage("{}: int", "SyntaxError: illegal target for annotation");
-    }
-
-    @Test
-    public void annotationType06() throws Exception {
-        checkSyntaxErrorMessage("(1,2): int", "SyntaxError: only single target (not tuple) can be annotated");
-    }
-
-    @Test
-    public void annotationType07() throws Exception {
-        checkSyntaxErrorMessage("[1,2]: int", "SyntaxError: only single target (not list) can be annotated");
-    }
-
-    @Test
-    public void annotationType08() throws Exception {
-        checkSyntaxErrorMessage("list(): int", "SyntaxError: illegal target for annotation");
-    }
 }

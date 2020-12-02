@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -175,10 +175,6 @@ public abstract class PGuards {
 
     public static boolean isEmptyStorage(PSequence sequence) {
         return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
-    }
-
-    public static boolean isEmptyStorage(PArray array) {
-        return array.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
     public static boolean isBasicStorage(PSequence sequence) {
@@ -417,6 +413,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytesLike;
+    }
+
+    public static boolean isArray(Object obj) {
+        return obj instanceof PArray;
     }
 
     public static boolean isAnySet(Object obj) {

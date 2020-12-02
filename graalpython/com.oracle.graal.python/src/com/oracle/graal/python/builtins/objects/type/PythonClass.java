@@ -29,6 +29,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -43,14 +44,15 @@ import com.oracle.truffle.api.source.SourceSection;
  * Mutable class.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonClass extends PythonManagedClass {
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, instanceShape, null, name, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, baseClasses);
     }
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape instanceShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, instanceShape, null, name, invokeMro, baseClasses);
+    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, boolean invokeMro, PythonAbstractClass[] baseClasses) {
+        super(lang, typeClass, classShape, null, name, invokeMro, baseClasses);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
@@ -63,8 +65,9 @@ public final class PythonClass extends PythonManagedClass {
     @ExportMessage
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
     }
 
     @ExportMessage

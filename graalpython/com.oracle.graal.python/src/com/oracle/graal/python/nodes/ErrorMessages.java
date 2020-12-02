@@ -160,6 +160,7 @@ public abstract class ErrorMessages {
     public static final String CANT_FIND_MODULE = "can't find module '%s'";
     public static final String CANT_MULTIPLY_SEQ_BY_NON_INT = "can't multiply sequence by non-int of type '%p'";
     public static final String CANT_PICKLE_FUNC_OBJS = "can't pickle function objects";
+    public static final String CANT_SET_S_S = "can't set %s.%s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE = "can't set attributes of %s";
     public static final String CANT_SET_ATTRIBUTES_OF_TYPE_S = "can't set attributes of built-in/extension type '%s'";
     public static final String CANT_SPECIFY_TIMEOUT_FOR_NONBLOCKING = "can't specify a timeout for a non-blocking call";
@@ -274,7 +275,7 @@ public abstract class ErrorMessages {
     public static final String ILLEGAL_EXPRESSION_FOR_AUGMENTED_ASSIGNEMNT = "illegal expression for augmented assignment";
     public static final String ILLEGAL_IP_STRING_PASSED_TO = "illegal IP address string passed to %s";
     public static final String ILLEGAL_SOCKET_ADDR_ARG = "%s: illegal sockaddr argument";
-    public static final String IMPORT_START_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
+    public static final String IMPORT_STAR_ONLY_ALLOWED_AT_MODULE_LEVEL = "import * only allowed at module level";
     public static final String INCOMPLETE_FORMAT = "incomplete format";
     public static final String INDEX_NOT_INT = "%s: index not int";
     public static final String INDEX_OUT_OF_BOUNDS = "index out of bounds";
@@ -322,6 +323,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_PTR_OBJ = "invalid pointer object: %s";
     public static final String INVALID_SYNTAX = "invalid syntax";
     public static final String INVALID_USE_OF_W_FORMAT_CHAR = "invalid use of 'w' format character";
+    public static final String INVALID_BUFFER_ACCESS = "invalid buffer access";
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
@@ -521,6 +523,7 @@ public abstract class ErrorMessages {
     public static final String STEP_1_NOT_SUPPORTED = "step != 1 not supported";
     public static final String STRING_ARG_WO_ENCODING = "string argument without an encoding";
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
+    public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
     public static final String SUBSECTION_NOT_FOUND = "subsection not found";
@@ -536,6 +539,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
     public static final String TIMEOUT_VALUE_TOO_LARGE = "timeout value is too large";
+    public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
     public static final String TOO_LARGE_TO_CONVERT_TO = "%s too large to convert to %s";
     public static final String TOO_MANY_ARG = "%s: too many arguments";
@@ -570,6 +574,7 @@ public abstract class ErrorMessages {
     public static final String UNSUPPORTED_OBJ_IN = "unsupported object in '%s'";
     public static final String UNSUPPORTED_OPERAND_P = "unsupported operand '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P = "unsupported operand type(s) for %s: '%p' and '%p'";
+    public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT = UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P + ". Did you mean \"print(<message>, file=<output_stream>)\"?";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_P_P_P = "unsupported operand type(s) for %s(): '%p', '%p', '%p'";
     public static final String UNSUPPORTED_OPERAND_TYPES_FOR_S_PR_S_P_AND_P = "unsupported operand type(s) for %s or %s(): '%p' and '%p'";
     public static final String UNSUPPORTED_SIZE_WAS = "unsupported %s size; was: %d";
@@ -614,7 +619,7 @@ public abstract class ErrorMessages {
     public static final String UNMAPPABLE_CHARACTER = "unmappable character";
     public static final String MALFORMED_INPUT = "malformed input";
     public static final String SHOULD_HAVE_RETURNED_EXCEPTION = "calling %N should have returned an instance of BaseException, not %p";
-    public static final String STRING_KEYS_MUST_BE_LENGHT_1 = "string keys in translate table must be of length 1";
+    public static final String STRING_KEYS_MUST_BE_LENGTH_1 = "string keys in translate table must be of length 1";
     public static final String KEYS_IN_TRANSLATE_TABLE_MUST_BE_STRINGS_OR_INTEGERS = "keys in translate table must be strings or integers";
     public static final String EXPECTED_BYTES_P_FOUND = "expected bytes, %p found";
     public static final String EMBEDDED_NULL_BYTE = "embedded null byte";

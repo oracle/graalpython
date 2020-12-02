@@ -21,57 +21,87 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+copyreg = None
+
+
+def import_copyreg():
+    global copyreg
+    if not copyreg:
+        import copyreg
+
+
 def __reduce__(obj, proto=0):
     if proto >= 2:
-        descr = getattr(w_obj, '__getnewargs_ex__', None)
-        hasargs = True
-        if descr is not None:
-            result = descr()
-            if not isinstance(result, tuple):
-                raise TypeError("__getnewargs_ex__ should return a tuple, not '%s'", type(result))
-            n = len(result)
-            if n != 2:
-                raise ValueError("__getnewargs_ex__ should return a tuple of length 2, not %d", n)
-            args, kwargs = result
-            if isinstance(args, tuple):
-                raise TypeError("first item of the tuple returned by __getnewargs_ex__ must be a tuple, not '%s'", type(args))
-            if not isinstance(kwargs, dict):
-                raise TypeError("second item of the tuple returned by __getnewargs_ex__ must be a dict, not '%s'", type(kwargs))
-        else:
-            descr = getattr(obj, '__getnewargs__', None)
-            if descr is not None:
-                args = descr(obj)
-                if not isinstance(args, tuple):
-                    raise TypeError("__getnewargs__ should return a tuple, not '%s'", type(args))
-            else:
-                hasargs = False
-                args = tuple()
-            kwargs = None
-        getstate = getattr(obj, '__getstate__')
-        if getstate is None:
-            required = (not hasargs and
-                not isinstance(obj, list) and
-                not isinstance(obj, dict))
-            obj_type = type(obj)
-            if required:
-                raise TypeError("cannot pickle %s objects", obj_type)
-        return reduce_2(obj, proto, args, kwargs)
-    return reduce_1(obj, proto)
+        return reduce_newobj(obj)
+
+    proto = int(proto)
+    import_copyreg()
+    return copyreg._reduce_ex(obj, proto)
 
 
-def _getstate(obj):
+def _get_new_arguments(obj):
+    # We first attempt to fetch the arguments for __new__ by calling __getnewargs_ex__ on the object.
+    getnewargs_ex = getattr(obj, '__getnewargs_ex__', None)
+    if getnewargs_ex is not None:
+        newargs = getnewargs_ex()
+        if not isinstance(newargs, tuple):
+            raise TypeError("__getnewargs_ex__ should return a tuple, not '{}'".format(type(newargs)))
+        if len(newargs) != 2:
+            raise ValueError("__getnewargs_ex__ should return a tuple of length 2, not {}".format(len(newargs)))
+        args, kwargs = newargs
+        if not isinstance(args, tuple):
+            raise TypeError("first item of the tuple returned by __getnewargs_ex__ must be a tuple, not '{}".format(type(args)))
+        if not isinstance(kwargs, dict):
+            raise TypeError("second item of the tuple returned by __getnewargs_ex__ must be a dict, not '{}'".format(type(kwargs)))
+        return args, kwargs
+
+    getnewargs = getattr(obj, '__getnewargs__', None)
+    if getnewargs is not None:
+        args = getnewargs()
+        if not isinstance(args, tuple):
+            raise TypeError("__getnewargs__ should return a tuple, not '{}'".format(type(args)))
+        return args, None
+
+    # The object does not have __getnewargs_ex__ and __getnewargs__. This may
+    # mean __new__ does not takes any arguments on this object, or that the
+    # object does not implement the reduce protocol for pickling or
+    # copying.
+    return None, None
+
+
+def reduce_newobj(obj):
     cls = obj.__class__
+    if not hasattr(cls, '__new__'):
+        raise TypeError("cannot pickle '{}' object".format(cls.__name__))
+
+    args, kwargs = _get_new_arguments(obj)
+    import_copyreg()
+
+    hasargs = args is not None
+
+    if kwargs is None or len(kwargs) == 0:
+        newobj = copyreg.__newobj__
+        newargs = (cls, ) + (args if args else tuple())
+    elif args is not None:
+        newobj = copyreg.__newobj_ex__
+        newargs = (cls, args, kwargs)
+    else:
+        import sys
+        frame = sys._getframe(0)
+        file_name = frame.f_code.co_filename
+        line_no = frame.f_lineno
+        raise SystemError("{}:{}: bad argument to internal function".format(file_name, line_no))
 
     try:
         getstate = obj.__getstate__
     except AttributeError:
-        # and raises a TypeError if the condition holds true, this is done
-        # just before reduce_2 is called in pypy
+        required = not hasargs and not isinstance(obj, (list, dict))
+        itemsize = getattr(type(obj), '__itemsize__', 0)
+        if required and itemsize != 0:
+            raise TypeError("cannot pickle '{}' object".format(cls.__name__))
+
         state = getattr(obj, "__dict__", None)
-        # CPython returns None if the dict is empty
-        if state is not None and len(state) == 0:
-            state = None
-        names = slotnames(cls) # not checking for list
+        names = slotnames(cls)  # not checking for list
         if names is not None:
             slots = {}
             for name in names:
@@ -80,49 +110,15 @@ def _getstate(obj):
                 except AttributeError:
                     pass
                 else:
-                    slots[name] =  value
+                    slots[name] = value
             if slots:
                 state = state, slots
     else:
         state = getstate()
-    return state
-
-
-copyreg = None
-def reduce_1(obj, proto):
-    global copyreg
-    if not copyreg:
-        import copyreg
-    return copyreg._reduce_ex(obj, proto)
-
-
-def reduce_2(obj, proto, args, kwargs):
-    cls = obj.__class__
-
-    if not hasattr(type(obj), "__new__"):
-        raise TypeError("can't pickle %s objects" % type(obj).__name__)
-
-    global copyreg
-    if not copyreg:
-        import copyreg
-
-    if not isinstance(args, tuple):
-        raise TypeError("__getnewargs__ should return a tuple")
-    if not kwargs:
-       newobj = copyreg.__newobj__
-       args2 = (cls,) + args
-    elif proto >= 4:
-       newobj = copyreg.__newobj_ex__
-       args2 = (cls, args, kwargs)
-    else:
-       raise ValueError("must use protocol 4 or greater to copy this "
-                        "object; since __getnewargs_ex__ returned "
-                        "keyword arguments.")
-    state = _getstate(obj)
     listitems = iter(obj) if isinstance(obj, list) else None
     dictitems = iter(obj.items()) if isinstance(obj, dict) else None
 
-    return newobj, args2, state, listitems, dictitems
+    return newobj, newargs, state, listitems, dictitems
 
 
 def slotnames(cls):
@@ -144,14 +140,15 @@ def slotnames(cls):
 
 
 def __reduce_ex__(obj, proto=0):
-    obj_reduce = getattr(obj, "__reduce__", None)
-    if obj_reduce is not None:
+    obj_reduce = getattr(type, "__reduce__", None)
+    _reduce = getattr(obj, "__reduce__", None)
+    if _reduce is not None:
         # Check if __reduce__ has been overridden:
         # "type(obj).__reduce__ is not object.__reduce__"
         cls_reduce = getattr(type(obj), "__reduce__", None)
         override = cls_reduce is not obj_reduce
         if override:
-            return obj_reduce()
+            return _reduce()
     return __reduce__(obj, proto)
 
 

@@ -43,6 +43,13 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetDictStorageNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -111,6 +118,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
     @Child private TypeNodes.IsSameTypeNode isSameTypeNode = IsSameTypeNodeGen.create();
     @Child private GetMroStorageNode getMroNode;
+
+    protected static final int MAX_DICT_TYPES = ReadAttributeFromObjectNode.MAX_DICT_TYPES;
 
     protected PythonCore getCore() {
         if (contextRef == null) {
@@ -190,18 +199,34 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return findAttr(getCore(), klass, key, readAttrNode);
     }
 
-    static final class PythonClassAssumptionPair {
+    static final class AttributeAssumptionPair {
         public final Assumption assumption;
         public final Object value;
 
-        PythonClassAssumptionPair(Assumption assumption, Object value) {
+        AttributeAssumptionPair(Assumption assumption, Object value) {
             this.assumption = assumption;
             this.value = value;
         }
     }
 
-    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(Object klass) {
+    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
+        // - avoid cases when attributes are stored in a dict containing elements
+        // with a potential MRO sideeffect on access.
+        // Also note that attr should not be read more than once.
+        // - assuming that keys/elements can't be added or replaced in a class dict.
+        // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
+        // possibly do so, but for now leaving it as it is.
+        PDict dict;
+        if (klass instanceof PythonAbstractNativeObject) {
+            Object nativedict = CExtNodes.GetTypeMemberNode.getUncached().execute(klass, NativeMember.TP_DICT);
+            dict = nativedict == PNone.NO_VALUE ? null : (PDict) nativedict;
+        } else {
+            dict = PythonObjectLibrary.getUncached().getDict(klass);
+        }
+        if (dict != null && HashingStorageLibrary.getUncached().hasSideEffect(GetDictStorageNode.getUncached().execute(dict))) {
+            return null;
+        }
         MroSequenceStorage mro = getMro(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length(); i++) {
@@ -215,19 +240,19 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             }
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
-                return new PythonClassAssumptionPair(attrAssumption, value);
+                return new AttributeAssumptionPair(attrAssumption, value);
             }
         }
-        return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
+        return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedClassInMROInfo != null"}, //
+    @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    assumptions = {"cachedClassInMROInfo.assumption", "singleContextAssumption()"})
+                    assumptions = {"cachedAttrInMROInfo.assumption", "singleContextAssumption()"})
     protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
-        return cachedClassInMROInfo.value;
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
+        return cachedAttrInMROInfo.value;
     }
 
     protected static ReadAttributeFromObjectNode[] create(int size) {

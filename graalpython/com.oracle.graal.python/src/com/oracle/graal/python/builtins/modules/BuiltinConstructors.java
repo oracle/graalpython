@@ -77,6 +77,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SLOTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKREF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
@@ -86,6 +87,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -108,9 +110,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -153,7 +156,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -189,8 +191,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -2198,8 +2198,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary nslib,
+                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create(__INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
@@ -2229,9 +2229,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             try {
                 PDict namespace = (PDict) copyDict.call(frame, namespaceOrig);
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, nslib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
+                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize);
 
-                for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
+                for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
                     if (setName != PNone.NO_VALUE) {
                         try {
@@ -2253,7 +2253,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
                     PythonObject globals = callerFrame.getGlobals();
                     if (globals != null) {
-                        String moduleName = getModuleNameFromGlobals(globals, nslib);
+                        String moduleName = getModuleNameFromGlobals(globals, hashingStoragelib);
                         if (moduleName != null) {
                             ensureWriteAttrNode().execute(frame, newType, __MODULE__, moduleName);
                         }
@@ -2261,8 +2261,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // delete __qualname__ from namespace
-                if (nslib.hasKey(namespace.getDictStorage(), __QUALNAME__)) {
-                    HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __QUALNAME__);
+                if (hashingStoragelib.hasKey(namespace.getDictStorage(), __QUALNAME__)) {
+                    HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), __QUALNAME__);
                     if (newStore != namespace.getDictStorage()) {
                         updatedStorage.enter();
                         namespace.setDictStorage(newStore);
@@ -2270,15 +2270,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
 
                 // set __class__ cell contents
-                Object classcell = nslib.getItem(namespace.getDictStorage(), __CLASSCELL__);
+                Object classcell = hashingStoragelib.getItem(namespace.getDictStorage(), __CLASSCELL__);
                 if (classcell != null) {
                     if (classcell instanceof PCell) {
                         ((PCell) classcell).setRef(newType);
                     } else {
                         raise(TypeError, ErrorMessages.MUST_BE_A_CELL, "__classcell__");
                     }
-                    if (nslib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
-                        HashingStorage newStore = nslib.delItem(namespace.getDictStorage(), __CLASSCELL__);
+                    if (hashingStoragelib.hasKey(namespace.getDictStorage(), __CLASSCELL__)) {
+                        HashingStorage newStore = hashingStoragelib.delItem(namespace.getDictStorage(), __CLASSCELL__);
                         if (newStore != namespace.getDictStorage()) {
                             updatedStorage.enter();
                             namespace.setDictStorage(newStore);
@@ -2324,8 +2324,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
-                        HashingStorageLibrary nslib, LookupAttributeInMRONode getDictAttrNode, LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode,
-                        GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
+                        PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
+                        LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize) {
             Object[] array = ensureGetObjectArrayNode().execute(bases);
 
             PythonAbstractClass[] basesArray;
@@ -2359,7 +2359,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // 2.) copy the dictionary slots
             Object[] slots = new Object[1];
             boolean[] qualnameSet = new boolean[]{false};
-            copyDictSlots(pythonClass, namespace, nslib, slots, qualnameSet);
+            copyDictSlots(pythonClass, namespace, lib, hashingStorageLib, slots, qualnameSet);
             if (!qualnameSet[0]) {
                 pythonClass.setQualName(name);
             }
@@ -2369,9 +2369,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
             // CPython masks the __hash__ method with None when __eq__ is overriden, but __hash__ is
             // not
-            Object hashMethod = nslib.getItem(namespace.getDictStorage(), __HASH__);
+            Object hashMethod = hashingStorageLib.getItem(namespace.getDictStorage(), __HASH__);
             if (hashMethod == null) {
-                Object eqMethod = nslib.getItem(namespace.getDictStorage(), __EQ__);
+                Object eqMethod = hashingStorageLib.getItem(namespace.getDictStorage(), __EQ__);
                 if (eqMethod != null) {
                     pythonClass.setAttribute(__HASH__, PNone.NONE);
                 }
@@ -2455,7 +2455,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
 
                     // checks for some name errors too
-                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, nslib);
+                    PTuple newSlots = copySlots(name, slotsStorage, slotlen, addDict, addWeakRef, namespace, hashingStorageLib);
 
                     // add native slot descriptors
                     if (pythonClass.needsNativeAllocation()) {
@@ -2463,6 +2463,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } finally {
                     ensureForeignCallContext().exit(frame, context, state);
+                }
+                if (!addDict && getDictAttrNode.execute(pythonClass) == PNone.NO_VALUE) {
+                    pythonClass.setHasSlotsButNoDictFlag();
                 }
             }
 
@@ -2515,10 +2518,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        private void copyDictSlots(PythonClass pythonClass, PDict namespace, HashingStorageLibrary nslib, Object[] slots, boolean[] qualnameSet) {
+        private void copyDictSlots(PythonClass pythonClass, PDict namespace, PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, Object[] slots, boolean[] qualnameSet) {
             // copy the dictionary slots over, as CPython does through PyDict_Copy
             // Also check for a __slots__ sequence variable in dict
-            for (DictEntry entry : nslib.entries(namespace.getDictStorage())) {
+            PDict typeDict = null;
+            for (DictEntry entry : hashingStorageLib.entries(namespace.getDictStorage())) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
                 if (__SLOTS__.equals(key)) {
@@ -2565,8 +2569,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                 } else if (SpecialAttributeNames.__CLASSCELL__.equals(key)) {
                     // don't populate this attribute
-                } else {
+                } else if (key instanceof String && typeDict == null) {
                     pythonClass.setAttribute(key, value);
+                } else {
+                    // DynamicObjectStorage ignores non-string keys
+                    typeDict = lib.getDict(pythonClass);
+                    if (typeDict == null) {
+                        // 1.) create DynamicObjectStorage based dict from pythonClass
+                        typeDict = PythonObjectFactory.getUncached().createDictFixedStorage(pythonClass);
+                        try {
+                            lib.setDict(pythonClass, typeDict);
+                        } catch (UnsupportedMessageException ex) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw new IllegalStateException("can't set dict into " + pythonClass, ex);
+                        }
+                    }
+                    // 2.) writing a non string key converts DynamicObjectStorage to
+                    // EconomicMapStorage
+                    HashingStorage updatedStore = hashingStorageLib.setItem(typeDict.getDictStorage(), key, value);
+                    typeDict.setDictStorage(updatedStore);
                 }
             }
         }
@@ -3371,29 +3392,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return execute(frame, PythonBuiltinClassType.PMemoryView, object);
         }
 
-        // TODO arrays should support buffer protocol too, but their implementation would be
-        // complex, because they don't have an underlying byte array
         @Specialization
         PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), true, "B", false, getQueue.execute());
+            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), true, "B");
         }
 
         @Specialization
         PMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return fromManaged(object, 1, lenNode.execute(storage), false, "B", true, getQueue.execute());
+            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), false, "B");
+        }
+
+        @Specialization
+        PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object) {
+            return factory().createMemoryViewForManagedObject(object, object.getFormat().bytesize, object.getLength(), false, object.getFormatStr());
         }
 
         @Specialization
         PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
-                        @Shared("getQueue") @Cached MemoryViewNodes.GetBufferReferences getQueue) {
+                        @Cached MemoryViewNodes.GetBufferReferences getQueue) {
             object.checkReleased(this);
             return factory().createMemoryView(getQueue.execute(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
                             object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
@@ -3421,18 +3443,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Fallback
         PMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
-        }
-
-        private PMemoryView fromManaged(Object object, int itemsize, int length, boolean readonly, String format, boolean needsRelease,
-                        MemoryViewNodes.BufferReferences refQueue) {
-            ManagedBuffer managedBuffer = null;
-            if (needsRelease) {
-                // TODO We should lock the underlying storage for resizing
-                managedBuffer = ManagedBuffer.createForManaged(object);
-            }
-            return factory().createMemoryView(refQueue, managedBuffer, object, length * itemsize, readonly, itemsize, format, 1,
-                            null, 0, new int[]{length}, new int[]{itemsize}, null,
-                            PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
         }
 
         public static MemoryViewNode create() {

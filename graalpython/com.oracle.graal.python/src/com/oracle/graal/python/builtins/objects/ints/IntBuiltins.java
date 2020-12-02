@@ -62,14 +62,13 @@ import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
@@ -2399,19 +2398,6 @@ public class IntBuiltins extends PythonBuiltins {
             return fromPBytes(cl, bytes, byteorder, false);
         }
 
-        // from PArray
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, boolean signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return compute(cl, fromSequenceStorageNode.execute(frame, array.getSequenceStorage()), byteorder, signed);
-        }
-
-        @Specialization
-        Object fromPArray(VirtualFrame frame, Object cl, PArray array, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Cached("create()") BytesNodes.FromSequenceStorageNode fromSequenceStorageNode) {
-            return fromPArray(frame, cl, array, byteorder, false, fromSequenceStorageNode);
-        }
-
         // from buffer
         @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
         Object fromBuffer(Object cl, Object buffer, String byteorder, boolean signed,
@@ -2804,6 +2790,25 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
+    }
+
+    @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetNewArgsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doI(int self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object doL(long self) {
+            return factory().createTuple(new Object[]{factory().createInt(self)});
+        }
+
+        @Specialization
+        Object getPI(PInt self) {
+            return factory().createTuple(new Object[]{factory().createInt(self.getValue())});
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__FLOAT__, minNumOfPositionalArgs = 1)

@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -45,12 +46,13 @@ import com.oracle.truffle.api.library.ExportMessage;
  * A Python built-in class that is immutable.
  */
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PythonBuiltinClass extends PythonManagedClass {
     private final PythonBuiltinClassType type;
 
     @TruffleBoundary
     public PythonBuiltinClass(PythonLanguage lang, PythonBuiltinClassType builtinClass, PythonAbstractClass base) {
-        super(lang, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getQualifiedName(), base);
+        super(lang, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(lang), builtinClass.getInstanceShape(lang), builtinClass.getName(), base);
         this.type = builtinClass;
     }
 
@@ -86,8 +88,9 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @SuppressWarnings("static-method")
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype) {
-        return isSubtype.execute(plib.getLazyPythonClass(instance), this);
+        return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
     }
 
     @ExportMessage
@@ -97,7 +100,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     @ExportMessage
     String getMetaQualifiedName() {
-        return type.getQualifiedName();
+        return type.getPrintName();
     }
 
     @Override

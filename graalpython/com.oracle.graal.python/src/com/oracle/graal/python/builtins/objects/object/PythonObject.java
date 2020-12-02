@@ -34,6 +34,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.HiddenAttributes;
@@ -56,6 +57,7 @@ import com.oracle.truffle.api.object.Shape;
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
     private static final byte CLASS_CHANGED_FLAG = 1;
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
 
     private final Object initialPythonClass;
 
@@ -127,6 +129,7 @@ public class PythonObject extends PythonAbstractObject {
     @SuppressWarnings("deprecation")
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
+        assert name instanceof String || name instanceof HiddenPythonKey || name instanceof HiddenKey : name.getClass().getSimpleName();
         CompilerAsserts.neverPartOfCompilation();
         DynamicObjectLibrary.getUncached().putWithFlags(getStorage(), name, value, 0);
     }

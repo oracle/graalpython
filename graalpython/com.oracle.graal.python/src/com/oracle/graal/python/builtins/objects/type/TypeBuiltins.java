@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.HiddenPythonKey;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -120,6 +122,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -127,6 +130,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -152,10 +156,20 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenPythonKey TYPE_FREE = new HiddenPythonKey("__free__");
     public static final HiddenPythonKey TYPE_FLAGS = new HiddenPythonKey(__FLAGS__);
     public static final HiddenPythonKey TYPE_VECTORCALL_OFFSET = new HiddenPythonKey("__vectorcall_offset__");
+    private static final HiddenPythonKey TYPE_DOC = new HiddenPythonKey(__DOC__);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeBuiltinsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put(TYPE_DOC, //
+                        "type(object_or_name, bases, dict)\n" + //
+                                        "type(object) -> the object's type\n" + //
+                                        "type(name, bases, dict) -> a new type");
     }
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
@@ -180,15 +194,81 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __DOC__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    @ImportStatic(SpecialAttributeNames.class)
+    public abstract static class DocNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object getDoc(PythonBuiltinClassType self, @SuppressWarnings("unused") PNone value) {
+            return getDoc(getCore().lookupType(self), value);
+        }
+
+        @Specialization
+        static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
+            // see type.c#type_get_doc()
+            if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
+                return ((PythonObject) self).getAttribute(TYPE_DOC);
+            } else {
+                return ((PythonObject) self).getAttribute(__DOC__);
+            }
+        }
+
+        @Specialization(guards = "!isAnyBuiltinClass(self)")
+        Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+            // see type.c#type_get_doc()
+            Object res = self.getAttribute(__DOC__);
+            Object resClass = PythonObjectLibrary.getUncached().getLazyPythonClass(res);
+            Object get = LookupAttributeInMRONode.Dynamic.getUncached().execute(resClass, __GET__);
+            if (PGuards.isCallable(get)) {
+                return CallTernaryMethodNode.getUncached().execute(frame, get, res, PNone.NONE, self);
+            }
+            return res;
+        }
+
+        protected boolean isAnyBuiltinClass(PythonClass klass) {
+            return IsBuiltinClassProfile.getUncached().profileIsAnyBuiltinClass(klass);
+        }
+
+        @Specialization
+        static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
+            return ReadAttributeFromObjectNode.getUncached().execute(self, __DOC__);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object setDoc(PythonClass self, Object value) {
+            self.setAttribute(__DOC__, value);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "isBuiltin.profileIsAnyBuiltinClass(self)"})
+        Object doc(Object self, @SuppressWarnings("unused") Object value,
+                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Cached GetNameNode getName) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_S_S, getName.execute(self), __DOC__);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        Object doc(PythonClass self, Object value) {
+            self.setAttribute(__DOC__, value);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization
+        Object doc(Object self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+                        @Cached GetNameNode getName) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getName.execute(self), __DOC__);
+        }
+    }
+
     @Builtin(name = __MRO__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
         Object doit(Object klass,
                         @Cached("create()") TypeNodes.GetMroNode getMroNode,
-                        @Cached TypeNodes.GetMroStorageNode getMroStorageNode,
                         @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
-            if (notInitialized.profile(klass instanceof PythonManagedClass && !getMroStorageNode.execute(klass).isInitialized())) {
+            if (notInitialized.profile(klass instanceof PythonManagedClass && !((PythonManagedClass) klass).isMROInitialized())) {
                 return PNone.NONE;
             }
             PythonAbstractClass[] mro = getMroNode.execute(klass);
@@ -200,16 +280,18 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization(guards = "lib.isLazyPythonClass(klass)")
+        @SuppressWarnings("unused")
         Object doit(Object klass,
-                        @Cached("create()") GetMroNode getMroNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached GetMroNode getMroNode,
+                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             PythonAbstractClass[] mro = getMroNode.execute(klass);
             return factory().createList(Arrays.copyOf(mro, mro.length, Object[].class));
         }
 
         @Specialization(guards = "!lib.isLazyPythonClass(object)")
+        @SuppressWarnings("unused")
         Object doit(Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("pythonLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, MRO, "type", object);
         }
     }
@@ -852,12 +934,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -943,6 +1025,16 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "native type");
         }
 
+        @Specialization(guards = "!isNoValue(value)")
+        Object setModuleType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        Object setModuleBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+        }
+
         @TruffleBoundary
         private static Object getModuleName(String fqname) {
             int firstDotIdx = fqname.indexOf('.');
@@ -957,7 +1049,7 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class QualNameNode extends AbstractSlotNode {
         @Specialization(guards = "isNoValue(value)")
         static String getName(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value) {
-            return cls.getQualifiedName();
+            return cls.getName();
         }
 
         @Specialization(guards = "isNoValue(value)")
@@ -967,7 +1059,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setName(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -1026,12 +1118,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setDictoffsetBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})
@@ -1118,12 +1210,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeType(@SuppressWarnings("unused") PythonBuiltinClassType cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = "!isNoValue(value)")
         Object setBasicsizeBuiltin(@SuppressWarnings("unused") PythonBuiltinClass cls, @SuppressWarnings("unused") Object value) {
-            throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
+            throw raise(PythonErrorType.TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE, "built-in/extension 'type'");
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isPythonBuiltinClass(cls)"})

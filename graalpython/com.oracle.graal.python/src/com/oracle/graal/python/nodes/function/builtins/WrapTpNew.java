@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -130,7 +131,11 @@ public final class WrapTpNew extends SlotWrapper {
             if (newMethod instanceof PBuiltinFunction) {
                 if (builtinProfile == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    builtinProfile = ValueProfile.createIdentityProfile();
+                    if (lookupLanguageReference(PythonLanguage.class).get().singleContextAssumption.isValid()) {
+                        builtinProfile = ValueProfile.createIdentityProfile();
+                    } else {
+                        builtinProfile = ValueProfile.getUncached();
+                    }
                 }
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = ((PBuiltinFunction) builtinProfile.profile(newMethod)).getBuiltinNodeFactory();
                 if (factory != null) {

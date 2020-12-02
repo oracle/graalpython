@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,47 +38,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects;
+package com.oracle.graal.python.nodes;
+
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 
-@ExportLibrary(PythonObjectLibrary.class)
-public final class PEllipsis extends PythonAbstractObject {
+public class PNodeWithRaise extends PNodeWithContext {
+    @Child private PRaiseNode raiseNode;
 
-    public static final PEllipsis INSTANCE = new PEllipsis();
-
-    private PEllipsis() {
+    protected final PRaiseNode getRaiseNode() {
+        if (raiseNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (isAdoptable()) {
+                raiseNode = insert(PRaiseNode.create());
+            } else {
+                raiseNode = PRaiseNode.getUncached();
+            }
+        }
+        return raiseNode;
     }
 
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return "Ellipsis";
+    public PException raise(PythonBuiltinClassType type, String string) {
+        return getRaiseNode().raise(type, string);
     }
 
-    @Override
-    public int compareTo(Object o) {
-        return this.hashCode() - o.hashCode();
+    public PException raise(Object exceptionType) {
+        return getRaiseNode().raise(exceptionType);
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PEllipsis;
+    public final PException raise(PythonBuiltinClassType type, PBaseException cause, String format, Object... arguments) {
+        return getRaiseNode().raise(type, cause, format, arguments);
     }
 
-    @ExportMessage
-    Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
-                    @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);
+    public final PException raise(PythonBuiltinClassType type, String format, Object... arguments) {
+        return getRaiseNode().raise(type, format, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Object... arguments) {
+        return getRaiseNode().raise(type, arguments);
+    }
+
+    public final PException raise(PythonBuiltinClassType type, Exception e) {
+        return getRaiseNode().raise(type, e);
+    }
+
+    public final PException raiseOverflow() {
+        return getRaiseNode().raiseNumberTooLarge(OverflowError, 0);
     }
 }

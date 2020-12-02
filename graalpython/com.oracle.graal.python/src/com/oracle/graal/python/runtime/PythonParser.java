@@ -93,7 +93,9 @@ public interface PythonParser {
     enum ErrorType {
         Generic,
         Indentation,
-        Tab
+        Tab,
+        Print,
+        Exec
     }
 
     public interface ParserErrorCallback {

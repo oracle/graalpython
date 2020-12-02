@@ -43,7 +43,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
@@ -64,6 +64,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonObjectLibrary.class)
 public final class PInt extends PythonBuiltinObject {
 
     public static final BigInteger MAX_INT = BigInteger.valueOf(Integer.MAX_VALUE);
@@ -277,7 +278,7 @@ public final class PInt extends PythonBuiltinObject {
 
     @ExportMessage
     public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongLossyNode castToLong) {
+                    @Cached CastToJavaLongExactNode castToLong) {
         return castToLong.execute(this);
     }
 

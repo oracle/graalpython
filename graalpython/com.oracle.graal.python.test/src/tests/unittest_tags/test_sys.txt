@@ -29,6 +29,7 @@
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_getwindowsversion
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_implementation
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_intern
+*graalpython.lib-python.3.test.test_sys.SysModuleTest.test_ioencoding
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_ioencoding_nonascii
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_is_finalizing
 *graalpython.lib-python.3.test.test_sys.SysModuleTest.test_issue20602

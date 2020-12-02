@@ -6,6 +6,7 @@
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_contains_fake
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_contains_order
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_count
+*graalpython.lib-python.3.test.test_tuple.TupleTest.test_free_after_iterating
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_getitem
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_getitem_error
 *graalpython.lib-python.3.test.test_tuple.TupleTest.test_getitemoverwriteiter

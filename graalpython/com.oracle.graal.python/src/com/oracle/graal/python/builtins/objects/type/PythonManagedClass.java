@@ -38,6 +38,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ComputeMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -53,23 +54,26 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 
+@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
-    private final MroSequenceStorage methodResolutionOrder;
+    @CompilationFinal private MroSequenceStorage methodResolutionOrder;
 
     private final Set<PythonAbstractClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonAbstractClass, Boolean>());
-    private final Shape instanceShape;
+    @CompilationFinal private Shape instanceShape;
     private String name;
     private String qualName;
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
+    @CompilationFinal private boolean mroInitialized = false;
 
     @TruffleBoundary
     protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, String name, PythonAbstractClass... baseClasses) {
@@ -90,9 +94,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this, invokeMro));
+        this.setMRO(ComputeMroNode.doSlowPath(this, invokeMro));
         if (invokeMro) {
-            this.methodResolutionOrder.setInitialized();
+            mroInitialized = true;
         }
 
         this.needsNativeAllocation = computeNeedsNativeAllocation();
@@ -107,6 +111,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
     }
 
+    public boolean isMROInitialized() {
+        return mroInitialized;
+    }
+
     /**
      * Invoke metaclass mro() method and set the result as new method resolution order.
      */
@@ -114,9 +122,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public void invokeMro() {
         PythonAbstractClass[] mro = ComputeMroNode.invokeMro(this);
         if (mro != null) {
-            this.methodResolutionOrder.setInternalArrayObject(mro);
+            this.setMRO(mro);
         }
-        this.methodResolutionOrder.setInitialized();
+        mroInitialized = true;
     }
 
     private static String getBaseName(String qname) {
@@ -150,6 +158,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     PythonAbstractClass getSuperClass() {
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
+    }
+
+    public void setMRO(PythonAbstractClass[] mro) {
+        methodResolutionOrder = new MroSequenceStorage(name, mro);
     }
 
     public MroSequenceStorage getMethodResolutionOrder() {
@@ -209,7 +221,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         this.baseClasses = newBaseClasses;
 
         for (PythonAbstractClass base : getBaseClasses()) {
-            if (base instanceof PythonManagedClass && !((PythonManagedClass) base).getMethodResolutionOrder().isInitialized()) {
+            if (base instanceof PythonManagedClass && !((PythonManagedClass) base).mroInitialized) {
                 throw PRaiseNode.getUncached().raise(TypeError, ErrorMessages.CANNOT_EXTEND_INCOMPLETE_P, base);
             }
         }
@@ -228,29 +240,29 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         }
 
         PythonAbstractClass[] oldBaseClasses = getBaseClasses();
-        Object[] oldMRO = this.methodResolutionOrder.getInternalArray();
+        PythonAbstractClass[] oldMRO = (PythonAbstractClass[]) this.methodResolutionOrder.getInternalArray();
 
         Set<PythonAbstractClass> subclasses = GetSubclassesNode.getUncached().execute(this);
         PythonAbstractClass[] subclassesArray = subclasses.toArray(new PythonAbstractClass[subclasses.size()]);
-        Object[][] oldSubClasssMROs = new Object[subclasses.size()][];
+        PythonAbstractClass[][] oldSubClasssMROs = new PythonAbstractClass[subclasses.size()][];
         for (int i = 0; i < subclassesArray.length; i++) {
             PythonAbstractClass scls = subclassesArray[i];
             if (scls instanceof PythonManagedClass) {
-                oldSubClasssMROs[i] = ((PythonManagedClass) scls).methodResolutionOrder.getInternalArray();
+                oldSubClasssMROs[i] = (PythonAbstractClass[]) ((PythonManagedClass) scls).methodResolutionOrder.getInternalArray();
             }
         }
 
         try {
             // for what follows see also typeobject.c#type_set_bases()
             this.baseClasses = newBaseClasses;
-            this.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(this));
             this.methodResolutionOrder.lookupChanged();
+            this.setMRO(ComputeMroNode.doSlowPath(this));
 
             for (PythonAbstractClass scls : subclasses) {
                 if (scls instanceof PythonManagedClass) {
                     PythonManagedClass pmc = (PythonManagedClass) scls;
-                    pmc.methodResolutionOrder.setInternalArrayObject(ComputeMroNode.doSlowPath(scls));
                     pmc.methodResolutionOrder.lookupChanged();
+                    pmc.setMRO(ComputeMroNode.doSlowPath(scls));
                 }
             }
             if (this.baseClasses == newBaseClasses) {
@@ -283,15 +295,15 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 // e.g. the mro() call might have manipulated __bases__
                 this.baseClasses = oldBaseClasses;
             }
-            this.methodResolutionOrder.setInternalArrayObject(oldMRO);
             this.methodResolutionOrder.lookupChanged();
+            this.setMRO(oldMRO);
 
             for (int i = 0; i < subclassesArray.length; i++) {
                 PythonAbstractClass scls = subclassesArray[i];
                 if (oldSubClasssMROs[i] != null) {
                     PythonManagedClass pmc = (PythonManagedClass) scls;
-                    pmc.methodResolutionOrder.setInternalArrayObject(oldSubClasssMROs[i]);
                     pmc.methodResolutionOrder.lookupChanged();
+                    pmc.setMRO(oldSubClasssMROs[i]);
                 }
             }
             throw pe;
@@ -339,6 +351,16 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         } else {
             return (PythonBuiltinClass) object;
         }
+    }
+
+    /**
+     * Sets the {@link PythonObject#HAS_SLOTS_BUT_NO_DICT_FLAG} shape flag in the
+     * {@code instanceShape}. This method must not be called after the type has been initialized and
+     * used.
+     */
+    @TruffleBoundary
+    public void setHasSlotsButNoDictFlag() {
+        instanceShape = PythonLanguage.getShapeForClassWithoutDict(this);
     }
 
     @ExportMessage

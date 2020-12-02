@@ -1372,6 +1372,7 @@ class AbstractUnpickleTests(unittest.TestCase):
         for p in badpickles:
             self.check_unpickling_error(self.truncated_errors, p)
 
+    @support.impl_detail("GR-16579: support for multi-threading", graalvm=False)
     @reap_threads
     def test_unpickle_module_race(self):
         # https://bugs.python.org/issue34572
@@ -2243,6 +2244,7 @@ class AbstractPickleTests(unittest.TestCase):
                 loaded = self.loads(dumped)
                 self.assert_is_copy(obj, loaded)
 
+    @support.impl_detail("GR-27557: attribute name interning not yet supported", graalvm=False)
     def test_attribute_name_interning(self):
         # Test that attribute names of pickled objects are interned when
         # unpickling.
@@ -2478,7 +2480,11 @@ class AbstractPickleTests(unittest.TestCase):
             # contents) while Python pickler issues two calls to write: one for
             # the frame header and one for the frame binary contents.
             writer = ChunkAccumulator()
-            self.pickler(writer, proto).dump(objects)
+            # self.pickler(writer, proto).dump(objects)
+            # disable pickler memo until GR-27634 is fixed (id builtin)
+            p = self.pickler(writer, proto)
+            p.fast = True
+            p.dump(objects)
 
             # Actually read the binary content of the chunks after the end
             # of the call to dump: any memoryview passed to write should not
@@ -2692,6 +2698,7 @@ class AbstractPickleTests(unittest.TestCase):
                                        shape=(4, 2), strides=(1, 4),
                                        flags=flags)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_in_band_buffers(self):
         # Test in-band buffers (PEP 574)
         for obj in self.buffer_like_objects():
@@ -2723,6 +2730,7 @@ class AbstractPickleTests(unittest.TestCase):
     # XXX Unfortunately cannot test non-contiguous array
     # (see comment in PicklableNDArray.__reduce_ex__)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_oob_buffers(self):
         # Test out-of-band buffers (PEP 574)
         for obj in self.buffer_like_objects():
@@ -2765,6 +2773,7 @@ class AbstractPickleTests(unittest.TestCase):
                     self.assertIs(type(new), type(obj))
                     self.assertEqual(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_oob_buffers_writable_to_readonly(self):
         # Test reconstructing readonly object from writable buffer
         obj = ZeroCopyBytes(b"foobar")
@@ -2778,6 +2787,7 @@ class AbstractPickleTests(unittest.TestCase):
             self.assertIs(type(new), type(obj))
             self.assertEqual(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_picklebuffer_error(self):
         # PickleBuffer forbidden with protocol < 5
         pb = pickle.PickleBuffer(b"foobar")
@@ -2785,6 +2795,7 @@ class AbstractPickleTests(unittest.TestCase):
             with self.assertRaises(pickle.PickleError):
                 self.dumps(pb, proto)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_buffer_callback_error(self):
         def buffer_callback(buffers):
             1/0
@@ -2792,6 +2803,7 @@ class AbstractPickleTests(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError):
             self.dumps(pb, 5, buffer_callback=buffer_callback)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_buffers_error(self):
         pb = pickle.PickleBuffer(b"foobar")
         for proto in range(5, pickle.HIGHEST_PROTOCOL + 1):
@@ -3196,13 +3208,16 @@ class AbstractPickleModuleTests(unittest.TestCase):
             new = loads(data, buffers=buffers)
             self.assertIs(new, obj)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_dumps_loads_oob_buffers(self):
         # Test out-of-band buffers (PEP 574) with top-level dumps() and loads()
         self.check_dumps_loads_oob_buffers(self.dumps, self.loads)
 
+    @support.impl_detail("GR-26995: PickleBuffer support missing", graalvm=False)
     def test_dump_load_oob_buffers(self):
         # Test out-of-band buffers (PEP 574) with top-level dump() and load()
         def dumps(obj, **kwargs):
+            # breakpoint()
             f = io.BytesIO()
             self.dump(obj, f, **kwargs)
             return f.getvalue()

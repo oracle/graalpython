@@ -330,3 +330,65 @@ def test_itemsize():
     class C(tuple):
         __itemsize__ = 42
     assert C.__itemsize__ == 8
+    
+def test_descr_name_qualname():    
+    assert float.real.__qualname__ == 'float.real'
+    assert float.real.__name__ == 'real'
+    class C: __slots__ = ['a']
+    assert C.a.__name__ == 'a'
+    assert C.a.__qualname__ == 'test_descr_name_qualname.<locals>.C.a'
+    raised = False
+    try:
+        C.a.__qualname__ = 'b'
+    except AttributeError:
+        raised = True
+    assert raised    
+    raised = False
+    try:
+        C.a.__name__ = 'b'
+    except AttributeError:
+        raised = True
+    assert raised    
+    
+def test_cant_set_builtin_attributes():
+    raised = False
+    try:
+        float.__name__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        float.__qualname__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        float.__dictoffset__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        float.__module__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        float.__itemsize__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised
+    
+    raised = False
+    try:
+        float.__basicsize__ = 'b'
+    except TypeError:
+        raised = True
+    assert raised    

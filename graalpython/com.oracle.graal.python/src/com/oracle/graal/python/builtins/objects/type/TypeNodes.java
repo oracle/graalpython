@@ -316,8 +316,8 @@ public abstract class TypeNodes {
         @Specialization
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
                         @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
-            if (!notInitialized.profile(obj.getMethodResolutionOrder().isInitialized())) {
-                obj.getMethodResolutionOrder().setInternalArrayObject(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
+            if (!notInitialized.profile(obj.isMROInitialized())) {
+                obj.setMRO(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
             }
             return obj.getMethodResolutionOrder();
         }

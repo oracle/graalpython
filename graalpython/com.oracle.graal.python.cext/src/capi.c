@@ -247,7 +247,7 @@ static void initialize_globals() {
 
 static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)bytearray_releasebuffer);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memoryview_getbuffer, (releasebufferproc)memoryview_releasebuffer);
 }
@@ -511,6 +511,12 @@ PyObject* PyTruffle_Object_New(PyTypeObject* cls, PyTypeObject* dominatingNative
         } \
         return polyglot_from_##__polyglot_type__##_array(carr, len); \
     } \
+    void* PyTruffle_##__jtype__##ArrayRealloc(const void* array, int64_t len) { \
+        int64_t size = len + 1; \
+        __ctype__* carr = (__ctype__*) realloc(array, size * sizeof(__ctype__)); \
+        carr[len] = (__ctype__)0; \
+        return polyglot_from_##__polyglot_type__##_array(carr, len); \
+    }
 
 PRIMITIVE_ARRAY_TO_NATIVE(Byte, int8_t, i8, polyglot_as_i8);
 PRIMITIVE_ARRAY_TO_NATIVE(Int, int32_t, i32, polyglot_as_i32);

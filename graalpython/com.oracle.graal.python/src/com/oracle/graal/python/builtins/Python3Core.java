@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndentationError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TabError;
+import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
@@ -67,6 +68,7 @@ import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.JArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LZMAModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
@@ -101,6 +103,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
@@ -114,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -223,7 +227,6 @@ public final class Python3Core implements PythonCore {
                         "str",
                         "type",
                         "_imp",
-                        "array",
                         "_thread",
                         "function",
                         "_functools",
@@ -340,6 +343,8 @@ public final class Python3Core implements PythonCore {
                         new PZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
+                        new NotImplementedBuiltins(),
+                        new EllipsisBuiltins(),
                         new SentinelIteratorBuiltins(),
                         new ForeignIteratorBuiltins(),
                         new GeneratorBuiltins(),
@@ -380,6 +385,7 @@ public final class Python3Core implements PythonCore {
                         new CodecsTruffleModuleBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
+                        new JArrayModuleBuiltins(),
                         new SREModuleBuiltins(),
                         new AstModuleBuiltins(),
                         new SelectModuleBuiltins(),
@@ -668,10 +674,10 @@ public final class Python3Core implements PythonCore {
     }
 
     private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtinsForObj) {
-        Map<String, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String constantName = entry.getKey();
-            obj.setAttribute(constantName, entry.getValue());
+        Map<Object, Object> builtinConstants = builtinsForObj.getBuiltinConstants();
+        for (Map.Entry<Object, Object> entry : builtinConstants.entrySet()) {
+            Object constant = entry.getKey();
+            obj.setAttribute(constant, entry.getValue());
         }
 
         Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtinsForObj.getBuiltinFunctions();
@@ -796,29 +802,25 @@ public final class Python3Core implements PythonCore {
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : PNone.NONE);
         instance.setAttribute("lineno", section.getStartLine());
         instance.setAttribute("offset", section.getStartColumn());
-        String msg;
-        if (section.getCharIndex() == source.getLength()) {
+        String msg = "invalid syntax";
+        if (type == PythonParser.ErrorType.Print) {
+            CharSequence line = source.getCharacters(section.getStartLine());
+            line = line.subSequence(line.toString().lastIndexOf(PRINT), line.length());
+            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(line);
+            if (matcher.matches()) {
+                String arg = matcher.group(2).trim();
+                String maybeEnd = "";
+                if (arg.endsWith(",")) {
+                    maybeEnd = " end=\" \"";
+                }
+                msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
+            }
+        } else if (type == PythonParser.ErrorType.Exec) {
+            msg = "Missing parentheses in call to 'exec'";
+        } else if (section.getCharIndex() == source.getLength()) {
             msg = "unexpected EOF while parsing";
         } else if (message != null) {
             msg = (new ErrorMessageFormatter()).format(message, arguments);
-        } else {
-            msg = "invalid syntax";
-        }
-        if (section.isAvailable() && type == PythonParser.ErrorType.Generic) {
-            Matcher matcher = MISSING_PARENTHESES_PATTERN.matcher(source.getCharacters(section.getStartLine()));
-            if (matcher.matches()) {
-                String fn = matcher.group(1);
-                if (fn.equals("print")) {
-                    String arg = matcher.group(2).trim();
-                    String maybeEnd = "";
-                    if (arg.endsWith(",")) {
-                        maybeEnd = " end=\" \"";
-                    }
-                    msg = (new ErrorMessageFormatter()).format("Missing parentheses in call to 'print'. Did you mean print(%s%s)?", arg, maybeEnd);
-                } else {
-                    msg = "Missing parentheses in call to 'exec'";
-                }
-            }
         }
         instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));

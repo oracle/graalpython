@@ -60,7 +60,7 @@ public abstract class PForeignToPTypeNode extends Node {
     public abstract Object executeConvert(Object value);
 
     protected static boolean isOtherClass(Class<?> clazz) {
-        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class);
+        return !(clazz == Byte.class || clazz == Short.class || clazz == Float.class || clazz == Character.class || clazz == PException.class);
     }
 
     @Specialization(guards = {"value.getClass() == cachedClass", "isOtherClass(cachedClass)"}, limit = "1")

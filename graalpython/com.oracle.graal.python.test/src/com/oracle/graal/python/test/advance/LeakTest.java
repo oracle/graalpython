@@ -185,6 +185,11 @@ public class LeakTest extends AbstractLanguageLauncher {
             // do this a few times to dump a small heap if we can
             MBeanServer server = null;
             for (int i = 0; i < 10; i++) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    // do nothing
+                }
                 System.gc();
                 Runtime.getRuntime().freeMemory();
                 server = ManagementFactory.getPlatformMBeanServer();

@@ -17,6 +17,7 @@
 *graalpython.lib-python.3.test.test_list.ListTest.test_exhausted_iterator
 *graalpython.lib-python.3.test.test_list.ListTest.test_extend
 *graalpython.lib-python.3.test.test_list.ListTest.test_extendedslicing
+*graalpython.lib-python.3.test.test_list.ListTest.test_free_after_iterating
 *graalpython.lib-python.3.test.test_list.ListTest.test_getitem
 *graalpython.lib-python.3.test.test_list.ListTest.test_getitem_error
 *graalpython.lib-python.3.test.test_list.ListTest.test_getitemoverwriteiter

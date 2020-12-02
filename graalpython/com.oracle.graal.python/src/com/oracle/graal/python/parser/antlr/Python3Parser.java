@@ -31,20 +31,16 @@
 // Generated from graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3.g4 by ANTLR 4.7.2
 package com.oracle.graal.python.parser.antlr;
 
-import com.oracle.graal.python.builtins.objects.PEllipsis;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
-import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.parser.sst.*;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 
@@ -348,6 +344,10 @@ public class Python3Parser extends Parser {
 	    private int getLastIndex(ParserRuleContext ctx) {
 	    	// ignores ctx
 	        return getStopIndex(this._input.get(this._input.index() - 1));
+	    }
+
+	    private boolean isForbiddenName(String name) {
+	        return "True".equals(name) || "False".equals(name) || "None".equals(name) || "__debug__".equals(name);
 	    }
 
 	public Python3Parser(TokenStream input) {
@@ -919,7 +919,7 @@ public class Python3Parser extends Parser {
 			        } else {
 			            factory.getScopeEnvironment().addSeenVar(dottedName);
 			        }
-			        push( new DecoratorSSTNode(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx))); 
+			        push( factory.createDecorator(dottedName, args, getStartIndex(_localctx), getLastIndex(_localctx))); 
 			    
 			}
 		}
@@ -1138,7 +1138,7 @@ public class Python3Parser extends Parser {
 			setState(272);
 			match(COLON);
 			 
-			            String name = _localctx.n.getText(); 
+			            String name = factory.mangleName(_localctx.n.getText()); 
 			            ScopeInfo enclosingScope = scopeEnvironment.getCurrentScope();
 			            String enclosingClassName = enclosingScope.isInClassScope() ? enclosingScope.getScopeId() : null;
 			            ScopeInfo functionScope = scopeEnvironment.pushScope(name, ScopeInfo.ScopeKind.Function);
@@ -1660,12 +1660,19 @@ public class Python3Parser extends Parser {
 			}
 
 			 
-			            ArgDefListBuilder.AddParamResult result = args.addParam((_localctx.NAME!=null?_localctx.NAME.getText():null), type, defValue); 
+			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
+			            if (isForbiddenName(name)) {
+			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
+			            ArgDefListBuilder.AddParamResult result = args.addParam(name, type, defValue); 
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
 			                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
 			                case DUPLICATED_ARGUMENT:
-			                    throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
+			                    throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            } 
 			            
 			        
@@ -1734,7 +1741,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name, type); 
+			 args.addSplat(name != null ? factory.mangleName(name) : null, type); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1792,8 +1799,15 @@ public class Python3Parser extends Parser {
 			}
 
 			 
-			            if (args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
-			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
+			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
+			            if (isForbiddenName(name)) {
+			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
+			            if (args.addKwargs(name, type) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			                throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            }
 			        
 			}
@@ -2236,12 +2250,19 @@ public class Python3Parser extends Parser {
 			}
 
 			 
-			            ArgDefListBuilder.AddParamResult result = args.addParam((_localctx.NAME!=null?_localctx.NAME.getText():null), null, defValue); 
+			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
+			            if (isForbiddenName(name)) {
+			                factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+			            }
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
+			            ArgDefListBuilder.AddParamResult result = args.addParam(name, null, defValue); 
 			            switch(result) {
 			                case NONDEFAULT_FOLLOWS_DEFAULT:
 			                    throw new PythonRecognitionException("non-default argument follows default argument", this, _input, _localctx, getCurrentToken());
 			                case DUPLICATED_ARGUMENT:
-			                    throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
+			                    throw new PythonRecognitionException("duplicate argument '" + name + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            }
 			            
 			        
@@ -2292,7 +2313,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 args.addSplat(name, null);
+			 args.addSplat(name != null ? factory.mangleName(name) : null, null);
 			}
 		}
 		catch (RecognitionException re) {
@@ -2330,7 +2351,11 @@ public class Python3Parser extends Parser {
 			setState(561);
 			_localctx.NAME = match(NAME);
 
-			            if (args.addKwargs((_localctx.NAME!=null?_localctx.NAME.getText():null), null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
+			            String name = (_localctx.NAME!=null?_localctx.NAME.getText():null);
+			            if (name != null) {
+			                name = factory.mangleName(name);
+			            }
+			            if (args.addKwargs(name, null) == ArgDefListBuilder.AddParamResult.DUPLICATED_ARGUMENT) {
 			                throw new PythonRecognitionException("duplicate argument '" + (_localctx.NAME!=null?_localctx.NAME.getText():null) + "' in function definition", this, _input, _localctx, getCurrentToken());
 			            }
 			        
@@ -2860,11 +2885,7 @@ public class Python3Parser extends Parser {
 				                    if (start == start()) {
 				                        push(new ExpressionStatementSSTNode(value));
 				                    } else {
-				                        SSTNode[] lhs = getArray(start, SSTNode[].class);
-				                        if (lhs.length == 1 && lhs[0] instanceof StarSSTNode) {
-				                            throw new PythonRecognitionException("starred assignment target must be in a list or tuple", this, _input, _localctx, _localctx.start);
-				                        }
-				                        push(factory.createAssignment(lhs, value, getStartIndex(_localctx), rhsStopIndex));
+				                        push(factory.createAssignment(getArray(start, SSTNode[].class), value, getStartIndex(_localctx), rhsStopIndex));
 				                    }
 				                
 				}
@@ -3311,7 +3332,7 @@ public class Python3Parser extends Parser {
 				}
 			}
 
-			 push(new ReturnSSTNode(value, getStartIndex(_localctx), getLastIndex(_localctx)));
+			 push(factory.createReturn(value, getStartIndex(_localctx), getLastIndex(_localctx)));
 			}
 		}
 		catch (RecognitionException re) {
@@ -6719,7 +6740,7 @@ public class Python3Parser extends Parser {
 					_localctx.NAME = match(NAME);
 					   
 					                    assert _localctx.NAME != null;
-					                    _localctx.result =  new GetAttributeSSTNode(_localctx.result, (_localctx.NAME!=null?_localctx.NAME.getText():null), getStartIndex(_localctx), getStopIndex(_localctx.NAME));
+					                    _localctx.result =  factory.createGetAttribute(_localctx.result, (_localctx.NAME!=null?_localctx.NAME.getText():null), getStartIndex(_localctx), getStopIndex(_localctx.NAME));
 					                
 					}
 					break;
@@ -8257,12 +8278,16 @@ public class Python3Parser extends Parser {
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				 String name = getCurrentToken().getText();
-				                  if (getCurrentToken().getType() != NAME) {
-				                    throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
-				                  }
-				                  // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
-				                  boolean isNameAsVariableInScope = scopeEnvironment.getCurrentScope().getSeenVars() == null ? false : scopeEnvironment.getCurrentScope().getSeenVars().contains(name);
+
+				                    String name = getCurrentToken().getText();
+				                    if (isForbiddenName(name)) {
+				                        factory.throwSyntaxError(getStartIndex(_localctx), getLastIndex(_localctx), ErrorMessages.CANNOT_ASSIGN_TO, name);
+				                    }
+				                    if (getCurrentToken().getType() != NAME) {
+				                        throw new PythonRecognitionException("keyword can't be an expression", this, _input, _localctx, getCurrentToken());
+				                    }
+				                    // TODO this is not nice. There is done two times lookup in collection to remove name from seen variables. !!!
+				                    boolean isNameAsVariableInScope = scopeEnvironment.getCurrentScope().getSeenVars() == null ? false : scopeEnvironment.getCurrentScope().getSeenVars().contains(name);
 				                
 				setState(1588);
 				_localctx.n = _localctx.test = test();
